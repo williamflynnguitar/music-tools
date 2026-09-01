@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>2 &amp; 4 — fading time trainer</title>
+<style>
+:root{
+  --ink:#0C1517;
+  --panel:#111E21;
+  --panel-2:#16262A;
+  --rule:#22383C;
+  --bone:#EDE7DA;
+  --dim:#7C8E8E;
+  --dimmer:#4C6165;
+  --brass:#C9A05A;
+  --brass-hot:#F2CC87;
+  --rest:#2E4448;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--ink);
+  color:var(--bone);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding:28px 20px 64px;
+}
+main{max-width:880px;margin:0 auto;}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;
+  padding-bottom:14px;border-bottom:1px solid var(--rule);
+}
+.wordmark{
+  font-family:var(--mono);
+  font-size:13px;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--brass);margin:0;font-weight:500;
+}
+.tagline{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--dim);text-transform:uppercase;margin:0;
+}
+
+/* ---------- readout ---------- */
+.readout{
+  padding:36px 0 26px;
+  display:grid;grid-template-columns:auto 1fr;gap:8px 34px;align-items:end;
+}
+.bpm{
+  font-family:var(--sans);
+  font-size:clamp(88px,20vw,164px);
+  line-height:.78;
+  font-weight:700;
+  letter-spacing:-.055em;
+  font-stretch:condensed;
+  margin:0;
+  font-variant-numeric:tabular-nums;
+}
+.bpm.hidden-tempo{color:var(--dimmer);letter-spacing:-.02em;}
+.bpm-unit{
+  font-family:var(--mono);font-size:11px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--dim);margin:8px 0 0;
+}
+.meta{display:flex;flex-direction:column;gap:11px;padding-bottom:6px;}
+.meta-row{display:flex;justify-content:space-between;gap:14px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+  border-bottom:1px solid var(--rule);padding-bottom:9px;}
+.meta-row span:first-child{color:var(--dim);text-transform:uppercase;letter-spacing:.16em;font-size:10.5px;}
+.meta-row span:last-child{font-variant-numeric:tabular-nums;}
+.meta-row.is-muted span:last-child{color:var(--dimmer);}
+
+/* ---------- beat lamps ---------- */
+.lamps{display:flex;gap:9px;align-items:center;margin:2px 0 0;}
+.lamp{
+  width:34px;height:5px;border-radius:1px;background:var(--rest);
+  transition:background .09s linear;
+}
+.lamp.backbeat{background:#3E5A5E;}
+.lamp.lit{background:var(--brass-hot);transition:none;}
+.lamp.lit-soft{background:var(--dimmer);transition:none;}
+.lamp-note{font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+  color:var(--dimmer);text-transform:uppercase;margin-left:6px;}
+
+/* ---------- the chart strip (signature) ---------- */
+.chart{
+  margin:14px 0 30px;border:1px solid var(--rule);background:var(--panel);
+  padding:0;position:relative;overflow:hidden;
+}
+.chart-head{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:9px 13px;border-bottom:1px solid var(--rule);
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);
+}
+.chart-body{display:flex;height:86px;position:relative;}
+.stage-cell{
+  flex:1;border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:11px 9px 8px;min-width:0;
+}
+.stage-cell:last-child{border-right:none;}
+.stage-cell.active{background:var(--panel-2);}
+.slashes{display:flex;gap:2px;align-items:center;flex-wrap:nowrap;overflow:hidden;}
+.slash{
+  flex:1 1 0;min-width:2px;max-width:9px;height:15px;
+  background:var(--brass);
+  clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);
+}
+.slash.off{background:var(--rest);}
+.stage-cell.active .slash{background:var(--brass-hot);}
+.stage-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  color:var(--dimmer);text-transform:uppercase;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.stage-cell.active .stage-label{color:var(--brass);}
+.playhead{
+  position:absolute;top:0;bottom:0;width:1px;background:var(--brass-hot);
+  left:0;pointer-events:none;box-shadow:0 0 9px 1px rgba(242,204,135,.5);
+}
+.chart.blind .chart-body,.chart.blind .playhead{visibility:hidden;}
+.chart.blind::after{
+  content:"display muted — listen only";
+  position:absolute;inset:37px 0 0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--dimmer);
+}
+.density-strip{flex:1;position:relative;padding:14px 13px;display:flex;align-items:center;}
+.density-track{width:100%;height:34px;position:relative;}
+.density-fill{position:absolute;inset:0;
+  background:linear-gradient(90deg,var(--brass) 0%,var(--rest) 100%);
+  opacity:.85;
+  clip-path:polygon(0 0,100% 100%,100% 100%,0 100%);
+}
+
+/* ---------- transport ---------- */
+.transport{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-bottom:34px;}
+button{font-family:var(--mono);cursor:pointer;}
+.btn-go{
+  background:var(--brass);color:#0C1517;border:none;
+  padding:16px 40px;font-size:13px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;
+}
+.btn-go:hover{background:var(--brass-hot);}
+.btn-go.running{background:transparent;color:var(--brass);box-shadow:inset 0 0 0 1px var(--brass);}
+.btn-ghost{
+  background:transparent;color:var(--dim);border:1px solid var(--rule);
+  padding:16px 22px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+}
+.btn-ghost:hover{color:var(--bone);border-color:var(--dimmer);}
+.hint{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--dimmer);}
+
+/* ---------- settings ---------- */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);}
+.panel{background:var(--ink);padding:20px 19px 22px;}
+.panel h2{
+  font-family:var(--mono);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--brass);margin:0 0 17px;font-weight:500;
+}
+.field{margin-bottom:15px;}
+.field:last-child{margin-bottom:0;}
+.field > label{
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);margin-bottom:7px;
+}
+.field .val{color:var(--bone);font-variant-numeric:tabular-nums;}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--rule);outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--brass);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:var(--brass);cursor:pointer;}
+input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offset:5px;}
+.seg{display:flex;border:1px solid var(--rule);}
+.seg button{
+  flex:1;background:transparent;border:none;color:var(--dim);
+  padding:9px 6px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+}
+.seg button[aria-pressed=true]{background:var(--brass);color:#0C1517;font-weight:700;}
+.toggle{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--dim);
+  padding:9px 0;border-bottom:1px solid var(--rule);cursor:pointer;
+}
+.toggle:last-child{border-bottom:none;}
+.toggle input{position:absolute;opacity:0;width:0;height:0;}
+.sw{width:34px;height:17px;background:var(--rule);flex:none;position:relative;transition:background .15s;}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:11px;height:11px;background:var(--dim);transition:.15s;}
+.toggle input:checked + .sw{background:var(--brass);}
+.toggle input:checked + .sw::after{left:20px;background:#0C1517;}
+.toggle input:focus-visible + .sw{outline:2px solid var(--brass-hot);outline-offset:3px;}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.note{font-family:var(--mono);font-size:10px;line-height:1.65;color:var(--dimmer);
+  margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);}
+
+@media (max-width:660px){
+  .panels{grid-template-columns:1fr;}
+  .readout{grid-template-columns:1fr;gap:22px;}
+  .chart-body{height:74px;}
+  .stage-cell{padding:8px 5px 6px;}
+  .stage-label{font-size:8px;letter-spacing:.04em;}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<main>
+
+  <div class="masthead">
+    <h1 class="wordmark">2 &amp; 4</h1>
+    <p class="tagline">fading backbeat · inner pulse trainer</p>
+  </div>
+
+  <section class="readout">
+    <div>
+      <p class="bpm" id="bpmDisplay">120</p>
+      <p class="bpm-unit" id="bpmUnit">beats per minute</p>
+    </div>
+    <div class="meta">
+      <div class="meta-row"><span>Round</span><span id="roundOut">—</span></div>
+      <div class="meta-row" id="rowTime"><span>Remaining</span><span id="timeOut">3:00</span></div>
+      <div class="meta-row" id="rowBar"><span>Bar</span><span id="barOut">—</span></div>
+      <div class="lamps" id="lamps">
+        <div class="lamp" data-b="0"></div>
+        <div class="lamp backbeat" data-b="1"></div>
+        <div class="lamp" data-b="2"></div>
+        <div class="lamp backbeat" data-b="3"></div>
+        <span class="lamp-note">clicks on 2 &amp; 4</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="chart" id="chart">
+    <div class="chart-head">
+      <span id="chartTitle">Dropout plan</span>
+      <span id="chartStatus">idle</span>
+    </div>
+    <div class="chart-body" id="chartBody"></div>
+    <div class="playhead" id="playhead" style="display:none"></div>
+  </section>
+
+  <div class="transport">
+    <button class="btn-go" id="goBtn">Start</button>
+    <button class="btn-ghost" id="repeatBtn">Repeat tempo</button>
+    <button class="btn-ghost" id="skipBtn">Next tempo</button>
+    <span class="hint">Space start / stop &nbsp;·&nbsp; R repeat &nbsp;·&nbsp; N next</span>
+  </div>
+
+  <div class="panels">
+    <div class="panel">
+      <h2>Session</h2>
+
+      <div class="field">
+        <label>Tempo source
+          <span class="val" id="srcVal">fixed</span></label>
+        <div class="seg" role="group">
+          <button id="srcFixed" aria-pressed="true">Fixed</button>
+          <button id="srcRandom" aria-pressed="false">Random</button>
+        </div>
+      </div>
+
+      <div class="field" id="fixedField">
+        <label for="bpm">Tempo <span class="val"><b id="bpmVal">120</b> bpm</span></label>
+        <input type="range" id="bpm" min="40" max="300" step="1" value="120">
+      </div>
+
+      <div id="randomFields" style="display:none">
+        <div class="pair">
+          <div class="field">
+            <label for="minBpm">Low <span class="val" id="minVal">70</span></label>
+            <input type="range" id="minBpm" min="40" max="300" step="1" value="70">
+          </div>
+          <div class="field">
+            <label for="maxBpm">High <span class="val" id="maxVal">220</span></label>
+            <input type="range" id="maxBpm" min="40" max="300" step="1" value="220">
+          </div>
+        </div>
+        <div class="field">
+          <label for="step">Step <span class="val"><b id="stepVal">5</b> bpm</span></label>
+          <input type="range" id="step" min="1" max="20" step="1" value="5">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="rounds">Rounds <span class="val" id="roundsVal">4</span></label>
+        <input type="range" id="rounds" min="1" max="20" step="1" value="4">
+      </div>
+
+      <div class="field">
+        <label for="dur">Round length <span class="val" id="durVal">3:00</span></label>
+        <input type="range" id="dur" min="30" max="600" step="15" value="180">
+      </div>
+
+      <div class="field">
+        <label for="rest">Rest between rounds <span class="val"><b id="restVal">15</b> s</span></label>
+        <input type="range" id="rest" min="0" max="60" step="5" value="15">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Dropout</h2>
+
+      <div class="field">
+        <label>Method <span class="val" id="modeVal">phrase</span></label>
+        <div class="seg" role="group">
+          <button id="modePhrase" aria-pressed="true">Phrase</button>
+          <button id="modeThin" aria-pressed="false">Random thin</button>
+        </div>
+      </div>
+
+      <div class="field" id="phraseField">
+        <label>Phrase length <span class="val"><b id="phraseVal">8</b> bars</span></label>
+        <div class="seg" role="group" id="phraseSeg">
+          <button data-n="4" aria-pressed="false">4</button>
+          <button data-n="8" aria-pressed="true">8</button>
+          <button data-n="12" aria-pressed="false">12</button>
+          <button data-n="16" aria-pressed="false">16</button>
+        </div>
+      </div>
+
+      <div class="field" id="floorField">
+        <label for="floor">Final click density
+          <span class="val"><b id="floorVal">25</b>%<span id="floorBars"></span></span></label>
+        <input type="range" id="floor" min="0" max="75" step="5" value="25">
+      </div>
+
+      <div class="field">
+        <label for="vol">Click volume <span class="val"><b id="volVal">85</b>%</span></label>
+        <input type="range" id="vol" min="0" max="100" step="1" value="85">
+      </div>
+
+      <label class="toggle">Count-in bar
+        <input type="checkbox" id="countIn" checked><span class="sw"></span></label>
+      <label class="toggle">Show tempo number
+        <input type="checkbox" id="showTempo" checked><span class="sw"></span></label>
+      <label class="toggle">Blank the display while playing
+        <input type="checkbox" id="blind"><span class="sw"></span></label>
+      <label class="toggle">Flash beat lamps
+        <input type="checkbox" id="lampsOn"><span class="sw"></span></label>
+
+      <p class="note" id="modeNote">Phrase: clicking bars are spread evenly through each phrase rather than bunched at the front, and thin out toward your density floor. A click always lands on bar 1 of the phrase.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+/* ============================================================
+   Phrase dropout.
+
+   Instead of a solid run of clicking bars followed by a solid run of
+   silence, each phrase cycle of n bars gets k clicking bars spread as
+   evenly as possible through it. k falls over the round from every bar
+   down to your density floor.
+
+   Maximally even distribution: bar i clicks when (i*k) mod n < k.
+   This always puts a click on bar 1 of the phrase, then spaces the rest
+   out. n=8, k=2 gives bars 1 and 5. k=3 gives 1, 4 and 7.
+   ============================================================ */
+function barClicks(i, k, n){ return ((i * k) % n) < k; }
+
+// Density falls to the floor at 90% of the round, then holds, so the
+// last stretch is a stable sparse pattern rather than a moving target.
+const SETTLE = 0.9;
+function densityAt(prog){
+  const f = S.floor/100;
+  const p = Math.min(1, Math.max(0, prog)/SETTLE);
+  return f + (1 - f) * (1 - p);
+}
+function kAt(prog){
+  return Math.max(1, Math.min(S.phrase, Math.round(densityAt(prog) * S.phrase)));
+}
+
+const PLAN_COLS = 6;   // sample columns drawn in the plan chart
+
+const S = {
+  bpm:120, minBpm:70, maxBpm:220, step:5,
+  rounds:4, duration:180, rest:15,
+  random:false, mode:"phrase", phrase:8, floor:25, vol:0.85,
+  countIn:true, showTempo:true, blind:false, lamps:false
+};
+
+/* ---------- audio ---------- */
+const AC = window.AudioContext || window.webkitAudioContext;
+let ctx=null, master=null, noiseBuf=null;
+
+function initAudio(){
+  if(ctx) return;
+  ctx = new AC();
+  master = ctx.createGain();
+  master.gain.value = S.vol;
+  master.connect(ctx.destination);
+  const len = Math.floor(ctx.sampleRate * 0.25);
+  noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+}
+
+// Cross-stick flavoured click: bandpassed noise transient + a short pitched body.
+function click(t, o){
+  const freq  = o.freq  ?? 1900;
+  const body  = o.body  ?? 430;
+  const gain  = o.gain  ?? 1;
+  const decay = o.decay ?? 0.05;
+  const nAmt  = o.noise ?? 0.7;
+
+  if(nAmt > 0){
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter(); bp.type="bandpass";
+    bp.frequency.value = freq; bp.Q.value = 1.3;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(gain*nAmt, t+0.0009);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+decay);
+    src.connect(bp).connect(g).connect(master);
+    src.start(t); src.stop(t+decay+0.03);
+  }
+  const osc = ctx.createOscillator(); osc.type="triangle";
+  osc.frequency.setValueAtTime(body, t);
+  osc.frequency.exponentialRampToValueAtTime(body*0.55, t+decay);
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0.0001, t);
+  g2.gain.linearRampToValueAtTime(gain*0.5, t+0.0012);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t+decay*1.5);
+  osc.connect(g2).connect(master);
+  osc.start(t); osc.stop(t+decay*1.8);
+}
+const VOICE = {
+  back:   {freq:1950, body:440, gain:0.95, decay:0.052, noise:0.72},
+  cnt1:   {freq:1100, body:300, gain:0.55, decay:0.035, noise:0.4},
+  cnt:    {freq:950,  body:250, gain:0.34, decay:0.03,  noise:0.35},
+  chime:  {freq:700,  body:660, gain:0.4,  decay:0.34,  noise:0.05}
+};
+
+/* ---------- transport state ---------- */
+const LOOKAHEAD = 25;      // ms between scheduler wakeups
+const AHEAD     = 0.13;    // s of audio scheduled in advance
+
+let timerID=null, rafID=null, restTimer=null;
+let phase="idle";          // idle | countin | play | rest
+let nextNoteTime=0, beatInBar=0, bar=0, playStart=0;
+let curK=0, phraseBar=0, barAudible=true;
+let tempos=[], roundIndex=0, bpm=120, take=1;
+let visQ=[], restEndsAt=0, wakeLock=null;
+
+/* ---------- scheduler ---------- */
+function scheduler(){
+  if(phase==="rest" || phase==="idle") return;
+  const spb = 60/bpm;
+  while(nextNoteTime < ctx.currentTime + AHEAD){
+    if(!scheduleBeat(nextNoteTime, spb)) return;
+    nextNoteTime += spb;
+  }
+}
+
+function scheduleBeat(t, spb){
+  if(phase === "countin"){
+    click(t, beatInBar===0 ? VOICE.cnt1 : VOICE.cnt);
+    visQ.push({t, beat:beatInBar, soft:true});
+    beatInBar++;
+    if(beatInBar > 3){
+      beatInBar = 0; phase = "play";
+      playStart = t + spb; bar = 0; curK = 0; phraseBar = 0;
+    }
+    return true;
+  }
+
+  // phase === "play"
+  if(beatInBar === 0){
+    const elapsed = t - playStart;
+    if(elapsed >= S.duration - 1e-6){ endRound(t); return false; }
+    if(S.mode === "phrase"){
+      const prog = elapsed/S.duration;
+      const pos = phraseBar % S.phrase;
+      if(pos === 0){ curK = kAt(prog); markPlan(prog); }
+      barAudible = barClicks(pos, curK, S.phrase);
+      phraseBar++;
+    }
+    bar++;
+  }
+
+  let audible = false;
+  if(beatInBar === 1 || beatInBar === 3){
+    if(S.mode === "phrase"){
+      audible = barAudible;
+    } else {
+      audible = Math.random() < densityAt((t - playStart)/S.duration);
+    }
+    if(audible) click(t, VOICE.back);
+  }
+  visQ.push({t, beat:beatInBar, audible, bar});
+  beatInBar = (beatInBar + 1) % 4;
+  return true;
+}
+
+/* ---------- rounds ---------- */
+function buildTempos(){
+  const out = [];
+  if(!S.random){ for(let i=0;i<S.rounds;i++) out.push(S.bpm); return out; }
+  const lo = Math.min(S.minBpm, S.maxBpm), hi = Math.max(S.minBpm, S.maxBpm);
+  const pool = [];
+  for(let b=lo; b<=hi; b+=S.step) pool.push(b);
+  if(!pool.length) pool.push(lo);
+  let bag = [], last = null;
+  for(let i=0;i<S.rounds;i++){
+    if(!bag.length){
+      bag = pool.slice();
+      for(let j=bag.length-1;j>0;j--){ const k=(Math.random()*(j+1))|0; [bag[j],bag[k]]=[bag[k],bag[j]]; }
+      if(bag.length>1 && bag[0]===last) bag.push(bag.shift());
+    }
+    const v = bag.shift(); out.push(v); last = v;
+  }
+  return out;
+}
+
+function startEngine(){
+  requestWake();
+  if(!timerID) timerID = setInterval(scheduler, LOOKAHEAD);
+  if(!rafID)   rafID   = requestAnimationFrame(paint);
+  goBtn.textContent = "Stop";
+  goBtn.classList.add("running");
+  playhead.style.display = "block";
+  applyBlind();
+}
+
+function startSession(){
+  initAudio();
+  if(ctx.state === "suspended") ctx.resume();
+  tempos = buildTempos();
+  roundIndex = 0;
+  take = 1;
+  beginRound();
+  startEngine();
+}
+
+// Restart the current tempo from the top. Works mid-round, during the rest
+// between rounds (replays the tempo you just finished, not the next one),
+// and after a session has ended. The queue is untouched — this counts as
+// another take at the same round, not an extra round.
+function repeatRound(){
+  if(!tempos.length) return;
+  clearTimeout(restTimer); restTimer = null;
+  initAudio();
+  if(ctx.state === "suspended") ctx.resume();
+  phase = "idle";
+  take++;
+  beginRound();
+  startEngine();
+}
+
+function beginRound(){
+  bpm = tempos[roundIndex];
+  beatInBar = 0; bar = 0; curK = 0; phraseBar = 0; visQ.length = 0;
+  nextNoteTime = ctx.currentTime + 0.12;
+  phase = S.countIn ? "countin" : "play";
+  if(!S.countIn) playStart = nextNoteTime;
+  drawChart();
+  bpmDisplay.textContent = S.showTempo ? bpm : "••";
+  bpmDisplay.classList.toggle("hidden-tempo", !S.showTempo);
+  bpmUnit.textContent = S.showTempo ? "beats per minute" : "tempo hidden";
+  roundOut.textContent = (roundIndex+1) + " of " + tempos.length
+                       + (take > 1 ? " · take " + take : "");
+  chartStatus.textContent = S.countIn ? "counting in" : "playing";
+}
+
+function endRound(t){
+  click(t, VOICE.chime);
+  click(t + 0.16, VOICE.chime);
+  phase = "rest";
+  const isLast = roundIndex >= tempos.length - 1;
+  const lead = Math.max(0, (t - ctx.currentTime)) * 1000;
+  if(isLast){
+    chartStatus.textContent = "session complete";
+    restTimer = setTimeout(() => stopSession(true), lead + 900);
+    return;
+  }
+  if(S.rest === 0){
+    restTimer = setTimeout(() => { roundIndex++; take = 1; beginRound(); }, lead + 250);
+    return;
+  }
+  restEndsAt = ctx.currentTime + (lead/1000) + S.rest;
+  chartStatus.textContent = "rest";
+  const nextBpm = tempos[roundIndex+1];
+  bpmDisplay.textContent = S.showTempo ? nextBpm : "••";
+  bpmUnit.textContent = S.showTempo ? "next tempo" : "next tempo hidden";
+  restTimer = setTimeout(() => { roundIndex++; take = 1; beginRound(); }, lead + S.rest*1000);
+}
+
+function stopSession(complete){
+  clearInterval(timerID); timerID = null;
+  clearTimeout(restTimer); restTimer = null;
+  if(rafID) cancelAnimationFrame(rafID); rafID = null;
+  phase = "idle"; visQ.length = 0;
+  releaseWake();
+  goBtn.textContent = "Start";
+  goBtn.classList.remove("running");
+  playhead.style.display = "none";
+  chart.classList.remove("blind");
+  chartStatus.textContent = complete ? "session complete" : "idle";
+  barOut.textContent = "—";
+  timeOut.textContent = fmt(S.duration);
+  if(!complete) roundOut.textContent = "—";
+  bpmDisplay.textContent = S.random ? (Math.min(S.minBpm,S.maxBpm)+"–"+Math.max(S.minBpm,S.maxBpm)) : S.bpm;
+  bpmDisplay.classList.remove("hidden-tempo");
+  bpmUnit.textContent = S.random ? "random range" : "beats per minute";
+  document.querySelectorAll(".lamp").forEach(l => l.classList.remove("lit","lit-soft"));
+  drawChart();
+}
+
+function skipRound(){
+  if(phase === "idle") return;
+  clearTimeout(restTimer);
+  if(roundIndex >= tempos.length - 1){ stopSession(true); return; }
+  roundIndex++; take = 1; beginRound();
+}
+
+/* ---------- visuals ---------- */
+function paint(){
+  rafID = requestAnimationFrame(paint);
+  const now = ctx.currentTime;
+
+  while(visQ.length && visQ[0].t <= now){
+    const ev = visQ.shift();
+    if(S.lamps && !(S.blind && phase === "play")){
+      const lamp = document.querySelector('.lamp[data-b="'+ev.beat+'"]');
+      if(lamp){
+        lamp.classList.remove("lit","lit-soft");
+        void lamp.offsetWidth;
+        lamp.classList.add(ev.soft ? "lit-soft" : (ev.audible ? "lit" : "lit-soft"));
+        setTimeout(() => lamp.classList.remove("lit","lit-soft"), 80);
+      }
+    }
+    if(ev.bar) barOut.textContent = ev.bar;
+  }
+
+  if(phase === "play"){
+    const remain = Math.max(0, S.duration - (now - playStart));
+    timeOut.textContent = fmt(remain);
+    const prog = Math.min(1, Math.max(0, (now - playStart)/S.duration));
+    playhead.style.left = (prog*100) + "%";
+    chartStatus.textContent = S.mode === "phrase"
+      ? (curK ? curK + " of every " + S.phrase + " bars" : "playing")
+      : Math.round(densityAt(prog)*100) + "% of clicks";
+  } else if(phase === "rest"){
+    timeOut.textContent = "rest " + Math.max(0, Math.ceil(restEndsAt - now)) + "s";
+  } else if(phase === "countin"){
+    timeOut.textContent = fmt(S.duration);
+  }
+  return;
+}
+
+function drawChart(){
+  chartBody.innerHTML = "";
+  if(S.mode === "thin"){
+    chartTitle.textContent = "Click density over the round";
+    const wrap = document.createElement("div");
+    wrap.className = "density-strip";
+    const track = document.createElement("div"); track.className = "density-track";
+    const fill = document.createElement("div"); fill.className = "density-fill";
+    const endPct = 100 - S.floor;
+    fill.style.clipPath = "polygon(0 0, "+(SETTLE*100)+"% "+endPct+"%, 100% "+endPct+"%, 100% 100%, 0 100%)";
+    track.appendChild(fill);
+    const lbl = document.createElement("div");
+    lbl.className = "stage-label";
+    lbl.style.cssText = "position:absolute;bottom:-11px;left:0;right:0;display:flex;justify-content:space-between";
+    lbl.innerHTML = "<span>100% of clicks</span><span>"+S.floor+"%</span>";
+    track.appendChild(lbl);
+    wrap.appendChild(track);
+    chartBody.appendChild(wrap);
+    return;
+  }
+  chartTitle.textContent = "Dropout plan";
+  for(let i=0; i<PLAN_COLS; i++){
+    const prog = (i + 0.5)/PLAN_COLS;
+    const k = kAt(prog);
+    const cell = document.createElement("div");
+    cell.className = "stage-cell";
+    cell.dataset.i = i;
+    const row = document.createElement("div");
+    row.className = "slashes";
+    for(let b=0; b<S.phrase; b++){
+      const s = document.createElement("div");
+      s.className = "slash" + (barClicks(b, k, S.phrase) ? "" : " off");
+      row.appendChild(s);
+    }
+    const lab = document.createElement("div");
+    lab.className = "stage-label";
+    lab.textContent = k + " of " + S.phrase;
+    cell.appendChild(row);
+    cell.appendChild(lab);
+    chartBody.appendChild(cell);
+  }
+}
+
+function markPlan(prog){
+  const i = Math.min(PLAN_COLS-1, Math.max(0, Math.floor(prog*PLAN_COLS)));
+  document.querySelectorAll(".stage-cell").forEach(c =>
+    c.classList.toggle("active", +c.dataset.i === i));
+}
+
+function applyBlind(){
+  const hide = S.blind;
+  chart.classList.toggle("blind", hide);
+  rowBar.classList.toggle("is-muted", hide);
+  rowTime.classList.toggle("is-muted", hide);
+  if(hide){ barOut.textContent = "—"; }
+}
+
+function fmt(s){
+  s = Math.max(0, Math.round(s));
+  return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+}
+
+/* ---------- wake lock ---------- */
+async function requestWake(){
+  try{ if("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){}
+}
+function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null; }
+
+/* ---------- wiring ---------- */
+const $ = id => document.getElementById(id);
+const bpmDisplay=$("bpmDisplay"), bpmUnit=$("bpmUnit"), roundOut=$("roundOut"),
+      timeOut=$("timeOut"), barOut=$("barOut"), rowBar=$("rowBar"), rowTime=$("rowTime"),
+      chart=$("chart"), chartBody=$("chartBody"), chartTitle=$("chartTitle"),
+      chartStatus=$("chartStatus"), playhead=$("playhead"), goBtn=$("goBtn");
+
+function slider(id, key, fmtFn, valId){
+  const el = $(id), out = $(valId);
+  const sync = () => { S[key] = +el.value; if(out) out.textContent = fmtFn ? fmtFn(+el.value) : el.value; };
+  el.addEventListener("input", () => { sync(); onSettings(); });
+  sync();
+}
+slider("bpm","bpm",null,"bpmVal");
+slider("minBpm","minBpm",null,"minVal");
+slider("maxBpm","maxBpm",null,"maxVal");
+slider("step","step",null,"stepVal");
+slider("rounds","rounds",null,"roundsVal");
+slider("dur","duration",fmt,"durVal");
+slider("rest","rest",null,"restVal");
+slider("floor","floor",null,"floorVal");
+
+$("vol").addEventListener("input", e => {
+  S.vol = +e.target.value/100;
+  $("volVal").textContent = e.target.value;
+  if(master) master.gain.setTargetAtTime(S.vol, ctx.currentTime, 0.01);
+});
+
+function toggle(id, key, after){
+  $(id).addEventListener("change", e => { S[key] = e.target.checked; if(after) after(); });
+}
+toggle("countIn","countIn");
+toggle("showTempo","showTempo", () => { if(phase==="idle") stopSession(false); });
+toggle("blind","blind", applyBlind);
+toggle("lampsOn","lamps", () => {
+  if(!S.lamps) document.querySelectorAll(".lamp").forEach(l => l.classList.remove("lit","lit-soft"));
+});
+
+function segment(aId, bId, apply){
+  const a = $(aId), b = $(bId);
+  a.addEventListener("click", () => { a.setAttribute("aria-pressed","true");  b.setAttribute("aria-pressed","false"); apply(false); });
+  b.addEventListener("click", () => { a.setAttribute("aria-pressed","false"); b.setAttribute("aria-pressed","true");  apply(true);  });
+}
+segment("srcFixed","srcRandom", isRandom => {
+  S.random = isRandom;
+  $("srcVal").textContent = isRandom ? "random" : "fixed";
+  $("fixedField").style.display  = isRandom ? "none" : "";
+  $("randomFields").style.display = isRandom ? "" : "none";
+  if(phase === "idle") stopSession(false);
+});
+segment("modePhrase","modeThin", isThin => {
+  S.mode = isThin ? "thin" : "phrase";
+  $("modeVal").textContent = isThin ? "random thin" : "phrase";
+  $("phraseField").style.display = isThin ? "none" : "";
+  $("modeNote").textContent = isThin
+    ? "Random thin: every individual click is a coin flip whose odds fall through the round. Sparser and less predictable — there is no reliable place to re-sync."
+    : "Phrase: clicking bars are spread evenly through each phrase rather than bunched at the front, and thin out toward your density floor. A click always lands on bar 1 of the phrase.";
+  updateFloorLabel();
+  drawChart();
+});
+
+// Phrase length: 4, 8, 12 or 16 bars in the repeating cycle.
+document.querySelectorAll("#phraseSeg button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#phraseSeg button").forEach(o =>
+      o.setAttribute("aria-pressed", String(o === b)));
+    S.phrase = +b.dataset.n;
+    $("phraseVal").textContent = S.phrase;
+    updateFloorLabel();
+    if(phase === "idle") stopSession(false); else drawChart();
+  });
+});
+
+function updateFloorLabel(){
+  $("floorBars").textContent = S.mode === "phrase"
+    ? " · " + Math.max(1, Math.min(S.phrase, Math.round(S.floor/100*S.phrase))) + " of " + S.phrase + " bars"
+    : "";
+}
+$("floor").addEventListener("input", updateFloorLabel);
+updateFloorLabel();
+
+goBtn.addEventListener("click", () => phase === "idle" ? startSession() : stopSession(false));
+$("skipBtn").addEventListener("click", skipRound);
+$("repeatBtn").addEventListener("click", repeatRound);
+
+function onSettings(){ if(phase === "idle") stopSession(false); }
+
+document.addEventListener("keydown", e => {
+  if(/INPUT|BUTTON|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+  if(e.code === "Space"){
+    e.preventDefault();
+    phase === "idle" ? startSession() : stopSession(false);
+  } else if(e.key === "r" || e.key === "R"){
+    e.preventDefault(); repeatRound();
+  } else if(e.key === "n" || e.key === "N"){
+    e.preventDefault(); skipRound();
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible" && phase !== "idle" && !wakeLock) requestWake();
+});
+
+drawChart();
+stopSession(false);
+</script>
+</body>
+</html>
