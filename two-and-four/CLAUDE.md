@@ -90,7 +90,14 @@ midpoints via `kAt`, so what the chart shows is exactly what will play.
 - Random tempos use a shuffled-bag draw over `[low..high]` stepped by
   `step`, refilled when empty, avoiding an immediate repeat across bag
   boundaries.
-- Click sounds are synthesized (bandpassed noise transient + short
+- Tap tempo (button in the fixed-tempo field, or `T`) sets `S.bpm` from the
+  average of the last 4 tap intervals (`TAP_WINDOW` = 5 taps kept), so the
+  tempo can be steered while tapping; a gap over `TAP_RESET_MS` = 2 s starts
+  a fresh run. Taps are timestamped on `pointerdown`, not `click`, because
+  `click` fires on release and adds jitter. Result clamps to the slider's
+  40–300 range. No-op in random-tempo mode. Like the tempo slider, a
+  mid-session change takes effect at the next session start, not the
+  current round. (bandpassed noise transient + short
   triangle body) — no samples, no network.
 - Screen Wake Lock is requested while running and re-acquired on
   visibility change.

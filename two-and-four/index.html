@@ -196,6 +196,15 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
 .toggle input:checked + .sw{background:var(--brass);}
 .toggle input:checked + .sw::after{left:20px;background:#0C1517;}
 .toggle input:focus-visible + .sw{outline:2px solid var(--brass-hot);outline-offset:3px;}
+.tempo-row{display:flex;gap:12px;align-items:center;}
+.tempo-row input[type=range]{flex:1;}
+.btn-tap{
+  background:transparent;color:var(--dim);border:1px solid var(--rule);
+  padding:16px 22px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  flex:none;touch-action:manipulation;
+}
+.btn-tap:hover{color:var(--bone);border-color:var(--dimmer);}
+.btn-tap.tick{background:var(--brass);color:#0C1517;border-color:var(--brass);transition:none;}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
 .note{font-family:var(--mono);font-size:10px;line-height:1.65;color:var(--dimmer);
   margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);}
@@ -250,7 +259,7 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
     <button class="btn-go" id="goBtn">Start</button>
     <button class="btn-ghost" id="repeatBtn">Repeat tempo</button>
     <button class="btn-ghost" id="skipBtn">Next tempo</button>
-    <span class="hint">Space start / stop &nbsp;·&nbsp; R repeat &nbsp;·&nbsp; N next</span>
+    <span class="hint">Space start / stop &nbsp;·&nbsp; R repeat &nbsp;·&nbsp; N next &nbsp;·&nbsp; T tap tempo</span>
   </div>
 
   <div class="panels">
@@ -268,7 +277,10 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
 
       <div class="field" id="fixedField">
         <label for="bpm">Tempo <span class="val"><b id="bpmVal">120</b> bpm</span></label>
-        <input type="range" id="bpm" min="40" max="300" step="1" value="120">
+        <div class="tempo-row">
+          <input type="range" id="bpm" min="40" max="300" step="1" value="120">
+          <button class="btn-tap" id="tapBtn">Tap</button>
+        </div>
       </div>
 
       <div id="randomFields" style="display:none">
@@ -806,6 +818,33 @@ function updateFloorLabel(){
 $("floor").addEventListener("input", updateFloorLabel);
 updateFloorLabel();
 
+/* ---------- tap tempo ---------- */
+// Averages the last few tap intervals so the tempo can be steered while
+// tapping; a 2s+ gap starts a fresh run. Taps are timestamped on
+// pointerdown, not click — click fires on release and adds jitter.
+const TAP_RESET_MS = 2000;
+const TAP_WINDOW = 5;           // taps kept, i.e. up to 4 intervals averaged
+let taps = [];
+
+function tapTempo(){
+  if(S.random) return;          // tap sets the fixed tempo only
+  const tapBtn = $("tapBtn");
+  tapBtn.classList.add("tick");
+  setTimeout(() => tapBtn.classList.remove("tick"), 100);
+  const now = performance.now();
+  if(taps.length && now - taps[taps.length-1] > TAP_RESET_MS) taps.length = 0;
+  taps.push(now);
+  if(taps.length > TAP_WINDOW) taps.shift();
+  if(taps.length < 2) return;
+  const avgMs = (taps[taps.length-1] - taps[0]) / (taps.length - 1);
+  const v = Math.round(Math.min(300, Math.max(40, 60000/avgMs)));
+  S.bpm = v;
+  $("bpm").value = v;
+  $("bpmVal").textContent = v;
+  onSettings();
+}
+$("tapBtn").addEventListener("pointerdown", e => { e.preventDefault(); tapTempo(); });
+
 goBtn.addEventListener("click", () => phase === "idle" ? startSession() : stopSession(false));
 $("skipBtn").addEventListener("click", skipRound);
 $("repeatBtn").addEventListener("click", repeatRound);
@@ -821,6 +860,8 @@ document.addEventListener("keydown", e => {
     e.preventDefault(); repeatRound();
   } else if(e.key === "n" || e.key === "N"){
     e.preventDefault(); skipRound();
+  } else if(e.key === "t" || e.key === "T"){
+    e.preventDefault(); tapTempo();
   }
 });
 document.addEventListener("visibilitychange", () => {
