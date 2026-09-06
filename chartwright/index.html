@@ -320,6 +320,7 @@
       <button class="btn quiet" id="menuBtn" aria-label="Toggle song list">☰ Songs</button>
       <div class="spacer"></div>
       <span class="status" id="status" role="status"></span>
+      <button class="btn" id="printBtn" title="Print, or save as PDF from the print dialog">Print / PDF</button>
     </div>
     <div class="sheetwrap">
       <div class="sheet" id="sheet"></div>
@@ -1223,6 +1224,12 @@ function init() {
   });
   document.body.appendChild(dl);
 
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  window.addEventListener("beforeprint", () => {
+    const s = currentSong();
+    if (s && s.title) document.title = s.title;   // becomes the suggested PDF filename
+  });
+  window.addEventListener("afterprint", () => { document.title = "Chartwright"; });
   document.getElementById("newSongBtn").addEventListener("click", newSong);
   document.getElementById("dupSongBtn").addEventListener("click", duplicateSong);
   document.getElementById("delSongBtn").addEventListener("click", deleteSong);
