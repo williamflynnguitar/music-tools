@@ -12,6 +12,8 @@ practice room.
 - **fretboard/** — movable scale fingerings, ten scales, every key
 - **scales-deck/** — Scale Practice 101 as a step-through deck of cards
 - **arpeggios-deck/** — arpeggio practice: parallel shapes, HDA and VDA
+- **chartwright/** — chord-chart editor with self-adjusting spacing; charts
+  save on your device
 
 These tools are the companion to the **Jazz Guitar Technique Handbook, 3rd
 edition**; the fingering and exercise data is derived from it. The book itself

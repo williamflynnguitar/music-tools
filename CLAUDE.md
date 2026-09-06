@@ -9,7 +9,10 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `fretboard/` — renderer + major-scale fingering data (JGTH p. 7)
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
-- `chartwright/` — chord diagram generator (planned)
+- `chartwright/` — chord-chart editor (lyrics with chords over syllables).
+  Predates the no-storage rule: it keeps charts in try/catch-wrapped
+  localStorage, and carries dormant Claude-artifact save code from its
+  original home. Both are deliberate exceptions until it gets a rework.
 
 ## Who these are for
 
