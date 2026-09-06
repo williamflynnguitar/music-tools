@@ -32,8 +32,8 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
 ## Shared data
 
 The `SCALES` registry (per-scale steps, degree labels, applications, fingering
-shapes; major, dorian, mixolydian, harmonic minor and melodic minor so far) is
-duplicated in fretboard,
+shapes; major, dorian, mixolydian, harmonic minor, phrygian dominant and melodic
+minor so far) is duplicated in fretboard,
 scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
 Keep the three copies byte-identical — `SHAPES` and `MAJOR` are aliases into
 `SCALES.major` for older code. Factoring the renderer and data into a shared
