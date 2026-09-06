@@ -55,7 +55,7 @@
 </head>
 <body>
 <h1>Arpeggios deck <small>Arpeggio Practice · pp. 76–78 · shapes from pp. 25–36</small></h1>
-<p class="lede">Three approaches from the book. Parallel shapes moves one grip around; the two diatonic approaches walk every 7th chord in a key, either from a fixed fingering (HDA) or from inside one scale position (VDA).</p>
+<p class="lede">Three approaches from the book. Parallel shapes moves one grip around; the two diatonic approaches walk every 7th chord in a key, either from a fixed fingering (HDA) or up every tone of one scale position (VDA).</p>
 
 <div class="layout">
   <aside>
@@ -381,21 +381,34 @@ const APPROACHES = [
      return out; } },
  { name: "VDA · vertical diatonic", uses: ["tonality","octaves","scale"],
    steps() {
+     /* Ex. 4 (p. 78): every scale tone of the position, ascending in pitch, becomes a root
+        in turn and gets the diatonic arpeggio rooted there, for as long as an arpeggio
+        still fits the position (up to 2 notes outside allowed, flagged). */
      const sc = scalePlace(state.scale, state.key, state.ton), chords = diatonic(state.key, state.ton);
      const lo = sc.minFret - 1, hi = sc.maxFret + 1;
-     return chords.map(c => {
+     const STR = { 6: 0, 5: 5, 4: 10, 3: 15, 2: 19, 1: 24 };            // relative string tuning
+     const ord = s => s === 1 ? "1st" : s === 2 ? "2nd" : s === 3 ? "3rd" : s + "th";
+     const roots = sc.dots.slice().sort((a, b) => (STR[a.string] + a.fret) - (STR[b.string] + b.fret));
+     const out = [];
+     for (const r of roots) {
+       const pc = (OPEN[r.string] + r.fret) % 12, c = chords.find(x => x.pc === pc);
        const cands = [];
-       for (const sh of ARP[state.oct][c.q]) for (const extra of [0, 12]) {
-         let rf = ((c.pc - OPEN[sh.rs]) % 12 + 12) % 12 + extra; if (rf + Math.min(...sh.n.map(d => d[1])) < 1) rf += 12;
-         const dots = chordDots(state.key, c.root, c.pc, c.q, sh, rf);
-         const inside = dots.filter(d => !d.alt && d.fret >= lo && d.fret <= hi).length, total = dots.filter(d => !d.alt).length;
+       for (const sh of ARP[state.oct][c.q]) {
+         if (sh.rs !== r.string) continue;                              // rooted on this very note
+         const dots = chordDots(state.key, c.root, c.pc, c.q, sh, r.fret), real = dots.filter(d => !d.alt);
+         if (real.some(d => d.fret < 1)) continue;
+         const inside = real.filter(d => d.fret >= lo && d.fret <= hi).length;
          const onScale = dots.filter(d => sc.dots.some(s => s.string === d.string && s.fret === d.fret)).length;
-         cands.push({ p: { oct: state.oct, q: c.q, sh, key: state.key, rootName: c.root, pc: c.pc, rootFret: rf, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) }, score: inside * 10 + onScale, out: total - inside });
+         cands.push({ p: { oct: state.oct, q: c.q, sh, key: state.key, rootName: c.root, pc: c.pc, rootFret: r.fret, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) }, score: inside * 10 + onScale, outN: real.length - inside });
        }
-       const best = cands.sort((a, b) => b.score - a.score)[0];
-       return { p: best.p, under: sc.dots, sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · ${shapeName(best.p.sh, ARP[state.oct][c.q])} · inside ${SCALES[state.ton].shapes[state.scale].name}`,
-         flag: best.out ? `${best.out} note${best.out > 1 ? "s" : ""} step outside the scale position; the book allows this` : "",
-         instr: `Stay inside the ${SCALES[state.ton].shapes[state.scale].name} position of ${state.key} ${TONAL[state.ton].name} (the hollow outline) and find the ${c.root}${QUAL[c.q].sym} arpeggio there (Ex. 4). Fingering choices follow proximity to the scale shape.` }; }); } },
+       const best = cands.sort((a, b) => b.score - a.score || a.outN - b.outN)[0];
+       if (!best || best.outN > 2) break;                               // no arpeggio fits here any more
+       out.push({ p: best.p, under: sc.dots,
+         sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · root ${ord(r.string)} string, ${r.fret}fr · ${shapeName(best.p.sh, ARP[state.oct][c.q])}`,
+         flag: best.outN ? `${best.outN} note${best.outN > 1 ? "s" : ""} step${best.outN > 1 ? "" : "s"} outside the scale position; the book allows this` : "",
+         instr: `Each scale tone of the ${SCALES[state.ton].shapes[state.scale].name} position of ${state.key} ${TONAL[state.ton].name} becomes a root in turn, ascending (Ex. 4). Play the ${c.root}${QUAL[c.q].sym} arpeggio rooted there (the brass dot); fingering choices follow proximity to the scale shape, and the book says not to be dogmatic about staying in position.` });
+     }
+     return out; } },
 ];
 
 /* ---------- ui ---------- */
