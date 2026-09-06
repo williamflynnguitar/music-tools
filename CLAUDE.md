@@ -3,6 +3,14 @@
 Small, self-contained browser tools for jazz practice and teaching. Built by
 William, a jazz guitarist and educator. Primary users are me and my students.
 
+## Apps
+
+- `two-and-four/` — metronome (beats 2 and 4, dropout modes)
+- `fretboard/` — renderer + major-scale fingering data (JGTH p. 7)
+- `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
+- `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
+- `chartwright/` — chord diagram generator (planned)
+
 ## Who these are for
 
 Students opening a link on a phone in a practice room, often with no wifi,
@@ -20,6 +28,14 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
   alternative. Default to writing it by hand.
 - Each tool lives in its own lowercase-hyphenated folder with `index.html` as
   the entry point.
+
+## Shared data
+
+`SHAPES` (six major fingerings) is currently duplicated in fretboard,
+scales-deck and arpeggios-deck. Keep the three copies identical. Factoring the
+renderer and data into a shared file is the next structural change; the "no
+build step" rule can be kept with a concatenation script or by inlining at
+commit time.
 
 ## Audio
 
@@ -60,6 +76,12 @@ Shared across tools so they read as a family:
 - Restrained motion. Any moving element is a visual time cue, which can
   undermine a tool whose purpose is removing time cues. Make motion optional
   and default it off where that risk exists.
+
+## Fretboard conventions
+
+Strings horizontal, 1st string on top, frets left to right, label centred over
+the first fret space. Roots brass, notes bone, computed/extended notes hollow,
+alternates dashed. Shape data is always `[string, offset-from-root, finger]`.
 
 ## Working style
 

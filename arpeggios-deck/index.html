@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arpeggios deck — Arpeggio Practice</title>
+<style>
+  :root {
+    --ink: #0a1a20; --petrol: #10303a; --petrol-2: #163f4b;
+    --bone: #e9e2d2; --bone-dim: #a9a597; --brass: #c9a44c; --warn: #d86b4a;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--bone); font-family: var(--sans); }
+  body { padding: 28px 32px 48px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+  h1 small { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-left: 12px; }
+  p.lede { margin: 0 0 24px; color: var(--bone-dim); font-size: 15px; max-width: 64ch; }
+  .layout { display: grid; grid-template-columns: 270px 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-bottom: 8px; padding: 0; }
+  .g6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+  .g1 { display: grid; grid-template-columns: 1fr; gap: 4px; }
+  .g1 button { text-align: left; padding: 8px 10px; font-family: var(--sans); font-size: 14px; }
+  button { font-family: var(--mono); font-size: 13px; color: var(--bone); background: var(--petrol); border: 1px solid transparent; border-radius: 4px; padding: 8px 6px; cursor: pointer; line-height: 1.1; }
+  button:hover { background: var(--petrol-2); }
+  button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  button[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
+  button:disabled { opacity: .4; cursor: default; }
+  .card { background: var(--petrol); border-radius: 6px; padding: 18px 22px 16px; }
+  .card header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 6px; }
+  .card header .where { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .title { display: flex; align-items: baseline; gap: 14px; margin: 0 0 2px; }
+  .title .key { font-family: var(--mono); font-size: 36px; font-weight: 500; letter-spacing: -.02em; }
+  .title .name { font-size: 20px; }
+  .title .shape { font-family: var(--mono); font-size: 15px; color: var(--bone-dim); margin-left: auto; text-align: right; }
+  .sub { margin: 0 0 12px; color: var(--bone-dim); font-size: 14px; }
+  .card svg { width: 100%; height: auto; display: block; max-height: 260px; }
+  .instr { margin: 12px 0 0; font-size: 15px; line-height: 1.5; max-width: 70ch; }
+  .instr em { color: var(--brass); font-style: normal; }
+  .flag { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 8px 0 0; }
+  nav { display: flex; gap: 8px; align-items: center; margin-top: 14px; }
+  nav .bar { flex: 1; height: 3px; background: var(--petrol-2); border-radius: 2px; overflow: hidden; }
+  nav .bar i { display: block; height: 100%; background: var(--brass); }
+  nav button { padding: 9px 14px; }
+  .hint { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+</style>
+</head>
+<body>
+<h1>Arpeggios deck <small>Arpeggio Practice · pp. 76–78 · shapes from pp. 25–36</small></h1>
+<p class="lede">Three approaches from the book. Parallel shapes moves one grip around; the two diatonic approaches walk every 7th chord in a key, either from a fixed fingering (HDA) or from inside one scale position (VDA).</p>
+
+<div class="layout">
+  <aside>
+    <fieldset><legend>Approach</legend><div class="g1" id="approach"></div></fieldset>
+    <fieldset><legend>Key (in 4ths)</legend><div class="g6" id="keys"></div></fieldset>
+    <fieldset id="fsTonality"><legend>Tonality</legend><div class="g3" id="tonality"></div></fieldset>
+    <fieldset id="fsQuality"><legend>Quality</legend><div class="g4" id="quality"></div></fieldset>
+    <fieldset><legend>Octaves</legend><div class="g2" id="octaves"></div></fieldset>
+    <fieldset id="fsRootString"><legend>Root string</legend><div class="g4" id="rootString"></div></fieldset>
+    <fieldset id="fsFinger"><legend>Root finger</legend><div class="g4" id="finger"></div></fieldset>
+    <fieldset id="fsScale"><legend>Scale fingering</legend><div class="g6" id="scale"></div></fieldset>
+    <fieldset><legend>Labels</legend><div class="g3" id="labels"></div></fieldset>
+  </aside>
+  <main>
+    <div class="card" id="card"></div>
+    <nav><button id="prev">← Prev</button><div class="bar"><i id="fill"></i></div><button id="next">Next →</button></nav>
+    <p class="hint">← → step · Home restart</p>
+  </main>
+</div>
+
+<script>
+/* ---------- arpeggio shapes: [string, offset from root fret, finger]; rs = root string ---------- */
+const ARP = {
+ 1: {
+  maj7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,1,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,1,3]]},{rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,1,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,1,3]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[2,-3,1]],alt:[[3,1,4]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,2,2],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,2,3],[2,2,4]]},{rs:4,n:[[4,0,3],[3,-1,2],[2,-2,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-1,3],[2,-2,2],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,3,4],[1,2,3]]},{rs:3,n:[[3,0,1],[3,4,4],[2,3,3],[1,2,2]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-2,1],[1,2,4]]}],
+  m7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,0,1]]},{rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,0,2]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,0,1]]},{rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,0,2]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,2,3],[2,1,2]]},{rs:4,n:[[4,0,2],[3,-2,1],[3,2,4],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-2,1],[2,-2,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-2,3],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[3,3,3],[2,3,4],[1,1,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-2,1],[1,1,4]]}],
+  dom7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,0,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,0,2]]},{rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,0,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,0,2]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,2,2],[2,1,1]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,2,4],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-1,2],[2,-2,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-1,3],[2,-2,2],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,3,4],[1,1,2]]},{rs:3,n:[[3,0,1],[3,4,4],[2,3,3],[1,1,1]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-2,1],[1,1,4]]}],
+  m7b5: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,0,1]]},{rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,0,3]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,0,1]]},{rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,0,3]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,1,2],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-2,1],[3,1,4],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-3,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,3],[2,-3,2],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[3,3,4],[2,2,3],[1,1,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-3,1],[1,1,4]]}],
+  dim7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,1],[5,4,4]]},{rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,-1,1]]},{rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,-1,2]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,-1,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,1],[4,4,4]]},{rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,-1,1]]},{rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,-1,2]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,-1,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,1,2],[2,0,1]]},{rs:4,n:[[4,0,3],[3,-2,1],[3,1,3],[2,0,3]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-3,1],[2,0,4]]},
+   {rs:3,n:[[3,0,1],[3,3,4],[2,2,3],[1,0,1]]},{rs:3,n:[[3,0,3],[2,-1,3],[1,-3,1],[1,0,4]]}],
+  mMaj7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,1,2]]},{rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,1,3]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,1,2]]},{rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,1,3]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,1,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,2,2],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-2,1],[3,2,3],[2,2,4]]},{rs:4,n:[[4,0,3],[3,-2,1],[2,-2,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-2,3],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[3,3,3],[2,3,4],[1,2,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-2,1],[1,2,4]]}],
+  maj7s5: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,3,3],[4,1,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,3,4],[4,1,3]]},{rs:6,n:[[6,0,3],[5,-1,2],[4,-2,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,3,3],[3,1,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,3,4],[3,1,3]]},{rs:5,n:[[5,0,3],[4,-1,2],[3,-2,1],[3,1,4]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-2,2],[2,-3,1]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,3,3],[2,2,2]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,3,4],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-1,1],[2,-1,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-1,2],[2,-1,3],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,4,4],[1,2,3]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-1,1],[1,2,4]]}],
+ },
+ 2: {
+  maj7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,1,1],[4,2,3],[3,1,2],[2,0,1],[2,4,4],[1,0,1]]},
+   {rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,1,3],[4,2,4],[3,1,3],[2,0,2],[1,-1,1],[1,0,2]]},
+   {rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,1,4],[3,-3,1],[2,-3,1],[2,0,4],[1,-1,3],[1,0,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,1,1],[3,2,2],[2,2,3],[1,0,1],[1,4,4]]},
+   {rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,1,1],[3,2,2],[2,2,3],[1,0,1],[1,4,4]]},
+   {rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[2,-3,1],[2,-2,2],[1,-3,1],[1,0,4]],alt:[[3,1,4]]}],
+  m7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,0,1],[4,2,3],[3,0,1],[2,0,1],[1,0,1],[1,3,4]]},
+   {rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,0,2],[4,2,4],[3,0,2],[2,0,3],[1,-2,1],[1,0,3]]},
+   {rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,0,4],[3,-3,1],[3,0,3],[2,0,4],[1,-2,2],[1,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,0,1],[3,2,3],[2,1,2],[1,0,1],[1,3,4]]},
+   {rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,0,1],[3,2,3],[2,1,2],[1,0,1],[1,3,4]]},
+   {rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,0,4],[2,-2,1],[2,1,4],[1,0,3]]}],
+  dom7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,0,1],[4,2,3],[3,1,2],[2,0,1],[2,3,4],[1,0,1]]},
+   {rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,0,1],[4,2,3],[3,1,2],[2,0,1],[2,3,4],[1,0,1]]},
+   {rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,0,4],[3,-3,1],[2,-3,1],[2,0,4],[1,-2,2],[1,0,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,0,1],[3,2,2],[2,2,3],[1,0,1],[1,3,4]]},
+   {rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,0,1],[3,2,2],[2,2,3],[1,0,1],[1,3,4]]},
+   {rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[3,0,4],[2,-2,2],[1,-3,1],[1,0,4]]}],
+  m7b5: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,0,1],[4,2,4],[3,0,2],[2,-1,1],[2,3,4],[1,0,1]]},
+   {rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,0,3],[3,-3,1],[3,0,4],[2,-1,2],[1,-2,1],[1,0,3]]},
+   {rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,0,4],[3,-3,2],[3,0,4],[2,-1,2],[1,-2,1],[1,0,3]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,0,1],[3,2,3],[2,1,2],[1,-1,1],[1,3,4]]},
+   {rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,0,3],[2,-2,1],[2,1,4],[1,-1,2]]},
+   {rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,0,4],[2,-2,2],[1,-4,1],[1,-1,3]]}],
+  dim7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,-1,1],[4,2,4],[3,0,2],[2,-1,1],[2,2,4],[1,0,1]]},
+   {rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,-1,2],[3,-3,1],[3,0,4],[2,-1,3],[1,-3,1],[1,0,4]]},
+   {rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,-1,4],[3,-3,1],[3,0,4],[2,-1,3],[1,-3,1],[1,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,-1,1],[3,2,4],[2,1,3],[1,-1,1],[1,2,4]]},
+   {rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,-1,2],[2,-2,1],[2,1,4],[1,-1,1],[1,2,4]]},
+   {rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,-1,4],[2,-2,3],[1,-4,1],[1,-1,4]]}],
+  mMaj7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,1,2],[4,2,3],[3,0,1],[2,0,1],[2,4,4],[1,0,1]]},
+   {rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,1,3],[4,2,4],[3,0,2],[2,0,3],[1,-1,1],[1,0,2]]},
+   {rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,1,4],[3,-3,1],[3,0,3],[2,0,4],[1,-1,2],[1,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,1,2],[3,2,3],[2,1,2],[1,0,1],[1,4,4]]},
+   {rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,1,2],[3,2,3],[2,1,2],[1,0,1],[1,4,4]]},
+   {rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,1,4],[2,-2,1],[2,1,4],[1,0,3]]}],
+  maj7s5: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,3,3],[4,1,1],[4,2,2],[3,1,1],[2,1,1],[2,4,4],[1,0,1]]},
+   {rs:6,n:[[6,0,2],[5,-1,1],[5,3,4],[4,1,2],[4,2,3],[3,1,2],[2,1,3],[1,-1,1],[1,0,2]]},
+   {rs:6,n:[[6,0,3],[5,-1,2],[4,-2,1],[4,1,4],[3,-3,1],[2,-3,1],[2,1,4],[1,-1,2],[1,0,3]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,3,3],[3,1,1],[3,2,2],[2,2,3],[1,1,1],[1,4,4]]},
+   {rs:5,n:[[5,0,2],[4,-1,1],[4,3,4],[3,1,1],[3,2,2],[2,2,3],[1,1,1],[1,4,4]]},
+   {rs:5,n:[[5,0,3],[4,-1,2],[3,-2,1],[3,1,4],[2,-2,1],[2,2,4],[1,1,3]]}],
+ }
+};
+/* ---------- major scale shapes (shared with the other decks) ---------- */
+const SHAPES = {
+  P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+  P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+  M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+  M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+  I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+  I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+};
+const CYCLE = ["P6","P5","M6","M5","I6","I5"];
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"];
+const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};
+const NECK_TOP = 17;
+
+/* ---------- harmony ---------- */
+const QUAL = {
+  maj7:  { sym: "maj7",  iv: [0,4,7,11], name: "major 7th" },
+  m7:    { sym: "-7",    iv: [0,3,7,10], name: "minor 7th" },
+  dom7:  { sym: "7",     iv: [0,4,7,10], name: "dominant 7th" },
+  m7b5:  { sym: "ø7",    iv: [0,3,6,10], name: "half-diminished 7th" },
+  dim7:  { sym: "°7",    iv: [0,3,6,9],  name: "diminished 7th" },
+  mMaj7: { sym: "-maj7", iv: [0,3,7,11], name: "minor-major 7th" },
+  maj7s5:{ sym: "maj7#5",iv: [0,4,8,11], name: "augmented major 7th" },
+};
+const DEGLBL = { 0:"R", 3:"b3", 4:"3", 6:"b5", 7:"5", 8:"#5", 9:"bb7", 10:"b7", 11:"7" };
+const TONAL = {
+  major:    { name: "major",          steps: [0,2,4,5,7,9,11] },
+  harmonic: { name: "harmonic minor", steps: [0,2,3,5,7,8,11] },
+  melodic:  { name: "melodic minor",  steps: [0,2,3,5,7,9,11] },
+};
+const LETTERS = ["C","D","E","F","G","A","B"], LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function spell(letter, pc) {                         // letter + accidental for a pitch class
+  let diff = ((pc - LPC[letter]) % 12 + 12) % 12; if (diff > 6) diff -= 12;
+  return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
+}
+function scaleSpelled(key, ton) {                   // note names of a scale, one per letter
+  const li = LETTERS.indexOf(key[0]);
+  return TONAL[ton].steps.map((st, i) => spell(LETTERS[(li + i) % 7], (PC[key] + st) % 12));
+}
+function diatonic(key, ton) {                        // the seven 7th chords of a tonality
+  const steps = TONAL[ton].steps, names = scaleSpelled(key, ton);
+  return steps.map((_, i) => {
+    const pcs = [0,2,4,6].map(k => (PC[key] + steps[(i + k) % 7]) % 12);
+    const iv = pcs.map(p => (p - pcs[0] + 12) % 12).join(",");
+    const q = Object.keys(QUAL).find(k => QUAL[k].iv.join(",") === iv);
+    return { root: names[i], pc: pcs[0], q, degree: i + 1, roman: roman(i, q) };
+  });
+}
+function roman(i, q) { const r = ["I","II","III","IV","V","VI","VII"][i]; const minor = ["m7","m7b5","dim7","mMaj7"].includes(q); return (minor ? r.toLowerCase() : r) + (q === "m7b5" ? "ø" : q === "dim7" ? "°" : q === "maj7s5" ? "+" : ""); }
+function chordDots(key, rootName, pc, q, shape, rf) {
+  const li = LETTERS.indexOf(rootName[0]);
+  const nameOf = iv => { const k = { 0:0, 3:2, 4:2, 6:4, 7:4, 8:4, 9:6, 10:6, 11:6 }[iv]; return spell(LETTERS[(li + k) % 7], (pc + iv) % 12); };
+  const mk = ([s, off, f], alt) => { const fret = rf + off, npc = (OPEN[s] + fret) % 12, iv = (npc - pc + 12) % 12;
+    return { string: s, fret, finger: f, iv, root: iv === 0, ok: QUAL[q].iv.includes(iv), deg: DEGLBL[iv] || "?", note: nameOf(iv), alt }; };
+  return shape.n.map(d => mk(d, false)).concat((shape.alt || []).map(d => mk(d, true)));
+}
+const FINGER = ["", "index", "middle", "ring", "pinky"];
+const rootFinger = sh => sh.n.find(d => d[1] === 0 && d[0] === sh.rs)[2];
+function shapeName(sh, list) {
+  const same = list.filter(x => x.rs === sh.rs && rootFinger(x) === rootFinger(sh));
+  return `${FINGER[rootFinger(sh)]} · ${sh.rs}th string`.replace("3th","3rd") + (same.length > 1 ? ` (${"ab"[same.indexOf(sh)]})` : "");
+}
+function placeArp(oct, q, sh, key, rootName, pc, minRoot = 1) {
+  let rf = ((pc - OPEN[sh.rs]) % 12 + 12) % 12;
+  const lo = () => rf + Math.min(...sh.n.map(d => d[1])), hi = () => rf + Math.max(...sh.n.map(d => d[1]));
+  while (lo() < 1 || rf < minRoot) rf += 12;
+  if (hi() > NECK_TOP + 2 && lo() - 12 >= 1 && rf - 12 >= minRoot) rf -= 12;
+  const dots = chordDots(key, rootName, pc, q, sh, rf);
+  return { oct, q, sh, key, rootName, pc, rootFret: rf, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
+}
+function scalePlace(id, key) {
+  let rf = ((PC[key] - OPEN[SHAPES[id].rootString]) % 12 + 12) % 12;
+  const lo = () => rf + Math.min(...SHAPES[id].notes.map(n => n[1])), hi = () => rf + Math.max(...SHAPES[id].notes.map(n => n[1]));
+  if (lo() < 1) rf += 12; if (hi() > 19 && lo() - 12 >= 1) rf -= 12;
+  const dots = SHAPES[id].notes.map(([s, off, f]) => ({ string: s, fret: rf + off, finger: f, root: (OPEN[s] + rf + off) % 12 === PC[key] }));
+  return { id, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
+}
+
+/* ---------- renderer ---------- */
+function svgDots(dots, under, labels, ariaLabel) {
+  const all = dots.concat(under || []);
+  const minF = Math.max(0, Math.min(...all.map(d => d.fret))), maxF = Math.max(...all.map(d => d.fret));
+  const span = maxF - minF + 1, cw = 54, ch = 30, padL = 16, padT = 48, padR = 16, padB = 18;
+  const W = padL + span * cw + padR, H = padT + 5 * ch + padB;
+  const x = f => padL + (f - minF + 0.5) * cw, y = s => padT + (s - 1) * ch;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${ariaLabel}">`;
+  o += `<text x="${x(minF)}" y="${padT-30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${minF}fr</text><line x1="${x(minF)}" y1="${padT-26}" x2="${x(minF)}" y2="${padT-17}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  for (let f = 0; f <= span; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f===0||f===span?2.5:1}" opacity=".7"/>`; }
+  for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${padL+span*cw}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8+s*0.35}" opacity=".7"/>`;
+  for (const d of under || []) o += `<circle cx="${x(d.fret)}" cy="${y(d.string)}" r="10" fill="none" stroke="${d.root?'var(--brass)':'var(--bone-dim)'}" stroke-width="1.2" opacity=".45"/>`;
+  for (const d of dots) {
+    const cx = x(d.fret), cy = y(d.string), fill = d.root ? "var(--brass)" : d.ok === false ? "var(--warn)" : "var(--bone)";
+    if (d.alt) o += `<circle cx="${cx}" cy="${cy}" r="11" fill="var(--petrol)" stroke="${fill}" stroke-width="1.5" stroke-dasharray="3 2"/>`;
+    else o += `<circle cx="${cx}" cy="${cy}" r="11.5" fill="${fill}"/>`;
+    const lab = labels === "notes" ? d.note : labels === "degrees" ? d.deg : d.finger;
+    o += `<text x="${cx}" y="${cy+4.3}" font-family="var(--mono)" font-size="${String(lab).length>1?10:12.5}" font-weight="600" fill="${d.alt?fill:'var(--ink)'}" text-anchor="middle">${lab}</text>`;
+  }
+  return o + `</svg>`;
+}
+
+/* ---------- approaches ---------- */
+const state = { approach: 0, key: "C", ton: "major", q: "maj7", oct: 1, rs: 6, finger: 1, scale: "I6", labels: "fingers", i: 0 };
+function shapesFor(oct, q) { return ARP[oct][q].filter(s => oct === 1 || true); }
+function pickShape(oct, q, rs, finger) {
+  const list = ARP[oct][q].filter(s => s.rs === rs);
+  const exact = list.find(s => rootFinger(s) === finger);
+  if (exact) return { sh: exact, sub: false };
+  const near = list.slice().sort((a, b) => Math.abs(rootFinger(a) - finger) - Math.abs(rootFinger(b) - finger))[0];
+  return { sh: near, sub: true };
+}
+function rsOptions(oct) { return oct === 1 ? [6,5,4,3] : [6,5]; }
+
+const APPROACHES = [
+ { name: "Parallel shapes · one key", uses: ["quality","octaves"],
+   steps() {
+     const list = ARP[state.oct][state.q], pc = PC[state.key];
+     const placed = list.map(sh => placeArp(state.oct, state.q, sh, state.key, state.key, pc)).sort((a, b) => a.minFret - b.minFret);
+     return placed.map((p, i) => ({ p, sub: `Position ${i+1} of ${placed.length} · ${shapeName(p.sh, list)} · root ${p.rootFret}fr`,
+       instr: `Same chord, same quality, every fingering the book gives. Play each ${state.oct === 1 ? "one" : "two"}-octave shape up and down before moving to the next position (Ex. 1).` })); } },
+ { name: "Parallel shapes · through the keys", uses: ["quality","octaves","rootString","finger"],
+   steps() {
+     const { sh, sub } = pickShape(state.oct, state.q, state.rs, state.finger), list = ARP[state.oct][state.q];
+     const ki = KEYS.indexOf(state.key);
+     return KEYS.map((_, j) => { const k = KEYS[(ki + j) % 12]; const p = placeArp(state.oct, state.q, sh, k, k, PC[k]);
+       return { p, sub: `Key ${j+1} of 12 · ${shapeName(sh, list)} · root ${p.rootFret}fr`, flag: sub ? `no ${FINGER[state.finger]} fingering for ${QUAL[state.q].name} on this string; using ${FINGER[rootFinger(sh)]}` : "",
+         instr: `Keep the grip, move the root around the cycle of 4ths (Ex. 2). Hear the quality stay constant while the key changes.` }; }); } },
+ { name: "HDA · horizontal diatonic", uses: ["tonality","octaves","rootString","finger"],
+   steps() {
+     const chords = diatonic(state.key, state.ton), list = q => ARP[state.oct][q];
+     let minRoot = 1; const out = [];
+     for (const c of chords) {
+       const { sh, sub } = pickShape(state.oct, c.q, state.rs, state.finger);
+       const p = placeArp(state.oct, c.q, sh, state.key, c.root, c.pc, minRoot); minRoot = p.rootFret;
+       out.push({ p, sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · ${shapeName(sh, list(c.q))} · root ${p.rootFret}fr`,
+         flag: sub ? `no ${FINGER[state.finger]} fingering for ${QUAL[c.q].name}; using ${FINGER[rootFinger(sh)]} (the book says not to be dogmatic here)` : "",
+         instr: `Diatonic ${["I","ii","iii","IV","V","vi","vii"][c.degree-1]} chord of ${state.key} ${TONAL[state.ton].name}, root on the ${state.rs}th string, climbing the neck (Ex. 3). Hear how this arpeggio sits inside the key.`.replace("3th","3rd") });
+     }
+     const top = out[out.length - 1].p, oct = placeArp(state.oct, chords[0].q, pickShape(state.oct, chords[0].q, state.rs, state.finger).sh, state.key, chords[0].root, chords[0].pc, top.rootFret);
+     if (oct.maxFret <= NECK_TOP + 2) out.push({ p: oct, sub: `${chords[0].roman} · ${chords[0].root}${QUAL[chords[0].q].sym} · octave`, instr: `Back to the tonic an octave up.` });
+     return out; } },
+ { name: "VDA · vertical diatonic", uses: ["octaves","scale"],
+   steps() {
+     const sc = scalePlace(state.scale, state.key), chords = diatonic(state.key, "major");
+     const lo = sc.minFret - 1, hi = sc.maxFret + 1;
+     return chords.map(c => {
+       const cands = [];
+       for (const sh of ARP[state.oct][c.q]) for (const extra of [0, 12]) {
+         let rf = ((c.pc - OPEN[sh.rs]) % 12 + 12) % 12 + extra; if (rf + Math.min(...sh.n.map(d => d[1])) < 1) rf += 12;
+         const dots = chordDots(state.key, c.root, c.pc, c.q, sh, rf);
+         const inside = dots.filter(d => !d.alt && d.fret >= lo && d.fret <= hi).length, total = dots.filter(d => !d.alt).length;
+         const onScale = dots.filter(d => sc.dots.some(s => s.string === d.string && s.fret === d.fret)).length;
+         cands.push({ p: { oct: state.oct, q: c.q, sh, key: state.key, rootName: c.root, pc: c.pc, rootFret: rf, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) }, score: inside * 10 + onScale, out: total - inside });
+       }
+       const best = cands.sort((a, b) => b.score - a.score)[0];
+       return { p: best.p, under: sc.dots, sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · ${shapeName(best.p.sh, ARP[state.oct][c.q])} · inside ${SHAPES[state.scale].name}`,
+         flag: best.out ? `${best.out} note${best.out > 1 ? "s" : ""} step outside the scale position; the book allows this` : "",
+         instr: `Stay inside the ${SHAPES[state.scale].name} position of ${state.key} major (the hollow outline) and find the ${c.root}${QUAL[c.q].sym} arpeggio there (Ex. 4). Fingering choices follow proximity to the scale shape.` }; }); } },
+];
+
+/* ---------- ui ---------- */
+function seg(el, items, current, onPick) {
+  el.innerHTML = "";
+  for (const it of items) { const b = document.createElement("button"); b.textContent = it.label; b.setAttribute("aria-pressed", String(it.id === current)); b.addEventListener("click", () => onPick(it.id)); el.appendChild(b); }
+}
+let steps = [];
+function rebuild(reset) {
+  const a = APPROACHES[state.approach];
+  if (!rsOptions(state.oct).includes(state.rs)) state.rs = 6;
+  seg(document.getElementById("approach"), APPROACHES.map((x, i) => ({ id: i, label: x.name })), state.approach, i => { state.approach = i; rebuild(true); });
+  seg(document.getElementById("keys"), KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; rebuild(true); });
+  seg(document.getElementById("tonality"), Object.keys(TONAL).map(t => ({ id: t, label: TONAL[t].name.replace(" minor", " min") })), state.ton, t => { state.ton = t; rebuild(true); });
+  seg(document.getElementById("quality"), Object.keys(QUAL).map(q => ({ id: q, label: QUAL[q].sym })), state.q, q => { state.q = q; rebuild(true); });
+  seg(document.getElementById("octaves"), [1,2].map(o => ({ id: o, label: `${o}-octave` })), state.oct, o => { state.oct = o; rebuild(true); });
+  seg(document.getElementById("rootString"), rsOptions(state.oct).map(s => ({ id: s, label: `${s}` })), state.rs, s => { state.rs = s; rebuild(true); });
+  seg(document.getElementById("finger"), [1,2,3,4].map(f => ({ id: f, label: FINGER[f] })), state.finger, f => { state.finger = f; rebuild(true); });
+  seg(document.getElementById("scale"), CYCLE.map(s => ({ id: s, label: s })), state.scale, s => { state.scale = s; rebuild(true); });
+  seg(document.getElementById("labels"), [["fingers","fingers"],["degrees","degrees"],["notes","notes"]].map(([id, label]) => ({ id, label })), state.labels, l => { state.labels = l; rebuild(false); });
+  for (const f of ["tonality","quality","rootString","finger","scale"]) document.getElementById("fs" + f[0].toUpperCase() + f.slice(1)).hidden = !a.uses.includes(f);
+  steps = a.steps();
+  state.i = reset ? 0 : Math.min(state.i, steps.length - 1);
+  show();
+}
+function show() {
+  const s = steps[state.i], a = APPROACHES[state.approach], p = s.p;
+  const bad = p.dots.filter(d => d.ok === false).length;
+  document.getElementById("card").innerHTML = `<header><span class="where">${a.name}</span><span class="where">${state.i+1} / ${steps.length}</span></header>
+    <p class="title"><span class="key">${p.rootName}${QUAL[p.q].sym}</span><span class="name">${QUAL[p.q].name}</span><span class="shape">${p.oct}-octave</span></p>
+    <p class="sub">${s.sub}</p>${svgDots(p.dots, s.under, state.labels, `${p.rootName} ${QUAL[p.q].name}`)}
+    <p class="instr">${s.instr}</p>${s.flag ? `<p class="flag">${s.flag}</p>` : ""}${bad ? `<p class="flag">${bad} transcribed note${bad>1?"s":""} not in the chord, check the data</p>` : ""}
+    <div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>chord tone</span>${p.dots.some(d => d.alt) ? `<span><i style="border:1.5px dashed var(--bone)"></i>alternate (diamond in the book)</span>` : ""}${s.under ? `<span><i style="border:1.2px solid var(--bone-dim)"></i>scale position</span>` : ""}</div>`;
+  document.getElementById("fill").style.width = `${(state.i + 1) / steps.length * 100}%`;
+  document.getElementById("prev").disabled = state.i === 0;
+  document.getElementById("next").disabled = state.i === steps.length - 1;
+}
+document.getElementById("prev").addEventListener("click", () => { if (state.i > 0) { state.i--; show(); } });
+document.getElementById("next").addEventListener("click", () => { if (state.i < steps.length - 1) { state.i++; show(); } });
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") document.getElementById("next").click();
+  if (e.key === "ArrowLeft") document.getElementById("prev").click();
+  if (e.key === "Home") { state.i = 0; show(); }
+});
+rebuild(true);
+</script>
+</body>
+</html>
