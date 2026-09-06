@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fretboard — authoring</title>
+<style>
+  :root {
+    --ink: #0a1a20;
+    --petrol: #10303a;
+    --petrol-2: #163f4b;
+    --bone: #e9e2d2;
+    --bone-dim: #a9a597;
+    --brass: #c9a44c;
+    --warn: #d86b4a;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--bone); font-family: var(--sans); }
+  body { padding: 28px 32px 48px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-weight: 400; font-size: 26px; margin: 0 0 4px; letter-spacing: .01em; }
+  h1 small { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-left: 12px; }
+  p.lede { margin: 0 0 24px; color: var(--bone-dim); font-size: 15px; max-width: 64ch; }
+
+  .layout { display: grid; grid-template-columns: 250px 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } }
+
+  fieldset { border: 0; padding: 0; margin: 0 0 22px; }
+  legend { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-bottom: 8px; padding: 0; }
+  .scales { display: grid; grid-template-columns: 1fr; gap: 4px; }
+  .keys { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .fingerings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  button {
+    font-family: var(--mono); font-size: 13px; color: var(--bone);
+    background: var(--petrol); border: 1px solid transparent; border-radius: 4px;
+    padding: 8px 6px; cursor: pointer; line-height: 1;
+  }
+  button:hover { background: var(--petrol-2); }
+  button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  button[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
+  button.wide { grid-column: 1 / -1; }
+  button.ghost { background: transparent; border-color: var(--petrol-2); }
+  button.ghost:hover { background: var(--petrol); }
+  button:disabled { opacity: .4; cursor: default; }
+  .apply { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 8px 0 0; line-height: 1.6; }
+  .apply b { color: var(--bone); font-weight: 400; }
+
+  .diagrams { display: grid; gap: 22px; }
+  .diagrams.grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  figure { margin: 0; background: var(--petrol); border-radius: 6px; padding: 14px 16px 12px; }
+  figcaption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  figcaption b { font-weight: 400; font-size: 17px; }
+  figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  figure svg { width: 100%; height: auto; display: block; }
+  figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
+  .editing circle[data-i], .editing polygon[data-i] { cursor: pointer; }
+
+  .necklegend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .necklegend button {
+    font-family: var(--mono); font-size: 11px; color: var(--bone);
+    background: var(--petrol-2); border: 1px solid transparent; border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .necklegend button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .necklegend button[aria-pressed="true"] { border-color: var(--brass); }
+  .necklegend button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  .cycle { margin-top: 6px; font-size: 14px; color: var(--bone-dim); }
+  .cycle code { font-family: var(--mono); color: var(--bone); font-size: 13px; }
+
+  details { margin-top: 28px; }
+  summary { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); cursor: pointer; }
+  pre { font-family: var(--mono); font-size: 12px; background: var(--petrol); padding: 14px 16px; border-radius: 6px; overflow: auto; color: var(--bone); line-height: 1.45; }
+</style>
+</head>
+<body>
+
+<h1>Fretboard <small>JGTH · movable scale fingerings · authoring</small></h1>
+<p class="lede">The authoring copy of the fretboard tool: everything the student page has, plus edit-fingers mode, copy-shape and the raw shape data. Not linked from the landing page.</p>
+
+<div class="layout">
+  <aside>
+    <fieldset>
+      <legend>Scale</legend>
+      <div class="scales" id="scales"></div>
+      <p class="apply" id="apply"></p>
+    </fieldset>
+    <fieldset>
+      <legend>Key (in 4ths)</legend>
+      <div class="keys" id="keys"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Fingering</legend>
+      <div class="fingerings" id="fingerings"></div>
+    </fieldset>
+    <fieldset id="fsVariants" hidden>
+      <legend>Variant</legend>
+      <div class="modes" id="variants"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Show</legend>
+      <div class="modes" id="modes"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Cycle of fingerings</legend>
+      <button class="ghost wide" id="step">Next in cycle</button>
+      <p class="cycle" id="cycleHint"></p>
+    </fieldset>
+    <fieldset>
+      <legend>Transcribe</legend>
+      <div class="modes">
+        <button id="edit">Edit fingers</button>
+        <button id="copy">Copy shape</button>
+      </div>
+      <p class="cycle" id="editHint"></p>
+    </fieldset>
+  </aside>
+
+  <main class="diagrams" id="diagrams"></main>
+</div>
+
+<details>
+  <summary>Shape data for the current selection</summary>
+  <pre id="data"></pre>
+</details>
+
+<script>
+/* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
+const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};                             // open-string pitch classes
+const CYCLE = ["P6","P5","M6","M5","I6","I5"];                        // p. 61, cycle of fingerings
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+/* SCALES[id]: steps/degrees are parallel arrays (length 8 for the bebop scales later);
+   apply is the application line from the scale's intro page, verbatim as printed (in C);
+   spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
+   passing = index into steps of the added bebop passing tone (rendered as a diamond);
+   shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   a shape may carry named fingering variants: notes (labelled variantName) is the
+   default, variants = { name: full notes list }; the apps remember the chosen
+   variant per shape for the session, in memory only;
+   shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
+   open (placement floor 0, not 1). */
+const SCALES = {
+  major: { name:"Major", steps:[0,2,4,5,7,9,11], degrees:["R","2","3","4","5","6","7"], spellFrom:0,
+    apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",variantName:"B on 4th string",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]],
+        variants:{"B on 3rd string":[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,2],[3,-1,4],[4,-3,1],[4,-1,3],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]}},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  dorian: { name:"Dorian", steps:[0,2,3,5,7,9,10], degrees:["R","2","b3","4","5","6","b7"], spellFrom:10,
+    apply:{ chords:"C-7 · F7", uses:["ii chords in major keys","V7 chords in major keys","iv chords in minor keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  mixolydian: { name:"Mixolydian", steps:[0,2,4,5,7,9,10], degrees:["R","2","3","4","5","6","b7"], spellFrom:5,
+    apply:{ chords:"C7 · C9 · C7(sus4) · G-7", uses:["unaltered dominant chords","ii chords in major keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  harmonic: { name:"Harmonic minor", steps:[0,2,3,5,7,8,11], degrees:["R","2","b3","4","5","b6","7"],
+    apply:{ chords:"C-(\u25b37)", uses:["tonic minor chords"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-1,2],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-4,1],[3,-3,2],[3,-1,4],[3,0,4],[4,-3,1],[4,-2,2],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[1,1,4],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,3],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  phrygdom: { name:"Phrygian dominant", steps:[0,1,4,5,7,8,10], degrees:["R","b2","3","4","5","b6","b7"],
+    apply:{ chords:"C7(b9) \u00b7 C7(b13/b9) \u00b7 G\u00f87", uses:["V7 chords in minor keys","ii chords in minor keys"] }, pages:"pp. 12\u201313",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-4,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,-4,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,-1,3],[3,-3,1],[3,-2,2],[3,0,4],[4,-4,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,-1,1],[5,0,1],[5,2,3],[5,3,4],[6,0,2],[6,1,3]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,3,4],[2,-1,1],[2,2,3],[2,3,4],[3,0,1],[3,2,3],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,0,2],[5,1,3]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,1,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[1,3,4],[2,-1,1],[2,2,3],[2,3,4],[3,0,1],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,1,2],[5,4,4]]},
+    }},
+  melodic: { name:"Melodic minor", steps:[0,2,3,5,7,9,11], degrees:["R","2","b3","4","5","6","7"],
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords","3rd mode: Eb\u25b37(#5) \u00b7 Eb+\u25b37 \u2014 Lydian augmented","4th mode: F7(#11) \u00b7 F9(#11) \u00b7 F13 \u2014 Lydian dominant","6th mode: A\u00f87 \u00b7 A\u00f89 \u2014 Locrian #2","7th mode: B7alt \u2014 altered / dim whole-tone / super Locrian"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  majorBebop: { name:"Major bebop", steps:[0,2,4,5,7,8,9,11], degrees:["R","2","3","4","5","#5","6","7"], passing:5,
+    apply:{ chords:"C\u25b37 \u00b7 C6 \u00b7 C6/9", uses:[] }, pages:"pp. 14\u201315",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,2],[3,2,3],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,1],[3,4,3],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,2],[2,5,4],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,1],[2,5,3],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  mixoBebop: { name:"Mixolydian bebop", steps:[0,2,4,5,7,9,10,11], degrees:["R","2","3","4","5","6","b7","7"], passing:7,
+    apply:{ chords:"G-7 \u00b7 C7", uses:[] }, pages:"pp. 16\u201317",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,2],[3,-1,3],[4,-3,1],[4,-1,2],[4,0,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  phrygdomBebop: { name:"Phrygian dominant bebop", steps:[0,1,4,5,7,8,10,11], degrees:["R","b2","3","4","5","b6","b7","7"], passing:7,
+    apply:{ chords:"G\u00f87 \u00b7 C7(b9) \u00b7 C7(b13/b9)", uses:[] }, pages:"pp. 18\u201319",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-4,0],[1,-2,0],[1,-1,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[3,-4,0],[3,-3,0],[3,-2,0],[4,-3,0],[4,-2,0],[4,0,0],[5,-4,0],[5,-1,0],[5,0,0],[6,0,0]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,0],[1,-2,0],[1,0,0],[2,-3,0],[2,-2,0],[2,-1,0],[3,-3,0],[3,-2,0],[3,0,0],[4,-4,0],[4,-1,0],[4,0,0],[5,0,0]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,3,0],[3,1,0],[3,2,0],[4,0,0],[4,1,0],[4,2,0],[4,3,0],[5,-1,0],[5,0,0],[5,2,0],[5,3,0],[6,0,0],[6,1,0]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,0],[1,1,0],[1,3,0],[2,-1,0],[2,2,0],[2,3,0],[3,0,0],[3,1,0],[3,2,0],[4,-1,0],[4,0,0],[4,2,0],[4,3,0],[5,0,0],[5,1,0]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,3,0],[3,1,0],[3,2,0],[4,0,0],[4,1,0],[4,2,0],[4,3,0],[5,0,0],[5,2,0],[5,3,0],[6,0,0],[6,1,0],[6,4,0]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,0],[1,1,0],[1,3,0],[2,-1,0],[2,2,0],[2,3,0],[3,0,0],[3,1,0],[3,2,0],[4,0,0],[4,2,0],[4,3,0],[5,0,0],[5,1,0],[5,4,0]]},
+    }},
+  melodicBebop: { name:"Melodic minor bebop", steps:[0,2,3,5,7,8,9,11], degrees:["R","2","b3","4","5","#5","6","7"], passing:5,
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords"] }, pages:"pp. 20\u201321",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[3,1,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+};
+const SHAPES = SCALES.major.shapes;   // back-compat alias
+const MAJOR  = SCALES.major.steps;    // back-compat alias
+/* ===== end shared scale data ===== */
+
+/* ---------- note spelling ---------- */
+const LPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0)) % 12 + 12) % 12;
+function noteNames(key, scaleId) {
+  const sc = SCALES[scaleId];
+  if (sc.spellFrom == null) {          // spell each degree from its label (non-modal scales)
+    const from = k => sc.degrees.map((dg, i) => {
+      const n = dg === "R" ? 1 : parseInt(dg.replace(/[b#]/g, ""), 10);
+      const letter = "CDEFGAB"[("CDEFGAB".indexOf(k[0]) + n - 1) % 7];
+      let diff = ((pcOf(k) + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
+      return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
+    });
+    const ENH = { Db:"C#", Eb:"D#", Gb:"F#", Ab:"G#", Bb:"A#" };   // avoid double flats in minor keys
+    const SIMPLE = ["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+    let names = from(key);
+    if (ENH[key] && names.some(x => x.length > 2)) names = from(ENH[key]);
+    return names.map(n => n.length > 2 ? SIMPLE[pcOf(n)] : n);   // no double accidentals survive
+  }
+  const parent = KEYS.find(k => PC[k] === (PC[key] + sc.spellFrom) % 12);
+  const names = SPELL[parent];
+  const i0 = names.findIndex(n => pcOf(n) === PC[key]);
+  return names.map((_, j) => names[(i0 + j) % names.length]);
+}
+
+/* ---------- placement ---------- */
+function rootFret(key, string) {
+  return (PC[key] - OPEN[string] + 12) % 12;
+}
+function place(scaleId, shapeId, key) {
+  const sc = SCALES[scaleId], s = sc.shapes[shapeId], names = noteNames(key, scaleId);
+  const notes = activeNotes(sc, shapeId);
+  let rf = rootFret(key, s.rootString);
+  const floor = s.open ? 0 : 1;                    // open-position shapes may sit on the nut
+  const lo = () => rf + Math.min(...notes.map(n => n[1]));
+  const hi = () => rf + Math.max(...notes.map(n => n[1]));
+  if (lo() < floor) rf += 12;                      // keep off the nut, as the book does
+  if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
+  const dots = notes.map(([str, off, fin], i) => {
+    const fret = rf + off;
+    const pc = (OPEN[str] + fret) % 12;
+    const deg = sc.steps.indexOf((pc - PC[key] + 12) % 12);
+    return { i, string: str, fret, finger: fin, pc, degree: deg, root: deg === 0,
+             note: deg >= 0 ? names[deg] : "?" };
+  });
+  return { id: shapeId, scale: scaleId, key, rootFret: rf, dots,
+           minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
+}
+
+/* ---------- renderer ---------- */
+function draw(p, mode, editing) {
+  const sc = SCALES[p.scale], shape = sc.shapes[p.id];
+  const span = p.maxFret - p.minFret + 1;
+  const cellW = 54, cellH = 30, padL = 16, padT = 48, padR = 16, padB = 18;
+  const W = padL + span * cellW + padR, H = padT + 5 * cellH + padB;
+  const x = f => padL + (f - p.minFret + 0.5) * cellW;
+  const y = s => padT + (s - 1) * cellH;
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} ${sc.name}, ${shape.name}">`;
+  const nutCol = 1 - p.minFret;                    // grid column index where the nut sits, if visible
+  if (nutCol < 0 || nutCol > 1) {                  // no nut in view: label the first fret space
+    const fx0 = x(p.minFret);
+    out += `<text x="${fx0}" y="${padT - 30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${p.minFret}fr</text>`;
+    out += `<line x1="${fx0}" y1="${padT - 26}" x2="${fx0}" y2="${padT - 17}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  }
+  for (let f = 0; f <= span; f++) {
+    const fx = padL + f * cellW, nut = f === nutCol;
+    out += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut ? 'var(--bone)' : 'var(--bone-dim)'}" stroke-width="${nut ? 6 : f === 0 || f === span ? 2.5 : 1}" opacity="${nut ? .9 : .7}"/>`;
+  }
+  for (let s = 1; s <= 6; s++) {
+    out += `<line x1="${padL}" y1="${y(s)}" x2="${padL + span * cellW}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.35}" opacity=".7"/>`;
+  }
+  for (const d of p.dots) {
+    const cx = x(d.fret), cy = y(d.string), r = 11.5;
+    const fill = d.root ? "var(--brass)" : "var(--bone)";
+    const attrs = editing ? ` data-i="${d.i}" data-shape="${p.id}"` : "";
+    if (sc.passing != null && d.degree === sc.passing)
+      out += `<polygon points="${cx},${cy - 13} ${cx + 13},${cy} ${cx},${cy + 13} ${cx - 13},${cy}" fill="${fill}"${attrs}/>`;
+    else out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"${attrs}/>`;
+    const label = (mode === "fingers" || editing) ? (d.finger || "") : mode === "degrees" ? sc.degrees[d.degree] : mode === "notes" ? d.note : "";
+    if (label !== "") {
+      const fs = String(label).length > 1 ? 10.5 : 12.5;
+      out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${label}</text>`;
+    }
+    if (editing) out += `<circle cx="${cx}" cy="${cy}" r="15" fill="transparent" data-i="${d.i}" data-shape="${p.id}"/>`;
+  }
+  return out + `</svg>`;
+}
+function figure(p, mode, editing) {
+  const sc = SCALES[p.scale], shape = sc.shapes[p.id];
+  const bad = p.dots.filter(d => d.degree < 0);
+  const check = bad.length ? `${bad.length} note(s) outside ${p.key} ${sc.name.toLowerCase()}` : "";
+  const dir = shape.dir ? ` · ${shape.dir === "asc" ? "ascending" : "descending"}` : "";
+  const vn = shape.variants ? ` · ${state.variants[vKey(p.id)] || shape.variantName || "default"}` : "";
+  return `<figure>
+    <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}${vn}</span></figcaption>
+    ${draw(p, mode, editing)}
+    <p class="check">${check}</p>
+  </figure>`;
+}
+
+/* ---------- whole-neck view ---------- */
+const NECK_TOP = 17;
+function neckPlacements() {                          // every placement of the cycle, frets 1-17
+  const sc = SCALES[state.scale], out = [];
+  for (const id of sc.cycle) {
+    const s = sc.shapes[id], notes = activeNotes(sc, id);
+    const base = rootFret(state.key, s.rootString);
+    for (const rf of [base - 12, base, base + 12, base + 24]) {
+      const lo = rf + Math.min(...notes.map(n => n[1]));
+      const hi = rf + Math.max(...notes.map(n => n[1]));
+      if (lo < 1 || hi > NECK_TOP) continue;
+      out.push({ id, rf, lo, hi, key: id + "@" + rf,
+                 cells: new Set(notes.map(([str, off]) => str + ":" + (rf + off))) });
+    }
+  }
+  return out.sort((a, b) => a.lo - b.lo || a.hi - b.hi);
+}
+function drawNeck() {
+  /* Fingering colors, in neck order. Deutan-warm (coral, green, olive) and
+     deutan-cool (blue, magenta, violet) alternate, so fingerings adjacent on
+     the neck stay apart under deuteranopia (all adjacent pairs dE76 > 37 in a
+     Vienot simulation, L* 64.8-71.5). Numbers in the dots are the redundant
+     channel; brass stays reserved for the root ring. */
+  const NECK_COLORS = ["#e8825a", "#4fa8e8", "#5fc46a", "#e07bc0", "#bfae3e", "#a98ef2"];
+  const sc = SCALES[state.scale], ps = neckPlacements();
+  ps.forEach((q, i) => { q.n = i + 1; q.color = NECK_COLORS[i % 6]; });
+  const sel = ps.some(q => q.key === state.neckSel) ? state.neckSel : null;
+  const hov = !sel && ps.some(q => q.key === state.neckHover) ? state.neckHover : null;
+  const fade = q => sel ? (q.key === sel ? 1 : .12) : hov ? (q.key === hov ? 1 : .3) : 1;
+  const op = v => v < 1 ? ` opacity="${v}"` : "";
+  let rows = 1; const lastAtRow = [];                // stagger labels whose windows collide
+  for (const q of ps) {
+    let r = 0;
+    while (lastAtRow[r] != null && q.lo - lastAtRow[r] < 3) r++;
+    q.row = r; lastAtRow[r] = q.lo; rows = Math.max(rows, r + 1);
+  }
+  const cw = 54, ch = 30, padL = 16, padR = 16, padB = 30;
+  const padT = 10 + rows * 17 + 14;
+  const W = padL + (NECK_TOP + 1) * cw + padR, H = padT + 5 * ch + padB;
+  const x = f => padL + (f + 0.5) * cw, y = s => padT + (s - 1) * ch;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${state.key} ${sc.name}, whole neck">`;
+  for (let f = 0; f <= NECK_TOP + 1; f++) {          // neutral board: lines carry no color
+    const fx = padL + f * cw, nut = f === 1;         // boundary between the open column and fret 1
+    o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut ? 'var(--bone)' : 'var(--bone-dim)'}" stroke-width="${nut ? 6 : f === 0 || f === NECK_TOP + 1 ? 2.5 : 1}" opacity="${nut ? .9 : .5}"/>`;
+    if ([3, 5, 7, 9, 12, 15, 17].includes(f)) o += `<text x="${x(f)}" y="${H - 8}" font-family="var(--mono)" font-size="11" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
+  }
+  for (let s = 1; s <= 6; s++)
+    o += `<line x1="${padL}" y1="${y(s)}" x2="${padL + (NECK_TOP + 1) * cw}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.35}" opacity=".7"/>`;
+  for (const q of ps)                                // window-start labels in the fingering's color
+    o += `<text x="${x(q.lo)}" y="${12 + q.row * 17}" font-family="var(--mono)" font-size="12" font-weight="600" fill="${q.color}"${op(fade(q))} text-anchor="middle" data-band="${q.key}" style="cursor:pointer">${q.n} ${q.id}</text>`;
+  const R = 9, K = R * 0.7071;                       // dot radius; K = diagonal half-chord
+  for (let str = 1; str <= 6; str++) for (let f = 0; f <= NECK_TOP; f++) {
+    const deg = sc.steps.indexOf(((OPEN[str] + f) % 12 - PC[state.key] + 12) % 12);
+    if (deg < 0) continue;
+    const cx = x(f), cy = y(str);
+    const owners = ps.filter(q => q.cells.has(str + ":" + f));
+    if (!owners.length) {                            // in scale but in no position: hollow, full opacity
+      o += `<circle cx="${cx}" cy="${cy}" r="${R - 2}" fill="none" stroke="var(--bone-dim)" stroke-width="1.2"/>`;
+      continue;
+    }
+    if (owners.length === 1) {
+      o += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${owners[0].color}"${op(fade(owners[0]))}/>`;
+    } else if (owners.length === 2) {                // diagonal split: lower fingering lower-left
+      const A = `${(cx - K).toFixed(2)} ${(cy - K).toFixed(2)}`, B = `${(cx + K).toFixed(2)} ${(cy + K).toFixed(2)}`;
+      o += `<path d="M ${A} A ${R} ${R} 0 0 0 ${B} Z" fill="${owners[0].color}"${op(fade(owners[0]))}/>`;
+      o += `<path d="M ${A} A ${R} ${R} 0 0 1 ${B} Z" fill="${owners[1].color}"${op(fade(owners[1]))}/>`;
+    } else {                                         // 3+: equal wedges, neck order, from the NW
+      const a0 = -3 * Math.PI / 4, step = 2 * Math.PI / owners.length;
+      owners.forEach((q, i) => {
+        const p1 = [cx + R * Math.cos(a0 + i * step), cy + R * Math.sin(a0 + i * step)];
+        const p2 = [cx + R * Math.cos(a0 + (i + 1) * step), cy + R * Math.sin(a0 + (i + 1) * step)];
+        o += `<path d="M ${cx} ${cy} L ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A ${R} ${R} 0 0 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)} Z" fill="${q.color}"${op(fade(q))}/>`;
+      });
+    }
+    const maxFade = Math.max(...owners.map(fade));
+    if (deg === 0)                                   // root: brass ring, a non-color channel
+      o += `<circle cx="${cx}" cy="${cy}" r="${R + 2.5}" fill="none" stroke="var(--brass)" stroke-width="2.5"${op(maxFade)}/>`;
+    const num = (t, tx, ty, fs) => `<text x="${tx}" y="${ty}" font-family="var(--mono)" font-size="${fs}" font-weight="700" fill="var(--ink)" text-anchor="middle"${op(maxFade)}>${t}</text>`;
+    if (owners.length === 1) o += num(owners[0].n, cx, cy + 3.2, 9);
+    else if (owners.length === 2) o += num(owners[0].n, cx - 3.6, cy + 6.6, 7.5) + num(owners[1].n, cx + 3.6, cy - 0.8, 7.5);
+    else o += num(owners.map(q => q.n).join(""), cx, cy + 2.6, 6.5);
+  }
+  o += `</svg>`;
+  const legend = `<div class="necklegend">` + ps.map(q =>
+    `<button data-leg="${q.key}" aria-pressed="${sel === q.key}"${op(fade(q))}><i style="background:${q.color}"></i>${q.n} ${q.id} · ${q.lo}fr</button>`).join("") + `</div>`;
+  return `<figure>
+    <figcaption><b>${state.key} ${sc.name.toLowerCase()}</b><span>whole neck · ${ps.length} positions${sel ? " · " + sel.split("@")[0] + " isolated" : ""}</span></figcaption>
+    ${o}
+    ${legend}
+    <p class="check"></p>
+  </figure>`;
+}
+
+/* ---------- state + ui ---------- */
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", edit: false, variants: {}, neckSel: null, neckHover: null };
+const vKey = id => state.scale + ":" + id;
+function activeNotes(sc, id) {                       // the chosen variant's notes, default otherwise
+  const sh = sc.shapes[id], v = state.variants[vKey(id)];
+  return (sh.variants && v && sh.variants[v]) || sh.notes;
+}
+const cyc = () => SCALES[state.scale].cycle;
+
+function seg(containerId, items, current, onPick) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  for (const it of items) {
+    const b = document.createElement("button");
+    b.textContent = it.label;
+    b.setAttribute("aria-pressed", String(it.id === current));
+    if (it.wide) b.classList.add("wide");
+    b.addEventListener("click", () => onPick(it.id));
+    el.appendChild(b);
+  }
+}
+function render() {
+  const sc = SCALES[state.scale];
+  seg("scales", Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; render(); });
+  seg("keys", KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; render(); });
+  seg("fingerings", [...Object.keys(sc.shapes).map(f => ({ id: f, label: f })),
+      { id: "all", label: "All", wide: true }, { id: "neck", label: "Whole neck", wide: true }],
+      state.fingering, f => { state.fingering = f; render(); });
+  seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
+      .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
+
+  if (!sc.shapes[state.fingering] && state.fingering !== "all" && state.fingering !== "neck") state.fingering = cyc()[0];
+  const cur = sc.shapes[state.fingering];
+  const fsV = document.getElementById("fsVariants");
+  fsV.hidden = !(cur && cur.variants);
+  if (cur && cur.variants) {
+    seg("variants",
+        [{ id: "", label: cur.variantName || "default" }, ...Object.keys(cur.variants).map(n => ({ id: n, label: n }))],
+        state.variants[vKey(state.fingering)] || "",
+        v => { if (v) state.variants[vKey(state.fingering)] = v; else delete state.variants[vKey(state.fingering)]; render(); });
+  }
+
+  document.getElementById("apply").innerHTML =
+    `${sc.pages} · application <b>${sc.apply.chords}</b>` +
+    (sc.apply.uses.length ? `<br>${sc.apply.uses.join("<br>")}` : "") +
+    `<br>(as printed, in C)`;
+
+  const main = document.getElementById("diagrams");
+  const neck = state.fingering === "neck";
+  const ids = neck ? [] : state.fingering === "all" ? Object.keys(sc.shapes) : [state.fingering];
+  main.classList.toggle("grid", ids.length > 1);
+  main.classList.toggle("editing", state.edit && !neck);
+  const placed = ids.map(id => place(state.scale, id, state.key));
+  main.innerHTML = neck ? drawNeck() : placed.map(p => figure(p, state.mode, state.edit)).join("");
+
+  const hint = document.getElementById("cycleHint");
+  if (state.fingering === "neck") {
+    hint.innerHTML = `Every position at once. Click a position label to isolate it; click again to clear.`;
+  } else if (state.fingering === "all") {
+    hint.innerHTML = `Pick one fingering to step around the cycle.`;
+  } else {
+    const c = cyc();
+    const nf = c[(c.indexOf(state.fingering) + 1) % c.length];
+    const nk = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
+    hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, same position.`;
+  }
+
+  const editBtn = document.getElementById("edit");
+  editBtn.setAttribute("aria-pressed", String(state.edit));
+  editBtn.disabled = state.fingering === "neck";
+  document.getElementById("copy").disabled = state.fingering === "all" || state.fingering === "neck";
+  document.getElementById("editHint").textContent = state.edit
+    ? "Click a dot: finger 1 → 2 → 3 → 4 → none. Edits live in memory only until copied."
+    : "";
+
+  if (neck) {
+    document.getElementById("data").textContent = JSON.stringify(
+      neckPlacements().map(q => ({ id: q.id, rootFret: q.rf, window: q.lo + "-" + q.hi })), null, 1)
+      .replace(/\n\s+("id"|"rootFret"|"window")/g, ' $1').replace(/\n\s+}/g, ' }');
+    return;
+  }
+  document.getElementById("data").textContent = JSON.stringify(
+    placed.map(p => ({ scale: p.scale, id: p.id, key: p.key, rootString: sc.shapes[p.id].rootString, rootFret: p.rootFret,
+      dots: p.dots.map(d => ({ s: d.string, f: d.fret, finger: d.finger, note: d.note, deg: d.degree >= 0 ? sc.degrees[d.degree] : "?" })) })),
+    null, 1).replace(/\n\s+("s")/g, ' $1').replace(/,\n\s+("f"|"finger"|"note"|"deg")/g, ', $1').replace(/\n\s+}/g, ' }');
+}
+document.getElementById("step").addEventListener("click", () => {
+  if (state.fingering === "all" || state.fingering === "neck") return;
+  const c = cyc();
+  state.fingering = c[(c.indexOf(state.fingering) + 1) % c.length];
+  state.key = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
+  render();
+});
+
+/* ---------- edit fingers + copy ---------- */
+document.getElementById("edit").addEventListener("click", () => { state.edit = !state.edit; render(); });
+document.getElementById("diagrams").addEventListener("click", e => {
+  const band = e.target.closest ? e.target.closest("[data-band],[data-leg]") : null;
+  if (band && state.fingering === "neck") {
+    const k = band.dataset.band || band.dataset.leg;
+    state.neckSel = state.neckSel === k ? null : k;
+    state.neckHover = null;
+    render();
+    return;
+  }
+  if (!state.edit) return;
+  const c = e.target.closest ? e.target.closest("circle[data-i]") : null;
+  if (!c) return;
+  const notes = activeNotes(SCALES[state.scale], c.dataset.shape);
+  const n = notes[+c.dataset.i];
+  n[2] = n[2] === 4 ? 0 : n[2] + 1;                // 1 → 2 → 3 → 4 → none → 1
+  render();
+});
+document.getElementById("copy").addEventListener("click", () => {
+  if (state.fingering === "all") return;
+  const notes = activeNotes(SCALES[state.scale], state.fingering);
+  const json = "[" + notes.map(n => `[${n[0]},${n[1]},${n[2]}]`).join(",") + "]";
+  const vn = state.variants[vKey(state.fingering)];
+  document.getElementById("data").textContent = `${state.scale} ${state.fingering}${vn ? " (" + vn + ")" : ""} notes:\n${json}`;
+  document.querySelector("details").open = true;
+  if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
+});
+document.getElementById("diagrams").addEventListener("mouseover", e => {
+  if (state.fingering !== "neck" || state.neckSel) return;
+  const leg = e.target.closest ? e.target.closest("[data-leg]") : null;
+  if (leg && state.neckHover !== leg.dataset.leg) { state.neckHover = leg.dataset.leg; render(); }
+});
+document.getElementById("diagrams").addEventListener("mouseout", e => {
+  if (state.fingering !== "neck" || !state.neckHover) return;
+  const leg = e.target.closest ? e.target.closest("[data-leg]") : null;
+  if (leg && leg.dataset.leg === state.neckHover) { state.neckHover = null; render(); }
+});
+render();
+</script>
+</body>
+</html>
