@@ -26,9 +26,10 @@ Standard Web Audio lookahead pattern (see root CLAUDE.md):
 Visuals never touch timing. Every scheduled beat also pushes
 `{t, beat, audible, bar}` onto `visQ`; a `requestAnimationFrame` loop
 (`paint`) drains events whose timestamp has passed `ctx.currentTime` and
-updates lamps, bar counter, clock and playhead from the audio clock.
-Rests between rounds use `setTimeout` — acceptable because nothing is
-keeping musical time during a rest.
+updates lamps, bar counter and clock from the audio clock. The dropout
+chart is deliberately NOT driven by the clock — see below. Rests between
+rounds use `setTimeout` — acceptable because nothing is keeping musical
+time during a rest.
 
 ## Phrase dropout math
 
@@ -79,6 +80,20 @@ choice (documented in the code comment above `SETTLE`).
 
 The dropout-plan chart samples this same curve at `PLAN_COLS` = 6 column
 midpoints via `kAt`, so what the chart shows is exactly what will play.
+
+**The chart is a static pre-round preview, not a live display.** Its
+axis is stages, not time; an earlier version moved a playhead across it
+and highlighted the current stage, which players read as "a click
+sounds when the cursor crosses a slash" — wrong, and a drummer caught
+it. The playhead, the `.active` stage highlight and the per-frame chart
+status text were removed; the chart renders on parameter change, at
+round start and on stop only. Clicking bars draw as brass slashes,
+silent bars as small dots (shape + colour), with a legend strip saying
+so and labelling the columns "6 stages sampled across the round · a
+preview, not a timeline". (The old `.active` highlight also had a
+specificity bug — `.stage-cell.active .slash` overrode `.slash.off`, so
+every bar in the highlighted cell lit as if clicking. Gone with the
+live display; don't reintroduce a live cursor here.)
 
 ## Other structure worth knowing
 

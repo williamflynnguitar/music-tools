@@ -107,26 +107,36 @@ main{max-width:880px;margin:0 auto;}
   padding:11px 9px 8px;min-width:0;
 }
 .stage-cell:last-child{border-right:none;}
-.stage-cell.active{background:var(--panel-2);}
 .slashes{display:flex;gap:2px;align-items:center;flex-wrap:nowrap;overflow:hidden;}
 .slash{
   flex:1 1 0;min-width:2px;max-width:9px;height:15px;
   background:var(--brass);
   clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);
 }
-.slash.off{background:var(--rest);}
-.stage-cell.active .slash{background:var(--brass-hot);}
+.slash.off{background:transparent;clip-path:none;position:relative;}
+.slash.off::after{
+  content:"";position:absolute;left:50%;top:50%;width:5px;height:5px;
+  margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--rest);
+}
 .stage-label{
   font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
   color:var(--dimmer);text-transform:uppercase;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;
 }
-.stage-cell.active .stage-label{color:var(--brass);}
-.playhead{
-  position:absolute;top:0;bottom:0;width:1px;background:var(--brass-hot);
-  left:0;pointer-events:none;box-shadow:0 0 9px 1px rgba(242,204,135,.5);
+.chart-legend{
+  display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+  padding:8px 13px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);
 }
-.chart.blind .chart-body,.chart.blind .playhead{visibility:hidden;}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px;}
+.chart-legend .sw{
+  display:inline-block;width:8px;height:12px;background:var(--brass);
+  clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);
+}
+.chart-legend .sw.off{width:5px;height:5px;border-radius:50%;background:var(--rest);clip-path:none;}
+.chart-legend .lg-note{color:var(--dimmer);letter-spacing:.1em;margin-left:auto;}
+.chart.blind .chart-body,.chart.blind .chart-legend{visibility:hidden;}
 .chart.blind::after{
   content:"display muted — listen only";
   position:absolute;inset:37px 0 0;display:flex;align-items:center;justify-content:center;
@@ -252,7 +262,7 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
       <span id="chartStatus">idle</span>
     </div>
     <div class="chart-body" id="chartBody"></div>
-    <div class="playhead" id="playhead" style="display:none"></div>
+    <div class="chart-legend" id="chartLegend"></div>
   </section>
 
   <div class="transport">
@@ -481,6 +491,7 @@ function scheduleBeat(t, spb){
     if(beatInBar > 3){
       beatInBar = 0; phase = "play";
       playStart = t + spb; bar = 0; curK = 0; phraseBar = 0;
+      chartStatus.textContent = "playing";
     }
     return true;
   }
@@ -492,7 +503,7 @@ function scheduleBeat(t, spb){
     if(S.mode === "phrase"){
       const prog = elapsed/S.duration;
       const pos = phraseBar % S.phrase;
-      if(pos === 0){ curK = kAt(prog); markPlan(prog); }
+      if(pos === 0){ curK = kAt(prog); }
       barAudible = barClicks(pos, curK, S.phrase);
       phraseBar++;
     }
@@ -539,7 +550,6 @@ function startEngine(){
   if(!rafID)   rafID   = requestAnimationFrame(paint);
   goBtn.textContent = "Stop";
   goBtn.classList.add("running");
-  playhead.style.display = "block";
   applyBlind();
 }
 
@@ -614,7 +624,6 @@ function stopSession(complete){
   releaseWake();
   goBtn.textContent = "Start";
   goBtn.classList.remove("running");
-  playhead.style.display = "none";
   chart.classList.remove("blind");
   chartStatus.textContent = complete ? "session complete" : "idle";
   barOut.textContent = "—";
@@ -656,11 +665,6 @@ function paint(){
   if(phase === "play"){
     const remain = Math.max(0, S.duration - (now - playStart));
     timeOut.textContent = fmt(remain);
-    const prog = Math.min(1, Math.max(0, (now - playStart)/S.duration));
-    playhead.style.left = (prog*100) + "%";
-    chartStatus.textContent = S.mode === "phrase"
-      ? (curK ? curK + " of every " + S.phrase + " bars" : "playing")
-      : Math.round(densityAt(prog)*100) + "% of clicks";
   } else if(phase === "rest"){
     timeOut.textContent = "rest " + Math.max(0, Math.ceil(restEndsAt - now)) + "s";
   } else if(phase === "countin"){
@@ -687,9 +691,15 @@ function drawChart(){
     track.appendChild(lbl);
     wrap.appendChild(track);
     chartBody.appendChild(wrap);
+    chartLegend.style.display = "none";
     return;
   }
   chartTitle.textContent = "Dropout plan";
+  chartLegend.style.display = "flex";
+  chartLegend.innerHTML =
+    '<span><i class="sw"></i>bar clicks</span>' +
+    '<span><i class="sw off"></i>bar silent</span>' +
+    '<span class="lg-note">' + PLAN_COLS + ' stages sampled across the round \u00b7 a preview, not a timeline</span>';
   for(let i=0; i<PLAN_COLS; i++){
     const prog = (i + 0.5)/PLAN_COLS;
     const k = kAt(prog);
@@ -710,12 +720,6 @@ function drawChart(){
     cell.appendChild(lab);
     chartBody.appendChild(cell);
   }
-}
-
-function markPlan(prog){
-  const i = Math.min(PLAN_COLS-1, Math.max(0, Math.floor(prog*PLAN_COLS)));
-  document.querySelectorAll(".stage-cell").forEach(c =>
-    c.classList.toggle("active", +c.dataset.i === i));
 }
 
 function applyBlind(){
@@ -741,8 +745,8 @@ function releaseWake(){ try{ wakeLock && wakeLock.release(); }catch(e){} wakeLoc
 const $ = id => document.getElementById(id);
 const bpmDisplay=$("bpmDisplay"), bpmUnit=$("bpmUnit"), roundOut=$("roundOut"),
       timeOut=$("timeOut"), barOut=$("barOut"), rowBar=$("rowBar"), rowTime=$("rowTime"),
-      chart=$("chart"), chartBody=$("chartBody"), chartTitle=$("chartTitle"),
-      chartStatus=$("chartStatus"), playhead=$("playhead"), goBtn=$("goBtn");
+      chart=$("chart"), chartBody=$("chartBody"), chartTitle=$("chartTitle"), chartLegend=$("chartLegend"),
+      chartStatus=$("chartStatus"), goBtn=$("goBtn");
 
 function slider(id, key, fmtFn, valId){
   const el = $(id), out = $(valId);
