@@ -7,12 +7,18 @@ across the three apps until the renderer is factored out.
 ## Structure
 - `CONCEPTS[n].steps()` returns an array of cards `{ p | svg | text, key, shape, sub, instr, opts, flag }`.
 - `state = { scale, key, concept, tier, interval, pattern, i }`. Scale (major / dorian /
-  mixolydian / harmonic minor / phrygian dominant / melodic minor) is selectable; all concept logic reads `SCALE().steps`, `.degrees`,
+  mixolydian / harmonic minor / phrygian dominant / melodic minor / four bebop
+  scales) is selectable; all concept logic reads `SCALE().steps`, `.degrees`,
   `.cycle` and `.shapes` rather than the old MAJOR/DEG globals.
 - Cards render via `svgShape(placement, opts)` (positions) or `svgStrings(key, strings, links)` (horizontal lanes, frets 0–17).
 
 ## Rules encoded
 - **Concepts 1, 2**: key gear moves in 4ths, fingering gear moves through the scale's cycle. Easy dims notes outside root-to-root.
+- **Directions** (bebop scales with asc/desc fingerings): concept 1 uses ascending,
+  concept 2 descending (both tiers), concept 3 alternates by card (the descending card
+  re-places the descending variant at the same root fret), everything else ascending.
+  `variant(id, dir)` / `posId(pos, dir)` map between siblings; non-directional scales
+  pass through unchanged. Validated headlessly per concept.
 - **Extended shapes** (Intermediate and up): all in-key notes within the position window, hollow dots. Fingers assigned by offset: 5-fret spans 1-2-3-4-4, 6-fret spans 1-1-2-3-4-4; book fingers win where a book dot exists. These are computed, not transcribed.
 - **Concept 2 Easy**: hold the starting key's root on the 1st string for six keys; the
   held note's function is computed per key from the scale (R 5 2 6 3 7 in major). Keys

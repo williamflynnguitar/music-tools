@@ -1,6 +1,6 @@
 # Fretboard
 
-Renderer for the movable scale fingerings (JGTH pp. 6–13 so far).
+Renderer for the movable scale fingerings (JGTH pp. 6–21 so far).
 Self-contained `index.html`, no dependencies, no storage.
 
 ## Data model
@@ -16,8 +16,11 @@ Self-contained `index.html`, no dependencies, no storage.
   so Gb harmonic minor displays with sharps.
 - `shapes[id] = { rootString, name, notes: [[string, offset, finger], ...] }` as before;
   `string` 1 (high E) to 6 (low E), `offset` relative to the root on `rootString`.
-  `finger: 0` = no finger printed (renders as a plain dot). Future flags: `open`
-  (placement floor 0 instead of 1) and `dir: "asc"/"desc"` (bebop fingerings).
+  `finger: 0` = no finger printed (renders as a plain dot). Directional (bebop) shapes
+  carry `pos` ("P6") and `dir` ("asc"/"desc"); ids are pos + a/d ("P6a"), and the
+  scale's `cycle` lists the ascending set. `passing` on a scale = index into `steps`
+  of the added bebop passing tone; those dots render as diamonds, as the book prints
+  them. `open` (placement floor 0 instead of 1) remains reserved.
 - Roots are derived from pitch, not stored. `SHAPES`/`MAJOR` remain as aliases to
   `SCALES.major` for the other decks.
 - Transcribed: major (p. 7), dorian and mixolydian (p. 9), harmonic and melodic minor
@@ -30,6 +33,17 @@ Self-contained `index.html`, no dependencies, no storage.
   root sits in each window, not from printed fingers — confirm them when authoring.
   One book quirk: the nut-position diagram prints its 6th-string G filled and the Ab
   beside it open; roots derive from pitch here, so it renders correctly anyway.
+- The four bebop scales (intro/application pages 14/16/18/20, shapes 15/17/19/21):
+  major, mixolydian, phrygian dominant, melodic minor bebop — 8-note steps/degrees.
+  Major, mixolydian and melodic minor bebop have separate ascending and descending
+  fingerings per position (several pairs are printed identical; both are stored).
+  Phrygian dominant bebop breaks the pattern: p. 19 is one dots-only set (no fingers,
+  no directions), printed in G like its parent, and the book draws its passing tones
+  round while the fingered pages use diamonds. The #5/b6 label is stored as "#5";
+  the intro pages of phrygian dominant bebop and melodic minor bebop misprint one
+  step name each — degrees rows and diagrams (both verified) settle the step sets.
+  Spelling falls back to a plain enharmonic name where letter-derived spelling would
+  need a double accidental (e.g. #5 of B is written G, not F##).
 
 ## Placement
 `place(scaleId, shapeId, key)` puts the root at its fret on the root string, then shifts
@@ -50,5 +64,4 @@ notes as `[[string, offset, finger], ...]` JSON to the clipboard and to the data
 for pasting into the shared block. Intended for transcribing new book pages.
 
 ## Not yet transcribed
-The four bebop scales (ascending and descending fingerings), half-whole diminished
-(pp. 14–23).
+Half-whole diminished (pp. 22–23).
