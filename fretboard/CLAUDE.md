@@ -44,5 +44,5 @@ notes as `[[string, offset, finger], ...]` JSON to the clipboard and to the data
 for pasting into the shared block. Intended for transcribing new book pages.
 
 ## Not yet transcribed
-Phrygian dominant (p. 13, dots only — no fingers), the four bebop scales (ascending
-and descending fingerings), half-whole diminished (pp. 12–23).
+The four bebop scales (ascending and descending fingerings), half-whole diminished
+(pp. 14–23).
