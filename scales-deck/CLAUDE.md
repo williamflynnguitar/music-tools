@@ -13,7 +13,7 @@ across the three apps until the renderer is factored out.
 - Cards render via `svgShape(placement, opts)` (positions) or `svgStrings(key, strings, links)` (horizontal lanes, frets 0–17).
 
 ## Rules encoded
-- **Concepts 1, 2**: key gear moves in 4ths, fingering gear moves through the scale's cycle. Easy dims notes outside root-to-root.
+- **Concepts 1, 2**: key gear moves in 4ths, fingering gear moves through the scale's cycle. Easy = from the lowest root to the top of the position (only the notes below that root are dimmed); Intermediate adds the notes below the root.
 - **Directions** (bebop scales with asc/desc fingerings): concept 1 uses ascending,
   concept 2 descending (both tiers), concept 3 alternates by card (the descending card
   re-places the descending variant at the same root fret), everything else ascending.

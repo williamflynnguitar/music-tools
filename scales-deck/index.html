@@ -375,8 +375,6 @@ const TXT = {
   adv2: () => `Play the fingering through the pattern <em>${state.pattern}</em> (e.g. 1231 2342 3453…).`,
 };
 const belowLowestRoot = p => { const lr = p.dots.filter(d => d.root).sort((a,b) => b.string - a.string || a.fret - b.fret)[0]; return d => d.string > lr.string || (d.string === lr.string && d.fret < lr.fret); };
-const aboveHighestRoot = p => { const hr = p.dots.filter(d => d.root).sort((a,b) => a.string - b.string || b.fret - a.fret)[0]; return d => d.string < hr.string || (d.string === hr.string && d.fret > hr.fret); };
-const rootToRoot = p => { const a = belowLowestRoot(p), b = aboveHighestRoot(p); return d => a(d) || b(d); };
 
 function keysFrom(k) { const i = KEYS.indexOf(k); return KEYS.map((_, j) => KEYS[(i + j) % 12]); }
 const tierText = t => t.startsWith("Advanced 1") ? TXT.adv1() : t.startsWith("Advanced 2") ? TXT.adv2() : "";
@@ -388,8 +386,8 @@ const CONCEPTS = [
      const easy = state.tier === "Easy", ext = !easy;
      return keysFrom(state.key).map((k, i) => { const c = SCALE().cycle, id = c[i % c.length], p = place(id, k);
        return { p, key: k, shape: id, sub: `Step ${i+1} of 12 · ${i ? "one notch clockwise on both gears" : "begin with " + c[0]}`,
-         opts: { ext, dim: easy ? rootToRoot(p) : () => false },
-         instr: easy ? `Play root to root, ascending. Each key moves one notch in 4ths; each fingering moves one notch in the cycle. Notice you stay in the same position.` : ext && state.tier === "Intermediate" ? `Play the entire shape, including the notes below the root (hollow dots).` : tierText(state.tier) }; }); } },
+         opts: { ext, dim: easy ? belowLowestRoot(p) : () => false },
+         instr: easy ? `Play from the lowest root to the top of the position, ascending. Each key moves one notch in 4ths; each fingering moves one notch in the cycle. Notice you stay in the same position.` : ext && state.tier === "Intermediate" ? `Play the entire shape, including the notes below the root (hollow dots).` : tierText(state.tier) }; }); } },
  { n: 2, name: "Descending 2-octave positions, around the cycle", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
      const easy = state.tier === "Easy";
