@@ -85,6 +85,10 @@
       <legend>Fingering</legend>
       <div class="fingerings" id="fingerings"></div>
     </fieldset>
+    <fieldset id="fsVariants" hidden>
+      <legend>Variant</legend>
+      <div class="modes" id="variants"></div>
+    </fieldset>
     <fieldset>
       <legend>Show</legend>
       <div class="modes" id="modes"></div>
@@ -124,6 +128,9 @@ const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],
    spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
    passing = index into steps of the added bebop passing tone (rendered as a diamond);
    shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   a shape may carry named fingering variants: notes (labelled variantName) is the
+   default, variants = { name: full notes list }; the apps remember the chosen
+   variant per shape for the session, in memory only;
    shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
    open (placement floor 0, not 1). */
 const SCALES = {
@@ -131,7 +138,8 @@ const SCALES = {
     apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
     cycle:["P6","P5","M6","M5","I6","I5"],
     shapes:{
-      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6:{rootString:6,name:"Pinky 6",variantName:"B on 4th string",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]],
+        variants:{"B on 3rd string":[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,2],[3,-1,4],[4,-3,1],[4,-1,3],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]}},
       P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
       M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
       M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
@@ -290,13 +298,14 @@ function rootFret(key, string) {
 }
 function place(scaleId, shapeId, key) {
   const sc = SCALES[scaleId], s = sc.shapes[shapeId], names = noteNames(key, scaleId);
+  const notes = activeNotes(sc, shapeId);
   let rf = rootFret(key, s.rootString);
   const floor = s.open ? 0 : 1;                    // open-position shapes may sit on the nut
-  const lo = () => rf + Math.min(...s.notes.map(n => n[1]));
-  const hi = () => rf + Math.max(...s.notes.map(n => n[1]));
+  const lo = () => rf + Math.min(...notes.map(n => n[1]));
+  const hi = () => rf + Math.max(...notes.map(n => n[1]));
   if (lo() < floor) rf += 12;                      // keep off the nut, as the book does
   if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
-  const dots = s.notes.map(([str, off, fin], i) => {
+  const dots = notes.map(([str, off, fin], i) => {
     const fret = rf + off;
     const pc = (OPEN[str] + fret) % 12;
     const deg = sc.steps.indexOf((pc - PC[key] + 12) % 12);
@@ -350,15 +359,21 @@ function figure(p, mode, editing) {
   const bad = p.dots.filter(d => d.degree < 0);
   const check = bad.length ? `${bad.length} note(s) outside ${p.key} ${sc.name.toLowerCase()}` : "";
   const dir = shape.dir ? ` · ${shape.dir === "asc" ? "ascending" : "descending"}` : "";
+  const vn = shape.variants ? ` · ${state.variants[vKey(p.id)] || shape.variantName || "default"}` : "";
   return `<figure>
-    <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}</span></figcaption>
+    <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}${vn}</span></figcaption>
     ${draw(p, mode, editing)}
     <p class="check">${check}</p>
   </figure>`;
 }
 
 /* ---------- state + ui ---------- */
-const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", edit: false };
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", edit: false, variants: {} };
+const vKey = id => state.scale + ":" + id;
+function activeNotes(sc, id) {                       // the chosen variant's notes, default otherwise
+  const sh = sc.shapes[id], v = state.variants[vKey(id)];
+  return (sh.variants && v && sh.variants[v]) || sh.notes;
+}
 const cyc = () => SCALES[state.scale].cycle;
 
 function seg(containerId, items, current, onPick) {
@@ -382,6 +397,16 @@ function render() {
       state.fingering, f => { state.fingering = f; render(); });
   seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
       .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
+
+  const cur = sc.shapes[state.fingering];
+  const fsV = document.getElementById("fsVariants");
+  fsV.hidden = !(cur && cur.variants);
+  if (cur && cur.variants) {
+    seg("variants",
+        [{ id: "", label: cur.variantName || "default" }, ...Object.keys(cur.variants).map(n => ({ id: n, label: n }))],
+        state.variants[vKey(state.fingering)] || "",
+        v => { if (v) state.variants[vKey(state.fingering)] = v; else delete state.variants[vKey(state.fingering)]; render(); });
+  }
 
   document.getElementById("apply").innerHTML =
     `${sc.pages} · application <b>${sc.apply.chords}</b>` +
@@ -431,16 +456,17 @@ document.getElementById("diagrams").addEventListener("click", e => {
   if (!state.edit) return;
   const c = e.target.closest ? e.target.closest("circle[data-i]") : null;
   if (!c) return;
-  const notes = SCALES[state.scale].shapes[c.dataset.shape].notes;
+  const notes = activeNotes(SCALES[state.scale], c.dataset.shape);
   const n = notes[+c.dataset.i];
   n[2] = n[2] === 4 ? 0 : n[2] + 1;                // 1 → 2 → 3 → 4 → none → 1
   render();
 });
 document.getElementById("copy").addEventListener("click", () => {
   if (state.fingering === "all") return;
-  const notes = SCALES[state.scale].shapes[state.fingering].notes;
+  const notes = activeNotes(SCALES[state.scale], state.fingering);
   const json = "[" + notes.map(n => `[${n[0]},${n[1]},${n[2]}]`).join(",") + "]";
-  document.getElementById("data").textContent = `${state.scale} ${state.fingering} notes:\n${json}`;
+  const vn = state.variants[vKey(state.fingering)];
+  document.getElementById("data").textContent = `${state.scale} ${state.fingering}${vn ? " (" + vn + ")" : ""} notes:\n${json}`;
   document.querySelector("details").open = true;
   if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
 });

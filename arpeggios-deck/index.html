@@ -179,6 +179,9 @@ const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],
    spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
    passing = index into steps of the added bebop passing tone (rendered as a diamond);
    shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   a shape may carry named fingering variants: notes (labelled variantName) is the
+   default, variants = { name: full notes list }; the apps remember the chosen
+   variant per shape for the session, in memory only;
    shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
    open (placement floor 0, not 1). */
 const SCALES = {
@@ -186,7 +189,8 @@ const SCALES = {
     apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
     cycle:["P6","P5","M6","M5","I6","I5"],
     shapes:{
-      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6:{rootString:6,name:"Pinky 6",variantName:"B on 4th string",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]],
+        variants:{"B on 3rd string":[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,2],[3,-1,4],[4,-3,1],[4,-1,3],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]}},
       P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
       M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
       M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},

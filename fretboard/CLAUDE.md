@@ -16,7 +16,13 @@ Self-contained `index.html`, no dependencies, no storage.
   so Gb harmonic minor displays with sharps.
 - `shapes[id] = { rootString, name, notes: [[string, offset, finger], ...] }` as before;
   `string` 1 (high E) to 6 (low E), `offset` relative to the root on `rootString`.
-  `finger: 0` = no finger printed (renders as a plain dot). Directional (bebop) shapes
+  `finger: 0` = no finger printed (renders as a plain dot). A shape may carry named
+  fingering variants: `notes` (labelled `variantName`) is the default and
+  `variants = { name: full notes list }` holds alternates — currently major P6,
+  "B on 4th string" (default) vs "B on 3rd string". Both apps show a toggle when the
+  shape at hand has variants and remember the choice per shape for the session, in
+  memory only; validation and the deck's extended-shape computation cover every
+  variant. Directional (bebop) shapes
   carry `pos` ("P6") and `dir` ("asc"/"desc"); ids are pos + a/d ("P6a"), and the
   scale's `cycle` lists the ascending set. `passing` on a scale = index into `steps`
   of the added bebop passing tone; those dots render as diamonds, as the book prints
