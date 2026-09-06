@@ -63,6 +63,17 @@ the first fret space with a tick. When the window reaches fret 1 the nut is draw
 instead of a label (as the book does for dorian M5). Roots brass, other notes bone,
 finger numbers in mono. Modes: fingers / degrees / notes / blank.
 
+## Whole-neck view
+"Whole neck" in the fingering picker draws every placement of the scale's cycle on one
+neck, frets 0–17, book orientation. Each placement is a translucent band over its fret
+window (overlaps shade darker; identical windows stack, both labelled); all scale notes
+draw as dots on top, roots brass, ring weight = how many positions contain the note
+(unclaimed notes, e.g. open strings, render faint). Clicking a position label or band
+isolates that placement; clicking again clears. The selected fingering variant is
+respected. Directional (bebop) scales show the ascending set. A position that genuinely
+cannot fit frets 1–17 is omitted — A major bebop I5a (spans 12–18) is the one case,
+and the validator distinguishes "doesn't fit" from "missing".
+
 ## Edit fingers mode
 "Edit fingers" makes dots clickable: each click cycles finger 1 → 2 → 3 → 4 → none.
 Edits mutate the in-memory SCALES data only. "Copy shape" writes the current shape's
