@@ -125,6 +125,28 @@ const SCALES = {
       I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
       I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
     }},
+  harmonic: { name:"Harmonic minor", steps:[0,2,3,5,7,8,11], degrees:["R","2","b3","4","5","b6","7"],
+    apply:{ chords:"C-(\u25b37)", uses:["tonic minor chords"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-1,2],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-4,1],[3,-3,2],[3,-1,4],[3,0,4],[4,-3,1],[4,-2,2],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[1,1,4],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,3],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  melodic: { name:"Melodic minor", steps:[0,2,3,5,7,9,11], degrees:["R","2","b3","4","5","6","7"],
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords","3rd mode: Eb\u25b37(#5) \u00b7 Eb+\u25b37 \u2014 Lydian augmented","4th mode: F7(#11) \u00b7 F9(#11) \u00b7 F13 \u2014 Lydian dominant","6th mode: A\u00f87 \u00b7 A\u00f89 \u2014 Locrian #2","7th mode: B7alt \u2014 altered / dim whole-tone / super Locrian"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
 };
 const SHAPES = SCALES.major.shapes;   // back-compat alias
 const MAJOR  = SCALES.major.steps;    // back-compat alias
@@ -136,14 +158,17 @@ const LPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
 const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0)) % 12 + 12) % 12;
 function noteNames(key, scaleId) {
   const sc = SCALES[scaleId];
-  if (sc.spellFrom == null) {          // spell each degree from its label (future non-modal scales)
-    const li = "CDEFGAB".indexOf(key[0]);
-    return sc.degrees.map((dg, i) => {
+  if (sc.spellFrom == null) {          // spell each degree from its label (non-modal scales)
+    const from = k => sc.degrees.map((dg, i) => {
       const n = dg === "R" ? 1 : parseInt(dg.replace(/[b#]/g, ""), 10);
-      const letter = "CDEFGAB"[(li + n - 1) % 7];
-      let diff = ((PC[key] + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
+      const letter = "CDEFGAB"[("CDEFGAB".indexOf(k[0]) + n - 1) % 7];
+      let diff = ((pcOf(k) + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
       return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
     });
+    const ENH = { Db:"C#", Eb:"D#", Gb:"F#", Ab:"G#", Bb:"A#" };   // avoid double flats in minor keys
+    let names = from(key);
+    if (ENH[key] && names.some(x => x.length > 2)) names = from(ENH[key]);
+    return names;
   }
   const parent = KEYS.find(k => PC[k] === (PC[key] + sc.spellFrom) % 12);
   const names = SPELL[parent];

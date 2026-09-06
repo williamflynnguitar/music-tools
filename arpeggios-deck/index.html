@@ -213,6 +213,28 @@ const SCALES = {
       I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
       I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
     }},
+  harmonic: { name:"Harmonic minor", steps:[0,2,3,5,7,8,11], degrees:["R","2","b3","4","5","b6","7"],
+    apply:{ chords:"C-(\u25b37)", uses:["tonic minor chords"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-1,2],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-4,1],[3,-3,2],[3,-1,4],[3,0,4],[4,-3,1],[4,-2,2],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[1,1,4],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,3],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  melodic: { name:"Melodic minor", steps:[0,2,3,5,7,9,11], degrees:["R","2","b3","4","5","6","7"],
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords","3rd mode: Eb\u25b37(#5) \u00b7 Eb+\u25b37 \u2014 Lydian augmented","4th mode: F7(#11) \u00b7 F9(#11) \u00b7 F13 \u2014 Lydian dominant","6th mode: A\u00f87 \u00b7 A\u00f89 \u2014 Locrian #2","7th mode: B7alt \u2014 altered / dim whole-tone / super Locrian"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
 };
 const SHAPES = SCALES.major.shapes;   // back-compat alias
 const MAJOR  = SCALES.major.steps;    // back-compat alias
@@ -275,11 +297,12 @@ function placeArp(oct, q, sh, key, rootName, pc, minRoot = 1) {
   const dots = chordDots(key, rootName, pc, q, sh, rf);
   return { oct, q, sh, key, rootName, pc, rootFret: rf, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
 }
-function scalePlace(id, key) {
-  let rf = ((PC[key] - OPEN[SHAPES[id].rootString]) % 12 + 12) % 12;
-  const lo = () => rf + Math.min(...SHAPES[id].notes.map(n => n[1])), hi = () => rf + Math.max(...SHAPES[id].notes.map(n => n[1]));
-  if (lo() < 1) rf += 12; if (hi() > 19 && lo() - 12 >= 1) rf -= 12;
-  const dots = SHAPES[id].notes.map(([s, off, f]) => ({ string: s, fret: rf + off, finger: f, root: (OPEN[s] + rf + off) % 12 === PC[key] }));
+function scalePlace(id, key, ton) {                     // ton: TONAL id === SCALES id
+  const sh = SCALES[ton].shapes[id], floor = sh.open ? 0 : 1;
+  let rf = ((PC[key] - OPEN[sh.rootString]) % 12 + 12) % 12;
+  const lo = () => rf + Math.min(...sh.notes.map(n => n[1])), hi = () => rf + Math.max(...sh.notes.map(n => n[1]));
+  if (lo() < floor) rf += 12; if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
+  const dots = sh.notes.map(([s, off, f]) => ({ string: s, fret: rf + off, finger: f, root: (OPEN[s] + rf + off) % 12 === PC[key] }));
   return { id, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
 }
 
@@ -345,9 +368,9 @@ const APPROACHES = [
      const top = out[out.length - 1].p, oct = placeArp(state.oct, chords[0].q, pickShape(state.oct, chords[0].q, state.rs, state.finger).sh, state.key, chords[0].root, chords[0].pc, top.rootFret);
      if (oct.maxFret <= NECK_TOP + 2) out.push({ p: oct, sub: `${chords[0].roman} · ${chords[0].root}${QUAL[chords[0].q].sym} · octave`, instr: `Back to the tonic an octave up.` });
      return out; } },
- { name: "VDA · vertical diatonic", uses: ["octaves","scale"],
+ { name: "VDA · vertical diatonic", uses: ["tonality","octaves","scale"],
    steps() {
-     const sc = scalePlace(state.scale, state.key), chords = diatonic(state.key, "major");
+     const sc = scalePlace(state.scale, state.key, state.ton), chords = diatonic(state.key, state.ton);
      const lo = sc.minFret - 1, hi = sc.maxFret + 1;
      return chords.map(c => {
        const cands = [];
@@ -359,9 +382,9 @@ const APPROACHES = [
          cands.push({ p: { oct: state.oct, q: c.q, sh, key: state.key, rootName: c.root, pc: c.pc, rootFret: rf, dots, minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) }, score: inside * 10 + onScale, out: total - inside });
        }
        const best = cands.sort((a, b) => b.score - a.score)[0];
-       return { p: best.p, under: sc.dots, sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · ${shapeName(best.p.sh, ARP[state.oct][c.q])} · inside ${SHAPES[state.scale].name}`,
+       return { p: best.p, under: sc.dots, sub: `${c.roman} · ${c.root}${QUAL[c.q].sym} · ${shapeName(best.p.sh, ARP[state.oct][c.q])} · inside ${SCALES[state.ton].shapes[state.scale].name}`,
          flag: best.out ? `${best.out} note${best.out > 1 ? "s" : ""} step outside the scale position; the book allows this` : "",
-         instr: `Stay inside the ${SHAPES[state.scale].name} position of ${state.key} major (the hollow outline) and find the ${c.root}${QUAL[c.q].sym} arpeggio there (Ex. 4). Fingering choices follow proximity to the scale shape.` }; }); } },
+         instr: `Stay inside the ${SCALES[state.ton].shapes[state.scale].name} position of ${state.key} ${TONAL[state.ton].name} (the hollow outline) and find the ${c.root}${QUAL[c.q].sym} arpeggio there (Ex. 4). Fingering choices follow proximity to the scale shape.` }; }); } },
 ];
 
 /* ---------- ui ---------- */
