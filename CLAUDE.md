@@ -31,11 +31,13 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
 
 ## Shared data
 
-`SHAPES` (six major fingerings) is currently duplicated in fretboard,
-scales-deck and arpeggios-deck. Keep the three copies identical. Factoring the
-renderer and data into a shared file is the next structural change; the "no
-build step" rule can be kept with a concatenation script or by inlining at
-commit time.
+The `SCALES` registry (per-scale steps, degree labels, applications, fingering
+shapes; major, dorian and mixolydian so far) is duplicated in fretboard,
+scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
+Keep the three copies byte-identical — `SHAPES` and `MAJOR` are aliases into
+`SCALES.major` for older code. Factoring the renderer and data into a shared
+file is the next structural change; the "no build step" rule can be kept with
+a concatenation script or by inlining at commit time.
 
 ## Audio
 

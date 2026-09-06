@@ -28,6 +28,7 @@
 
   fieldset { border: 0; padding: 0; margin: 0 0 22px; }
   legend { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-bottom: 8px; padding: 0; }
+  .scales { display: grid; grid-template-columns: 1fr; gap: 4px; }
   .keys { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
   .fingerings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
@@ -42,6 +43,9 @@
   button.wide { grid-column: 1 / -1; }
   button.ghost { background: transparent; border-color: var(--petrol-2); }
   button.ghost:hover { background: var(--petrol); }
+  button:disabled { opacity: .4; cursor: default; }
+  .apply { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 8px 0 0; line-height: 1.6; }
+  .apply b { color: var(--bone); font-weight: 400; }
 
   .diagrams { display: grid; gap: 22px; }
   .diagrams.grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
@@ -51,6 +55,7 @@
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
+  .editing circle[data-i] { cursor: pointer; }
 
   .cycle { margin-top: 6px; font-size: 14px; color: var(--bone-dim); }
   .cycle code { font-family: var(--mono); color: var(--bone); font-size: 13px; }
@@ -62,11 +67,16 @@
 </head>
 <body>
 
-<h1>Fretboard <small>JGTH · major scale · six fingerings</small></h1>
-<p class="lede">The six movable major-scale fingerings from page 7, stored as data and drawn in the book's orientation: strings run left to right, 1st string on top, roots in brass. Every dot is checked against the key as it's drawn.</p>
+<h1>Fretboard <small>JGTH · movable scale fingerings</small></h1>
+<p class="lede">The movable scale fingerings from the book, stored as data and drawn in its orientation: strings run left to right, 1st string on top, roots in brass. Every dot is checked against the key as it's drawn.</p>
 
 <div class="layout">
   <aside>
+    <fieldset>
+      <legend>Scale</legend>
+      <div class="scales" id="scales"></div>
+      <p class="apply" id="apply"></p>
+    </fieldset>
     <fieldset>
       <legend>Key (in 4ths)</legend>
       <div class="keys" id="keys"></div>
@@ -84,6 +94,14 @@
       <button class="ghost wide" id="step">Next in cycle</button>
       <p class="cycle" id="cycleHint"></p>
     </fieldset>
+    <fieldset>
+      <legend>Transcribe</legend>
+      <div class="modes">
+        <button id="edit">Edit fingers</button>
+        <button id="copy">Copy shape</button>
+      </div>
+      <p class="cycle" id="editHint"></p>
+    </fieldset>
   </aside>
 
   <main class="diagrams" id="diagrams"></main>
@@ -95,104 +113,117 @@
 </details>
 
 <script>
-/* ---------- data model ----------
-   Each shape is a list of [string, offset, finger].
-   string: 1 (high E) … 6 (low E)
-   offset: frets relative to the root on the shape's root string
-   finger: 1–4 as printed in the book
-   Roots are not stored; they are derived from pitch, so any note
-   that is a root will render as one, even where the book prints it filled.
-*/
-const SHAPES = {
-  P6: { rootString: 6, name: "Pinky 6", notes: [
-    [1,-3,1],[1,-1,3],[1,0,4],
-    [2,-3,1],[2,-2,2],[2,0,4],
-    [3,-3,1],[3,-1,3],
-    [4,-3,1],[4,-1,3],[4,1,4],
-    [5,-3,1],[5,-1,3],[5,0,4],
-    [6,0,4] ]},
-  P5: { rootString: 5, name: "Pinky 5", notes: [
-    [1,-3,1],[1,-2,2],[1,0,4],
-    [2,-3,1],[2,-2,2],[2,0,4],
-    [3,-3,1],[3,-1,3],
-    [4,-3,1],[4,-1,3],[4,0,4],
-    [5,0,4] ]},
-  M6: { rootString: 6, name: "Middle 6", notes: [
-    [1,-1,1],[1,0,2],
-    [2,0,2],[2,2,4],
-    [3,-1,1],[3,1,3],[3,2,4],
-    [4,-1,1],[4,1,3],[4,2,4],
-    [5,-1,1],[5,0,2],[5,2,4],
-    [6,0,2],[6,2,4] ]},
-  M5: { rootString: 5, name: "Middle 5", notes: [
-    [1,0,1],[1,2,3],
-    [2,0,1],[2,2,3],[2,3,4],
-    [3,-1,1],[3,1,3],[3,2,4],
-    [4,-1,1],[4,0,2],[4,2,4],
-    [5,0,2],[5,2,4] ]},
-  I6: { rootString: 6, name: "Index 6", notes: [
-    [1,2,1],[1,4,3],
-    [2,2,1],[2,4,3],[2,5,4],
-    [3,1,1],[3,2,2],[3,4,4],
-    [4,1,1],[4,2,2],[4,4,4],
-    [5,0,1],[5,2,2],[5,4,4],
-    [6,0,1],[6,2,2],[6,4,4] ]},
-  I5: { rootString: 5, name: "Index 5", notes: [
-    [1,2,1],[1,4,3],[1,5,4],
-    [2,2,1],[2,3,2],[2,5,4],
-    [3,1,1],[3,2,2],[3,4,4],
-    [4,0,1],[4,2,2],[4,4,4],
-    [5,0,1],[5,2,2],[5,4,4] ]},
-};
-const CYCLE = ["P6","P5","M6","M5","I6","I5"];           // p. 61, cycle of fingerings
+/* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
 const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
-const PC    = { C:0, Db:1, D:2, Eb:3, E:4, F:5, Gb:6, G:7, Ab:8, A:9, Bb:10, B:11 };
-const OPEN  = { 1:4, 2:11, 3:7, 4:2, 5:9, 6:4 };        // open-string pitch classes
-const MAJOR = [0,2,4,5,7,9,11];
-const DEGREE = ["R","2","3","4","5","6","7"];
-const SPELL = {
-  C:["C","D","E","F","G","A","B"], F:["F","G","A","Bb","C","D","E"], Bb:["Bb","C","D","Eb","F","G","A"],
-  Eb:["Eb","F","G","Ab","Bb","C","D"], Ab:["Ab","Bb","C","Db","Eb","F","G"], Db:["Db","Eb","F","Gb","Ab","Bb","C"],
-  Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"], B:["B","C#","D#","E","F#","G#","A#"], E:["E","F#","G#","A","B","C#","D#"],
-  A:["A","B","C#","D","E","F#","G#"], D:["D","E","F#","G","A","B","C#"], G:["G","A","B","C","D","E","F#"],
+const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};                             // open-string pitch classes
+const CYCLE = ["P6","P5","M6","M5","I6","I5"];                        // p. 61, cycle of fingerings
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+/* SCALES[id]: steps/degrees are parallel arrays (length 8 for the bebop scales later);
+   apply is the application line from the scale's intro page, verbatim as printed (in C);
+   spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
+   shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   future shape flags: open (placement floor 0, not 1), dir "asc"/"desc" (bebop fingerings). */
+const SCALES = {
+  major: { name:"Major", steps:[0,2,4,5,7,9,11], degrees:["R","2","3","4","5","6","7"], spellFrom:0,
+    apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  dorian: { name:"Dorian", steps:[0,2,3,5,7,9,10], degrees:["R","2","b3","4","5","6","b7"], spellFrom:10,
+    apply:{ chords:"C-7 · F7", uses:["ii chords in major keys","V7 chords in major keys","iv chords in minor keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  mixolydian: { name:"Mixolydian", steps:[0,2,4,5,7,9,10], degrees:["R","2","3","4","5","6","b7"], spellFrom:5,
+    apply:{ chords:"C7 · C9 · C7(sus4) · G-7", uses:["unaltered dominant chords","ii chords in major keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
 };
+const SHAPES = SCALES.major.shapes;   // back-compat alias
+const MAJOR  = SCALES.major.steps;    // back-compat alias
+/* ===== end shared scale data ===== */
+
+/* ---------- note spelling ---------- */
+const LPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0)) % 12 + 12) % 12;
+function noteNames(key, scaleId) {
+  const sc = SCALES[scaleId];
+  if (sc.spellFrom == null) {          // spell each degree from its label (future non-modal scales)
+    const li = "CDEFGAB".indexOf(key[0]);
+    return sc.degrees.map((dg, i) => {
+      const n = dg === "R" ? 1 : parseInt(dg.replace(/[b#]/g, ""), 10);
+      const letter = "CDEFGAB"[(li + n - 1) % 7];
+      let diff = ((PC[key] + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
+      return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
+    });
+  }
+  const parent = KEYS.find(k => PC[k] === (PC[key] + sc.spellFrom) % 12);
+  const names = SPELL[parent];
+  const i0 = names.findIndex(n => pcOf(n) === PC[key]);
+  return names.map((_, j) => names[(i0 + j) % names.length]);
+}
 
 /* ---------- placement ---------- */
 function rootFret(key, string) {
   return (PC[key] - OPEN[string] + 12) % 12;
 }
-function place(shapeId, key) {
-  const s = SHAPES[shapeId];
+function place(scaleId, shapeId, key) {
+  const sc = SCALES[scaleId], s = sc.shapes[shapeId], names = noteNames(key, scaleId);
   let rf = rootFret(key, s.rootString);
+  const floor = s.open ? 0 : 1;                    // open-position shapes may sit on the nut
   const lo = () => rf + Math.min(...s.notes.map(n => n[1]));
   const hi = () => rf + Math.max(...s.notes.map(n => n[1]));
-  if (lo() < 1) rf += 12;            // keep off the nut, as the book does
-  if (hi() > 19 && lo() - 12 >= 1) rf -= 12;
-  const dots = s.notes.map(([str, off, fin]) => {
+  if (lo() < floor) rf += 12;                      // keep off the nut, as the book does
+  if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
+  const dots = s.notes.map(([str, off, fin], i) => {
     const fret = rf + off;
     const pc = (OPEN[str] + fret) % 12;
-    const deg = MAJOR.indexOf((pc - PC[key] + 12) % 12);
-    return { string: str, fret, finger: fin, pc, degree: deg, root: deg === 0,
-             note: deg >= 0 ? SPELL[key][deg] : "?" };
+    const deg = sc.steps.indexOf((pc - PC[key] + 12) % 12);
+    return { i, string: str, fret, finger: fin, pc, degree: deg, root: deg === 0,
+             note: deg >= 0 ? names[deg] : "?" };
   });
-  return { id: shapeId, key, rootFret: rf, dots,
+  return { id: shapeId, scale: scaleId, key, rootFret: rf, dots,
            minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
 }
 
 /* ---------- renderer ---------- */
-function draw(p, mode) {
+function draw(p, mode, editing) {
+  const sc = SCALES[p.scale], shape = sc.shapes[p.id];
   const span = p.maxFret - p.minFret + 1;
   const cellW = 54, cellH = 30, padL = 16, padT = 48, padR = 16, padB = 18;
   const W = padL + span * cellW + padR, H = padT + 5 * cellH + padB;
   const x = f => padL + (f - p.minFret + 0.5) * cellW;
   const y = s => padT + (s - 1) * cellH;
-  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} major, ${SHAPES[p.id].name}">`;
-  const fx0 = x(p.minFret);
-  out += `<text x="${fx0}" y="${padT - 30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${p.minFret}fr</text>`;
-  out += `<line x1="${fx0}" y1="${padT - 26}" x2="${fx0}" y2="${padT - 17}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} ${sc.name}, ${shape.name}">`;
+  const nutCol = 1 - p.minFret;                    // grid column index where the nut sits, if visible
+  if (nutCol < 0 || nutCol > 1) {                  // no nut in view: label the first fret space
+    const fx0 = x(p.minFret);
+    out += `<text x="${fx0}" y="${padT - 30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${p.minFret}fr</text>`;
+    out += `<line x1="${fx0}" y1="${padT - 26}" x2="${fx0}" y2="${padT - 17}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  }
   for (let f = 0; f <= span; f++) {
-    const fx = padL + f * cellW;
-    out += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f === 0 || f === span ? 2.5 : 1}" opacity=".7"/>`;
+    const fx = padL + f * cellW, nut = f === nutCol;
+    out += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut ? 'var(--bone)' : 'var(--bone-dim)'}" stroke-width="${nut ? 6 : f === 0 || f === span ? 2.5 : 1}" opacity="${nut ? .9 : .7}"/>`;
   }
   for (let s = 1; s <= 6; s++) {
     out += `<line x1="${padL}" y1="${y(s)}" x2="${padL + span * cellW}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.35}" opacity=".7"/>`;
@@ -200,29 +231,34 @@ function draw(p, mode) {
   for (const d of p.dots) {
     const cx = x(d.fret), cy = y(d.string), r = 11.5;
     const fill = d.root ? "var(--brass)" : "var(--bone)";
-    out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
-    const label = mode === "fingers" ? d.finger : mode === "degrees" ? DEGREE[d.degree] : mode === "notes" ? d.note : "";
+    const attrs = editing ? ` data-i="${d.i}" data-shape="${p.id}"` : "";
+    out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"${attrs}/>`;
+    const label = (mode === "fingers" || editing) ? (d.finger || "") : mode === "degrees" ? sc.degrees[d.degree] : mode === "notes" ? d.note : "";
     if (label !== "") {
       const fs = String(label).length > 1 ? 10.5 : 12.5;
-      out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="var(--ink)" text-anchor="middle">${label}</text>`;
+      out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${label}</text>`;
     }
+    if (editing) out += `<circle cx="${cx}" cy="${cy}" r="15" fill="transparent" data-i="${d.i}" data-shape="${p.id}"/>`;
   }
   return out + `</svg>`;
 }
-function figure(p, mode) {
+function figure(p, mode, editing) {
+  const sc = SCALES[p.scale], shape = sc.shapes[p.id];
   const bad = p.dots.filter(d => d.degree < 0);
-  const check = bad.length ? `${bad.length} note(s) outside ${p.key} major` : "";
+  const check = bad.length ? `${bad.length} note(s) outside ${p.key} ${sc.name.toLowerCase()}` : "";
+  const dir = shape.dir ? ` · ${shape.dir === "asc" ? "ascending" : "descending"}` : "";
   return `<figure>
-    <figcaption><b>${p.key} major</b><span>${p.id} · ${SHAPES[p.id].name}</span></figcaption>
-    ${draw(p, mode)}
+    <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}</span></figcaption>
+    ${draw(p, mode, editing)}
     <p class="check">${check}</p>
   </figure>`;
 }
 
 /* ---------- state + ui ---------- */
-const state = { key: "C", fingering: "I6", mode: "fingers" };
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", edit: false };
+const cyc = () => SCALES[state.scale].cycle;
 
-function seg(containerId, items, current, onPick, extra) {
+function seg(containerId, items, current, onPick) {
   const el = document.getElementById(containerId);
   el.innerHTML = "";
   for (const it of items) {
@@ -235,36 +271,75 @@ function seg(containerId, items, current, onPick, extra) {
   }
 }
 function render() {
+  const sc = SCALES[state.scale];
+  if (!sc.shapes[state.fingering] && state.fingering !== "all") state.fingering = cyc()[0];
+  seg("scales", Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; render(); });
   seg("keys", KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; render(); });
-  seg("fingerings", [...CYCLE.map(f => ({ id: f, label: f })), { id: "all", label: "All six", wide: true }],
+  seg("fingerings", [...cyc().map(f => ({ id: f, label: f })), { id: "all", label: "All", wide: true }],
       state.fingering, f => { state.fingering = f; render(); });
   seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
       .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
 
+  document.getElementById("apply").innerHTML =
+    `${sc.pages} · application <b>${sc.apply.chords}</b>` +
+    (sc.apply.uses.length ? `<br>${sc.apply.uses.join("<br>")}` : "") +
+    `<br>(as printed, in C)`;
+
   const main = document.getElementById("diagrams");
-  const ids = state.fingering === "all" ? CYCLE : [state.fingering];
+  const ids = state.fingering === "all" ? cyc() : [state.fingering];
   main.classList.toggle("grid", ids.length > 1);
-  const placed = ids.map(id => place(id, state.key));
-  main.innerHTML = placed.map(p => figure(p, state.mode)).join("");
+  main.classList.toggle("editing", state.edit);
+  const placed = ids.map(id => place(state.scale, id, state.key));
+  main.innerHTML = placed.map(p => figure(p, state.mode, state.edit)).join("");
 
   const hint = document.getElementById("cycleHint");
   if (state.fingering === "all") {
     hint.innerHTML = `Pick one fingering to step around the cycle.`;
   } else {
-    const nf = CYCLE[(CYCLE.indexOf(state.fingering) + 1) % 6];
+    const c = cyc();
+    const nf = c[(c.indexOf(state.fingering) + 1) % c.length];
     const nk = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
     hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, same position.`;
   }
+
+  const editBtn = document.getElementById("edit");
+  editBtn.setAttribute("aria-pressed", String(state.edit));
+  document.getElementById("copy").disabled = state.fingering === "all";
+  document.getElementById("editHint").textContent = state.edit
+    ? "Click a dot: finger 1 → 2 → 3 → 4 → none. Edits live in memory only until copied."
+    : "";
+
   document.getElementById("data").textContent = JSON.stringify(
-    placed.map(p => ({ id: p.id, key: p.key, rootString: SHAPES[p.id].rootString, rootFret: p.rootFret,
-      dots: p.dots.map(d => ({ s: d.string, f: d.fret, finger: d.finger, note: d.note, deg: DEGREE[d.degree] })) })),
+    placed.map(p => ({ scale: p.scale, id: p.id, key: p.key, rootString: sc.shapes[p.id].rootString, rootFret: p.rootFret,
+      dots: p.dots.map(d => ({ s: d.string, f: d.fret, finger: d.finger, note: d.note, deg: d.degree >= 0 ? sc.degrees[d.degree] : "?" })) })),
     null, 1).replace(/\n\s+("s")/g, ' $1').replace(/,\n\s+("f"|"finger"|"note"|"deg")/g, ', $1').replace(/\n\s+}/g, ' }');
 }
 document.getElementById("step").addEventListener("click", () => {
   if (state.fingering === "all") return;
-  state.fingering = CYCLE[(CYCLE.indexOf(state.fingering) + 1) % 6];
+  const c = cyc();
+  state.fingering = c[(c.indexOf(state.fingering) + 1) % c.length];
   state.key = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
   render();
+});
+
+/* ---------- edit fingers + copy ---------- */
+document.getElementById("edit").addEventListener("click", () => { state.edit = !state.edit; render(); });
+document.getElementById("diagrams").addEventListener("click", e => {
+  if (!state.edit) return;
+  const c = e.target.closest ? e.target.closest("circle[data-i]") : null;
+  if (!c) return;
+  const notes = SCALES[state.scale].shapes[c.dataset.shape].notes;
+  const n = notes[+c.dataset.i];
+  n[2] = n[2] === 4 ? 0 : n[2] + 1;                // 1 → 2 → 3 → 4 → none → 1
+  render();
+});
+document.getElementById("copy").addEventListener("click", () => {
+  if (state.fingering === "all") return;
+  const notes = SCALES[state.scale].shapes[state.fingering].notes;
+  const json = "[" + notes.map(n => `[${n[0]},${n[1]},${n[2]}]`).join(",") + "]";
+  document.getElementById("data").textContent = `${state.scale} ${state.fingering} notes:\n${json}`;
+  document.querySelector("details").open = true;
+  if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
 });
 render();
 </script>

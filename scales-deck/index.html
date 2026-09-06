@@ -63,6 +63,7 @@
 
 <div class="layout">
   <aside>
+    <fieldset><legend>Scale</legend><div class="keys" id="scales" style="grid-template-columns:repeat(3,1fr)"></div></fieldset>
     <fieldset><legend>Key (in 4ths)</legend><div class="keys" id="keys"></div></fieldset>
     <fieldset><legend>Concept</legend><div class="concepts" id="concepts"></div></fieldset>
     <fieldset><legend>Tier</legend><div class="tiers" id="tiers"></div>
@@ -79,29 +80,85 @@
 </div>
 
 <script>
-/* ---------- shared data (identical to fretboard/index.html) ---------- */
-const SHAPES = {
-  P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
-  P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
-  M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
-  M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
-  I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
-  I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
-};
-const CYCLE = ["P6","P5","M6","M5","I6","I5"];
-const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"];
+/* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
 const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
-const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};
-const MAJOR = [0,2,4,5,7,9,11];
-const DEG   = ["R","2","3","4","5","6","7"];
+const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};                             // open-string pitch classes
+const CYCLE = ["P6","P5","M6","M5","I6","I5"];                        // p. 61, cycle of fingerings
 const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+/* SCALES[id]: steps/degrees are parallel arrays (length 8 for the bebop scales later);
+   apply is the application line from the scale's intro page, verbatim as printed (in C);
+   spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
+   shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   future shape flags: open (placement floor 0, not 1), dir "asc"/"desc" (bebop fingerings). */
+const SCALES = {
+  major: { name:"Major", steps:[0,2,4,5,7,9,11], degrees:["R","2","3","4","5","6","7"], spellFrom:0,
+    apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  dorian: { name:"Dorian", steps:[0,2,3,5,7,9,10], degrees:["R","2","b3","4","5","6","b7"], spellFrom:10,
+    apply:{ chords:"C-7 · F7", uses:["ii chords in major keys","V7 chords in major keys","iv chords in minor keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  mixolydian: { name:"Mixolydian", steps:[0,2,4,5,7,9,10], degrees:["R","2","3","4","5","6","b7"], spellFrom:5,
+    apply:{ chords:"C7 · C9 · C7(sus4) · G-7", uses:["unaltered dominant chords","ii chords in major keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+};
+const SHAPES = SCALES.major.shapes;   // back-compat alias
+const MAJOR  = SCALES.major.steps;    // back-compat alias
+/* ===== end shared scale data ===== */
+/* ---------- per-scale helpers ---------- */
+const SCALE = () => SCALES[state.scale];
+const SH = () => SCALE().shapes;
+const LPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0)) % 12 + 12) % 12;
+function noteNames(key, scaleId) {
+  const sc = SCALES[scaleId];
+  if (sc.spellFrom == null) {          // spell each degree from its label (future non-modal scales)
+    const li = "CDEFGAB".indexOf(key[0]);
+    return sc.degrees.map((dg, i) => {
+      const n = dg === "R" ? 1 : parseInt(dg.replace(/[b#]/g, ""), 10);
+      const letter = "CDEFGAB"[(li + n - 1) % 7];
+      let diff = ((PC[key] + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
+      return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
+    });
+  }
+  const parent = KEYS.find(k => PC[k] === (PC[key] + sc.spellFrom) % 12);
+  const names = SPELL[parent];
+  const i0 = names.findIndex(n => pcOf(n) === PC[key]);
+  return names.map((_, j) => names[(i0 + j) % names.length]);
+}
+const nnCache = {};
+const nn = key => { const c = state.scale + ":" + key; return nnCache[c] || (nnCache[c] = noteNames(key, state.scale)); };
 const NECK_TOP = 17;
 
 /* ---------- pitch helpers ---------- */
-const degreeOf = (key, pc) => MAJOR.indexOf((pc - PC[key] + 12) % 12);
+const degreeOf = (key, pc) => SCALE().steps.indexOf((pc - PC[key] + 12) % 12);
 function mkDot(key, string, fret, finger, extra) {
   const pc = (OPEN[string] + fret) % 12, d = degreeOf(key, pc);
-  return Object.assign({ string, fret, finger, degree: d, root: d === 0, note: d >= 0 ? SPELL[key][d] : "?" }, extra);
+  return Object.assign({ string, fret, finger, degree: d, root: d === 0, note: d >= 0 ? nn(key)[d] : "?" }, extra);
 }
 function scaleOnString(key, string, lo, hi) {
   const out = [];
@@ -116,7 +173,7 @@ function fingerFor(fret, lo, span) {
 /* ---------- placements ---------- */
 function rootFret(key, string) { return (PC[key] - OPEN[string] + 12) % 12; }
 function placeAt(id, key, rf) {
-  const s = SHAPES[id];
+  const s = SH()[id];
   const dots = s.notes.map(([str, off, fin]) => mkDot(key, str, rf + off, fin));
   const minFret = Math.min(...dots.map(d => d.fret)), maxFret = Math.max(...dots.map(d => d.fret));
   const span = maxFret - minFret + 1;
@@ -127,20 +184,21 @@ function placeAt(id, key, rf) {
   return { id, key, rootFret: rf, dots, extended, minFret, maxFret };
 }
 function place(id, key) {                        // the book's default position
-  let rf = rootFret(key, SHAPES[id].rootString);
-  const lo = () => rf + Math.min(...SHAPES[id].notes.map(n => n[1]));
-  const hi = () => rf + Math.max(...SHAPES[id].notes.map(n => n[1]));
-  if (lo() < 1) rf += 12;
-  if (hi() > 19 && lo() - 12 >= 1) rf -= 12;
+  const s = SH()[id], floor = s.open ? 0 : 1;
+  let rf = rootFret(key, s.rootString);
+  const lo = () => rf + Math.min(...s.notes.map(n => n[1]));
+  const hi = () => rf + Math.max(...s.notes.map(n => n[1]));
+  if (lo() < floor) rf += 12;
+  if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
   return placeAt(id, key, rf);
 }
 function allPlacements(key) {                    // every position of every shape on the neck
   const out = [];
-  for (const id of CYCLE) {
-    const base = rootFret(key, SHAPES[id].rootString);
+  for (const id of SCALE().cycle) {
+    const base = rootFret(key, SH()[id].rootString);
     for (const rf of [base - 12, base, base + 12, base + 24]) {
       const p = placeAt(id, key, rf);
-      if (p.minFret >= 1 && p.maxFret <= NECK_TOP + 2) out.push(p);
+      if (p.minFret >= (SH()[id].open ? 0 : 1) && p.maxFret <= NECK_TOP + 2) out.push(p);
     }
   }
   return out.sort((a, b) => a.minFret - b.minFret || a.maxFret - b.maxFret);
@@ -160,9 +218,10 @@ function svgShape(p, opts = {}) {
   const span = maxF - minF + 1, cw = 54, ch = 30, padL = 16, padT = 48, padR = 16, padB = 18;
   const W = padL + span * cw + padR, H = padT + 5 * ch + padB;
   const x = f => padL + (f - minF + 0.5) * cw, y = s => padT + (s - 1) * ch;
-  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} major, ${SHAPES[p.id].name}">`;
-  o += `<text x="${x(minF)}" y="${padT-30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${minF}fr</text><line x1="${x(minF)}" y1="${padT-26}" x2="${x(minF)}" y2="${padT-17}" stroke="var(--brass)" stroke-width="1.5"/>`;
-  for (let f = 0; f <= span; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f===0||f===span?2.5:1}" opacity=".7"/>`; }
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} ${SCALE().name}, ${SH()[p.id].name}">`;
+  const nutCol = 1 - minF;
+  if (nutCol < 0 || nutCol > 1) o += `<text x="${x(minF)}" y="${padT-30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${minF}fr</text><line x1="${x(minF)}" y1="${padT-26}" x2="${x(minF)}" y2="${padT-17}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  for (let f = 0; f <= span; f++) { const fx = padL + f * cw, nut = f === nutCol; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut?'var(--bone)':'var(--bone-dim)'}" stroke-width="${nut?6:f===0||f===span?2.5:1}" opacity="${nut?.9:.7}"/>`; }
   for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${padL+span*cw}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8+s*0.35}" opacity=".7"/>`;
   for (const d of all) {
     const cx = x(d.fret), cy = y(d.string), isDim = dim(d);
@@ -170,7 +229,7 @@ function svgShape(p, opts = {}) {
     if (d.ext) o += `<circle cx="${cx}" cy="${cy}" r="10.5" fill="var(--petrol)" stroke="${fill}" stroke-width="1.5" opacity="${isDim?.3:1}"/>`;
     else o += `<circle cx="${cx}" cy="${cy}" r="11.5" fill="${fill}" opacity="${isDim?.22:1}"/>`;
     if (ring(d)) o += `<circle cx="${cx}" cy="${cy}" r="16" fill="none" stroke="var(--brass)" stroke-width="2"/>`;
-    const lab = opts.labels === "notes" ? d.note : opts.labels === "degrees" ? DEG[d.degree] : showFingers ? d.finger : "";
+    const lab = opts.labels === "notes" ? d.note : opts.labels === "degrees" ? SCALE().degrees[d.degree] : showFingers ? (d.finger || "") : "";
     if (lab !== "" && lab !== 0) o += `<text x="${cx}" y="${cy+4.3}" font-family="var(--mono)" font-size="${String(lab).length>1?10.5:12.5}" font-weight="600" fill="${d.ext?fill:'var(--ink)'}" text-anchor="middle" opacity="${isDim?.4:1}">${lab}</text>`;
   }
   return o + `</svg>`;
@@ -179,7 +238,7 @@ function svgStrings(key, strings, pairs = []) {    // horizontal lanes, frets 0�
   const cw = 40, ch = 34, padL = 30, padT = 26, padB = 14, span = NECK_TOP + 1;
   const W = padL + span * cw + 16, H = padT + (strings.length - 1) * ch + padB + 12;
   const x = f => padL + (f + 0.5) * cw, y = i => padT + i * ch;
-  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} major on string${strings.length>1?'s':''} ${strings.join(' and ')}">`;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} ${SCALE().name} on string${strings.length>1?'s':''} ${strings.join(' and ')}">`;
   for (let f = 0; f <= NECK_TOP; f++) {
     o += `<line x1="${padL+f*cw}" y1="${y(0)-12}" x2="${padL+f*cw}" y2="${y(strings.length-1)+12}" stroke="var(--bone-dim)" stroke-width="${f===0?3:1}" opacity=".5"/>`;
     if ([3,5,7,9,12,15,17].includes(f)) o += `<text x="${x(f)}" y="${H-2}" font-family="var(--mono)" font-size="11" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
@@ -215,25 +274,28 @@ const CONCEPTS = [
  { n: 1, name: "2-octave positions, around the cycle", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
      const easy = state.tier === "Easy", ext = !easy;
-     return keysFrom(state.key).map((k, i) => { const id = CYCLE[i % 6], p = place(id, k);
-       return { p, key: k, shape: id, sub: `Step ${i+1} of 12 · ${i ? "one notch clockwise on both gears" : "begin with P6"}`,
+     return keysFrom(state.key).map((k, i) => { const c = SCALE().cycle, id = c[i % c.length], p = place(id, k);
+       return { p, key: k, shape: id, sub: `Step ${i+1} of 12 · ${i ? "one notch clockwise on both gears" : "begin with " + c[0]}`,
          opts: { ext, dim: easy ? rootToRoot(p) : () => false },
          instr: easy ? `Play root to root, ascending. Each key moves one notch in 4ths; each fingering moves one notch in the cycle. Notice you stay in the same position.` : ext && state.tier === "Intermediate" ? `Play the entire shape, including the notes below the root (hollow dots).` : tierText(state.tier) }; }); } },
  { n: 2, name: "Descending 2-octave positions, around the cycle", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
      const easy = state.tier === "Easy";
      let top = rootFret(state.key, 1); if (top < 5) top += 12;
-     const func = ["Root","5th","2nd","6th","3rd","7th"];
      if (easy) {
        let prev = null;
-       return keysFrom(state.key).slice(0, 6).map((k, i) => {
+       const six = keysFrom(state.key).slice(0, 6), inScale = six.filter(k => degreeOf(k, PC[state.key]) >= 0);
+       const skipped = six.length - inScale.length;
+       return inScale.map((k, i) => {
+         const fn = SCALE().degrees[degreeOf(k, PC[state.key])];
          const c = allPlacements(k).filter(p => p.dots.some(d => d.string === 1 && d.fret === top));
          const p = (i === 0 ? c.find(x => x.id === "P6") : null) || nearest(c, prev) || place("P6", k); prev = p;
-         return { p, key: k, shape: p.id, sub: `Step ${i+1} of 6 · start on ${SPELL[state.key][0]} (1st string, ${top}fr), here the ${func[i]}`,
+         return { p, key: k, shape: p.id, sub: `Step ${i+1} of ${inScale.length} · start on ${state.key} (1st string, ${top}fr), here degree ${fn}`,
            opts: { dim: d => d.string < 1, ring: d => d.string === 1 && d.fret === top },
-           instr: `Descend from the ringed note to the root on the 6th string. Keep starting on the same note as the key changes; it becomes the ${func[i]} of ${k}.` }; });
+           flag: skipped ? `${skipped} of 6 keys skipped: the held ${state.key} is not in their ${SCALE().name.toLowerCase()} scale` : "",
+           instr: `Descend from the ringed note to the root on the 6th string. Keep starting on the same note as the key changes; it becomes degree ${fn} of ${k}.` }; });
      }
-     return keysFrom(state.key).map((k, i) => { const id = CYCLE[i % 6], p = place(id, k);
+     return keysFrom(state.key).map((k, i) => { const c = SCALE().cycle, id = c[i % c.length], p = place(id, k);
        const t = p.dots.concat(p.extended).filter(d => d.string === 1).sort((a,b) => b.fret - a.fret)[0];
        return { p, key: k, shape: id, sub: `Step ${i+1} of 12 · cycle of fingerings, descending`, opts: { ext: true, ring: d => d.string === 1 && d.fret === t.fret },
          instr: state.tier === "Intermediate" ? `Descend through the full range of the shape, from the highest note on the 1st string to the lowest note on the 6th.` : tierText(state.tier) }; }); } },
@@ -248,10 +310,10 @@ const CONCEPTS = [
    steps() {
      const key = state.key, easy = state.tier === "Easy";
      let start = easy ? place("I6", key) : allPlacements(key)[0];
-     const out = []; let prevMin = start.minFret;
-     for (let d = 0; d < 8; d++) {
-       const deg = d % 7;
-       let f = (PC[key] + MAJOR[deg] - OPEN[6] + 12) % 12; while (f < prevMin) f += 12;
+     const out = []; let prevMin = start.minFret; const N = SCALE().steps.length;
+     for (let d = 0; d <= N; d++) {
+       const deg = d % N;
+       let f = (PC[key] + SCALE().steps[deg] - OPEN[6] + 12) % 12; while (f < prevMin) f += 12;
        let p, computed = false;
        if (d === 0 && easy) p = start;
        else {
@@ -265,18 +327,18 @@ const CONCEPTS = [
        }
        if (p.maxFret > NECK_TOP + 2) break;
        prevMin = p.minFret;
-       out.push({ p, key, shape: p.id, sub: `Degree ${DEG[deg]} on the 6th string · based in ${SHAPES[p.id].name}`, opts: { ring: x => x.string === 6 && x.fret === f, ext: !easy && !computed },
+       out.push({ p, key, shape: p.id, sub: `Degree ${SCALE().degrees[deg]} on the 6th string · based in ${SH()[p.id].name}`, opts: { ring: x => x.string === 6 && x.fret === f, ext: !easy && !computed },
          instr: (easy ? `Play a 2-octave fingering that begins on the ringed note.` : `Play from the ringed note; the tier also asks you to descend through each of these.`) + ` Visualise which of the six shapes it lives in.`,
-         flag: computed ? "modal fingering computed from the p. 69 rule, not transcribed" : "" });
+         flag: (computed ? "modal fingering computed from the p. 69 rule, not transcribed" : "") + (state.scale !== "major" ? (computed ? "; " : "") + "p. 69 rule extrapolated beyond major" : "") });
      }
      return out; } },
  { n: 5, name: "1-octave positions", tiers: ["Easy","Easy 2","Intermediate 1","Intermediate 2","Advanced 1","Advanced 2"],
    steps() {
-     const upper = p => { const rs = SHAPES[p.id].rootString === 6 ? 4 : 3; const r = p.dots.find(d => d.string === rs && d.root); return d => d.string > rs || (d.string === rs && r && d.fret < r.fret); };
+     const upper = p => { const rs = SH()[p.id].rootString === 6 ? 4 : 3; const r = p.dots.find(d => d.string === rs && d.root); return d => d.string > rs || (d.string === rs && r && d.fret < r.fret); };
      const via = { "Easy": 0, "Easy 2": 1, "Intermediate 1": 2, "Intermediate 2": 3, "Advanced 1": 0, "Advanced 2": 0 }[state.tier];
      const saved = state.tier; state.tier = ["Easy","Easy","Easy","Easy"][via]; const base = CONCEPTS[via].steps(); state.tier = saved;
      return base.map(s => Object.assign({}, s, { opts: { ext: false, dim: upper(s.p), ring: s.opts.ring }, sub: s.sub.replace(/Step/, "1-octave · step"),
-       instr: `Play only the upper octave: start on the ${SHAPES[s.p.id].rootString === 6 ? "4th" : "3rd"} string root and go up. ` + (saved.startsWith("Advanced") ? tierText(saved) : "") })); } },
+       instr: `Play only the upper octave: start on the ${SH()[s.p.id].rootString === 6 ? "4th" : "3rd"} string root and go up. ` + (saved.startsWith("Advanced") ? tierText(saved) : "") })); } },
  { n: 6, name: "Horizontal scales on a single string", tiers: ["Easy","Intermediate / Advanced"],
    steps() { return [1,2,3,4,5,6].map((s, i) => ({ svg: svgStrings(state.key, [s]), key: state.key, shape: `string ${s}`, sub: `String ${s} of 6 · lowest ${state.key} major note first`,
      instr: state.tier === "Easy" ? `Play up and down the scale entirely on this string to around the 12th–15th fret. Shift logically: open space above the index when moving up, below the pinky or ring when moving down.` : `Play ${TXT.int(state.interval)} and the pattern ${state.pattern} along this one string. Large shifts are the point.` })); } },
@@ -286,21 +348,21 @@ const CONCEPTS = [
      const pairs = []; for (let hi = 1; hi + gap <= 6; hi++) pairs.push([hi, hi + gap]);
      return pairs.map((pr, i) => {
        const [hi, lo] = pr, lows = scaleOnString(state.key, lo, 0, NECK_TOP), highs = scaleOnString(state.key, hi, 0, NECK_TOP), links = [];
-       for (const a of lows) { const td = (a.degree + iv - 1) % 7; const b = highs.filter(h => h.degree === td && Math.abs(h.fret - a.fret) <= 4).sort((p, q) => Math.abs(p.fret - a.fret) - Math.abs(q.fret - a.fret))[0]; if (b) links.push([a, b]); }
+       for (const a of lows) { const td = (a.degree + iv - 1) % SCALE().steps.length; const b = highs.filter(h => h.degree === td && Math.abs(h.fret - a.fret) <= 4).sort((p, q) => Math.abs(p.fret - a.fret) - Math.abs(q.fret - a.fret))[0]; if (b) links.push([a, b]); }
        return { svg: svgStrings(state.key, [hi, lo], links), key: state.key, shape: `strings ${hi}/${lo}`, sub: `Pair ${i+1} of ${pairs.length} · diatonic ${TXT.int(iv)}`,
          instr: state.tier === "Easy" ? `Start with the lowest 3rd on this pair and play every diatonic 3rd up the neck.` : state.tier === "Intermediate" ? `Play every diatonic ${TXT.int(iv)} on this pair. See each interval as the skeleton of a triad or 7th chord.` : state.tier === "Advanced 1" ? `Play these ${TXT.int(iv)} melodically rather than harmonically.` : `Fill in the intervals with the pattern ${state.pattern} across the pair.` }; }); } },
  { n: 8, name: "Full range scales", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
      const t = state.tier, key = state.key;
      const items = t === "Easy" ? [`Play the seven original Segovia fingerings.`, `Play fingerings #1 and #2 in every key they are used for.`, `Never spread beyond a 4-fret span; always open real estate above or below the hand as you shift.`]
-       : t === "Intermediate" ? [`As you climb ${key} major, name which of the six shapes you're passing through.`, `Use that to spot your own shifting points.`]
+       : t === "Intermediate" ? [`As you climb ${key} ${SCALE().name.toLowerCase()}, name which of the six shapes you're passing through.`, `Use that to spot your own shifting points.`]
        : t === "Advanced 1" ? [`Play all 12 keys using only Segovia fingerings #2 and #5.`, `Each is a movable 3-octave pattern off the 6th and 5th string.`]
-       : [`Segovia's route is one way up the mountain. Build your own route through ${key} major with logical shifts.`, `Compare it with the shapes you know; keep what makes more sense to you.`];
+       : [`Segovia's route is one way up the mountain. Build your own route through ${key} ${SCALE().name.toLowerCase()} with logical shifts.`, `Compare it with the shapes you know; keep what makes more sense to you.`];
      return items.map((s, i) => ({ text: true, key, shape: "3 octaves", sub: `Step ${i+1} of ${items.length}`, instr: s, flag: "Segovia fingerings are not yet transcribed; this card is text only" })); } },
 ];
 
 /* ---------- state + ui ---------- */
-const state = { key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0 };
+const state = { scale: "major", key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0 };
 let steps = [];
 function seg(el, items, current, onPick, attr) {
   el.innerHTML = "";
@@ -310,6 +372,7 @@ function seg(el, items, current, onPick, attr) {
 function rebuild(resetIndex) {
   const c = CONCEPTS[state.concept];
   if (!c.tiers.includes(state.tier)) state.tier = c.tiers[0];
+  seg(document.getElementById("scales"), Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; rebuild(true); });
   seg(document.getElementById("keys"), KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; rebuild(true); });
   seg(document.getElementById("concepts"), CONCEPTS.map((x, i) => ({ id: i, label: x.name, n: x.n })), state.concept, i => { state.concept = i; rebuild(true); }, true);
   seg(document.getElementById("tiers"), c.tiers.map(t => ({ id: t, label: t })), state.tier, t => { state.tier = t; rebuild(true); });
@@ -324,7 +387,7 @@ function show() {
   const s = steps[state.i], c = CONCEPTS[state.concept], card = document.getElementById("card");
   const visual = s.text ? "" : s.svg ? s.svg : svgShape(s.p, s.opts);
   card.innerHTML = `<header><span class="where">${c.n}. ${c.name} · ${state.tier}</span><span class="where">${state.i+1} / ${steps.length}</span></header>
-    <p class="title"><span class="key">${s.key}</span><span class="name">major</span><span class="shape">${s.shape}</span></p>
+    <p class="title"><span class="key">${s.key}</span><span class="name">${SCALE().name.toLowerCase()}</span><span class="shape">${s.shape}</span></p>
     <p class="sub">${s.sub}</p>${visual}<p class="instr">${s.instr}</p>${s.flag ? `<p class="flag">${s.flag}</p>` : ""}
     ${s.p ? `<div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>book dot</span>${s.opts && s.opts.ext ? `<span><i style="border:1.5px solid var(--bone)"></i>below the root (computed)</span>` : ""}${s.opts && s.opts.ring ? `<span><i style="border:2px solid var(--brass)"></i>start here</span>` : ""}</div>` : ""}`;
   document.getElementById("fill").style.width = `${(state.i + 1) / steps.length * 100}%`;

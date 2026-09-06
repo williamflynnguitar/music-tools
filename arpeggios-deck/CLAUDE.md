@@ -8,7 +8,9 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
 - Qualities: `maj7 m7 dom7 m7b5 dim7 mMaj7 maj7s5`. 1-octave shapes exist on root strings 6, 5, 4, 3 (up to four fingerings each); 2-octave shapes on 6 and 5 (three each). 130 shapes total.
 - Fingering is named by the finger on the root (`rootFinger`) plus root string; duplicates get (a)/(b). ø7 and °7 use a ring-finger shape where the other qualities use middle.
 - Every shape is validated headlessly: all notes are chord tones of the quality. Finger numbers are not machine-checkable; verify against the book.
-- `SHAPES` (major scale positions) is a copy of `../fretboard/index.html`; keep identical.
+- Carries the shared `SCALES` block (see `../fretboard/CLAUDE.md`); keep it byte-identical
+  across the three apps. `SHAPES` is the alias to `SCALES.major.shapes`; VDA still uses
+  major scale positions only.
 
 ## Harmony
 - `TONAL` holds major, harmonic minor, melodic minor step sets. `diatonic(key, ton)` stacks scale thirds and matches the interval set to a quality; note names are spelled letter-by-letter (`spell`).
