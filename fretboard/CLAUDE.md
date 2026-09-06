@@ -5,8 +5,8 @@ Self-contained `index.html`, no dependencies, no storage.
 
 ## Data model
 - `SCALES[id] = { name, steps, degrees, apply, spellFrom, cycle, shapes }` — the shared
-  scale registry, kept byte-identical across fretboard, scales-deck and arpeggios-deck
-  (between the `===== shared scale data =====` markers).
+  scale registry, kept byte-identical across fretboard/index.html, fretboard/edit.html,
+  scales-deck and arpeggios-deck (between the `===== shared scale data =====` markers).
 - `steps`/`degrees` are parallel arrays (length 8 for the bebop scales later).
 - `apply` is the application line from the scale's intro page, verbatim as printed (in C).
 - `spellFrom` = semitones up to the parent major key; note names come from that key's
@@ -65,20 +65,29 @@ finger numbers in mono. Modes: fingers / degrees / notes / blank.
 
 ## Whole-neck view
 "Whole neck" in the fingering picker draws every placement of the scale's cycle on one
-neck, frets 0–17, book orientation. Each placement is a translucent band over its fret
-window (overlaps shade darker; identical windows stack, both labelled); all scale notes
-draw as dots on top, roots brass, ring weight = how many positions contain the note
-(unclaimed notes, e.g. open strings, render faint). Clicking a position label or band
-isolates that placement; clicking again clears. The selected fingering variant is
-respected. Directional (bebop) scales show the ascending set. A position that genuinely
-cannot fit frets 1–17 is omitted — A major bebop I5a (spans 12–18) is the one case,
-and the validator distinguishes "doesn't fit" from "missing".
+neck, frets 0–17, book orientation. Fingerings are color-coded, all dots at full
+opacity: each placement gets a color from a fixed neck-order palette in which
+deutan-warm (coral, green, olive) and deutan-cool (blue, magenta, violet) alternate,
+so neck-adjacent fingerings stay separated under deuteranopia (all adjacent pairs
+dE76 > 37 in a Viénot simulation; L* 64.8–71.5, so no fingering reads heavier).
+Notes shared by two fingerings split diagonally (lower fingering lower-left); three
+or more get equal wedges. Every dot carries its position number in small mono — the
+redundant channel for colorblindness and grayscale. Roots are marked by a heavier
+brass ring (brass is reserved for roots; fills never use it). Scale notes in no
+position render as hollow neutral circles. Board lines stay neutral. A legend lists
+the fingerings with their colors: hovering emphasizes one, clicking isolates it
+(so does clicking its on-board label), clicking again clears. The selected fingering
+variant is respected. Directional (bebop) scales show the ascending set. A position
+that genuinely cannot fit frets 1–17 is omitted — A major bebop I5a (spans 12–18) is
+the one case, and the validator distinguishes "doesn't fit" from "missing".
 
-## Edit fingers mode
-"Edit fingers" makes dots clickable: each click cycles finger 1 → 2 → 3 → 4 → none.
-Edits mutate the in-memory SCALES data only. "Copy shape" writes the current shape's
-notes as `[[string, offset, finger], ...]` JSON to the clipboard and to the data pane,
-for pasting into the shared block. Intended for transcribing new book pages.
+## Authoring page (edit.html)
+The student page (`index.html`) has no editing UI. `edit.html` is the authoring copy —
+the same app plus "Edit fingers" (click a dot: finger 1 → 2 → 3 → 4 → none, mutating
+the in-memory SCALES data), "Copy shape" (the current shape/variant as
+`[[string, offset, finger], ...]` JSON) and the raw shape-data pane. It carries its own
+copy of the shared SCALES block: keep it byte-identical with the other three files.
+Deliberately not linked from the landing page.
 
 ## Not yet transcribed
 Half-whole diminished (pp. 22–23).

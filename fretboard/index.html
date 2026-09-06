@@ -55,8 +55,16 @@
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
-  .editing circle[data-i], .editing polygon[data-i] { cursor: pointer; }
 
+  .necklegend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .necklegend button {
+    font-family: var(--mono); font-size: 11px; color: var(--bone);
+    background: var(--petrol-2); border: 1px solid transparent; border-radius: 4px;
+    padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .necklegend button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .necklegend button[aria-pressed="true"] { border-color: var(--brass); }
+  .necklegend button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
   .cycle { margin-top: 6px; font-size: 14px; color: var(--bone-dim); }
   .cycle code { font-family: var(--mono); color: var(--bone); font-size: 13px; }
 
@@ -98,23 +106,10 @@
       <button class="ghost wide" id="step">Next in cycle</button>
       <p class="cycle" id="cycleHint"></p>
     </fieldset>
-    <fieldset>
-      <legend>Transcribe</legend>
-      <div class="modes">
-        <button id="edit">Edit fingers</button>
-        <button id="copy">Copy shape</button>
-      </div>
-      <p class="cycle" id="editHint"></p>
-    </fieldset>
   </aside>
 
   <main class="diagrams" id="diagrams"></main>
 </div>
-
-<details>
-  <summary>Shape data for the current selection</summary>
-  <pre id="data"></pre>
-</details>
 
 <script>
 /* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
@@ -317,7 +312,7 @@ function place(scaleId, shapeId, key) {
 }
 
 /* ---------- renderer ---------- */
-function draw(p, mode, editing) {
+function draw(p, mode) {
   const sc = SCALES[p.scale], shape = sc.shapes[p.id];
   const span = p.maxFret - p.minFret + 1;
   const cellW = 54, cellH = 30, padL = 16, padT = 48, padR = 16, padB = 18;
@@ -341,20 +336,18 @@ function draw(p, mode, editing) {
   for (const d of p.dots) {
     const cx = x(d.fret), cy = y(d.string), r = 11.5;
     const fill = d.root ? "var(--brass)" : "var(--bone)";
-    const attrs = editing ? ` data-i="${d.i}" data-shape="${p.id}"` : "";
     if (sc.passing != null && d.degree === sc.passing)
-      out += `<polygon points="${cx},${cy - 13} ${cx + 13},${cy} ${cx},${cy + 13} ${cx - 13},${cy}" fill="${fill}"${attrs}/>`;
-    else out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"${attrs}/>`;
-    const label = (mode === "fingers" || editing) ? (d.finger || "") : mode === "degrees" ? sc.degrees[d.degree] : mode === "notes" ? d.note : "";
+      out += `<polygon points="${cx},${cy - 13} ${cx + 13},${cy} ${cx},${cy + 13} ${cx - 13},${cy}" fill="${fill}"/>`;
+    else out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
+    const label = mode === "fingers" ? (d.finger || "") : mode === "degrees" ? sc.degrees[d.degree] : mode === "notes" ? d.note : "";
     if (label !== "") {
       const fs = String(label).length > 1 ? 10.5 : 12.5;
       out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${label}</text>`;
     }
-    if (editing) out += `<circle cx="${cx}" cy="${cy}" r="15" fill="transparent" data-i="${d.i}" data-shape="${p.id}"/>`;
   }
   return out + `</svg>`;
 }
-function figure(p, mode, editing) {
+function figure(p, mode) {
   const sc = SCALES[p.scale], shape = sc.shapes[p.id];
   const bad = p.dots.filter(d => d.degree < 0);
   const check = bad.length ? `${bad.length} note(s) outside ${p.key} ${sc.name.toLowerCase()}` : "";
@@ -362,7 +355,7 @@ function figure(p, mode, editing) {
   const vn = shape.variants ? ` · ${state.variants[vKey(p.id)] || shape.variantName || "default"}` : "";
   return `<figure>
     <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}${vn}</span></figcaption>
-    ${draw(p, mode, editing)}
+    ${draw(p, mode)}
     <p class="check">${check}</p>
   </figure>`;
 }
@@ -385,8 +378,18 @@ function neckPlacements() {                          // every placement of the c
   return out.sort((a, b) => a.lo - b.lo || a.hi - b.hi);
 }
 function drawNeck() {
+  /* Fingering colors, in neck order. Deutan-warm (coral, green, olive) and
+     deutan-cool (blue, magenta, violet) alternate, so fingerings adjacent on
+     the neck stay apart under deuteranopia (all adjacent pairs dE76 > 37 in a
+     Vienot simulation, L* 64.8-71.5). Numbers in the dots are the redundant
+     channel; brass stays reserved for the root ring. */
+  const NECK_COLORS = ["#e8825a", "#4fa8e8", "#5fc46a", "#e07bc0", "#bfae3e", "#a98ef2"];
   const sc = SCALES[state.scale], ps = neckPlacements();
+  ps.forEach((q, i) => { q.n = i + 1; q.color = NECK_COLORS[i % 6]; });
   const sel = ps.some(q => q.key === state.neckSel) ? state.neckSel : null;
+  const hov = !sel && ps.some(q => q.key === state.neckHover) ? state.neckHover : null;
+  const fade = q => sel ? (q.key === sel ? 1 : .12) : hov ? (q.key === hov ? 1 : .3) : 1;
+  const op = v => v < 1 ? ` opacity="${v}"` : "";
   let rows = 1; const lastAtRow = [];                // stagger labels whose windows collide
   for (const q of ps) {
     let r = 0;
@@ -398,41 +401,60 @@ function drawNeck() {
   const W = padL + (NECK_TOP + 1) * cw + padR, H = padT + 5 * ch + padB;
   const x = f => padL + (f + 0.5) * cw, y = s => padT + (s - 1) * ch;
   let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${state.key} ${sc.name}, whole neck">`;
-  for (const q of ps) {                              // translucent bands; overlap shades darker
-    const on = sel === q.key, dim = sel && !on;
-    o += `<rect x="${padL + q.lo * cw}" y="${y(1) - 13}" width="${(q.hi - q.lo + 1) * cw}" height="${5 * ch + 26}" rx="6" fill="var(--bone)" opacity="${on ? .16 : dim ? .02 : .06}"${on ? ' stroke="var(--brass)" stroke-width="1.5"' : ""} data-band="${q.key}" style="cursor:pointer"/>`;
-  }
-  for (let f = 0; f <= NECK_TOP + 1; f++) {
+  for (let f = 0; f <= NECK_TOP + 1; f++) {          // neutral board: lines carry no color
     const fx = padL + f * cw, nut = f === 1;         // boundary between the open column and fret 1
     o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut ? 'var(--bone)' : 'var(--bone-dim)'}" stroke-width="${nut ? 6 : f === 0 || f === NECK_TOP + 1 ? 2.5 : 1}" opacity="${nut ? .9 : .5}"/>`;
     if ([3, 5, 7, 9, 12, 15, 17].includes(f)) o += `<text x="${x(f)}" y="${H - 8}" font-family="var(--mono)" font-size="11" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
   }
   for (let s = 1; s <= 6; s++)
     o += `<line x1="${padL}" y1="${y(s)}" x2="${padL + (NECK_TOP + 1) * cw}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.35}" opacity=".7"/>`;
-  for (const q of ps) {                              // position labels; click to isolate
-    const on = sel === q.key, dim = sel && !on;
-    o += `<text x="${x(q.lo)}" y="${12 + q.row * 17}" font-family="var(--mono)" font-size="12" font-weight="600" fill="var(--brass)" opacity="${dim ? .3 : 1}" text-anchor="middle" data-band="${q.key}" style="cursor:pointer">${q.id}</text>`;
-  }
-  const selCells = sel ? ps.find(q => q.key === sel).cells : null;
+  for (const q of ps)                                // window-start labels in the fingering's color
+    o += `<text x="${x(q.lo)}" y="${12 + q.row * 17}" font-family="var(--mono)" font-size="12" font-weight="600" fill="${q.color}"${op(fade(q))} text-anchor="middle" data-band="${q.key}" style="cursor:pointer">${q.n} ${q.id}</text>`;
+  const R = 9, K = R * 0.7071;                       // dot radius; K = diagonal half-chord
   for (let str = 1; str <= 6; str++) for (let f = 0; f <= NECK_TOP; f++) {
     const deg = sc.steps.indexOf(((OPEN[str] + f) % 12 - PC[state.key] + 12) % 12);
     if (deg < 0) continue;
-    const count = ps.reduce((n, q) => n + q.cells.has(str + ":" + f), 0);
-    const op = selCells ? (selCells.has(str + ":" + f) ? 1 : .15) : count ? 1 : .35;
-    const fill = deg === 0 ? "var(--brass)" : "var(--bone)";
-    o += `<circle cx="${x(f)}" cy="${y(str)}" r="6.5" fill="${fill}" opacity="${op}"/>`;
-    if (count > 1) o += `<circle cx="${x(f)}" cy="${y(str)}" r="9" fill="none" stroke="${fill}" stroke-width="${0.8 + (count - 1) * 1.2}" opacity="${op * .8}"/>`;
+    const cx = x(f), cy = y(str);
+    const owners = ps.filter(q => q.cells.has(str + ":" + f));
+    if (!owners.length) {                            // in scale but in no position: hollow, full opacity
+      o += `<circle cx="${cx}" cy="${cy}" r="${R - 2}" fill="none" stroke="var(--bone-dim)" stroke-width="1.2"/>`;
+      continue;
+    }
+    if (owners.length === 1) {
+      o += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${owners[0].color}"${op(fade(owners[0]))}/>`;
+    } else if (owners.length === 2) {                // diagonal split: lower fingering lower-left
+      const A = `${(cx - K).toFixed(2)} ${(cy - K).toFixed(2)}`, B = `${(cx + K).toFixed(2)} ${(cy + K).toFixed(2)}`;
+      o += `<path d="M ${A} A ${R} ${R} 0 0 0 ${B} Z" fill="${owners[0].color}"${op(fade(owners[0]))}/>`;
+      o += `<path d="M ${A} A ${R} ${R} 0 0 1 ${B} Z" fill="${owners[1].color}"${op(fade(owners[1]))}/>`;
+    } else {                                         // 3+: equal wedges, neck order, from the NW
+      const a0 = -3 * Math.PI / 4, step = 2 * Math.PI / owners.length;
+      owners.forEach((q, i) => {
+        const p1 = [cx + R * Math.cos(a0 + i * step), cy + R * Math.sin(a0 + i * step)];
+        const p2 = [cx + R * Math.cos(a0 + (i + 1) * step), cy + R * Math.sin(a0 + (i + 1) * step)];
+        o += `<path d="M ${cx} ${cy} L ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} A ${R} ${R} 0 0 1 ${p2[0].toFixed(2)} ${p2[1].toFixed(2)} Z" fill="${q.color}"${op(fade(q))}/>`;
+      });
+    }
+    const maxFade = Math.max(...owners.map(fade));
+    if (deg === 0)                                   // root: brass ring, a non-color channel
+      o += `<circle cx="${cx}" cy="${cy}" r="${R + 2.5}" fill="none" stroke="var(--brass)" stroke-width="2.5"${op(maxFade)}/>`;
+    const num = (t, tx, ty, fs) => `<text x="${tx}" y="${ty}" font-family="var(--mono)" font-size="${fs}" font-weight="700" fill="var(--ink)" text-anchor="middle"${op(maxFade)}>${t}</text>`;
+    if (owners.length === 1) o += num(owners[0].n, cx, cy + 3.2, 9);
+    else if (owners.length === 2) o += num(owners[0].n, cx - 3.6, cy + 6.6, 7.5) + num(owners[1].n, cx + 3.6, cy - 0.8, 7.5);
+    else o += num(owners.map(q => q.n).join(""), cx, cy + 2.6, 6.5);
   }
   o += `</svg>`;
+  const legend = `<div class="necklegend">` + ps.map(q =>
+    `<button data-leg="${q.key}" aria-pressed="${sel === q.key}"${op(fade(q))}><i style="background:${q.color}"></i>${q.n} ${q.id} · ${q.lo}fr</button>`).join("") + `</div>`;
   return `<figure>
     <figcaption><b>${state.key} ${sc.name.toLowerCase()}</b><span>whole neck · ${ps.length} positions${sel ? " · " + sel.split("@")[0] + " isolated" : ""}</span></figcaption>
     ${o}
+    ${legend}
     <p class="check"></p>
   </figure>`;
 }
 
 /* ---------- state + ui ---------- */
-const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", edit: false, variants: {}, neckSel: null };
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", variants: {}, neckSel: null, neckHover: null };
 const vKey = id => state.scale + ":" + id;
 function activeNotes(sc, id) {                       // the chosen variant's notes, default otherwise
   const sh = sc.shapes[id], v = state.variants[vKey(id)];
@@ -482,9 +504,8 @@ function render() {
   const neck = state.fingering === "neck";
   const ids = neck ? [] : state.fingering === "all" ? Object.keys(sc.shapes) : [state.fingering];
   main.classList.toggle("grid", ids.length > 1);
-  main.classList.toggle("editing", state.edit && !neck);
   const placed = ids.map(id => place(state.scale, id, state.key));
-  main.innerHTML = neck ? drawNeck() : placed.map(p => figure(p, state.mode, state.edit)).join("");
+  main.innerHTML = neck ? drawNeck() : placed.map(p => figure(p, state.mode)).join("");
 
   const hint = document.getElementById("cycleHint");
   if (state.fingering === "neck") {
@@ -497,25 +518,6 @@ function render() {
     const nk = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
     hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, same position.`;
   }
-
-  const editBtn = document.getElementById("edit");
-  editBtn.setAttribute("aria-pressed", String(state.edit));
-  editBtn.disabled = state.fingering === "neck";
-  document.getElementById("copy").disabled = state.fingering === "all" || state.fingering === "neck";
-  document.getElementById("editHint").textContent = state.edit
-    ? "Click a dot: finger 1 → 2 → 3 → 4 → none. Edits live in memory only until copied."
-    : "";
-
-  if (neck) {
-    document.getElementById("data").textContent = JSON.stringify(
-      neckPlacements().map(q => ({ id: q.id, rootFret: q.rf, window: q.lo + "-" + q.hi })), null, 1)
-      .replace(/\n\s+("id"|"rootFret"|"window")/g, ' $1').replace(/\n\s+}/g, ' }');
-    return;
-  }
-  document.getElementById("data").textContent = JSON.stringify(
-    placed.map(p => ({ scale: p.scale, id: p.id, key: p.key, rootString: sc.shapes[p.id].rootString, rootFret: p.rootFret,
-      dots: p.dots.map(d => ({ s: d.string, f: d.fret, finger: d.finger, note: d.note, deg: d.degree >= 0 ? sc.degrees[d.degree] : "?" })) })),
-    null, 1).replace(/\n\s+("s")/g, ' $1').replace(/,\n\s+("f"|"finger"|"note"|"deg")/g, ', $1').replace(/\n\s+}/g, ' }');
 }
 document.getElementById("step").addEventListener("click", () => {
   if (state.fingering === "all" || state.fingering === "neck") return;
@@ -525,31 +527,25 @@ document.getElementById("step").addEventListener("click", () => {
   render();
 });
 
-/* ---------- edit fingers + copy ---------- */
-document.getElementById("edit").addEventListener("click", () => { state.edit = !state.edit; render(); });
+/* ---------- neck interactions ---------- */
 document.getElementById("diagrams").addEventListener("click", e => {
-  const band = e.target.closest ? e.target.closest("[data-band]") : null;
+  const band = e.target.closest ? e.target.closest("[data-band],[data-leg]") : null;
   if (band && state.fingering === "neck") {
-    state.neckSel = state.neckSel === band.dataset.band ? null : band.dataset.band;
+    const k = band.dataset.band || band.dataset.leg;
+    state.neckSel = state.neckSel === k ? null : k;
+    state.neckHover = null;
     render();
-    return;
   }
-  if (!state.edit) return;
-  const c = e.target.closest ? e.target.closest("circle[data-i]") : null;
-  if (!c) return;
-  const notes = activeNotes(SCALES[state.scale], c.dataset.shape);
-  const n = notes[+c.dataset.i];
-  n[2] = n[2] === 4 ? 0 : n[2] + 1;                // 1 → 2 → 3 → 4 → none → 1
-  render();
 });
-document.getElementById("copy").addEventListener("click", () => {
-  if (state.fingering === "all") return;
-  const notes = activeNotes(SCALES[state.scale], state.fingering);
-  const json = "[" + notes.map(n => `[${n[0]},${n[1]},${n[2]}]`).join(",") + "]";
-  const vn = state.variants[vKey(state.fingering)];
-  document.getElementById("data").textContent = `${state.scale} ${state.fingering}${vn ? " (" + vn + ")" : ""} notes:\n${json}`;
-  document.querySelector("details").open = true;
-  if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
+document.getElementById("diagrams").addEventListener("mouseover", e => {
+  if (state.fingering !== "neck" || state.neckSel) return;
+  const leg = e.target.closest ? e.target.closest("[data-leg]") : null;
+  if (leg && state.neckHover !== leg.dataset.leg) { state.neckHover = leg.dataset.leg; render(); }
+});
+document.getElementById("diagrams").addEventListener("mouseout", e => {
+  if (state.fingering !== "neck" || !state.neckHover) return;
+  const leg = e.target.closest ? e.target.closest("[data-leg]") : null;
+  if (leg && leg.dataset.leg === state.neckHover) { state.neckHover = null; render(); }
 });
 render();
 </script>
