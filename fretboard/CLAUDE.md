@@ -27,10 +27,10 @@ Self-contained `index.html`, no dependencies, no storage.
   (p. 11, applications p. 10) — the same six fingering identities (I/M/P × 6th/5th-string
   root) in all five. The minor scales print several non-root-string roots with their own
   fingers (e.g. harmonic minor I6 roots on fingers 2/4); roots are still derived from pitch.
-- Phrygian dominant (p. 13, applications p. 12): dots only, all fingers 0, to be authored
-  in edit mode. The book prints it in G (V of C minor, matching the applications) and the
-  data stores root-relative offsets as usual. Slot ids (I/M/P) are inferred from where the
-  root sits in each window, not from printed fingers — confirm them when authoring.
+- Phrygian dominant (p. 13, applications p. 12): the book prints dots only, in G (V of
+  C minor, matching the applications); the data stores root-relative offsets as usual.
+  Fingers are William's, authored in edit mode (the book prints none). The root fingers
+  confirm the I/M/P slot ids that were originally inferred from the window positions.
   One book quirk: the nut-position diagram prints its 6th-string G filled and the Ab
   beside it open; roots derive from pitch here, so it renders correctly anyway.
 - The four bebop scales (intro/application pages 14/16/18/20, shapes 15/17/19/21):
