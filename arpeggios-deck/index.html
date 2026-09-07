@@ -58,12 +58,64 @@
   .hint { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 8px; }
   .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
   .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+
+  /* ---------- tabs + full-neck browser (Shapes / Root) ---------- */
+  :root {
+    /* shape color by root string — Shapes tab; ../fretboard/ reuses these for scale patterns */
+    --rs6: #69aed0; --rs5: #83c88e; --rs4: #c29bdb; --rs3: #e28b8b;
+    /* shape color by root finger — Root tab */
+    --fg1: #5fc9bd; --fg2: #d08bc3; --fg3: #a9c96f; --fg4: #8fa3e8;
+  }
+  .tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--petrol-2); }
+  .tabs button { font-family: var(--mono); font-size: 13px; letter-spacing: .1em; background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0; color: var(--bone-dim); padding: 10px 16px; }
+  .tabs button:hover { background: transparent; color: var(--bone); }
+  .tabs button[aria-pressed="true"] { background: transparent; color: var(--brass); border-bottom-color: var(--brass); }
+  .ctrlrow { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+  .ctrlrow fieldset { margin: 0; }
+  .ctrlrow .seggrp { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ctrlrow .seggrp button { padding: 7px 10px; }
+  .layerrow { display: flex; gap: 4px; align-items: center; margin: 0 0 10px; }
+  .layerrow .lab { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-right: 8px; }
+  .neckwrap { overflow-x: auto; background: var(--petrol); border-radius: 6px; padding: 10px 8px 2px; }
+  .neck svg { display: block; min-width: 940px; width: 100%; height: auto; }
+  .neck.hov g.nd { opacity: .25; }
+  .neck.hov g.nd.hl { opacity: 1; }
+  .neck g.nd.hl .w { fill: var(--brass); }
+  .neck g.nd.hl .o { stroke: var(--brass); }
+  .neckmsg { font-family: var(--mono); font-size: 12.5px; color: var(--bone-dim); padding: 30px 18px; margin: 0; }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
+  .cardgrid .card.hlc { box-shadow: inset 0 0 0 1.5px var(--brass); }
+  .cardgrid .grouphead { grid-column: 1 / -1; font-family: var(--mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--brass); margin: 14px 0 0; }
+  .csw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
 </style>
 </head>
 <body>
 <h1>Arpeggios deck <small>Arpeggio Practice · pp. 76–78 · shapes from pp. 25–36</small></h1>
-<p class="lede">Three approaches from the book. Parallel shapes moves one grip around; the two diatonic approaches walk every 7th chord in a key, either from a fixed fingering (HDA) or up every tone of one scale position (VDA).</p>
+<p class="lede">The shape library (pp. 25–36) as a browsable neck — by root finger in Shapes, by clicked position in Root — plus the book's three practice approaches (pp. 76–78) under Practice.</p>
 
+<div class="tabs" role="tablist">
+  <button id="tabShapes" aria-pressed="true">Shapes</button>
+  <button id="tabRoot" aria-pressed="false">Root</button>
+  <button id="tabPractice" aria-pressed="false">Practice</button>
+</div>
+
+<section id="paneShapes">
+  <div class="ctrlrow" id="shapesCtrls"></div>
+  <div class="layerrow" id="layerRow" hidden></div>
+  <div class="neckwrap"><div class="neck" id="shapesNeck"></div></div>
+  <div class="legend" id="shapesLegend"></div>
+  <div class="cardgrid" id="shapesCards"></div>
+</section>
+
+<section id="paneRoot" hidden>
+  <div class="ctrlrow" id="rootCtrls"></div>
+  <p class="hint" id="rootHint"></p>
+  <div class="neckwrap"><div class="neck" id="rootNeck"></div></div>
+  <div class="legend" id="rootLegend"></div>
+  <div class="cardgrid" id="rootCards"></div>
+</section>
+
+<section id="panePractice" hidden>
 <div class="layout">
   <aside>
     <fieldset><legend>Approach</legend><div class="g1" id="approach"></div></fieldset>
@@ -84,6 +136,7 @@
     <p class="hint">← → step · Home restart</p>
   </main>
 </div>
+</section>
 
 <script>
 /* ---------- arpeggio shapes: [string, offset from root fret, finger]; rs = root string ---------- */
@@ -783,7 +836,7 @@ function notationPanel(p) {
   const src = `../notation/svg/arpeggios/${p.oct}-${p.q}-${ARP[p.oct][p.q].indexOf(p.sh)}-${p.rootName.replace("#", "s")}.svg`;
   const BOOK_SYM = { maj7:"Δ7", m7:"-7", dom7:"7", m7b5:"ø7", dim7:"°7", mMaj7:"-Δ7", maj7s5:"Δ7#5", "6":"6", maj:"", min:"-", dim:"°", aug:"+" };
   const opts = { chord: p.rootName + (BOOK_SYM[p.q] ?? QUAL[p.q].sym), beam: 4 };
-  return `<div class="ly" data-src="${src}" data-notes='${JSON.stringify(notes)}' data-opts='${JSON.stringify(opts)}'></div><p class="lynote"><span>staff + TAB in ${p.rootName}, engraved with LilyPond</span><button type="button" id="dlLy">Download .ly</button></p>`;
+  return `<div class="ly" data-src="${src}" data-notes='${JSON.stringify(notes)}' data-opts='${JSON.stringify(opts)}'></div><p class="lynote"><span>staff + TAB in ${p.rootName}, engraved with LilyPond</span><button type="button" class="dlLy">Download .ly</button></p>`;
 }
 function downloadLy(p) {
   const notes = p.dots.filter(d => !d.alt);
@@ -803,7 +856,7 @@ function show() {
     <p class="sub">${s.sub}</p>${svgDots(p.dots, s.under, state.labels, `${p.rootName} ${QUAL[p.q].name}`)}${notationPanel(p)}
     <p class="instr">${s.instr}</p>${s.flag ? `<p class="flag">${s.flag}</p>` : ""}${p.sh.gen ? `<p class="flag">generated fingering (the book has no triad arpeggio pages); check it against your hand</p>` : ""}${bad ? `<p class="flag">${bad} transcribed note${bad>1?"s":""} not in the chord, check the data</p>` : ""}
     <div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>chord tone</span>${p.dots.some(d => d.alt) ? `<span><i style="border:1.5px dashed var(--bone)"></i>alternate (diamond in the book)</span>` : ""}${s.under ? `<span><i style="border:1.2px solid var(--bone-dim)"></i>scale position</span>` : ""}</div>`;
-  const dl = document.getElementById("dlLy"); if (dl) dl.addEventListener("click", () => downloadLy(p));
+  const dl = document.getElementById("card").querySelector(".dlLy"); if (dl) dl.addEventListener("click", () => downloadLy(p));
   hydrateNotation(document.getElementById("card"));
   document.getElementById("fill").style.width = `${(state.i + 1) / steps.length * 100}%`;
   document.getElementById("prev").disabled = state.i === 0;
@@ -812,13 +865,288 @@ function show() {
 document.getElementById("prev").addEventListener("click", () => { if (state.i > 0) { state.i--; show(); } });
 document.getElementById("next").addEventListener("click", () => { if (state.i < steps.length - 1) { state.i++; show(); } });
 document.addEventListener("keydown", e => {
+  if (state.tab !== "practice") return;
   if (e.key === "ArrowRight") document.getElementById("next").click();
   if (e.key === "ArrowLeft") document.getElementById("prev").click();
   if (e.key === "Home") { state.i = 0; show(); }
 });
+/* ================= full-neck browser: Shapes & Root tabs =================
+   Practice above is wrapped, not modified. These tabs read the same ARP data
+   and shared state; per-finger grouping is by rootFinger(sh) — the finger
+   actually on the anchor root — never by a triad override's slot key.
+   Colors: --rs6..--rs3 by root string (Shapes), --fg1..--fg4 by finger (Root). */
+
+const NECK_MAX = 19;
+state.tab = "practice";                 // switchTab() at boot moves to "shapes"
+state.shFinger = 1;
+state.layers = { 1: true, 2: true, 3: true, 4: true };
+state.rootSel = null;
+let shapesDirty = true, rootDirty = true;
+let shapesPs = {}, rootPs = {};         // shape id → placed card data, for Download .ly
+
+const RSCOL = { 6: "var(--rs6)", 5: "var(--rs5)", 4: "var(--rs4)", 3: "var(--rs3)" };
+const FGCOL = { 1: "var(--fg1)", 2: "var(--fg2)", 3: "var(--fg3)", 4: "var(--fg4)" };
+const pcToKey = pc => KEYS.find(k => PC[k] === ((pc % 12) + 12) % 12);
+const shapeId = sh => state.oct + "-" + state.q + "-" + ARP[state.oct][state.q].indexOf(sh);
+const isB = sh => shapeName(sh, ARP[state.oct][state.q]).endsWith("(b)");
+const ordStr = s => (s === 3 ? "3rd" : s + "th") + " string";
+
+/* every root fret on sh.rs in 1..19 that yields the key's pitch class and
+   keeps all of the shape's notes within frets 1..19 (alt notes excluded) */
+function shapePlacements(sh, key) {
+  const out = [], base = ((PC[key] - OPEN[sh.rs]) % 12 + 12) % 12;
+  for (let rf = base; rf <= NECK_MAX; rf += 12) {
+    if (rf < 1) continue;
+    if (sh.n.every(d => rf + d[1] >= 1 && rf + d[1] <= NECK_MAX)) out.push(rf);
+  }
+  return out;
+}
+
+/* ---------- one neck drawing, shared by Shapes (per-finger, All) and Root ----------
+   groups: [{id, color, dashed, dots}] — dots from chordDots, alt filtered out.
+   A position covered by n shapes splits into n wedges (filled) or arc segments
+   (hollow); never stacked or offset. Labels only when unambiguous. */
+function neckSVG(groups, opts = {}) {
+  const cw = 46, ch = 30, padL = 14, padT = 16, padB = 30, r = 10;
+  const W = padL + NECK_MAX * cw + padL, H = padT + 5 * ch + padB;
+  const x = f => padL + (f - 0.5) * cw, y = s => padT + (s - 1) * ch;
+  const dim = new Set(opts.dimStrings || []);
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="full neck, frets 0 to ${NECK_MAX}">`;
+  for (const f of [3, 5, 7, 9, 15, 17]) o += `<circle cx="${x(f)}" cy="${padT + 2.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
+  o += `<circle cx="${x(12)}" cy="${padT + 1.5 * ch}" r="4" fill="var(--petrol-2)"/><circle cx="${x(12)}" cy="${padT + 3.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
+  for (let f = 0; f <= NECK_MAX; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f === 0 ? 4 : 1}" opacity="${f === 0 ? .9 : .45}"/>`; }
+  for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${W - padL}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.3}" opacity="${dim.has(s) ? .2 : .6}"/>`;
+  for (let f = 1; f <= NECK_MAX; f++) o += `<text x="${x(f)}" y="${H - 10}" font-family="var(--mono)" font-size="10.5" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
+  if (opts.clickable) for (const s of opts.clickable) for (let f = 1; f <= NECK_MAX; f++)
+    o += `<rect x="${x(f) - cw / 2}" y="${y(s) - ch / 2}" width="${cw}" height="${ch}" fill="transparent" style="cursor:pointer" data-cs="${s}" data-cf="${f}"/>`;
+  const pos = new Map();
+  groups.forEach(g => g.dots.forEach(d => {
+    const k = d.string + ":" + d.fret;
+    if (!pos.has(k)) pos.set(k, { string: d.string, fret: d.fret, root: d.root, deg: d.deg, note: d.note, entries: [] });
+    const p = pos.get(k);
+    if (!p.entries.some(e => e.id === g.id)) p.entries.push({ id: g.id, color: g.color, dashed: g.dashed, finger: d.finger });
+  }));
+  const pt = (cx, cy, a, rr) => `${(cx + rr * Math.cos(a)).toFixed(2)} ${(cy + rr * Math.sin(a)).toFixed(2)}`;
+  const wedge = (cx, cy, a0, a1, rr) => `M${cx} ${cy} L${pt(cx, cy, a0, rr)} A${rr} ${rr} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(cx, cy, a1, rr)} Z`;
+  const arcseg = (cx, cy, a0, a1, rr) => `M${pt(cx, cy, a0, rr)} A${rr} ${rr} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(cx, cy, a1, rr)}`;
+  for (const p of pos.values()) {
+    const cx = x(p.fret), cy = y(p.string), n = p.entries.length;
+    o += `<g class="nd" data-ids="${p.entries.map(e => e.id).join(" ")}" data-s="${p.string}" data-f="${p.fret}"${p.root ? ' data-root="1"' : ""}>`;
+    if (!p.root && n > 1) o += `<circle cx="${cx}" cy="${cy}" r="${r - 2}" fill="var(--ink)" fill-opacity=".55"/>`;
+    p.entries.forEach((e, i) => {
+      const a0 = -Math.PI / 2 + i * 2 * Math.PI / n, a1 = a0 + 2 * Math.PI / n;
+      if (p.root) {
+        o += n === 1 ? `<circle class="w" cx="${cx}" cy="${cy}" r="${r}" fill="${e.color}"/>`
+                     : `<path class="w" d="${wedge(cx, cy, a0, a1, r)}" fill="${e.color}"/>`;
+        if (e.dashed) o += `<path class="o" d="${arcseg(cx, cy, n === 1 ? -Math.PI / 2 : a0, n === 1 ? Math.PI * 1.499 : a1, r + 2.4)}" fill="none" stroke="${e.color}" stroke-width="1.3" stroke-dasharray="3 2.4"/>`;
+      } else {
+        o += n === 1 ? `<circle class="o" cx="${cx}" cy="${cy}" r="${r - 1}" fill="var(--ink)" fill-opacity=".55" stroke="${e.color}" stroke-width="2"${e.dashed ? ' stroke-dasharray="3 2.4"' : ""}/>`
+                     : `<path class="o" d="${arcseg(cx, cy, a0 + 0.07, a1 - 0.07, r - 1)}" fill="none" stroke="${e.color}" stroke-width="2"${e.dashed ? ' stroke-dasharray="3 2.4"' : ""}/>`;
+      }
+    });
+    const lab = state.labels === "notes" ? p.note : state.labels === "degrees" ? p.deg
+              : (p.entries.every(e => e.finger === p.entries[0].finger) ? p.entries[0].finger : "");
+    if (lab !== "" && lab != null)
+      o += `<text x="${cx}" y="${cy + 3.8}" font-family="var(--mono)" font-size="${String(lab).length > 1 ? 9.5 : 11.5}" font-weight="600" fill="${p.root ? "var(--ink)" : "var(--bone)"}" text-anchor="middle" pointer-events="none">${lab}</text>`;
+    o += `</g>`;
+  }
+  if (opts.selected) o += `<circle cx="${x(opts.selected.fret)}" cy="${y(opts.selected.string)}" r="${r + 4}" fill="none" stroke="var(--brass)" stroke-width="2"/>`;
+  return o + `</svg>`;
+}
+
+/* ---------- shared controls, one instance per tab, all writing to state ---------- */
+function ctrlFs(parent, label) {
+  const f = document.createElement("fieldset");
+  f.innerHTML = `<legend>${label}</legend><div class="seggrp"></div>`;
+  parent.appendChild(f);
+  return f.lastElementChild;
+}
+function buildSharedCtrls(containerId, isShapes) {
+  const c = document.getElementById(containerId); c.innerHTML = "";
+  seg(ctrlFs(c, "Key"), KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; onSharedChange(); });
+  seg(ctrlFs(c, "Chord size"), Object.keys(SIZE).map(z => ({ id: z, label: SIZE[z].name })), state.size, z => { state.size = z; if (!SIZE[z].quals.includes(state.q)) state.q = SIZE[z].quals[0]; onSharedChange(); });
+  seg(ctrlFs(c, "Quality"), SIZE[state.size].quals.map(q => ({ id: q, label: QUAL[q].sym || "maj" })), state.q, q => { state.q = q; onSharedChange(); });
+  seg(ctrlFs(c, "Octaves"), [1, 2].map(o => ({ id: o, label: o + "-oct" })), state.oct, o => { state.oct = o; if (state.rootSel && !rsOptions(o).includes(state.rootSel.string)) state.rootSel = null; onSharedChange(); });
+  seg(ctrlFs(c, "Labels"), [["fingers", "fingers"], ["degrees", "degrees"], ["notes", "notes"]].map(([id, label]) => ({ id, label })), state.labels, l => { state.labels = l; onSharedChange(); });
+  seg(ctrlFs(c, "Notation"), [["on", "staff + TAB"], ["off", "hidden"]].map(([id, label]) => ({ id, label })), state.notation, n => { state.notation = n; onSharedChange(); });
+  if (isShapes) seg(ctrlFs(c, "Finger"), [1, 2, 3, 4, "all"].map(f => ({ id: f, label: f === "all" ? "All" : FINGER[f] })), state.shFinger, f => { state.shFinger = f; renderShapes(); });
+}
+function onSharedChange() {
+  shapesDirty = rootDirty = true;
+  practiceRebuild(true);          // Practice re-derives its steps and re-syncs its controls
+  if (state.tab === "shapes") renderShapes();
+  else if (state.tab === "root") renderRoot();
+}
+
+/* ---------- Shapes tab ---------- */
+function shapeCardHTML(sh, color, psStore, extraFlag) {
+  const list = ARP[state.oct][state.q];
+  const p = placeArp(state.oct, state.q, sh, state.key, state.key, PC[state.key]);
+  const id = shapeId(sh);
+  psStore[id] = p;
+  return `<div class="card" data-sid="${id}">
+    <header><span class="where"><i class="csw" style="background:${color}"></i>${shapeName(sh, list)}</span><span class="where">root ${p.rootFret}fr</span></header>
+    <p class="title"><span class="key">${state.key}${QUAL[state.q].sym}</span><span class="name">${QUAL[state.q].name}</span><span class="shape">${state.oct}-octave</span></p>
+    ${svgDots(p.dots, null, state.labels, `${state.key} ${QUAL[state.q].name}, ${shapeName(sh, list)}`)}
+    ${extraFlag ? `<p class="flag">${extraFlag}</p>` : ""}${notationPanel(p)}</div>`;
+}
+function renderShapes() {
+  shapesDirty = false;
+  buildSharedCtrls("shapesCtrls", true);
+  const list = ARP[state.oct][state.q];
+  const all = state.shFinger === "all";
+  const layerRow = document.getElementById("layerRow");
+  layerRow.hidden = !all;
+  if (all) {
+    layerRow.innerHTML = '<span class="lab">Layers</span>';
+    for (let f = 1; f <= 4; f++) {
+      const b = document.createElement("button");
+      b.textContent = FINGER[f];
+      b.setAttribute("aria-pressed", String(!!state.layers[f]));
+      b.addEventListener("click", () => { state.layers[f] = !state.layers[f]; renderShapes(); });
+      layerRow.appendChild(b);
+    }
+  }
+  const shown = all ? list.filter(sh => state.layers[rootFinger(sh)]) : list.filter(sh => rootFinger(sh) === state.shFinger);
+  const neckEl = document.getElementById("shapesNeck");
+  if (!shown.length) {
+    neckEl.innerHTML = `<p class="neckmsg">No ${all ? "" : FINGER[state.shFinger] + "-root "}${state.oct}-octave ${QUAL[state.q].name} shapes${all ? " on the visible layers — turn a layer back on." : " — the book has none; try another finger."}</p>`;
+  } else {
+    const groups = [];
+    for (const sh of shown) for (const rf of shapePlacements(sh, state.key))
+      groups.push({ id: shapeId(sh), color: RSCOL[sh.rs], dashed: isB(sh),
+        dots: chordDots(state.key, state.key, PC[state.key], state.q, sh, rf).filter(d => !d.alt) });
+    neckEl.innerHTML = neckSVG(groups, {});
+  }
+  const strings = [...new Set(shown.map(sh => sh.rs))].sort((a, b) => b - a);
+  document.getElementById("shapesLegend").innerHTML =
+    `<span><i style="background:var(--bone-dim)"></i>root = filled</span>` +
+    `<span><i style="border:2px solid var(--bone-dim);background:transparent"></i>chord tone = hollow</span>` +
+    `<span><i style="border:1.5px dashed var(--bone-dim);background:transparent"></i>dashed = alternate fingering (b)</span>` +
+    strings.map(s => `<span><i style="background:${RSCOL[s]}"></i>root on ${ordStr(s)}</span>`).join("") +
+    `<span>⌥-click (long-press) a root dot to open it in the Root tab</span>`;
+  const cardsEl = document.getElementById("shapesCards");
+  shapesPs = {};
+  if (all) {
+    let html = "";
+    for (let f = 1; f <= 4; f++) {
+      const grp = list.filter(sh => rootFinger(sh) === f);
+      if (!grp.length) continue;
+      html += `<p class="grouphead">${FINGER[f]}</p>` + grp.map(sh => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs)).join("");
+    }
+    cardsEl.innerHTML = html;
+  } else {
+    cardsEl.innerHTML = shown.map(sh => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs)).join("");
+  }
+  hydrateNotation(cardsEl);
+}
+
+/* ---------- Root tab ---------- */
+function renderRoot() {
+  rootDirty = false;
+  buildSharedCtrls("rootCtrls", false);
+  const caps = rsOptions(state.oct);
+  document.getElementById("rootHint").textContent =
+    `Click a root position on strings ${caps.join("/")} — every ${QUAL[state.q].name} fingering rooted exactly there, colored by finger.`;
+  const sel = state.rootSel && caps.includes(state.rootSel.string) ? state.rootSel : null;
+  const neckEl = document.getElementById("rootNeck"), cardsEl = document.getElementById("rootCards");
+  rootPs = {};
+  let groups = [], fits = [], misfits = [];
+  if (sel) {
+    for (const sh of ARP[state.oct][state.q].filter(s => s.rs === sel.string))
+      (sh.n.every(d => sel.fret + d[1] >= 1 && sel.fret + d[1] <= NECK_MAX) ? fits : misfits).push(sh);
+    groups = fits.map(sh => ({ id: shapeId(sh), color: FGCOL[rootFinger(sh)], dashed: isB(sh),
+      dots: chordDots(state.key, state.key, PC[state.key], state.q, sh, sel.fret).filter(d => !d.alt) }));
+  }
+  const noneMsg = sel && !fits.length && !misfits.length
+    ? `<p class="neckmsg">No ${state.oct}-octave ${QUAL[state.q].name} shape roots on the ${ordStr(sel.string)}.</p>` : "";
+  neckEl.innerHTML = neckSVG(groups, { clickable: caps, selected: sel, dimStrings: [1, 2, 3, 4, 5, 6].filter(s => !caps.includes(s)) }) + noneMsg;
+  const fingersShown = [...new Set(fits.concat(misfits).map(rootFinger))].sort();
+  document.getElementById("rootLegend").innerHTML = sel ?
+    `<span><i style="background:var(--bone-dim)"></i>root = filled</span>` +
+    `<span><i style="border:2px solid var(--bone-dim);background:transparent"></i>chord tone = hollow</span>` +
+    fingersShown.map(f => `<span><i style="background:${FGCOL[f]}"></i>${FINGER[f]} root</span>`).join("") +
+    `<span><i style="border:2px solid var(--brass);background:transparent"></i>selected root</span>` : "";
+  const ordered = fits.concat(misfits).sort((a, b) => rootFinger(a) - rootFinger(b));
+  cardsEl.innerHTML = ordered.map(sh => shapeCardHTML(sh, FGCOL[rootFinger(sh)], rootPs,
+    misfits.includes(sh) ? `doesn't fit rooted at ${sel.fret}fr — some notes fall outside frets 1–19; drawn at its own position instead` : "")).join("");
+  hydrateNotation(cardsEl);
+}
+
+/* ---------- tabs, hover, clicks (delegated once — the necks re-render freely) ---------- */
+function switchTab(t) {
+  state.tab = t;
+  for (const [pane, key] of [["paneShapes", "shapes"], ["paneRoot", "root"], ["panePractice", "practice"]])
+    document.getElementById(pane).hidden = key !== t;
+  for (const [btn, key] of [["tabShapes", "shapes"], ["tabRoot", "root"], ["tabPractice", "practice"]])
+    document.getElementById(btn).setAttribute("aria-pressed", String(key === t));
+  if (t === "shapes" && shapesDirty) renderShapes();
+  if (t === "root" && rootDirty) renderRoot();
+}
+function hlNeck(neckEl, id) {
+  neckEl.classList.add("hov");
+  neckEl.querySelectorAll("g.nd").forEach(g => g.classList.toggle("hl", (" " + g.dataset.ids + " ").includes(" " + id + " ")));
+}
+function unhlNeck(neckEl) {
+  neckEl.classList.remove("hov");
+  neckEl.querySelectorAll("g.nd.hl").forEach(g => g.classList.remove("hl"));
+}
+function initBrowser() {
+  document.getElementById("tabShapes").addEventListener("click", () => switchTab("shapes"));
+  document.getElementById("tabRoot").addEventListener("click", () => switchTab("root"));
+  document.getElementById("tabPractice").addEventListener("click", () => switchTab("practice"));
+  for (const [neckId, cardsId, ps] of [["shapesNeck", "shapesCards", () => shapesPs], ["rootNeck", "rootCards", () => rootPs]]) {
+    const neckEl = document.getElementById(neckId), cardsEl = document.getElementById(cardsId);
+    cardsEl.addEventListener("mouseover", e => { const el = e.target.closest(".card[data-sid]"); if (el) hlNeck(neckEl, el.dataset.sid); });
+    cardsEl.addEventListener("mouseout", e => { if (!cardsEl.querySelector(".card[data-stick]")) unhlNeck(neckEl); });
+    cardsEl.addEventListener("click", e => {
+      const btn = e.target.closest(".dlLy");
+      if (btn) { downloadLy(ps()[btn.closest(".card[data-sid]").dataset.sid]); return; }
+      const el = e.target.closest(".card[data-sid]"); if (!el) return;
+      if (el.dataset.stick) { delete el.dataset.stick; unhlNeck(neckEl); }
+      else { cardsEl.querySelectorAll("[data-stick]").forEach(x => delete x.dataset.stick); el.dataset.stick = "1"; hlNeck(neckEl, el.dataset.sid); }
+    });
+    neckEl.addEventListener("mouseover", e => {
+      const g = e.target.closest ? e.target.closest("g.nd") : null;
+      cardsEl.querySelectorAll(".card.hlc").forEach(c => c.classList.remove("hlc"));
+      if (g) g.dataset.ids.split(" ").forEach(id => { const c = cardsEl.querySelector('.card[data-sid="' + id + '"]'); if (c) c.classList.add("hlc"); });
+    });
+  }
+  // Shapes → Root cross-link: ⌥-click or long-press a root dot on a root-capable string
+  const sn = document.getElementById("shapesNeck");
+  const jumpToRoot = g => {
+    const s = +g.dataset.s, f = +g.dataset.f;
+    if (!g.dataset.root || !rsOptions(state.oct).includes(s)) return;
+    state.rootSel = { string: s, fret: f };
+    rootDirty = true;
+    switchTab("root");
+  };
+  sn.addEventListener("click", e => { const g = e.target.closest("g.nd"); if (g && e.altKey) jumpToRoot(g); });
+  let lpTimer = null;
+  sn.addEventListener("touchstart", e => { const g = e.target.closest("g.nd"); if (g) lpTimer = setTimeout(() => jumpToRoot(g), 550); }, { passive: true });
+  sn.addEventListener("touchend", () => clearTimeout(lpTimer), { passive: true });
+  sn.addEventListener("touchmove", () => clearTimeout(lpTimer), { passive: true });
+  // Root tab: click a position on a root-capable string
+  document.getElementById("rootNeck").addEventListener("click", e => {
+    const g = e.target.closest ? e.target.closest("g.nd") : null;
+    const rc = !g && e.target.closest ? e.target.closest("rect[data-cs]") : null;
+    const s = g ? +g.dataset.s : rc ? +rc.dataset.cs : 0, f = g ? +g.dataset.f : rc ? +rc.dataset.cf : 0;
+    if (!s || !rsOptions(state.oct).includes(s)) return;
+    state.rootSel = { string: s, fret: f };
+    const k = pcToKey((OPEN[s] + f) % 12);
+    if (k !== state.key) { state.key = k; onSharedChange(); }   // re-renders Root via onSharedChange
+    else renderRoot();
+  });
+}
+
+const practiceRebuild = rebuild;
+rebuild = function (reset) { practiceRebuild(reset); shapesDirty = rootDirty = true; };
+
 buildTriads();
 document.body.insertAdjacentHTML("afterbegin", NOTE_DEFS);
 rebuild(true);
+initBrowser();
+switchTab("shapes");
 </script>
 </body>
 </html>

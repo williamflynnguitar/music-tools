@@ -1,6 +1,43 @@
 # Arpeggios deck
 
-Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes on pp. 25–36. Self-contained `index.html`.
+Shape browser and practice walkthrough for JGTH arpeggios (shapes pp. 25–36,
+Arpeggio Practice pp. 76–78). Self-contained `index.html`.
+
+## Tabs
+Three tabs: **Shapes** (default) · **Root** · **Practice**. Key, chord size,
+quality, octaves, labels and notation are shared state across all three; each
+tab renders its own control instances, all writing to the same `state`.
+Practice is the original app, wrapped, not changed — the approaches, `placeArp`,
+`diatonic`, `buildTriads`, `hydrateNotation` and the notation cell naming are
+untouched; `rebuild` is wrapped only to mark the other tabs dirty.
+
+- **Shapes**: one full neck (frets 0–19, inline SVG from `neckSVG`) with every
+  shape of the quality/octaves whose root finger matches the Finger control
+  (1–4, or All with per-finger layer toggles). Every placement in the key whose
+  notes all sit in frets 1–19 is drawn (`shapePlacements` — usually two octaves
+  of the neck). Colored **by root string**: `--rs6 --rs5 --rs4 --rs3`. Cards for
+  the shapes (one per shape, existing card renderer + notation) sit below;
+  hovering a card lights its placements brass, hovering a dot outlines its
+  card(s). ⌥-click / long-press a root dot jumps to Root with that root.
+- **Root**: a bare neck; clicking a position on a root-capable string
+  (6/5/4/3 in 1-octave, 6/5 in 2-octave; other strings drawn dim) sets the
+  shared key to that pitch (`KEYS` carries one spelling per pitch class) and
+  draws every shape rooted exactly there, colored **by root finger**:
+  `--fg1 --fg2 --fg3 --fg4`. A shape whose notes would leave frets 1–19 at the
+  clicked fret is not drawn on the neck but keeps its card, flagged — nothing
+  is silently dropped. The clicked root wears a brass ring.
+- Overlap rule: a position covered by n shapes splits into n wedges (roots,
+  filled) or n arc segments (chord tones, hollow) — never stacked or offset.
+  (b) duplicates share their color and go dashed. Labels draw only when every
+  overlapping shape agrees (degrees/notes always agree; fingers can differ).
+  `alt` diamond notes stay off the necks; cards still show them dashed.
+- Per-finger grouping is always by `rootFinger(sh)` — the finger on the anchor
+  root — never by a triad override's slot key (several "pinky" slots root on
+  the ring finger, and the book's ø7/°7 "middle" shapes are ring shapes).
+- Headless checks: `notation/pipeline/check-deck.js` — anchor/finger/chord-tone
+  validity, every Shapes placement in every key inside frets 1–19, Root-tab set
+  equality per string, per-finger partition = All view. Its placement/filter
+  rules are duplicated from `index.html`; keep in sync.
 
 ## Data model
 - `ARP[octaves][quality] = [{ rs, n: [[string, offset, finger], ...], alt?: [...] }, ...]`
