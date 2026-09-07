@@ -185,7 +185,11 @@ const ARP = {
    not transcribed; cards say so. Edit TRIAD_OVERRIDE to replace any shape with a
    curated one in the usual [[string, offset, finger], ...] form. */
 const TRIAD_IV = { maj: [0,4,7], min: [0,3,7], dim: [0,3,6], aug: [0,4,8] };
-const TRIAD_OVERRIDE = {};   // e.g. { "1|maj|6|index": [[6,0,1],[6,4,4],[5,2,2],[4,2,3]] }
+const TRIAD_OVERRIDE = {     // curated fingerings, [[string, offset, finger], ...] ascending
+  "1|maj|6|index": [[6,0,1],[6,4,4],[5,2,2],[4,2,3]],
+  "1|min|6|index": [[6,0,1],[6,3,4],[5,2,2],[4,2,3]],
+  "1|dim|6|index": [[6,0,1],[6,3,4],[5,1,2],[4,2,3]],
+};
 function genTriad(oct, q, rs, rootFinger, stretch = 0) {
   const iv = TRIAD_IV[q], seq = [];
   for (let o = 0; o < oct; o++) iv.forEach(i => seq.push(i + 12 * o)); seq.push(12 * oct);
