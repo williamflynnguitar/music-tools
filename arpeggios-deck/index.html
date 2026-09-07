@@ -219,9 +219,11 @@ function genTriad(oct, q, rs, rootFinger, stretch = 0) {
 function buildTriads() {
   for (const oct of [1, 2]) for (const q of Object.keys(TRIAD_IV)) {
     ARP[oct][q] = [];
-    for (const rs of (oct === 1 ? [6,5,4,3] : [6,5])) for (const rf of [1, 4]) {
-      const key = `${oct}|${q}|${rs}|${rf === 1 ? "index" : "pinky"}`;
-      const n = TRIAD_OVERRIDE[key] || genTriad(oct, q, rs, rf);
+    for (const rs of (oct === 1 ? [6,5,4,3] : [6,5])) for (const rf of [1, 2, 4]) {
+      // middle-root shapes are off-book, so they are never generated:
+      // the slot exists only when TRIAD_OVERRIDE curates one
+      const key = `${oct}|${q}|${rs}|${rf === 1 ? "index" : rf === 2 ? "middle" : "pinky"}`;
+      const n = TRIAD_OVERRIDE[key] || (rf === 2 ? null : genTriad(oct, q, rs, rf));
       if (n) ARP[oct][q].push({ rs, n, gen: !TRIAD_OVERRIDE[key] });
     }
   }

@@ -36,9 +36,12 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
   fingers follow the book's convention for a five-fret window (index shapes stretch
   the index down, pinky shapes stretch the pinky up); a one-fret stretch is allowed
   when nothing else fits, as in the book's 5th-string 2-octave shapes. 40 shapes.
-  Cards carry a "generated fingering" flag (`sh.gen`). `TRIAD_OVERRIDE["oct|q|rs|index|pinky"]`
+  Cards carry a "generated fingering" flag (`sh.gen`). `TRIAD_OVERRIDE["oct|q|rs|index|middle|pinky"]`
   replaces any generated shape with a curated `[[string, offset, finger], …]` list and
-  clears the flag. The pinky-root 2-octave triads from the 5th string are not generated
+  clears the flag. Middle-root slots are off-book and never generated — they exist only
+  when an override curates one; a new shape (middle, or the missing 2-oct 5th-string
+  pinky) shifts the shape indices after it, so delete that octave+quality's whole
+  `notation/svg/arpeggios/<oct>-<q>-*` set before re-rendering. The pinky-root 2-octave triads from the 5th string are not generated
   (they need a position shift, not a stretch); add them via the override.
 - VDA skips leading position roots that have no shape and shows a message when no
   shape fits at all, instead of an empty card.
@@ -59,12 +62,12 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
 
 ## Authoring page (edit.html)
 The student page has no editing UI. `edit.html` is the triad-fingering editor —
-pick octaves/quality/root string/root finger, click the board to add notes or
+pick octaves/quality/root string/root finger (index, middle or pinky), click the board to add notes or
 cycle fingers (click wraps 1 → 2 → 3 → 4 → 1; right- or ⌥-click removes), and copy the emitted `TRIAD_OVERRIDE`
 line for index.html. Works in offset-from-root space with the book's five-fret
 window shaded; validates chord tones, missing tones, root-to-root span; output
-is sorted ascending by pitch. It also computes the shape's index in
-`ARP[oct][q]` and prints the exact pipeline re-render command. Duplicates
+is sorted ascending by pitch. It prints the pipeline re-render command
+(whole octave+quality, since a new shape shifts cell indices). Duplicates
 `TRIAD_IV`/`genTriad`/`STR` between `===== triad generator =====` markers —
 keep in sync with index.html. Edits live in memory only (no storage APIs).
 Not linked from the landing page.
