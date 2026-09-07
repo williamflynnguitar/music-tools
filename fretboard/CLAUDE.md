@@ -87,3 +87,17 @@ Deliberately not linked from the landing page.
 
 ## Not yet transcribed
 Half-whole diminished (pp. 22–23).
+
+## Notation (added)
+- Every card shows staff + TAB in the card's actual key, engraved by LilyPond. Cells are
+  pre-rendered for every shape × key by `notation/pipeline/` (see its README) into
+  `notation/svg/fretboard/` and fetched on demand by `hydrateNotation()`
+  (cached per session). This is the one exception to "self-contained": diagrams work
+  offline; engraved notation needs the site. When a fetch fails, `notate()` draws the same
+  notes in the browser from LilyPond's own glyphs (`NOTE_DEFS`, 4 KB) and the caption says
+  so, so nothing goes blank.
+- `notationPanel()` builds the cell filename; `notation/pipeline/gen-*.js` builds the same
+  name from the same data. If you rename a shape or change `ARP`/`SCALES`, re-run the
+  pipeline (it only renders what's missing).
+- "Download .ly" writes the card as a LilyPond page via `lyShape()` — the same generator the
+  pipeline uses (shared with arpeggios-deck; keep in sync).

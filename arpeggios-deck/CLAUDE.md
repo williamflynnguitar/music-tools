@@ -23,3 +23,36 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
 
 ## Placement
 `placeArp` keeps every note at fret 1 or above and, where possible, the top note at or below fret 19; `minRoot` forces HDA to climb.
+
+## Triads (added)
+- `QUAL` gains `maj min dim aug` (marked `triad: true`); `SIZE` groups qualities into
+  triads / 7th chords and the "Chord size" control switches between them. `diatonic()`
+  stacks two thirds in triad mode and matches the triad interval sets; `roman()` knows
+  the triad symbols.
+- The book has no triad arpeggio pages, so shapes are generated at load by
+  `buildTriads()` / `genTriad()`: for each root string (6/5/4/3 for 1-octave, 6/5 for
+  2-octave) and root finger (index → window root..root+4, pinky → root-4..root), each
+  chord tone in ascending pitch goes on the highest string that keeps it in the window;
+  fingers follow the book's convention for a five-fret window (index shapes stretch
+  the index down, pinky shapes stretch the pinky up); a one-fret stretch is allowed
+  when nothing else fits, as in the book's 5th-string 2-octave shapes. 40 shapes.
+  Cards carry a "generated fingering" flag (`sh.gen`). `TRIAD_OVERRIDE["oct|q|rs|index|pinky"]`
+  replaces any generated shape with a curated `[[string, offset, finger], …]` list and
+  clears the flag. The pinky-root 2-octave triads from the 5th string are not generated
+  (they need a position shift, not a stretch); add them via the override.
+- VDA skips leading position roots that have no shape and shows a message when no
+  shape fits at all, instead of an empty card.
+
+## Notation (added)
+- Every card shows staff + TAB in the card's actual key, engraved by LilyPond. Cells are
+  pre-rendered for every shape × key by `notation/pipeline/` (see its README) into
+  `notation/svg/arpeggios/` and fetched on demand by `hydrateNotation()`
+  (cached per session). This is the one exception to "self-contained": diagrams work
+  offline; engraved notation needs the site. When a fetch fails, `notate()` draws the same
+  notes in the browser from LilyPond's own glyphs (`NOTE_DEFS`, 4 KB) and the caption says
+  so, so nothing goes blank.
+- `notationPanel()` builds the cell filename; `notation/pipeline/gen-*.js` builds the same
+  name from the same data. If you rename a shape or change `ARP`/`SCALES`, re-run the
+  pipeline (it only renders what's missing).
+- "Download .ly" writes the card as a LilyPond page via `lyShape()` — the same generator the
+  pipeline uses (shared with fretboard; keep in sync).

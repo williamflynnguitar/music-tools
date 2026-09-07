@@ -55,6 +55,13 @@
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
+  .ly { color: var(--bone); margin: 12px 0 4px; }
+  .ly svg { width: 100%; height: auto; max-height: 210px; }
+  .ly:empty { min-height: 90px; }
+  .ly text { fill: currentColor; }
+  .ly text.t { font-family: serif; font-weight: 700; }
+  .lynote { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 0; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .lynote button { padding: 4px 8px; font-size: 11px; }
 
   .cycle { margin-top: 6px; font-size: 14px; color: var(--bone-dim); }
   .cycle code { font-family: var(--mono); color: var(--bone); font-size: 13px; }
@@ -91,6 +98,10 @@
     <fieldset>
       <legend>Show</legend>
       <div class="modes" id="modes"></div>
+    </fieldset>
+    <fieldset>
+      <legend>Notation</legend>
+      <div class="modes" id="notation"></div>
     </fieldset>
     <fieldset>
       <legend>Cycle of fingerings</legend>
@@ -346,11 +357,184 @@ function figure(p, mode) {
   const vn = shape.variants ? ` · ${state.variants[vKey(p.id)] || shape.variantName || "default"}` : "";
   return `<figure>
     <figcaption><b>${p.key} ${sc.name.toLowerCase()}</b><span>${p.id} · ${shape.name}${dir}${vn}</span></figcaption>
-    ${draw(p, mode)}
+    ${draw(p, mode)}${notationPanel(p)}
     <p class="check">${check}</p>
   </figure>`;
 }
 
+/* ---------- notation: live, drawn with LilyPond's glyphs ---------- */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"f2\" d=\"M94 66c-60 0 -39 -66 -72 -66c-11 0 -22 7 -22 21c0 154 232 162 232 334c0 50 -17 102 -61 102c-33 0 -66 -14 -66 -44c0 -24 31 -37 31 -61c0 -34 -27 -61 -61 -61s-61 27 -61 61c0 84 72 148 157 148c98 0 190 -55 190 -145c0 -140 -131 -154 -225 -205 c85 -2 113 -61 165 -61c45 0 28 41 57 41c11 0 22 -8 22 -21c0 -29 -48 -109 -144 -109c-92 0 -96 66 -142 66z\" fill=\"currentColor\"/><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"f4\" d=\"M148 501c10 0 41 -15 72 -15c32 0 63 15 76 15c15 0 26 -11 26 -21c0 -4 -1 -7 -4 -10l-264 -291h134v4c0 60 50 41 75 85c7 11 8 24 14 36c3 7 10 10 17 10c11 0 24 -8 24 -25v-110h70c18 0 27 -14 27 -27s-9 -27 -27 -27h-70c2 -45 36 -82 80 -82c14 0 22 -10 22 -21 s-8 -22 -22 -22c-49 0 -96 14 -145 14s-97 -14 -146 -14c-14 0 -21 11 -21 22s7 21 21 21c44 0 79 37 81 82h-134c-43 0 -57 25 -57 42c0 5 1 10 3 12c73 81 123 182 123 291c0 17 11 31 25 31z\" fill=\"currentColor\"/><path id=\"f1\" d=\"M194 486c16 0 29 15 41 15c13 0 24 -13 24 -31v-341c0 -47 35 -86 81 -86c14 0 21 -10 21 -21s-7 -22 -21 -22c-49 0 -97 14 -146 14s-96 -14 -145 -14c-14 0 -22 11 -22 22s8 21 22 21c46 0 80 39 80 86v137c0 23 -16 35 -30 35c-7 0 -13 -4 -17 -11l-34 -65 c-5 -10 -14 -15 -23 -15c-14 0 -28 12 -28 27c0 4 1 8 3 13l129 250c2 4 7 6 11 6c18 0 37 -20 54 -20z\" fill=\"currentColor\"/><path id=\"f3\" d=\"M261 266c0 -54 85 -40 85 -125c0 -94 -83 -141 -186 -141c-84 0 -160 54 -160 133c0 32 26 58 58 58s58 -26 58 -58c0 -22 -36 -26 -36 -48c0 -33 42 -42 80 -42c41 0 56 50 56 98v21c0 44 -2 77 -43 77h-65c-18 0 -27 14 -27 27s9 27 27 27h65c42 0 43 36 43 83v11 c0 43 -20 70 -61 70c-34 0 -71 -8 -71 -38c0 -19 32 -23 32 -42c0 -28 -23 -51 -51 -51s-51 23 -51 51c0 72 66 123 141 123c93 0 174 -31 174 -113c0 -94 -68 -67 -68 -121z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+/* ---------- live notation with LilyPond's glyphs (shared; keep in sync with fretboard) ----------
+   notate(notes, opts) → SVG string. notes: [{string, fret, finger, note}], note spelled ("Eb",
+   "F#", "Cb"). Draws a treble_8 staff with eighth notes beamed in `opts.beam` (default 4),
+   accidentals as LilyPond would print them in one measure (no key signature), fingerings above,
+   TAB beneath, an optional chord symbol. Glyph outlines are LilyPond's Feta font, pulled from a
+   real LilyPond render; positions copy LilyPond's (clef on the G line, accidental 1.45 left of
+   the head, fingerings 0.55 above the staff, TAB digits 0.63 below the line). Units: one staff
+   space = 1. NOTE_DEFS must be in the document once. */
+/* ---------- live notation with LilyPond's glyphs (shared; keep in sync with fretboard) ----------
+   notate(notes, opts) → SVG string. notes: [{string, fret, finger, note}], note spelled ("Eb",
+   "F#", "Cb"). Draws a treble_8 staff with eighth notes beamed in `opts.beam` (default 4),
+   accidentals as LilyPond would print them in one measure (no key signature), fingerings above,
+   TAB beneath, an optional chord symbol. Glyph outlines are LilyPond's Feta font, pulled from a
+   real LilyPond render; positions copy LilyPond's (clef on the G line, accidental 1.45 left of
+   the head, fingerings 0.55 above the staff, TAB digits 0.63 below the line). Units: one staff
+   space = 1. NOTE_DEFS must be in the document once. */
+/* ---------- live notation with LilyPond's glyphs (shared; keep in sync with fretboard) ----------
+   notate(notes, opts) → SVG string. notes: [{string, fret, finger, note}], note spelled ("Eb",
+   "F#", "Cb"). Draws a treble_8 staff with eighth notes beamed in `opts.beam` (default 4),
+   accidentals as LilyPond would print them in one measure (no key signature), fingerings above,
+   TAB beneath, an optional chord symbol. Glyph outlines are LilyPond's Feta font, pulled from a
+   real LilyPond render; positions copy LilyPond's (clef on the G line, accidental 1.45 left of
+   the head, fingerings 0.55 above the staff, TAB digits 0.63 below the line). Units: one staff
+   space = 1. NOTE_DEFS must be in the document once. */
+const NOTE_MIDI = {1:64,2:59,3:55,4:50,5:45,6:40};
+function notate(notes, opts = {}) {
+  const order = notes.slice().sort((a, b) => (NOTE_MIDI[a.string] + a.fret) - (NOTE_MIDI[b.string] + b.fret));
+  if (opts.desc) order.reverse();
+  // beam groups: fours, remainder absorbed as threes (9 → 3+3+3, 13 → 4+3+3+3), as the LilyPond pipeline does
+  const groups = []; let left = order.length;
+  while (left > 0) { if (left % 4 === 0 || (left > 6 && left % 4 !== 1 && left % 4 !== 2)) { groups.push(4); left -= 4; } else if (left >= 3) { groups.push(3); left -= 3; } else { groups.push(left); left = 0; } }
+  const ACC = { "": 0, "#": 1, "##": 2, "b": -1, "bb": -2 };
+  // written pitch = sounding + 12 (treble_8); staff position from letter and octave
+  const cols = order.map(n => {
+    const letter = n.note[0].toUpperCase(), acc = n.note.slice(1), midi = NOTE_MIDI[n.string] + n.fret + 12;
+    const natural = midi - (ACC[acc] || 0), oct = Math.floor(natural / 12) - 1;
+    const idx = oct * 7 + "CDEFGAB".indexOf(letter);           // E4 (bottom line) = 30
+    return { n, letter, acc, oct, y: 4 - (idx - 30) * 0.5 };
+  });
+  // accidentals: show when the letter/octave's state differs (LilyPond's one-measure rule)
+  const state = {};
+  cols.forEach(c => { const k = c.letter + c.oct, cur = state[k] || ""; c.showAcc = c.acc !== cur ? (c.acc || "n") : ""; state[k] = c.acc; });
+  // horizontal layout
+  let x = 6.3; const STEP = 2.9;
+  cols.forEach(c => { if (c.showAcc) x += (c.showAcc === "b" || c.showAcc === "bb" ? 1.3 : 1.4); c.x = x; x += STEP; });
+  const W = x + 1.2;
+  let o = "";
+  const use = (id, x, y, s) => `<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${s || 0.004},${-(s || 0.004)})"/>`;
+  // staff and tab lines
+  for (let i = 0; i < 5; i++) o += `<line x1="0" y1="${i}" x2="${W}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+  const T0 = 7.6, TS = 1.5;
+  for (let i = 0; i < 6; i++) o += `<line x1="0" y1="${T0 + i * TS}" x2="${W}" y2="${T0 + i * TS}" stroke="currentColor" stroke-width="0.11"/>`;
+  o += `<line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" stroke-width="0.11"/><line x1="0" y1="${T0}" x2="0" y2="${T0 + 5 * TS}" stroke="currentColor" stroke-width="0.11"/>`;
+  // clefs
+  o += use("clef", 0.8, 3) + `<text x="1.15" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+  ["T", "A", "B"].forEach((L, i) => o += `<text x="1.3" y="${(T0 + 2.05 + i * 2.05).toFixed(2)}" font-family="sans-serif" font-weight="700" font-size="2.3" text-anchor="middle" fill="currentColor">${L}</text>`);
+  // groups: stems, beams, flags
+  const tops = [];
+  for (let s = 0, gi = 0; s < cols.length; s += groups[gi++]) {
+    const grp = cols.slice(s, s + groups[gi]);
+    const up = grp.reduce((a, c) => a + c.y, 0) / grp.length > 2;
+    const dir = up ? -1 : 1, sx = c => c.x + (up ? 1.23 : 0.07);   // LilyPond: head is 1.23 wide, anchored at its left edge
+    if (grp.length === 1) {
+      const c = grp[0], tip = c.y + dir * 3.5;
+      o += `<line x1="${sx(c)}" y1="${c.y}" x2="${sx(c)}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>` + use(up ? "flagUp" : "flagDown", sx(c), tip);
+      tops.push({ x: c.x, top: up ? tip - 0.6 : c.y });
+    } else {
+      const f = grp[0], l = grp[grp.length - 1];
+      let slope = (l.y - f.y) / (l.x - f.x); slope = Math.max(-0.22, Math.min(0.22, slope));
+      let base = f.y + dir * 3.5;                                   // beam y at first stem
+      grp.forEach(c => { const by = base + slope * (c.x - f.x); const len = (by - c.y) * dir; if (len < 2.8) base += dir * (2.8 - len); });
+      const beamY = c => base + slope * (c.x - f.x);
+      grp.forEach(c => { o += `<line x1="${sx(c)}" y1="${c.y}" x2="${sx(c)}" y2="${beamY(c)}" stroke="currentColor" stroke-width="0.13"/>`; tops.push({ x: c.x, top: up ? beamY(c) - 0.5 : c.y }); });
+      o += `<line x1="${sx(f)}" y1="${beamY(f)}" x2="${sx(l)}" y2="${beamY(l)}" stroke="currentColor" stroke-width="0.5"/>`;
+    }
+  }
+  // ledger lines, accidentals, heads, fingerings, tab
+  const fingerRow = Math.min(-0.55, ...tops.map(t => t.top - 1.0), ...cols.filter(c => c.showAcc).map(c => c.y - 1.9));
+  cols.forEach((c, i) => {
+    for (let ly = 5; ly <= c.y; ly++) o += `<line x1="${(c.x - 0.33).toFixed(2)}" y1="${ly}" x2="${(c.x + 1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+    for (let ly = -1; ly >= c.y; ly--) o += `<line x1="${(c.x - 0.33).toFixed(2)}" y1="${ly}" x2="${(c.x + 1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+    if (c.showAcc) {
+      if (c.showAcc === "#") o += use("sharp", c.x - 1.45, c.y);
+      else if (c.showAcc === "##") o += `<text x="${c.x - 1.0}" y="${c.y + 0.5}" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">𝄪</text>`;
+      else if (c.showAcc === "b") o += use("flat", c.x - 1.35, c.y);
+      else if (c.showAcc === "bb") o += use("flat", c.x - 2.2, c.y) + use("flat", c.x - 1.25, c.y);
+      else o += use("natural", c.x - 1.35, c.y);
+    }
+    o += use("nh", c.x, c.y);
+    const f = c.n.finger; if (f >= 1 && f <= 4) o += use("f" + f, c.x + 0.25, fingerRow, 0.0022);
+    o += `<text x="${(c.x + 0.62).toFixed(2)}" y="${(T0 + (c.n.string - 1) * TS + 0.63).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.75" text-anchor="middle" fill="currentColor">${c.n.fret}</text>`;
+  });
+  let top = fingerRow - 1.4;
+  if (opts.chord) {
+    const m = opts.chord.match(/^([A-G][#b]?)(.*)$/), root = m ? m[1].replace("#", "♯").replace("b", "♭") : opts.chord, suf = m ? m[2] : "";
+    const cy = fingerRow - 1.5;
+    o += `<text x="6.1" y="${cy.toFixed(2)}" font-family="sans-serif" font-size="2.1" fill="currentColor">${root}<tspan font-size="1.4" dy="-0.9">${suf}</tspan></text>`;
+    top = cy - 3.2;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.4 ${top.toFixed(1)} ${(W + 0.8).toFixed(1)} ${(T0 + 5 * TS + 1.6 - top).toFixed(1)}" preserveAspectRatio="xMidYMid meet">${o}</svg>`;
+}
+
+/* ---------- engraved cells: fetched from notation/svg/, live renderer as fallback ---------- */
+const NOTATION_CACHE = new Map();
+function hydrateNotation(root) {
+  (root || document).querySelectorAll(".ly[data-src]").forEach(async el => {
+    const src = el.dataset.src; delete el.dataset.src;
+    const fallback = () => { el.innerHTML = notate(JSON.parse(el.dataset.notes), JSON.parse(el.dataset.opts || "{}")); el.classList.add("fallback"); const n = el.nextElementSibling; if (n && n.classList.contains("lynote")) n.querySelector("span").textContent += " · offline: drawn from LilyPond's glyphs"; };
+    try {
+      let svg = NOTATION_CACHE.get(src);
+      if (!svg) { const r = await fetch(src); if (!r.ok) throw new Error(r.status); svg = await r.text(); if (!svg.startsWith("<svg")) throw new Error("not svg"); NOTATION_CACHE.set(src, svg); }
+      el.innerHTML = svg;
+    } catch (e) { fallback(); }
+  });
+}
+
+/* ---------- LilyPond for fingering shapes (shared; keep in sync with fretboard) ----------
+   lyShape(notes, opts) → LilyPond source. notes: [{string, fret, finger, note}] with `note`
+   a spelled name ("Eb", "F#", "Cb"). Ascending in pitch, eighth notes, fingerings above the
+   staff, TAB beneath. opts: {title, chord, part, source, compact} — compact drops the page
+   header for the inline SVG cells. */
+const LY_MIDI = {1:64,2:59,3:55,4:50,5:45,6:40};
+function lyNote(n) {
+  const letter = n.note[0].toLowerCase(), acc = n.note.slice(1);
+  const accLy = {"":"", "#":"is", "##":"isis", "b":"es", "bb":"eses"}[acc] || "";
+  const accSemi = {"":0, "#":1, "##":2, "b":-1, "bb":-2}[acc] || 0;
+  const midi = LY_MIDI[n.string] + n.fret, natural = midi - accSemi;
+  const oct = Math.floor(natural / 12) - 1;
+  const mark = oct >= 4 ? "'".repeat(oct - 3) : ",".repeat(3 - oct);
+  return letter + accLy + mark;
+}
+function lyShape(notes, opts = {}) {
+  let asc = notes.slice().sort((a, b) => (LY_MIDI[a.string] + a.fret) - (LY_MIDI[b.string] + b.fret));
+  if (opts.desc) asc.reverse();
+  const g = opts.beam || asc.length;                                   // beam group size (4 for scales)
+  const body = asc.map((n, i) => lyNote(n) + "8" + "\\" + n.string + (n.finger ? "-" + n.finger : "") + (i % g === 0 && i < asc.length - 1 ? "[" : (i % g === g - 1 || i === asc.length - 1) && i % g !== 0 ? "]" : "")).join(" ");
+  const chord = opts.chord ? `\\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } } { ${opts.chord} }` : "";
+  const paper = opts.compact
+    ? `\\paper { indent = 0 ragged-right = ##t } \\header { tagline = ##f } #(set-global-staff-size 17)`
+    : `\\paper { #(set-paper-size "letter") top-margin = 12.5\\mm bottom-margin = 12.5\\mm left-margin = 12.5\\mm right-margin = 12.5\\mm indent = 0 ragged-right = ##t print-page-number = ##f
+  bookTitleMarkup = \\markup \\column { \\fill-line { "${opts.part || "Guitar"}" \\column { ${(opts.source || "").split("\n").map(l => `\\line { "${l.replace(/"/g, '\\"')}" }`).join(" ")} } } \\vspace #2.2 \\fill-line { \\fontsize #6 \\bold "${(opts.title || "").replace(/"/g, '\\"')}" } \\vspace #0.5 } }
+\\header { tagline = ##f } #(set-global-staff-size 20)`;
+  return `\\version "2.24.0"
+${paper}
+mus = { \\time ${asc.length}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature ${body} \\bar "" }
+\\layout { \\context { \\Score \\remove "Bar_number_engraver" } }
+\\score { <<
+  ${chord}
+  \\new Staff \\with { \\override StringNumber.stencil = ##f \\remove "Time_signature_engraver" } { \\clef "treble_8" \\mus }
+  
+  \\new TabStaff \\with { \\override Fingering.stencil = ##f \\override TabNoteHead.whiteout = ##f \\remove "Time_signature_engraver" } { \\clef moderntab \\mus }
+>> }
+`;
+}
+
+function notationPanel(p) {
+  if (state.notation !== "on") return "";
+  const sh = SCALES[p.scale].shapes[p.id], v = state.variants[vKey(p.id)];
+  const notes = p.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
+  const id = (p.scale + "-" + p.id + (v ? "-" + v : "")).replace(/[^A-Za-z0-9-]/g, "_");
+  const src = `../notation/svg/fretboard/${id}-${p.key.replace("#", "s")}.svg`;
+  const opts = { beam: 4, desc: sh.dir === "desc" };
+  return `<div class="ly" data-src="${src}" data-notes='${JSON.stringify(notes)}' data-opts='${JSON.stringify(opts)}'></div><p class="lynote"><span>staff + TAB in ${p.key}${sh.dir === "desc" ? " · descending" : ""}, engraved with LilyPond</span><button type="button" class="dlLy" data-scale="${p.scale}" data-id="${p.id}">Download .ly</button></p>`;
+}
+function downloadLy(p) {
+  const sc = SCALES[p.scale], sh = sc.shapes[p.id];
+  const notes = p.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
+  const text = lyShape(notes, { beam: 4, desc: sh.dir === "desc", title: `${p.key} ${sc.name.toLowerCase()} · ${p.id} · ${sh.name}`, part: "Guitar", source: "Flynn, Jazz Guitar Technique Handbook\\n" + (sc.pages || "") });
+  const blob = new Blob([text], { type: "text/plain" }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `${p.key}-${p.scale}-${p.id}.ly`.replace("#", "s"); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
 /* ---------- whole-neck view ---------- */
 const NECK_TOP = 17;
 function neckPlacements() {                          // every placement of the cycle, frets 1-17
@@ -416,7 +600,7 @@ function drawNeck() {
 }
 
 /* ---------- state + ui ---------- */
-const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", variants: {}, neckSel: null };
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", notation: "on", variants: {}, neckSel: null };
 const vKey = id => state.scale + ":" + id;
 function activeNotes(sc, id) {                       // the chosen variant's notes, default otherwise
   const sh = sc.shapes[id], v = state.variants[vKey(id)];
@@ -445,6 +629,7 @@ function render() {
       state.fingering, f => { state.fingering = f; render(); });
   seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
       .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
+  seg("notation", [["on","Staff + TAB"],["off","Hidden"]].map(([id, label]) => ({ id, label })), state.notation, n => { state.notation = n; render(); });
 
   if (!sc.shapes[state.fingering] && state.fingering !== "all" && state.fingering !== "neck") state.fingering = cyc()[0];
   const cur = sc.shapes[state.fingering];
@@ -468,6 +653,7 @@ function render() {
   main.classList.toggle("grid", ids.length > 1);
   const placed = ids.map(id => place(state.scale, id, state.key));
   main.innerHTML = neck ? drawNeck() : placed.map(p => figure(p, state.mode)).join("");
+  if (!neck) hydrateNotation(main);
 
   const hint = document.getElementById("cycleHint");
   if (state.fingering === "neck") {
@@ -491,6 +677,8 @@ document.getElementById("step").addEventListener("click", () => {
 
 /* ---------- neck interactions ---------- */
 document.getElementById("diagrams").addEventListener("click", e => {
+  const dl = e.target.closest ? e.target.closest(".dlLy") : null;
+  if (dl) { downloadLy(place(dl.dataset.scale, dl.dataset.id, state.key)); return; }
   if (state.fingering === "neck" && e.target.closest && e.target.closest("[data-neckreset]")) {
     state.neckSel = null;
     render();
@@ -502,6 +690,7 @@ document.getElementById("diagrams").addEventListener("click", e => {
     render();
   }
 });
+document.body.insertAdjacentHTML("afterbegin", NOTE_DEFS);
 render();
 </script>
 </body>
