@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comping Rhythms</title>
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a;
+  --good:#7fb28a; --bad:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:6px 14px;cursor:pointer;color:var(--bone-dim)}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.app{display:grid;grid-template-columns:300px 1fr;padding:18px 28px 60px}
+@media (max-width:900px){.app{grid-template-columns:1fr;gap:24px}}
+.controls{padding-right:26px}
+.group{margin-bottom:18px}
+.group .lbl{display:block;font-size:14px;color:var(--bone-dim);margin-bottom:6px}
+select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
+.seg{display:grid;gap:4px;grid-template-columns:1fr 1fr}
+.seg.three{grid-template-columns:1fr 1fr 1fr}
+.seg button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 4px;cursor:pointer;font-size:14px}
+.seg button[aria-pressed=true]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--bone-dim);cursor:pointer;margin-top:6px}
+.check input{accent-color:var(--brass)}
+.tempo{display:flex;gap:8px;align-items:center}
+.tempo input{width:84px;font-family:var(--mono)}
+.hint{font-size:13px;color:var(--bone-dim);margin-top:6px}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+
+.stage{padding:0 8px}
+.title{font-family:var(--mono);font-size:20px;margin:0 0 4px}
+.sub{color:var(--bone-dim);font-size:14px;margin:0 0 14px;max-width:64ch}
+.phrase{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:1100px){.phrase{grid-template-columns:repeat(2,1fr)}}
+.bar{border:1px solid var(--line);border-radius:4px;padding:8px 8px 6px;position:relative;transition:none}
+.bar.now{border-color:var(--brass);background:var(--petrol-2)}
+.bar .n{font-family:var(--mono);font-size:10px;color:var(--bone-dim)}
+.bar .nm{font-size:12px;color:var(--bone-dim);line-height:1.3;min-height:32px}
+.bar .nm b{color:var(--bone);font-weight:400}
+.bar svg{display:block;width:100%;height:auto}
+.ly{color:var(--bone);padding:6px 4px 2px}
+.ly svg{width:100%;height:auto;max-height:64px}
+.bar.veiled .ly{visibility:hidden}
+.bar.veiled svg{visibility:hidden}
+.bar.veiled .nm{visibility:hidden}
+.stage .tools{margin-top:16px}
+.legend{margin-top:22px;font-size:13px;color:var(--bone-dim);max-width:64ch;line-height:1.5}
+
+/* ear mode */
+.ear{display:none;flex-direction:column;gap:14px}
+body.ear-on .ear{display:flex}
+body.ear-on .study{display:none}
+.choices{display:grid;grid-template-columns:repeat(2,minmax(200px,260px));gap:10px}
+.choices .bar{cursor:pointer}
+.choices .bar:hover{border-color:var(--brass)}
+.choices .bar.right{border-color:var(--good)}
+.choices .bar.wrong{border-color:var(--bad)}
+.score{font-family:var(--mono);font-size:14px;color:var(--bone-dim)}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1 class="wordmark">Comping <em>Rhythms</em></h1>
+  <div class="modes" role="group" aria-label="Mode">
+    <button id="mRead" aria-pressed="true">Read and play</button>
+    <button id="mEar" aria-pressed="false">Hear and name</button>
+  </div>
+</div>
+
+<div class="app">
+<aside class="controls">
+  <div class="group">
+    <span class="lbl">Feel</span>
+    <div class="seg" id="feel"><button data-v="swing" aria-pressed="true">Swing · Charleston</button><button data-v="straight" aria-pressed="false">Straight · Bossa</button></div>
+  </div>
+  <div class="group">
+    <span class="lbl">Phrase</span>
+    <div class="seg three" id="len"><button data-v="4" aria-pressed="true">4 bars</button><button data-v="8" aria-pressed="false">8</button><button data-v="12" aria-pressed="false">12</button></div>
+  </div>
+  <div class="group">
+    <span class="lbl">Change the rhythm</span>
+    <div class="seg three" id="every"><button data-v="1" aria-pressed="true">every bar</button><button data-v="2" aria-pressed="false">every 2</button><button data-v="4" aria-pressed="false">every 4</button></div>
+    <label class="check"><input type="checkbox" id="reshuffle" checked> new phrase each time round</label>
+  </div>
+  <div class="group">
+    <span class="lbl">Metronome</span>
+    <div class="tempo"><input type="number" id="bpm" value="140" min="40" max="300"> <span class="hint" style="margin:0" id="clickNote">bpm, clicks on 2 and 4</span></div>
+    <div class="tools" style="margin-top:10px"><button class="btn" id="play">Play</button><button class="btn quiet" id="shuffle">New phrase</button></div>
+    <p class="hint">One bar count-in. Space starts and stops; N is a new phrase.</p>
+  </div>
+  <div class="group">
+    <label class="lbl" for="sound">What the app plays on the hits</label>
+    <select id="sound">
+      <option value="chords">Chords (ii-V-I loop)</option>
+      <option value="stab">A muted stab</option>
+      <option value="none">Nothing, I play them</option>
+    </select>
+    <label class="check"><input type="checkbox" id="notation" checked> standard notation (off: eighth-note grid)</label>
+    <label class="check"><input type="checkbox" id="ahead" checked> show the next bar only (hide the rest)</label>
+  </div>
+</aside>
+
+<main class="stage">
+  <div class="study">
+    <h2 class="title" id="title"></h2>
+    <p class="sub" id="sub"></p>
+    <div class="phrase" id="phrase"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="ear">
+    <h2 class="title">Which rhythm is this?</h2>
+    <p class="sub">The app loops one bar of a rhythm with the click. Pick the grid that matches. It keeps looping until you answer.</p>
+    <div class="choices" id="choices"></div>
+    <div class="score" id="score">Streak 0</div>
+    <div class="tools"><button class="btn" id="earPlay">Play it</button><button class="btn" id="earNext">Next</button></div>
+  </div>
+</main>
+</div>
+
+<script>
+/* ---------- rhythm vocabulary (Handbook pp. 83–84) ---------- */
+// cells are eighth notes: 0 = beat 1, 1 = and of 1, … 7 = and of 4; -1 = and of 4 in the previous bar (pickup)
+const SWING_PLACE = [
+  {id:'prime',   name:'prime',       cells:[0,3]},
+  {id:'delayed', name:'delayed',     cells:[1,4]},
+  {id:'antic',   name:'anticipated', cells:[-1,3]},
+];
+// lengths in eighths for [first, second] hit, per placement and shape
+const LEN = {
+  prime:  {LS:[3,1], LL:[3,5], SS:[1,1], SL:[1,5]},
+  delayed:{LS:[3,1], LL:[3,4], SS:[1,1], SL:[1,4]},
+  antic:  {LS:[4,1], LL:[4,3], SS:[1,1], SL:[1,5]},
+};
+const DUR = [
+  {id:'LS', name:'long-short'}, {id:'LL', name:'long-long'}, {id:'SS', name:'short-short'}, {id:'SL', name:'short-long'},
+];
+const STRAIGHT = [
+  {id:'bossaA-L', name:'bossa, beat 1 long',  cells:[0,3,6], len:[3,1,1]},
+  {id:'bossaA-S', name:'bossa, beat 1 short', cells:[0,3,6], len:[1,1,1]},
+  {id:'bossaB',   name:'bossa, off the one',  cells:[1,4,6], len:[1,1,1]},
+  {id:'bossaC',   name:'two and four',        cells:[2,6],   len:[2,2]},
+];
+function swingVariations(){ const out=[]; SWING_PLACE.forEach(p=>DUR.forEach(d=>out.push({id:p.id+'-'+d.id, name:'Charleston, '+p.name+', '+d.name, cells:p.cells, len:LEN[p.id][d.id]}))); return out; }
+function vocabulary(feel){ return feel==='swing' ? swingVariations() : STRAIGHT; }
+
+/* ---------- chords for the hits (drop-2 top set, D-7 G7 CΔ7 CΔ7) ---------- */
+const OPEN=[null,64,59,55,50,45,40];
+const LOOP=[ [[4,7],[3,7],[2,6],[1,8]], [[4,5],[3,7],[2,6],[1,7]], [[4,5],[3,5],[2,5],[1,7]], [[4,5],[3,5],[2,5],[1,7]] ];
+
+/* ---------- state ---------- */
+const st={mode:'read', feel:'swing', len:4, every:1, phrase:[], swingRatio:0.62};
+const el=id=>document.getElementById(id);
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+
+function makePhrase(){
+  const vocab=vocabulary(st.feel); const out=[]; let cur=null;
+  for(let b=0;b<st.len;b++){ if(b%st.every===0){ let v=rnd(vocab); if(cur&&vocab.length>1){ let tries=0; while(v.id===cur.id&&tries++<10) v=rnd(vocab); } cur=v; } out.push(cur); }
+  st.phrase=out;
+}
+
+/* ---------- pre-rendered LilyPond notation (currentColor, so CSS colors it) ---------- */
+const RHY_SVG = {"antic-LL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 18.2893 4.7478\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"18.2893\" y2=\"0\"/> </g> <g transform=\"translate(18.1593, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.0544, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.5506, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.7768, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.8548, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(11.1050, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.3313, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(14.8093, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.5392 1.4830 3.4095 1.4830 4.0965 0.7500L4.0965 0.7500C3.4095 1.3390 1.5392 1.3390 0.8521 0.7500z\"/> </g> <g transform=\"translate(8.5506, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.3679 1.3599 2.4908 1.3599 3.0065 0.7500L3.0065 0.7500C2.4908 1.2159 1.3679 1.2159 0.8521 0.7500z\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.8042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.1444, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.3707, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.8986, 2.8750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> </svg>", "antic-LS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 16.3350 4.7478\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"16.3350\" y2=\"0\"/> </g> <g transform=\"translate(16.2050, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.0544, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.5506, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.7768, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.8548, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(11.1050, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M365 0h-355c-6 0 -10 4 -10 10v136c0 6 4 10 10 10h355c6 0 10 -4 10 -10v-136c0 -6 -4 -10 -10 -10z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.5392 1.4830 3.4095 1.4830 4.0965 0.7500L4.0965 0.7500C3.4095 1.3390 1.5392 1.3390 0.8521 0.7500z\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.8042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.1444, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.8986, 2.8750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.3707, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> </svg>", "antic-SL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 17.4091 4.6595\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"17.4091\" y2=\"0\"/> </g> <g transform=\"translate(17.2791, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.0544, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.4944, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.6944, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.9206, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.9986, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.2489, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M314 65c0 23 -19 41 -42 41c-39 0 -204 -110 -231 -143c-7 -8 -10 -18 -10 -28c0 -23 19 -41 42 -41c39 0 203 110 230 143c7 8 11 18 11 28zM262 136c41 0 82 -14 82 -71c0 -26 -16 -112 -74 -151c-25 -17 -87 -50 -187 -50c-41 0 -83 14 -83 71c0 26 16 112 74 151 c25 17 88 50 188 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(13.5482, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.0743\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.6944, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.3743 1.3653 2.5209 1.3653 3.0431 0.7500L3.0431 0.7500C2.5209 1.2213 1.3743 1.2213 0.8521 0.7500z\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.8042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.1444, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> </svg>", "antic-SS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 17.4789 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"17.4789\" y2=\"0\"/> </g> <g transform=\"translate(17.3489, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.0544, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.4944, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.6944, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.9206, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.9986, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.2489, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M365 0h-355c-6 0 -10 4 -10 10v136c0 6 4 10 10 10h355c6 0 10 -4 10 -10v-136c0 -6 -4 -10 -10 -10z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.8042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.1444, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> </svg>", "bossaA-L": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 14.7030 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"14.7030\" y2=\"0\"/> </g> <g transform=\"translate(14.5730, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.4606, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.8106, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(11.4627, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.0368, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.2542, 2.8750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.9062, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.1324, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.2104, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> </svg>", "bossaA-S": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 16.2010 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"16.2010\" y2=\"0\"/> </g> <g transform=\"translate(16.0710, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.7084, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.9587, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.3086, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.9608, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(13.5349, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.1521, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.6304, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.2042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.4042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> </svg>", "bossaB": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 17.2512 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"17.2512\" y2=\"0\"/> </g> <g transform=\"translate(17.1212, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.6044, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.8306, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.9086, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(11.1589, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(13.3589, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(14.0110, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(14.5851, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.7000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.9262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.0042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.2544, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> </svg>", "bossaC": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0000 11.9887 4.5833\"> <g transform=\"translate(0.0000, 3.3333)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"11.9887\" y2=\"0\"/> </g> <g transform=\"translate(11.8587, 3.3333)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.1503, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.7983, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.0246, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.1480, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.3743, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> </svg>", "delayed-LL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0000 12.2664 4.3833\"> <g transform=\"translate(0.0000, 3.3333)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"12.2664\" y2=\"0\"/> </g> <g transform=\"translate(12.1364, 3.3333)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.1062, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M314 65c0 23 -19 41 -42 41c-39 0 -204 -110 -231 -143c-7 -8 -10 -18 -10 -28c0 -23 19 -41 42 -41c39 0 203 110 230 143c7 8 11 18 11 28zM262 136c41 0 82 -14 82 -71c0 -26 -16 -112 -74 -151c-25 -17 -87 -50 -187 -50c-41 0 -83 14 -83 71c0 26 16 112 74 151 c25 17 88 50 188 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.4055, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.0743\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.9262, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.7000, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.4542, 2.8333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> </svg>", "delayed-LS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0000 14.2904 4.5833\"> <g transform=\"translate(0.0000, 3.3333)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"14.2904\" y2=\"0\"/> </g> <g transform=\"translate(14.1604, 3.3333)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.1062, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.7583, 4.2783)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.3324, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.8104, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.7000, 3.3333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.4542, 2.8333)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.9262, 3.3333)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> </svg>", "delayed-SL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 13.7647 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"13.7647\" y2=\"0\"/> </g> <g transform=\"translate(13.6347, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.2544, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.6044, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M314 65c0 23 -19 41 -42 41c-39 0 -204 -110 -231 -143c-7 -8 -10 -18 -10 -28c0 -23 19 -41 42 -41c39 0 203 110 230 143c7 8 11 18 11 28zM262 136c41 0 82 -14 82 -71c0 -26 -16 -112 -74 -151c-25 -17 -87 -50 -187 -50c-41 0 -83 14 -83 71c0 26 16 112 74 151 c25 17 88 50 188 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.9038, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.0743\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.7000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.9262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.0042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> </svg>", "delayed-SS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 15.7886 4.6500\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"15.7886\" y2=\"0\"/> </g> <g transform=\"translate(15.6586, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.6044, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.2565, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(9.8306, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(12.3086, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.7000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(3.9262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.0042, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(5.2544, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-6 78c0 59 124 83 124 182c0 24 -8 49 -25 69l-35 42c-3 3 -4 7 -4 10c0 9 9 15 17 15c4 0 8 -1 11 -5l151 -180c7 -9 10 -17 10 -25c0 -59 -124 -83 -124 -182c0 -24 7 -49 24 -69l84 -99c3 -3 4 -7 4 -10c0 -9 -8 -16 -16 -16s-45 44 -109 44c-16 0 -53 0 -53 -67 c0 -35 11 -74 28 -94c7 -8 -5 -19 -12 -11c-45 54 -92 148 -92 202c0 41 27 42 40 42c33 0 78 -13 119 -31l-132 158c-7 9 -10 17 -10 25z\" fill=\"currentColor\"/> </g> </svg>", "prime-LL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 12.6209 4.6595\"> <g transform=\"translate(12.4909, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"12.6209\" y2=\"0\"/> </g> <g transform=\"translate(4.9062, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.3743 1.3653 2.5209 1.3653 3.0431 0.7500L3.0431 0.7500C2.5209 1.2213 1.3743 1.2213 0.8521 0.7500z\"/> </g> <g transform=\"translate(8.7600, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.0743\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.4606, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M314 65c0 23 -19 41 -42 41c-39 0 -204 -110 -231 -143c-7 -8 -10 -18 -10 -28c0 -23 19 -41 42 -41c39 0 203 110 230 143c7 8 11 18 11 28zM262 136c41 0 82 -14 82 -71c0 -26 -16 -112 -74 -151c-25 -17 -87 -50 -187 -50c-41 0 -83 14 -83 71c0 26 16 112 74 151 c25 17 88 50 188 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.2104, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.2542, 2.8750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.9062, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.1324, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> </svg>", "prime-LS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 12.6906 4.4000\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"12.6906\" y2=\"0\"/> </g> <g transform=\"translate(12.5606, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.2104, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.4606, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M365 0h-355c-6 0 -10 4 -10 10v136c0 6 4 10 10 10h355c6 0 10 -4 10 -10v-136c0 -6 -4 -10 -10 -10z\" fill=\"currentColor\"/> </g> <g transform=\"translate(2.2542, 2.8750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0c0 31 25 56 56 56s56 -25 56 -56s-25 -56 -56 -56s-56 25 -56 56z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.1324, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.9062, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> </svg>", "prime-SL": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 14.1189 4.6595\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"14.1189\" y2=\"0\"/> </g> <g transform=\"translate(13.9889, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.4042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.6304, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.7084, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.9587, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M314 65c0 23 -19 41 -42 41c-39 0 -204 -110 -231 -143c-7 -8 -10 -18 -10 -28c0 -23 19 -41 42 -41c39 0 203 110 230 143c7 8 11 18 11 28zM262 136c41 0 82 -14 82 -71c0 -26 -16 -112 -74 -151c-25 -17 -87 -50 -187 -50c-41 0 -83 14 -83 71c0 26 16 112 74 151 c25 17 88 50 188 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(10.2580, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.0743\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.4042, 3.3750)\"> <path stroke-width=\"0.0960\" stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke=\"currentColor\" fill=\"currentColor\" d=\"M0.8521 0.7500C1.3743 1.3653 2.5209 1.3653 3.0431 0.7500L3.0431 0.7500C2.5209 1.2213 1.3743 1.2213 0.8521 0.7500z\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.1521, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.2042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> </svg>", "prime-SS": "<svg preserveAspectRatio=\"xMidYMid meet\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.2\" viewBox=\"0.0600 -0.0250 14.1887 4.5450\"> <g transform=\"translate(0.0000, 3.3750)\"> <line stroke-linejoin=\"round\" stroke-linecap=\"round\" stroke-width=\"0.1200\" stroke=\"currentColor\" x1=\"0.0600\" y1=\"0\" x2=\"14.1887\" y2=\"0\"/> </g> <g transform=\"translate(14.0587, 3.3750)\"> <rect x=\"0.0000\" y=\"-1.0000\" width=\"0.1900\" height=\"2.0000\" ry=\"0.0000\" fill=\"currentColor\"/> </g> <g transform=\"translate(6.4042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.6304, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3750\" width=\"0.1560\" height=\"3.1889\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(7.7084, 0.0400)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M0 0v-250h-16v250h16zM0 0c0 -197 207 -336 207 -533c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -20 -12c-13 0 -26 11 -23 27c26 61 42 126 42 192c0 103 -94 208 -165 283v250z\" fill=\"currentColor\"/> </g> <g transform=\"translate(8.9587, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M365 0h-355c-6 0 -10 4 -10 10v136c0 6 4 10 10 10h355c6 0 10 -4 10 -10v-136c0 -6 -4 -10 -10 -10z\" fill=\"currentColor\"/> </g> <g transform=\"translate(0.5000, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M218 136c66 0 108 -36 108 -89c0 -89 -113 -183 -218 -183c-66 0 -108 36 -108 89c0 89 113 183 218 183z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.1521, 4.3200)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M-50 0c0 28 22 50 50 50s50 -22 50 -50s-22 -50 -50 -50s-50 22 -50 50z\" fill=\"currentColor\"/> </g> <g transform=\"translate(1.7262, 3.3750)\"> <rect x=\"-0.0780\" y=\"-3.3333\" width=\"0.1560\" height=\"3.1472\" ry=\"0.0400\" fill=\"currentColor\"/> </g> <g transform=\"translate(4.2042, 3.3750)\"> <path transform=\"scale(0.0040, -0.0040)\" d=\"M70 205c79 0 46 -98 91 -98c16 0 54 48 61 63c6 12 23 12 28 0l-123 -420c-8 -7 -17 -10 -27 -10s-20 3 -28 10l117 326c-34 -12 -69 -22 -105 -22c-47 0 -87 34 -87 79c0 40 33 72 73 72z\" fill=\"currentColor\"/> </g> </svg>"};
+
+function cell(v, opts){ return (el('notation').checked && RHY_SVG[v.id]) ? '<div class="ly">'+RHY_SVG[v.id]+'</div>' : barSVG(v, opts); }
+
+/* ---------- grid rendering ---------- */
+function barSVG(v, opts){
+  opts=opts||{}; const W=220, H=54, pad=16, cw=(W-pad*2)/8, y=30;
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  for(let c=0;c<8;c++){ const x=pad+c*cw; o+=`<line x1="${x}" y1="${y-14}" x2="${x}" y2="${y+14}" stroke="${c%2?'#274b55':'#4a6b74'}" stroke-width="${c===0?2:1}"/>`;
+    o+=`<text x="${x+cw/2}" y="${H-3}" font-size="9" text-anchor="middle" fill="#6f8a92">${['1','+','2','+','3','+','4','+'][c]}</text>`; }
+  o+=`<line x1="${pad+8*cw}" y1="${y-14}" x2="${pad+8*cw}" y2="${y+14}" stroke="#4a6b74" stroke-width="2"/>`;
+  o+=`<line x1="${pad}" y1="${y}" x2="${pad+8*cw}" y2="${y}" stroke="#274b55" stroke-width="1"/>`;
+  if(!opts.hide){
+    v.cells.forEach((c,i)=>{
+      const x= c<0 ? pad-cw/2 : pad+c*cw+cw/2;
+      const isLong=v.len[i]>1;
+      const x2 = isLong ? pad+(c+v.len[i])*cw-3 : x+cw*0.45;
+      o+=`<line x1="${x}" y1="${y}" x2="${x2}" y2="${y}" stroke="#c9a24a" stroke-width="${isLong?6:3}" stroke-linecap="round" opacity="${isLong?.9:.55}"/>`;
+      o+=`<circle cx="${x}" cy="${y}" r="6" fill="#c9a24a"/>`;
+      if(c<0) o+=`<text x="${x}" y="${y-18}" font-size="8" text-anchor="middle" fill="#c9a24a">pickup</text>`;
+    });
+  }
+  return o+'</svg>';
+}
+function renderPhrase(){
+  const title = st.feel==='swing' ? 'Charleston variations' : 'Bossa nova patterns';
+  el('title').textContent=title;
+  el('sub').textContent = st.feel==='swing'
+    ? 'Three placements (prime, delayed, anticipated) × four long/short combinations = twelve rhythms. Long notes sustain to the next hit; short ones are clipped eighths.'
+    : 'Straight eighths. Thumb takes the bass on 1 and 3; the fingers play the hits shown.';
+  const veil = el('ahead').checked && sched.on;
+  el('phrase').innerHTML = st.phrase.map((v,i)=>`<div class="bar ${veil&&i!==sched.bar&&i!==(sched.bar+1)%st.len?'veiled':''}" data-i="${i}"><span class="n">${i+1}</span><div class="nm"><b>${v.name.split(', ')[0]}</b><br>${v.name.split(', ').slice(1).join(', ')||'&nbsp;'}</div>${cell(v)}</div>`).join('');
+  el('legend').innerHTML = st.feel==='swing'
+    ? 'Prime is beat 1 and the "and" of 2. Delayed pushes both an eighth later. Anticipated pulls the first hit back to the "and" of 4 in the bar before (shown as a pickup) and keeps the second on the "and" of 2. Handbook p. 83, Ex. 9–11.'
+    : 'These are starting patterns; check them against Ex. 12–14 and adjust the cell lists at the top of the script to match what you teach.';
+  el('clickNote').textContent = st.feel==='swing' ? 'bpm, clicks on 2 and 4' : 'bpm, clicks on 1 and 3';
+}
+
+/* ---------- audio ---------- */
+let ac=null; const ctx=()=>ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+function click(at, accent){ const c=ctx(); const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=accent?1800:1400;
+  g.gain.setValueAtTime(.3,at); g.gain.exponentialRampToValueAtTime(.001,at+.05); o.connect(g); g.connect(c.destination); o.start(at); o.stop(at+.06); }
+function hit(at, dur, barIdx){
+  const mode=el('sound').value; if(mode==='none') return; const c=ctx();
+  if(mode==='stab'){ const buf=c.createBuffer(1,c.sampleRate*0.12,c.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+    const src=c.createBufferSource(); src.buffer=buf; const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=900; f.Q.value=1.2; const g=c.createGain(); g.gain.value=.7;
+    src.connect(f); f.connect(g); g.connect(c.destination); src.start(at); return; }
+  const notes=LOOP[barIdx%4];
+  notes.forEach(([s,fr],i)=>{ const f=440*Math.pow(2,(OPEN[s]+fr-69)/12); const o=c.createOscillator(), g=c.createGain(); o.type='triangle'; o.frequency.value=f;
+    const t=at+i*0.012; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.16,t+.006); g.gain.exponentialRampToValueAtTime(.0008,t+Math.max(.09,dur));
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+Math.max(.09,dur)+.05); });
+}
+
+/* eighth-cell → time offset in beats, with swing */
+function cellBeats(c){ const beat=Math.floor(c/2); const odd=((c%2)+2)%2===1; return beat + (odd ? (st.feel==='swing'?st.swingRatio:0.5) : 0); }
+
+const sched={on:false, timer:null, next:0, beat:0, bar:0, hits:[], hitIdx:0};
+const LOOKAHEAD=0.13, INTERVAL=25;
+function spb(){ return 60/(+el('bpm').value||120); }
+
+/* build hit list for one pass through the phrase: {t: beats from phrase start, dur: beats, bar} */
+function buildHits(phrase){
+  const hits=[];
+  phrase.forEach((v,b)=>v.cells.forEach((c,i)=>{ const t=b*4+cellBeats(c); const end=b*4+cellBeats(c+v.len[i]); hits.push({t, dur:Math.max(0.12,end-t-0.04), bar:b}); }));
+  return hits.sort((a,b)=>a.t-b.t);
+}
+
+function play(){
+  if(sched.on) return stop();
+  const c=ctx(); sched.on=true; sched.beat=-4; sched.bar=-1; sched.next=c.currentTime+0.1; sched.phraseStart=null; sched.hits=[]; sched.pass=0;
+  el('play').textContent='Stop'; sched.timer=setInterval(tick,INTERVAL); renderPhrase();
+}
+function stop(){ sched.on=false; clearInterval(sched.timer); el('play').textContent='Play'; renderPhrase(); }
+function tick(){
+  const c=ctx(); const s=spb();
+  while(sched.next < c.currentTime+LOOKAHEAD){
+    const beat=sched.beat, time=sched.next, b=((beat%4)+4)%4;
+    const clickOn = st.feel==='swing' ? (b===1||b===3) : (b===0||b===2);
+    if(beat<0 && (clickOn||b===0)) click(time, b===0);
+    if(beat>=0 && clickOn) click(time,false);
+    {
+      // schedule each pass one beat early so an anticipated pickup (and of 4) can be placed before beat 1
+      if(b===3 && ((Math.floor((beat+1)/4)) % st.len)===0){
+        if(sched.pass>0 && el('reshuffle').checked) makePhrase();
+        sched.pass++;
+        const start=time+s; const hits=buildHits(st.phrase);
+        hits.forEach(h=>hit(start+h.t*s, h.dur*s, h.bar));
+        setTimeout(()=>{ if(sched.on) renderPhrase(); }, Math.max(0,(start-c.currentTime)*1000));
+      }
+      if(b===0 && beat>=0){
+        const pb = Math.floor(beat/4) % st.len;
+        setTimeout(()=>{ if(!sched.on) return; sched.bar=pb; document.querySelectorAll('.phrase .bar').forEach(x=>x.classList.remove('now'));
+          const card=document.querySelector(`.phrase .bar[data-i="${pb}"]`); if(card) card.classList.add('now'); if(el('ahead').checked) renderPhrase(); }, Math.max(0,(time-c.currentTime)*1000));
+      }
+    }
+    sched.next += s; sched.beat++;
+  }
+}
+
+/* ---------- ear mode ---------- */
+const ear={cur:null, streak:0, best:0, timer:null, on:false};
+function earNew(){
+  earStop();
+  const vocab=vocabulary(st.feel); const answer=rnd(vocab);
+  const pool=new Set([answer.id]); const choices=[answer];
+  while(choices.length<Math.min(4,vocab.length)){ const v=rnd(vocab); if(!pool.has(v.id)){ pool.add(v.id); choices.push(v); } }
+  choices.sort(()=>Math.random()-.5);
+  ear.cur={answer, choices, done:false};
+  el('choices').innerHTML = choices.map((v,i)=>`<div class="bar" data-i="${i}"><div class="nm">&nbsp;</div>${cell(v)}</div>`).join('');
+  el('choices').querySelectorAll('.bar').forEach(b=>b.addEventListener('click',()=>earAnswer(+b.dataset.i)));
+  el('score').textContent='Streak '+ear.streak+(ear.best?' · best '+ear.best:'');
+  earPlay();
+}
+function earPlay(){
+  earStop(); if(!ear.cur) return; const c=ctx(); ear.on=true;
+  const s=spb(); let next=c.currentTime+0.1; let beat=-4;
+  ear.timer=setInterval(()=>{
+    while(next<c.currentTime+LOOKAHEAD){
+      const b=((beat%4)+4)%4; const clickOn = st.feel==='swing'?(b===1||b===3):(b===0||b===2);
+      if(clickOn) click(next,false);
+      if(beat>=0 && b===0){ const hits=buildHits([ear.cur.answer]); hits.forEach(h=>hit(next+h.t*s, h.dur*s, 0)); }
+      next+=s; beat++;
+    }
+  }, INTERVAL);
+}
+function earStop(){ ear.on=false; clearInterval(ear.timer); }
+function earAnswer(i){
+  const cur=ear.cur; if(cur.done) return; cur.done=true; earStop();
+  const right=cur.choices[i].id===cur.answer.id;
+  if(right){ ear.streak++; ear.best=Math.max(ear.best,ear.streak); } else ear.streak=0;
+  el('choices').querySelectorAll('.bar').forEach((b,j)=>{ if(cur.choices[j].id===cur.answer.id) b.classList.add('right'); else if(j===i) b.classList.add('wrong'); b.querySelector('.nm').innerHTML=cur.choices[j].name; });
+  el('score').textContent='Streak '+ear.streak+(ear.best?' · best '+ear.best:'');
+}
+
+/* ---------- wiring ---------- */
+function seg(id, key, cb){ el(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; el(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); st[key]= isNaN(+b.dataset.v)? b.dataset.v : +b.dataset.v; cb(); }); }
+function setMode(m){ st.mode=m; document.body.classList.toggle('ear-on', m==='ear'); el('mRead').setAttribute('aria-pressed',m==='read'); el('mEar').setAttribute('aria-pressed',m==='ear');
+  if(m==='ear'){ if(sched.on) stop(); earNew(); } else { earStop(); renderPhrase(); } }
+(function init(){
+  seg('feel','feel',()=>{ if(sched.on) stop(); makePhrase(); if(st.mode==='ear') earNew(); else renderPhrase(); });
+  seg('len','len',()=>{ makePhrase(); renderPhrase(); });
+  seg('every','every',()=>{ makePhrase(); renderPhrase(); });
+  el('shuffle').addEventListener('click',()=>{ makePhrase(); renderPhrase(); });
+  el('play').addEventListener('click',play);
+  el('ahead').addEventListener('change',renderPhrase);
+  el('notation').addEventListener('change',()=>{ if(st.mode==='ear'&&ear.cur){ const c=ear.cur; el('choices').querySelectorAll('.bar').forEach((b,j)=>{ b.innerHTML='<div class="nm">'+(c.done?c.choices[j].name:'&nbsp;')+'</div>'+cell(c.choices[j]); }); } else renderPhrase(); });
+  el('mRead').addEventListener('click',()=>setMode('read')); el('mEar').addEventListener('click',()=>setMode('ear'));
+  el('earPlay').addEventListener('click',earPlay); el('earNext').addEventListener('click',earNew);
+  document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return;
+    if(e.code==='Space'){ e.preventDefault(); if(st.mode==='read') play(); else earPlay(); }
+    if(e.key.toLowerCase()==='n'){ if(st.mode==='read'){ makePhrase(); renderPhrase(); } else earNew(); } });
+  makePhrase(); renderPhrase();
+})();
+</script>
+</body>
+</html>
