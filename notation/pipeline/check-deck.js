@@ -12,8 +12,8 @@ const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "../../arpeggios-deck/index.html"), "utf8");
 const js = src.split("<script>")[1].split("/* ---------- notation:")[0];
 global.document = { getElementById: () => ({}) };
-const E = new Function(js + "; buildTriads(); return { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions };")();
-const { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions } = E;
+const E = new Function(js + "; buildTriads(); return { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions, placeArp };")();
+const { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions, placeArp } = E;
 
 const NECK_MAX = 19;
 let fails = 0, shapes = 0, placements = 0;
@@ -58,6 +58,29 @@ for (const oct of [1, 2]) for (const q of Object.keys(QUAL)) {
   if (total !== list.length) fail(`${oct}-${q}: per-finger split covers ${total}/${list.length}`);
   const allView = list.filter(sh => [1, 2, 3, 4].includes(rootFinger(sh)));
   if (allView.length !== list.length) fail(`${oct}-${q}: All view drops shapes`);
+  // E: Shapes cards and the Parallel · one key walk — same shapes, same order,
+  // for every key and finger (both sort ascending by placeArp root fret, stable)
+  for (const key of KEYS) for (let f = 1; f <= 4; f++) {
+    const cards = byFinger[f].map(sh => ({ sh, rf: placeArp(oct, q, sh, key, key, PC[key]).rootFret }))
+      .sort((a, b) => a.rf - b.rf).map(x => x.sh);                          // Shapes tab walkOrder
+    const walk = list.filter(sh => rootFinger(sh) === f)
+      .map(sh => placeArp(oct, q, sh, key, key, PC[key])).sort((a, b) => a.rootFret - b.rootFret)
+      .map(p => p.sh);                                                      // Parallel · one key steps
+    if (cards.length !== walk.length || cards.some((sh, i) => sh !== walk[i]))
+      fail(`${oct}-${q} ${key} finger ${f}: Shapes cards and Parallel walk disagree`);
+  }
+}
+
+// F: middle-root coverage, as the book actually gives it (1-octave, 7th chords).
+// ø7/°7 have no middle-root shapes at all; the others have middle on strings
+// 6/5/4, and on string 3 only the major-third qualities (m7 and mMaj7 use ring
+// there, like ø7/°7 do everywhere). Triads are excluded: their middle slots are
+// curated overrides, not book shapes. Fail loudly if any of this drifts.
+const MIDDLE_1OCT = { maj7: [6, 5, 4, 3], m7: [6, 5, 4], dom7: [6, 5, 4, 3], m7b5: [], dim7: [], mMaj7: [6, 5, 4], maj7s5: [6, 5, 4, 3] };
+for (const q of SIZE.seventh.quals) {
+  const have = [...new Set(ARP[1][q].filter(sh => rootFinger(sh) === 2).map(sh => sh.rs))].sort((a, b) => b - a);
+  const want = MIDDLE_1OCT[q];
+  if (have.join() !== want.join()) fail(`middle-root coverage for ${q}: strings [${have}] — expected [${want}]`);
 }
 console.log(`${shapes} shapes, ${placements} neck placements checked — ${fails ? fails + " FAILURES" : "all clean"}`);
 process.exit(fails ? 1 : 0);

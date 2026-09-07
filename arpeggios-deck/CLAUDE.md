@@ -16,7 +16,9 @@ untouched; `rebuild` is wrapped only to mark the other tabs dirty.
   (1–4, or All with per-finger layer toggles). Every placement in the key whose
   notes all sit in frets 1–19 is drawn (`shapePlacements` — usually two octaves
   of the neck). Colored **by root string**: `--rs6 --rs5 --rs4 --rs3`. Cards for
-  the shapes (one per shape, existing card renderer + notation) sit below;
+  the shapes (one per shape, existing card renderer + notation) sit below, in
+  the Parallel · one key walk order — ascending by `placeArp` root fret
+  (`walkOrder`) — numbered to match, so the neck reads as a map of that walk;
   hovering a card lights its placements brass, hovering a dot outlines its
   card(s). ⌥-click / long-press a root dot jumps to Root with that root.
 - **Root**: a bare neck; clicking a position on a root-capable string
@@ -36,8 +38,12 @@ untouched; `rebuild` is wrapped only to mark the other tabs dirty.
   the ring finger, and the book's ø7/°7 "middle" shapes are ring shapes).
 - Headless checks: `notation/pipeline/check-deck.js` — anchor/finger/chord-tone
   validity, every Shapes placement in every key inside frets 1–19, Root-tab set
-  equality per string, per-finger partition = All view. Its placement/filter
-  rules are duplicated from `index.html`; keep in sync.
+  equality per string, per-finger partition = All view, Shapes cards ≡
+  Parallel · one key walk (every key × finger), and the book's middle-root
+  coverage table (middle on 6/5/4 for maj7/m7/dom7/mMaj7/maj7#5, plus string 3
+  only for the major-third qualities; none for ø7/°7; triads excluded — their
+  middles are curated overrides). Its placement/filter rules are duplicated
+  from `index.html`; keep in sync.
 
 ## Data model
 - `ARP[octaves][quality] = [{ rs, n: [[string, offset, finger], ...], alt?: [...] }, ...]`
@@ -53,7 +59,13 @@ untouched; `rebuild` is wrapped only to mark the other tabs dirty.
 - Chord-tone labels: R, 3/b3, 5/b5/#5, 7/b7/bb7.
 
 ## Approaches
-1. **Parallel · one key** (Ex. 1): every fingering of one quality in one key, sorted up the neck.
+1. **Parallel · one key** (Ex. 1): the chosen *finger's* shapes of one quality in one
+   key, sorted ascending by root fret. (It used to walk every fingering interleaved —
+   that misread p. 76, where the shape being moved is finger-defined, "e.g. index
+   finger ^7". Now finger-filtered; empty finger/quality combinations — middle for
+   ø7/°7 — show a message with a hint to try ring.) This walk is the stepped-through
+   version of the Shapes tab's per-finger neck: same shapes, same order, checked
+   headlessly.
 2. **Parallel · through the keys** (Ex. 2): one grip, cycle of 4ths.
 3. **HDA** (Ex. 3): seven diatonic chords, fixed root string + finger, each root at or above the previous, tonic octave appended if it fits. Missing fingerings substitute the nearest finger and flag it.
 4. **VDA** (Ex. 4, p. 78): scale position drawn as a hollow outline; every scale tone of the position, ascending in pitch from the 6th string to the 1st, becomes a root in turn and gets the diatonic arpeggio rooted at that exact string and fret. Candidate fingerings are limited to that root string; scoring prefers notes inside the window (position ±1 fret), tie-broken by notes coinciding with the scale shape. The sequence stops at the first root where no fingering fits with at most 2 notes outside; outside notes on shown cards are flagged, as the book allows. Cards show the root's string and fret. In 1-octave mode roots naturally run out at the 2nd string (no shapes exist there), in 2-octave mode at the 4th. Takes a tonality: major, harmonic minor or melodic minor, using that scale's own positions — `scalePlace(id, key, ton)` reads `SCALES[ton].shapes`, and `TONAL[ton].steps` must stay equal to `SCALES[ton].steps`. Validated headlessly across all keys, positions, octaves and tonalities: roots are position tones ascending in pitch, at the stated string/fret, never more than 2 notes outside, always flagged.

@@ -590,12 +590,17 @@ function pickShape(oct, q, rs, finger) {
 function rsOptions(oct) { return oct === 1 ? [6,5,4,3] : [6,5]; }
 
 const APPROACHES = [
- { name: "Parallel shapes · one key", uses: ["quality","octaves"],
+ { name: "Parallel shapes · one key", uses: ["quality","octaves","finger"],
    steps() {
+     /* p. 76: the "shape" being moved up the neck is finger-defined ("e.g. index
+        finger ^7") — walk only the chosen finger's shapes, sorted by root fret.
+        This is the stepped-through version of the Shapes tab's per-finger neck;
+        the two must show the same shapes in the same order (check-deck.js). */
      const list = ARP[state.oct][state.q], pc = PC[state.key];
-     const placed = list.map(sh => placeArp(state.oct, state.q, sh, state.key, state.key, pc)).sort((a, b) => a.minFret - b.minFret);
+     const placed = list.filter(sh => rootFinger(sh) === state.finger)
+       .map(sh => placeArp(state.oct, state.q, sh, state.key, state.key, pc)).sort((a, b) => a.rootFret - b.rootFret);
      return placed.map((p, i) => ({ p, sub: `Position ${i+1} of ${placed.length} · ${shapeName(p.sh, list)} · root ${p.rootFret}fr`,
-       instr: `Same chord, same quality, every fingering the book gives. Play each ${state.oct === 1 ? "one" : "two"}-octave shape up and down before moving to the next position (Ex. 1).` })); } },
+       instr: `Same finger, same quality, every shape the book gives from that finger. Play each up and down, then move to the next position (Ex. 1).` })); } },
  { name: "Parallel shapes · through the keys", uses: ["quality","octaves","rootString","finger"],
    steps() {
      const { sh, sub } = pickShape(state.oct, state.q, state.rs, state.finger), list = ARP[state.oct][state.q];
@@ -848,7 +853,10 @@ function downloadLy(p) {
 }
 function show() {
   const a = APPROACHES[state.approach];
-  if (!steps.length) { document.getElementById("card").innerHTML = `<header><span class="where">${a.name}</span></header><p class="instr">No ${state.oct}-octave ${SIZE[state.size].name.replace(/s$/, "")} shape fits this position from the strings the position offers. Try another fingering or the 1-octave shapes.</p>`; document.getElementById("fill").style.width = "0"; document.getElementById("prev").disabled = document.getElementById("next").disabled = true; return; }
+  if (!steps.length) { const msg = state.approach === 0
+      ? `No ${FINGER[state.finger]}-root ${state.oct}-octave ${QUAL[state.q].name} shapes — the book gives none from that finger. Try ring.`
+      : `No ${state.oct}-octave ${SIZE[state.size].name.replace(/s$/, "")} shape fits this position from the strings the position offers. Try another fingering or the 1-octave shapes.`;
+    document.getElementById("card").innerHTML = `<header><span class="where">${a.name}</span></header><p class="instr">${msg}</p>`; document.getElementById("fill").style.width = "0"; document.getElementById("prev").disabled = document.getElementById("next").disabled = true; return; }
   const s = steps[state.i], p = s.p;
   const bad = p.dots.filter(d => d.ok === false).length;
   document.getElementById("card").innerHTML = `<header><span class="where">${a.name}</span><span class="where">${state.i+1} / ${steps.length}</span></header>
@@ -979,13 +987,19 @@ function onSharedChange() {
 }
 
 /* ---------- Shapes tab ---------- */
-function shapeCardHTML(sh, color, psStore, extraFlag) {
+/* walk order: ascending by placeArp root fret, stable on ties — the same
+   ordering (and numbering) as the fixed Parallel · one key steps */
+function walkOrder(shs) {
+  return shs.map(sh => ({ sh, rf: placeArp(state.oct, state.q, sh, state.key, state.key, PC[state.key]).rootFret }))
+    .sort((a, b) => a.rf - b.rf).map(x => x.sh);
+}
+function shapeCardHTML(sh, color, psStore, extraFlag, pos) {
   const list = ARP[state.oct][state.q];
   const p = placeArp(state.oct, state.q, sh, state.key, state.key, PC[state.key]);
   const id = shapeId(sh);
   psStore[id] = p;
   return `<div class="card" data-sid="${id}">
-    <header><span class="where"><i class="csw" style="background:${color}"></i>${shapeName(sh, list)}</span><span class="where">root ${p.rootFret}fr</span></header>
+    <header><span class="where"><i class="csw" style="background:${color}"></i>${pos ? pos + " · " : ""}${shapeName(sh, list)}</span><span class="where">root ${p.rootFret}fr</span></header>
     <p class="title"><span class="key">${state.key}${QUAL[state.q].sym}</span><span class="name">${QUAL[state.q].name}</span><span class="shape">${state.oct}-octave</span></p>
     ${svgDots(p.dots, null, state.labels, `${state.key} ${QUAL[state.q].name}, ${shapeName(sh, list)}`)}
     ${extraFlag ? `<p class="flag">${extraFlag}</p>` : ""}${notationPanel(p)}</div>`;
@@ -1030,13 +1044,13 @@ function renderShapes() {
   if (all) {
     let html = "";
     for (let f = 1; f <= 4; f++) {
-      const grp = list.filter(sh => rootFinger(sh) === f);
+      const grp = walkOrder(list.filter(sh => rootFinger(sh) === f));
       if (!grp.length) continue;
-      html += `<p class="grouphead">${FINGER[f]}</p>` + grp.map(sh => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs)).join("");
+      html += `<p class="grouphead">${FINGER[f]}</p>` + grp.map((sh, i) => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs, "", i + 1)).join("");
     }
     cardsEl.innerHTML = html;
   } else {
-    cardsEl.innerHTML = shown.map(sh => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs)).join("");
+    cardsEl.innerHTML = walkOrder(shown).map((sh, i) => shapeCardHTML(sh, RSCOL[sh.rs], shapesPs, "", i + 1)).join("");
   }
   hydrateNotation(cardsEl);
 }
