@@ -123,6 +123,10 @@ main{max-width:880px;margin:0 auto;}
   color:var(--dimmer);text-transform:uppercase;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;
 }
+/* Live highlight: the stage whose density is currently in force.
+   Deliberately does not touch .slash styling (see CLAUDE.md). */
+.stage-cell.now{background:var(--panel-2);box-shadow:inset 0 0 0 1px var(--brass);}
+.stage-cell.now .stage-label{color:var(--brass-hot);}
 .chart-legend{
   display:flex;gap:16px;align-items:center;flex-wrap:wrap;
   padding:8px 13px;border-top:1px solid var(--rule);
@@ -130,11 +134,11 @@ main{max-width:880px;margin:0 auto;}
   text-transform:uppercase;color:var(--dim);
 }
 .chart-legend span{display:inline-flex;align-items:center;gap:6px;}
-.chart-legend .sw{
+.chart-legend .lg-sw{
   display:inline-block;width:8px;height:12px;background:var(--brass);
   clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);
 }
-.chart-legend .sw.off{width:5px;height:5px;border-radius:50%;background:var(--rest);clip-path:none;}
+.chart-legend .lg-sw.off{width:5px;height:5px;border-radius:50%;background:var(--rest);clip-path:none;}
 .chart-legend .lg-note{color:var(--dimmer);letter-spacing:.1em;margin-left:auto;}
 .chart.blind .chart-body,.chart.blind .chart-legend{visibility:hidden;}
 .chart.blind::after{
@@ -354,11 +358,26 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
       </div>
 
       <div class="field">
+        <label for="settle">Reaches floor at <span class="val"><b id="settleVal">90</b>% of round</span></label>
+        <input type="range" id="settle" min="50" max="100" step="5" value="90">
+      </div>
+
+      <div class="field">
+        <label>Curve <span class="val" id="curveVal">linear</span></label>
+        <div class="seg" role="group" id="curveSeg">
+          <button data-c="linear" aria-pressed="true">Linear</button>
+          <button data-c="easein" aria-pressed="false">Ease in</button>
+          <button data-c="easeout" aria-pressed="false">Ease out</button>
+          <button data-c="stepped" aria-pressed="false">Stepped</button>
+        </div>
+      </div>
+
+      <div class="field">
         <label for="vol">Click volume <span class="val"><b id="volVal">85</b>%</span></label>
         <input type="range" id="vol" min="0" max="100" step="1" value="85">
       </div>
 
-      <label class="toggle">Count-in bar
+      <label class="toggle">Count-in (2 bars at 160+ bpm)
         <input type="checkbox" id="countIn" checked><span class="sw"></span></label>
       <label class="toggle">Show tempo number
         <input type="checkbox" id="showTempo" checked><span class="sw"></span></label>
@@ -381,7 +400,7 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
    Instead of a solid run of clicking bars followed by a solid run of
    silence, each phrase cycle of n bars gets k clicking bars spread as
    evenly as possible through it. k falls over the round from every bar
-   down to your density floor.
+   down to your density floor, along a configurable settle curve.
 
    Maximally even distribution: bar i clicks when (i*k) mod n < k.
    This always puts a click on bar 1 of the phrase, then spaces the rest
@@ -389,13 +408,29 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
    ============================================================ */
 function barClicks(i, k, n){ return ((i * k) % n) < k; }
 
-// Density falls to the floor at 90% of the round, then holds, so the
+// Density falls to the floor at S.settle% of the round, then holds, so the
 // last stretch is a stable sparse pattern rather than a moving target.
-const SETTLE = 0.9;
+// fallShape maps clamped fall-time p (0–1) to fraction of the fall completed.
+function fallShape(p){
+  switch(S.curve){
+    case "easein":  return p*p;               // stays dense, falls late and fast
+    case "easeout": return 1 - (1-p)*(1-p);   // thins early, long sparse tail
+    case "stepped": {
+      // Equal-time plateaus: in phrase mode, one per available k level
+      // (n down to the floor's k), so every density gets the same dwell time.
+      const n = S.phrase;
+      const kmin = Math.max(1, Math.min(n, Math.round(S.floor/100*n)));
+      const L = S.mode === "phrase" ? n - kmin + 1 : 6;
+      if(L <= 1) return 1;
+      return Math.min(L-1, Math.floor(p*L)) / (L-1);
+    }
+    default: return p;                        // linear
+  }
+}
 function densityAt(prog){
   const f = S.floor/100;
-  const p = Math.min(1, Math.max(0, prog)/SETTLE);
-  return f + (1 - f) * (1 - p);
+  const p = Math.min(1, Math.max(0, prog)/(S.settle/100));
+  return f + (1 - f) * (1 - fallShape(p));
 }
 function kAt(prog){
   return Math.max(1, Math.min(S.phrase, Math.round(densityAt(prog) * S.phrase)));
@@ -407,6 +442,7 @@ const S = {
   bpm:120, minBpm:70, maxBpm:220, step:5,
   rounds:4, duration:180, rest:15,
   random:false, mode:"phrase", phrase:8, floor:25, vol:0.85,
+  settle:90, curve:"linear",
   countIn:true, showTempo:true, blind:false, lamps:false
 };
 
@@ -466,9 +502,15 @@ const VOICE = {
 const LOOKAHEAD = 25;      // ms between scheduler wakeups
 const AHEAD     = 0.13;    // s of audio scheduled in advance
 
+// At fast tempos one bar of count-in is not enough time to get set:
+// count two bars, jazz style — "1 … 2 … 1 2 3 4" (clicks on 1 and 3 of
+// the first bar, then all four beats of the second).
+const TWO_BAR_COUNT_BPM = 160;
+
 let timerID=null, rafID=null, restTimer=null;
 let phase="idle";          // idle | countin | play | rest
 let nextNoteTime=0, beatInBar=0, bar=0, playStart=0;
+let countBeat=0, countLen=4;
 let curK=0, phraseBar=0, barAudible=true;
 let tempos=[], roundIndex=0, bpm=120, take=1;
 let visQ=[], restEndsAt=0, wakeLock=null;
@@ -485,10 +527,16 @@ function scheduler(){
 
 function scheduleBeat(t, spb){
   if(phase === "countin"){
-    click(t, beatInBar===0 ? VOICE.cnt1 : VOICE.cnt);
-    visQ.push({t, beat:beatInBar, soft:true});
-    beatInBar++;
-    if(beatInBar > 3){
+    const b = countBeat % 4;
+    const firstBarOfTwo = countLen === 8 && countBeat < 4;
+    if(firstBarOfTwo){
+      if(b === 0 || b === 2) click(t, VOICE.cnt1);   // "1 … 2 …"
+    } else {
+      click(t, b === 0 ? VOICE.cnt1 : VOICE.cnt);    // "1 2 3 4"
+    }
+    visQ.push({t, beat:b, soft:true});
+    countBeat++;
+    if(countBeat >= countLen){
       beatInBar = 0; phase = "play";
       playStart = t + spb; bar = 0; curK = 0; phraseBar = 0;
       chartStatus.textContent = "playing";
@@ -581,6 +629,8 @@ function repeatRound(){
 function beginRound(){
   bpm = tempos[roundIndex];
   beatInBar = 0; bar = 0; curK = 0; phraseBar = 0; visQ.length = 0;
+  countBeat = 0;
+  countLen = bpm >= TWO_BAR_COUNT_BPM ? 8 : 4;
   nextNoteTime = ctx.currentTime + 0.12;
   phase = S.countIn ? "countin" : "play";
   if(!S.countIn) playStart = nextNoteTime;
@@ -597,6 +647,7 @@ function endRound(t){
   click(t, VOICE.chime);
   click(t + 0.16, VOICE.chime);
   phase = "rest";
+  setStage(-1);
   const isLast = roundIndex >= tempos.length - 1;
   const lead = Math.max(0, (t - ctx.currentTime)) * 1000;
   if(isLast){
@@ -644,6 +695,30 @@ function skipRound(){
 }
 
 /* ---------- visuals ---------- */
+// Which plan-chart stage is in force right now. Matches on k (the density
+// the player is actually facing), tie-broken by round position — NOT a
+// playhead: it marks the density stage, never beat or bar position.
+let stageKs = [], lastStage = -1;
+function setStage(i){
+  if(i === lastStage) return;
+  lastStage = i;
+  chartBody.querySelectorAll(".stage-cell").forEach(c =>
+    c.classList.toggle("now", +c.dataset.i === i));
+}
+function updateStageNow(now){
+  if(phase !== "play" || S.mode !== "phrase" || !stageKs.length || curK < 1){
+    setStage(-1); return;
+  }
+  const prog = (now - playStart)/S.duration;
+  const tIdx = Math.max(0, Math.min(PLAN_COLS-1, Math.floor(prog*PLAN_COLS)));
+  let best = -1, bestScore = Infinity;
+  for(let i=0;i<stageKs.length;i++){
+    const score = Math.abs(stageKs[i]-curK)*100 + Math.abs(i-tIdx);
+    if(score < bestScore){ bestScore = score; best = i; }
+  }
+  setStage(best);
+}
+
 function paint(){
   rafID = requestAnimationFrame(paint);
   const now = ctx.currentTime;
@@ -662,6 +737,8 @@ function paint(){
     if(ev.bar) barOut.textContent = ev.bar;
   }
 
+  updateStageNow(now);
+
   if(phase === "play"){
     const remain = Math.max(0, S.duration - (now - playStart));
     timeOut.textContent = fmt(remain);
@@ -675,14 +752,26 @@ function paint(){
 
 function drawChart(){
   chartBody.innerHTML = "";
+  stageKs.length = 0; lastStage = -1;
   if(S.mode === "thin"){
     chartTitle.textContent = "Click density over the round";
     const wrap = document.createElement("div");
     wrap.className = "density-strip";
     const track = document.createElement("div"); track.className = "density-track";
     const fill = document.createElement("div"); fill.className = "density-fill";
-    const endPct = 100 - S.floor;
-    fill.style.clipPath = "polygon(0 0, "+(SETTLE*100)+"% "+endPct+"%, 100% "+endPct+"%, 100% 100%, 0 100%)";
+    // Trace the actual settle curve (shape + settle point), stepped included:
+    // each sample emits a point at the previous height first, so plateaus
+    // draw as true stairs rather than slopes.
+    const N = 60;
+    let prevY = ((1 - densityAt(0))*100).toFixed(1);
+    let pts = "0% " + prevY + "%";
+    for(let i=1;i<=N;i++){
+      const x = (i/N*100).toFixed(1);
+      const y = ((1 - densityAt(i/N))*100).toFixed(1);
+      pts += ", " + x + "% " + prevY + "%, " + x + "% " + y + "%";
+      prevY = y;
+    }
+    fill.style.clipPath = "polygon(" + pts + ", 100% 100%, 0% 100%)";
     track.appendChild(fill);
     const lbl = document.createElement("div");
     lbl.className = "stage-label";
@@ -697,12 +786,13 @@ function drawChart(){
   chartTitle.textContent = "Dropout plan";
   chartLegend.style.display = "flex";
   chartLegend.innerHTML =
-    '<span><i class="sw"></i>bar clicks</span>' +
-    '<span><i class="sw off"></i>bar silent</span>' +
-    '<span class="lg-note">' + PLAN_COLS + ' stages sampled across the round \u00b7 a preview, not a timeline</span>';
+    '<span><i class="lg-sw"></i>bar clicks</span>' +
+    '<span><i class="lg-sw off"></i>bar silent</span>' +
+    '<span class="lg-note">' + PLAN_COLS + ' stages sampled across the round \u00b7 not a timeline \u00b7 the stage in force lights up</span>';
   for(let i=0; i<PLAN_COLS; i++){
     const prog = (i + 0.5)/PLAN_COLS;
     const k = kAt(prog);
+    stageKs.push(k);
     const cell = document.createElement("div");
     cell.className = "stage-cell";
     cell.dataset.i = i;
@@ -762,6 +852,19 @@ slider("rounds","rounds",null,"roundsVal");
 slider("dur","duration",fmt,"durVal");
 slider("rest","rest",null,"restVal");
 slider("floor","floor",null,"floorVal");
+slider("settle","settle",null,"settleVal");
+
+// Curve shape: linear / ease in / ease out / stepped.
+const CURVE_NAMES = {linear:"linear", easein:"ease in", easeout:"ease out", stepped:"stepped"};
+document.querySelectorAll("#curveSeg button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#curveSeg button").forEach(o =>
+      o.setAttribute("aria-pressed", String(o === b)));
+    S.curve = b.dataset.c;
+    $("curveVal").textContent = CURVE_NAMES[S.curve];
+    if(phase === "idle") stopSession(false); else drawChart();
+  });
+});
 
 $("vol").addEventListener("input", e => {
   S.vol = +e.target.value/100;
