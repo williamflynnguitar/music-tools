@@ -84,7 +84,8 @@ re-place notes and cycle fingers, and copy the resulting <code>TRIAD_OVERRIDE</c
     <h2 id="shapeName"></h2>
     <div id="board"></div>
     <p class="board-note">Click an empty spot to add a note; click a note to cycle its finger
-      1 → 2 → 3 → 4 → remove. Shaded columns are the book's five-fret window for this root finger.</p>
+      1 → 2 → 3 → 4 → 1; right-click (or &#8997;-click) a note to remove it. Shaded columns are the
+      book's five-fret window for this root finger.</p>
     <div class="legend">
       <span><i style="background:var(--brass)"></i>root</span>
       <span><i style="background:var(--bone)"></i>chord tone</span>
@@ -223,9 +224,20 @@ document.getElementById("board").addEventListener("click", e => {
   const s = +cell.dataset.s, off = +cell.dataset.off;
   const notes = currentNotes();
   const i = notes.findIndex(n => n[0] === s && n[1] === off);
-  if (i >= 0) { if (notes[i][2] >= 4) notes.splice(i, 1); else notes[i][2]++; }
-  else notes.push([s, off, state.rf === 1 ? Math.min(4, Math.max(1, off)) : Math.max(1, Math.min(4, 4 + off))]);
+  if (i >= 0) {
+    if (e.altKey) notes.splice(i, 1);
+    else notes[i][2] = notes[i][2] % 4 + 1;            // 1 → 2 → 3 → 4 → 1
+  }
+  else if (!e.altKey) notes.push([s, off, state.rf === 1 ? Math.min(4, Math.max(1, off)) : Math.max(1, Math.min(4, 4 + off))]);
   render();
+});
+document.getElementById("board").addEventListener("contextmenu", e => {
+  const cell = e.target.closest ? e.target.closest("rect[data-s]") : null;
+  if (!cell) return;
+  e.preventDefault();
+  const notes = currentNotes();
+  const i = notes.findIndex(n => n[0] === +cell.dataset.s && n[1] === +cell.dataset.off);
+  if (i >= 0) { notes.splice(i, 1); render(); }
 });
 
 function seg(id, key, coerce) {

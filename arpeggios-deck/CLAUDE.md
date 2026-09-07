@@ -60,7 +60,7 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
 ## Authoring page (edit.html)
 The student page has no editing UI. `edit.html` is the triad-fingering editor —
 pick octaves/quality/root string/root finger, click the board to add notes or
-cycle fingers (1 → 2 → 3 → 4 → remove), and copy the emitted `TRIAD_OVERRIDE`
+cycle fingers (click wraps 1 → 2 → 3 → 4 → 1; right- or ⌥-click removes), and copy the emitted `TRIAD_OVERRIDE`
 line for index.html. Works in offset-from-root space with the book's five-fret
 window shaded; validates chord tones, missing tones, root-to-root span; output
 is sorted ascending by pitch. It also computes the shape's index in
