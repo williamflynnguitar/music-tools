@@ -200,12 +200,9 @@ const TRIAD_OVERRIDE = {     // curated fingerings, [[string, offset, finger], .
   "1|dim|6|pinky": [[6,0,4],[5,-2,2],[4,-4,1],[3,-3,2]],
   "1|aug|5|pinky": [[5,0,3],[4,-1,2],[3,-2,1],[2,-2,1]],
   "1|aug|4|pinky": [[4,0,4],[3,-1,2],[2,-1,3],[1,-2,1]],
-  // string-3 "pinky" slots: top string set runs out before the octave, so
-  // these are R to 5(#5) only, and the root finger varies by quality
-  "1|maj|3|pinky": [[3,0,2],[2,0,3],[1,-2,1]],
-  "1|min|3|pinky": [[3,0,3],[2,-1,2],[1,-2,1]],
-  "1|dim|3|pinky": [[3,0,4],[2,-1,3],[1,-3,1]],
-  "1|aug|3|pinky": [[3,0,2],[2,0,3],[1,-1,1]],
+  // No pinky-root shapes on the top string set (root string 3): the octave
+  // falls outside the window and the resulting R-to-5 fingerings don't make
+  // sense — decided Sep 2026; don't re-add.
   "2|maj|6|middle": [[6,0,2],[5,-1,1],[5,2,4],[4,2,3],[3,1,2],[2,0,1],[1,0,1]],
   "2|min|6|middle": [[6,0,2],[5,-2,1],[5,2,4],[4,2,3],[3,0,1],[2,0,1],[1,0,1]],
   "2|aug|6|middle": [[6,0,2],[5,-1,1],[5,3,4],[4,2,3],[3,1,2],[2,1,2],[1,0,1]],

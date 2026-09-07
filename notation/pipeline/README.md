@@ -8,7 +8,7 @@ LilyPond's glyphs in the browser instead.
 Requires: node, python3, lilypond (2.24+) on the PATH.
 
     cd notation/pipeline
-    node gen-arpeggios.js        # → ly/arpeggios/*.ly   (2,160 cells: 180 shapes × 12 keys)
+    node gen-arpeggios.js        # → ly/arpeggios/*.ly   (2,112 cells: 176 shapes × 12 keys)
     node gen-fretboard.js        # → ly/fretboard/*.ly   (948 cells: 79 fingerings × 12 keys)
     ./render.sh all              # → ../svg/arpeggios/*.svg, ../svg/fretboard/*.svg
 
