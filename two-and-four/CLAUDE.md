@@ -22,9 +22,9 @@ Standard Web Audio lookahead pattern (see root CLAUDE.md):
 - The count-in is a separate phase, scheduled the same way; `playStart`
   is set to the beat *after* the last count click, so the count-in never
   eats round time. One bar ("1 2 3 4") normally; at
-  `TWO_BAR_COUNT_BPM` = **160 bpm and up** it becomes the idiomatic
-  two-bar jazz count — "1 … 2 … 1 2 3 4", clicks on beats 1 and 3 of the
-  first bar, all four of the second (`countBeat`/`countLen`).
+  `TWO_BAR_COUNT_BPM` = **160 bpm and up** it counts two full bars of
+  quarter-note clicks, accent on each downbeat (`countBeat`/`countLen`).
+  William chose 8 quarters over the "1 … 2 … 1 2 3 4" jazz count.
 
 Visuals never touch timing. Every scheduled beat also pushes
 `{t, beat, audible, bar}` onto `visQ`; a `requestAnimationFrame` loop

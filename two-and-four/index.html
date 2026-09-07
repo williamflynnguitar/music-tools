@@ -503,8 +503,7 @@ const LOOKAHEAD = 25;      // ms between scheduler wakeups
 const AHEAD     = 0.13;    // s of audio scheduled in advance
 
 // At fast tempos one bar of count-in is not enough time to get set:
-// count two bars, jazz style — "1 … 2 … 1 2 3 4" (clicks on 1 and 3 of
-// the first bar, then all four beats of the second).
+// count two full bars of quarter-note clicks, accent on each downbeat.
 const TWO_BAR_COUNT_BPM = 160;
 
 let timerID=null, rafID=null, restTimer=null;
@@ -528,12 +527,7 @@ function scheduler(){
 function scheduleBeat(t, spb){
   if(phase === "countin"){
     const b = countBeat % 4;
-    const firstBarOfTwo = countLen === 8 && countBeat < 4;
-    if(firstBarOfTwo){
-      if(b === 0 || b === 2) click(t, VOICE.cnt1);   // "1 … 2 …"
-    } else {
-      click(t, b === 0 ? VOICE.cnt1 : VOICE.cnt);    // "1 2 3 4"
-    }
+    click(t, b === 0 ? VOICE.cnt1 : VOICE.cnt);      // "1 2 3 4"
     visQ.push({t, beat:b, soft:true});
     countBeat++;
     if(countBeat >= countLen){
