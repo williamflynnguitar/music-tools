@@ -56,3 +56,15 @@ Interactive walkthrough of Arpeggio Practice (JGTH pp. 76–78) using the shapes
   pipeline (it only renders what's missing).
 - "Download .ly" writes the card as a LilyPond page via `lyShape()` — the same generator the
   pipeline uses (shared with fretboard; keep in sync).
+
+## Authoring page (edit.html)
+The student page has no editing UI. `edit.html` is the triad-fingering editor —
+pick octaves/quality/root string/root finger, click the board to add notes or
+cycle fingers (1 → 2 → 3 → 4 → remove), and copy the emitted `TRIAD_OVERRIDE`
+line for index.html. Works in offset-from-root space with the book's five-fret
+window shaded; validates chord tones, missing tones, root-to-root span; output
+is sorted ascending by pitch. It also computes the shape's index in
+`ARP[oct][q]` and prints the exact pipeline re-render command. Duplicates
+`TRIAD_IV`/`genTriad`/`STR` between `===== triad generator =====` markers —
+keep in sync with index.html. Edits live in memory only (no storage APIs).
+Not linked from the landing page.

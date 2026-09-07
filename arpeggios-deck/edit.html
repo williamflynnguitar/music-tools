@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arpeggios deck — triad fingering editor</title>
+<style>
+  :root {
+    --ink: #0a1a20; --petrol: #10303a; --petrol-2: #163f4b;
+    --bone: #e9e2d2; --bone-dim: #a9a597; --brass: #c9a44c; --warn: #d86b4a;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--bone); font-family: var(--sans); }
+  body { padding: 28px 32px 48px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+  h1 small { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-left: 12px; }
+  p.lede { margin: 0 0 24px; color: var(--bone-dim); font-size: 15px; max-width: 72ch; }
+  .layout { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  fieldset { border: 0; padding: 0; margin: 0 0 18px; }
+  legend { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-bottom: 8px; padding: 0; }
+  .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .g2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+  button { font-family: var(--mono); font-size: 13px; color: var(--bone); background: var(--petrol); border: 1px solid transparent; border-radius: 4px; padding: 8px 6px; cursor: pointer; line-height: 1.1; }
+  button:hover { background: var(--petrol-2); }
+  button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  button[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
+  button:disabled { opacity: .4; cursor: default; }
+  .card { background: var(--petrol); border-radius: 6px; padding: 18px 22px 16px; }
+  .card h2 { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--bone-dim); margin: 0 0 10px; }
+  .card svg { width: 100%; height: auto; display: block; }
+  .board-note { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 8px 0 0; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+  .actions button { padding: 8px 14px; }
+  .flag { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 8px 0 0; }
+  .ok { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 8px 0 0; }
+  .out { margin-top: 18px; }
+  .out pre { font-family: var(--mono); font-size: 13px; background: var(--ink); border-radius: 4px; padding: 12px 14px; overflow-x: auto; margin: 0; white-space: pre; }
+  .out .then { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 10px 0 4px; }
+  .paste { display: flex; gap: 8px; margin-top: 14px; }
+  .paste input { flex: 1; font-family: var(--mono); font-size: 12px; color: var(--bone); background: var(--ink); border: 1px solid var(--petrol-2); border-radius: 4px; padding: 8px 10px; }
+  .paste input:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+</style>
+</head>
+<body>
+<h1>Triad fingering editor <small>arpeggios-deck authoring</small></h1>
+<p class="lede">The authoring companion to the deck: pick a generated triad shape, click the board to
+re-place notes and cycle fingers, and copy the resulting <code>TRIAD_OVERRIDE</code> line to paste into
+<code>index.html</code>. Edits live in memory only until copied. Not linked from the landing page.</p>
+
+<div class="layout">
+  <div>
+    <fieldset><legend>Octaves</legend><div class="g2" id="octSeg">
+      <button data-v="1" aria-pressed="true">1</button>
+      <button data-v="2" aria-pressed="false">2</button>
+    </div></fieldset>
+    <fieldset><legend>Quality</legend><div class="g4" id="qSeg">
+      <button data-v="maj" aria-pressed="true">maj</button>
+      <button data-v="min" aria-pressed="false">min</button>
+      <button data-v="dim" aria-pressed="false">dim</button>
+      <button data-v="aug" aria-pressed="false">aug</button>
+    </div></fieldset>
+    <fieldset><legend>Root string</legend><div class="g4" id="rsSeg">
+      <button data-v="6" aria-pressed="true">6</button>
+      <button data-v="5" aria-pressed="false">5</button>
+      <button data-v="4" aria-pressed="false">4</button>
+      <button data-v="3" aria-pressed="false">3</button>
+    </div></fieldset>
+    <fieldset><legend>Root finger</legend><div class="g2" id="rfSeg">
+      <button data-v="1" aria-pressed="true">index</button>
+      <button data-v="4" aria-pressed="false">pinky</button>
+    </div></fieldset>
+    <fieldset><legend>Dot labels</legend><div class="g2" id="labSeg">
+      <button data-v="fingers" aria-pressed="true">fingers</button>
+      <button data-v="degrees" aria-pressed="false">degrees</button>
+    </div></fieldset>
+  </div>
+
+  <div class="card">
+    <h2 id="shapeName"></h2>
+    <div id="board"></div>
+    <p class="board-note">Click an empty spot to add a note; click a note to cycle its finger
+      1 → 2 → 3 → 4 → remove. Shaded columns are the book's five-fret window for this root finger.</p>
+    <div class="legend">
+      <span><i style="background:var(--brass)"></i>root</span>
+      <span><i style="background:var(--bone)"></i>chord tone</span>
+      <span><i style="background:var(--warn)"></i>outside the chord</span>
+    </div>
+    <div class="actions">
+      <button id="reset">Reset to generated</button>
+      <button id="clear">Clear</button>
+      <button id="copy">Copy override line</button>
+    </div>
+    <div id="flags"></div>
+    <div class="out">
+      <pre id="outLine"></pre>
+      <p class="then" id="thenNote"></p>
+    </div>
+    <div class="paste">
+      <input id="pasteIn" placeholder='paste an existing [[string, offset, finger], …] array to load it' spellcheck="false">
+      <button id="loadBtn">Load</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== triad generator — keep in sync with arpeggios-deck/index.html ===== */
+const TRIAD_IV = { maj: [0,4,7], min: [0,3,7], dim: [0,3,6], aug: [0,4,8] };
+const STR = { 6: 0, 5: 5, 4: 10, 3: 15, 2: 19, 1: 24 };
+function genTriad(oct, q, rs, rootFinger, stretch = 0) {
+  const iv = TRIAD_IV[q], seq = [];
+  for (let o = 0; o < oct; o++) iv.forEach(i => seq.push(i + 12 * o)); seq.push(12 * oct);
+  const lo = rootFinger === 1 ? 0 : -4 - stretch, hi = rootFinger === 1 ? 4 + stretch : 0;
+  const notes = []; let s = rs;
+  for (const semi of seq) {
+    let placed = null;
+    for (let str = 1; str <= s; str++) {
+      const off = semi + STR[rs] - STR[str];
+      if (off >= lo && off <= hi) { placed = [str, off]; break; }
+    }
+    if (!placed) return stretch ? null : genTriad(oct, q, rs, rootFinger, 1);
+    s = placed[0]; notes.push(placed);
+  }
+  return notes.map(([str, off]) => [str, off, rootFinger === 1 ? Math.min(4, Math.max(1, off)) : Math.max(1, 4 + off)]);
+}
+/* ===== end triad generator ===== */
+
+const QNAME = { maj: "major", min: "minor", dim: "diminished", aug: "augmented" };
+const DEG = { 0:"R", 1:"b2", 2:"2", 3:"b3", 4:"3", 5:"4", 6:"b5", 7:"5", 8:"#5", 9:"6", 10:"b7", 11:"7" };
+
+const state = { oct: 1, q: "maj", rs: 6, rf: 1, labels: "fingers" };
+const edits = {};                              // per-shape working copies, in memory only
+
+const shapeKey = () => `${state.oct}|${state.q}|${state.rs}|${state.rf === 1 ? "index" : "pinky"}`;
+const semiOf = n => n[1] + STR[n[0]] - STR[state.rs];   // pitch relative to the root
+const sorted = notes => notes.slice().sort((a, b) => semiOf(a) - semiOf(b) || b[0] - a[0]);
+
+function currentNotes() {
+  const k = shapeKey();
+  if (!edits[k]) {
+    const g = genTriad(state.oct, state.q, state.rs, state.rf);
+    edits[k] = g ? g.map(n => n.slice())
+                 : [[state.rs, 0, state.rf]];  // no generated shape: start from the root
+  }
+  return edits[k];
+}
+
+// Position of this shape in ARP[oct][q], matching buildTriads' push order
+// (nulls skipped; an override for the missing 2-oct/5th-string/pinky slot
+// appends, so indices of existing shapes don't move).
+function shapeIndex() {
+  let i = 0;
+  for (const rs of (state.oct === 1 ? [6,5,4,3] : [6,5])) for (const rf of [1, 4]) {
+    if (rs === state.rs && rf === state.rf) return i;
+    if (genTriad(state.oct, state.q, rs, rf)) i++;
+  }
+}
+
+/* ---------- board ---------- */
+function render() {
+  const notes = currentNotes();
+  const iv = TRIAD_IV[state.q];
+  const lo = state.rf === 1 ? 0 : -4, hi = state.rf === 1 ? 4 : 0;   // nominal window
+  let minO = Math.min(-6, ...notes.map(n => n[1]) ) - 1, maxO = Math.max(6, ...notes.map(n => n[1])) + 1;
+  const span = maxO - minO + 1, cw = 54, ch = 30, padL = 16, padT = 40, padR = 16, padB = 26;
+  const W = padL + span * cw + padR, H = padT + 5 * ch + padB;
+  const x = off => padL + (off - minO + 0.5) * cw, y = s => padT + (s - 1) * ch;
+
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="triad shape editor board">`;
+  o += `<rect x="${padL + (lo - minO) * cw}" y="${y(1) - 14}" width="${(hi - lo + 1) * cw}" height="${5 * ch + 28}" fill="var(--petrol-2)" opacity=".4"/>`;
+  o += `<text x="${x(0)}" y="${padT - 22}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">R</text><line x1="${x(0)}" y1="${padT - 18}" x2="${x(0)}" y2="${padT - 9}" stroke="var(--brass)" stroke-width="1.5"/>`;
+  for (let f = 0; f <= span; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="1" opacity=".7"/>`; }
+  for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${padL + span * cw}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.35}" opacity=".7"/>`;
+  for (let off = minO; off <= maxO; off++)
+    o += `<text x="${x(off)}" y="${H - 8}" font-family="var(--mono)" font-size="10" fill="var(--bone-dim)" text-anchor="middle" opacity=".8">${off > 0 ? "+" + off : off}</text>`;
+  for (let s = 1; s <= 6; s++) for (let off = minO; off <= maxO; off++)
+    o += `<rect x="${x(off) - cw / 2}" y="${y(s) - ch / 2}" width="${cw}" height="${ch}" fill="transparent" data-s="${s}" data-off="${off}" style="cursor:pointer"/>`;
+  for (const n of notes) {
+    const semi = ((semiOf(n) % 12) + 12) % 12;
+    const isRoot = semi === 0, inChord = iv.includes(semi);
+    const fill = isRoot ? "var(--brass)" : inChord ? "var(--bone)" : "var(--warn)";
+    const lab = state.labels === "degrees" ? DEG[semi] : n[2];
+    o += `<circle cx="${x(n[1])}" cy="${y(n[0])}" r="11.5" fill="${fill}" pointer-events="none"/>`;
+    o += `<text x="${x(n[1])}" y="${y(n[0]) + 4.3}" font-family="var(--mono)" font-size="${String(lab).length > 1 ? 10 : 12.5}" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${lab}</text>`;
+  }
+  document.getElementById("board").innerHTML = o + "</svg>";
+
+  document.getElementById("shapeName").textContent =
+    `${state.oct}-octave ${QNAME[state.q]} triad · root on string ${state.rs} · ${state.rf === 1 ? "index" : "pinky"} root`;
+
+  /* flags */
+  const flags = [];
+  const srt = sorted(notes);
+  const outside = srt.filter(n => !iv.includes(((semiOf(n) % 12) + 12) % 12));
+  if (outside.length) flags.push(`outside the chord: ${outside.map(n => `string ${n[0]} at ${n[1] >= 0 ? "+" + n[1] : n[1]} (${DEG[((semiOf(n) % 12) + 12) % 12]})`).join(", ")}`);
+  const have = new Set(srt.map(n => ((semiOf(n) % 12) + 12) % 12));
+  const missing = iv.filter(i => !have.has(i));
+  if (missing.length) flags.push(`missing chord tone${missing.length > 1 ? "s" : ""}: ${missing.map(i => DEG[i]).join(", ")}`);
+  if (srt.length && semiOf(srt[0]) !== 0) flags.push("lowest note is not the root");
+  const expected = state.oct === 1 ? 4 : 7;
+  if (srt.length !== expected) flags.push(`${srt.length} notes — generated ${state.oct}-octave shapes have ${expected} (root to root)`);
+  document.getElementById("flags").innerHTML = flags.length
+    ? flags.map(f => `<p class="flag">${f}</p>`).join("")
+    : `<p class="ok">all notes in the chord, root to root — looks right</p>`;
+
+  /* output */
+  const line = `"${shapeKey()}": [${srt.map(n => `[${n[0]},${n[1]},${n[2]}]`).join(",")}],`;
+  document.getElementById("outLine").textContent = line;
+  document.getElementById("thenNote").innerHTML =
+    `paste inside TRIAD_OVERRIDE in index.html, then re-render this shape's cells:<br>` +
+    `cd notation/pipeline &amp;&amp; rm -f ../svg/arpeggios/${state.oct}-${state.q}-${shapeIndex()}-*.svg &amp;&amp; node gen-arpeggios.js &amp;&amp; ./render.sh arpeggios`;
+}
+
+/* ---------- interaction ---------- */
+document.getElementById("board").addEventListener("click", e => {
+  const cell = e.target.closest ? e.target.closest("rect[data-s]") : null;
+  if (!cell) return;
+  const s = +cell.dataset.s, off = +cell.dataset.off;
+  const notes = currentNotes();
+  const i = notes.findIndex(n => n[0] === s && n[1] === off);
+  if (i >= 0) { if (notes[i][2] >= 4) notes.splice(i, 1); else notes[i][2]++; }
+  else notes.push([s, off, state.rf === 1 ? Math.min(4, Math.max(1, off)) : Math.max(1, Math.min(4, 4 + off))]);
+  render();
+});
+
+function seg(id, key, coerce) {
+  document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(`#${id} button`).forEach(o => o.setAttribute("aria-pressed", String(o === b)));
+    state[key] = coerce ? +b.dataset.v : b.dataset.v;
+    if (key === "oct") {                       // 2-octave roots live on strings 6 and 5 only
+      document.querySelectorAll("#rsSeg button").forEach(b2 => {
+        const okStr = state.oct === 1 || +b2.dataset.v >= 5;
+        b2.disabled = !okStr;
+        if (!okStr && +b2.dataset.v === state.rs) { state.rs = 5; }
+      });
+      document.querySelectorAll("#rsSeg button").forEach(b2 => b2.setAttribute("aria-pressed", String(+b2.dataset.v === state.rs)));
+    }
+    render();
+  }));
+}
+seg("octSeg", "oct", true); seg("qSeg", "q"); seg("rsSeg", "rs", true); seg("rfSeg", "rf", true); seg("labSeg", "labels");
+
+document.getElementById("reset").addEventListener("click", () => { delete edits[shapeKey()]; render(); });
+document.getElementById("clear").addEventListener("click", () => { edits[shapeKey()] = []; render(); });
+document.getElementById("copy").addEventListener("click", () => {
+  const t = document.getElementById("outLine").textContent;
+  if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {});
+});
+document.getElementById("loadBtn").addEventListener("click", () => {
+  const raw = document.getElementById("pasteIn").value;
+  const m = raw.match(/\[\s*\[[\s\S]*\]\s*\]/);
+  if (!m) return;
+  try {
+    const arr = JSON.parse(m[0]);
+    if (Array.isArray(arr) && arr.every(n => Array.isArray(n) && n.length === 3 && n.every(Number.isFinite)))
+      { edits[shapeKey()] = arr.map(n => n.slice()); render(); }
+  } catch (e) {}
+});
+
+render();
+</script>
+</body>
+</html>
