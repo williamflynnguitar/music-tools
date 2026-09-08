@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triad Voicings</title>
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a;
+  --good:#7fb28a; --bad:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:6px 14px;cursor:pointer;color:var(--bone-dim)}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.app{display:grid;grid-template-columns:290px 1fr;padding:18px 28px 40px;gap:0}
+@media (max-width:900px){.app{grid-template-columns:1fr;gap:24px}}
+.controls{padding-right:26px}
+.group{margin-bottom:18px}
+.group .lbl{display:block;font-size:14px;color:var(--bone-dim);margin-bottom:6px}
+.roots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.roots button,.seg button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 4px;cursor:pointer;font-family:var(--mono);font-size:13px}
+.roots button[aria-pressed=true],.seg button[aria-pressed=true]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.seg{display:grid;gap:4px;grid-template-columns:1fr 1fr}
+.seg.three{grid-template-columns:1fr 1fr 1fr}
+.seg.four{grid-template-columns:1fr 1fr 1fr 1fr}
+select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
+.sets{display:flex;flex-direction:column;gap:4px}
+.sets button{text-align:left;background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;font-size:14px}
+.sets button small{font-family:var(--mono);color:var(--bone-dim);font-size:11px}
+.sets button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
+.sets button[aria-pressed=true] small{color:var(--brass)}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--bone-dim);cursor:pointer;margin-top:6px}
+.check input{accent-color:var(--brass);width:auto}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.tempo{display:flex;gap:8px;align-items:center}
+.tempo input{width:76px;font-family:var(--mono)}
+.tempo select{width:110px}
+
+.stage{padding:0 10px}
+.title{font-family:var(--mono);font-size:22px;margin:0 0 4px}
+.title .q{color:var(--brass);font-size:.6em;vertical-align:.5em}
+.sub{color:var(--bone-dim);font-size:14px;margin:0 0 16px;max-width:64ch}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+.setrow{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.setrow .rlbl{font-family:var(--mono);font-size:12px;color:var(--bone-dim);width:64px;padding-top:40px;flex:none}
+.card{border:1px solid var(--line);border-radius:4px;padding:10px 8px 8px;text-align:center;cursor:pointer;background:transparent;color:var(--bone);width:168px}
+.card:hover,.card.sel{border-color:var(--brass)}
+.card .nm{font-family:var(--mono);font-size:15px;line-height:1.1}
+.card .nm .q{color:var(--brass);font-size:.7em;vertical-align:.4em}
+.card .tag{font-size:12px;color:var(--bone-dim);margin-top:2px;line-height:1.3;min-height:16px}
+.card svg{display:block;margin:4px auto 0}
+.card .rn{font-family:var(--mono);font-size:12px;color:var(--brass)}
+.chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;min-height:22px}
+.chips button{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);background:transparent;border-radius:10px;padding:2px 8px;cursor:pointer;color:var(--bone-dim)}
+.chips button[aria-pressed=true]{border-color:var(--brass);color:var(--brass)}
+.neckbox{margin-top:22px;background:var(--petrol);border-radius:6px;padding:12px 14px 8px}
+.neckbox h3{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--bone-dim);margin:0 0 6px}
+.neckbox svg{width:100%;height:auto;display:block}
+.hint{font-size:13px;color:var(--bone-dim);margin-top:16px;max-width:64ch}
+
+.choices4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,180px));gap:10px}
+.choices4 .card.right{border-color:var(--good)}
+.choices4 .card.wrong{border-color:var(--bad)}
+.score{font-family:var(--mono);font-size:14px;color:var(--bone-dim);margin-top:12px}
+.harm{display:flex;flex-direction:column;gap:4px}
+.harm button{text-align:left;background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 10px;cursor:pointer;font-size:14px}
+.harm button small{font-family:var(--mono);color:var(--bone-dim);font-size:11px;display:block}
+.harm button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Practice progressions</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder<span class="sp-pp">pp. 86&#8211;95</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+<div class="top">
+  <h1 class="wordmark">Triad <em>Voicings</em></h1>
+  <div class="modes" role="group" aria-label="Tab">
+    <button id="tShapes" aria-pressed="true">Shapes</button>
+    <button id="tKey" aria-pressed="false">Key study</button>
+    <button id="tDrill" aria-pressed="false">Drill</button>
+  </div>
+</div>
+
+<div class="app">
+<aside class="controls">
+  <div class="group sh-ctl">
+    <span class="lbl">Root</span>
+    <div class="roots" id="roots"></div>
+  </div>
+  <div class="group sh-ctl">
+    <span class="lbl">Quality</span>
+    <div class="seg four" id="quals"></div>
+  </div>
+  <div class="group sh-ctl">
+    <span class="lbl">Position</span>
+    <div class="seg" id="posPick">
+      <button data-p="closed" aria-pressed="true">Closed</button>
+      <button data-p="open" aria-pressed="false">Open</button>
+    </div>
+  </div>
+  <div class="group sh-ctl" id="setGroup">
+    <span class="lbl" id="setLbl">String set</span>
+    <div class="sets" id="sets"></div>
+    <label class="check"><input type="checkbox" id="allSets"> all sets, like the book page</label>
+  </div>
+
+  <div class="group ks-ctl" style="display:none">
+    <span class="lbl">Key</span>
+    <div class="roots" id="keys"></div>
+  </div>
+  <div class="group ks-ctl" style="display:none">
+    <label class="lbl" for="scale">Tonality</label>
+    <select id="scale"><option value="major">Major</option><option value="harm">Harmonic minor</option></select>
+  </div>
+  <div class="group ks-ctl" style="display:none">
+    <span class="lbl">String set (closed)</span>
+    <div class="sets" id="ksSets"></div>
+  </div>
+  <div class="group ks-ctl" style="display:none">
+    <span class="lbl">Harmonize the entry note as</span>
+    <div class="harm" id="harm"></div>
+  </div>
+  <div class="group ks-ctl" style="display:none">
+    <span class="lbl">Metronome</span>
+    <div class="tempo"><input type="number" id="bpm" value="80" min="30" max="240"> <span class="hint" style="margin:0">bpm, clicks on 2 and 4</span></div>
+    <div class="tempo" style="margin-top:8px">
+      <select id="rate"><option value="beat">chord per beat</option><option value="bar">chord per bar</option></select>
+      <select id="countin" style="width:100px"><option value="0">no count</option><option value="1" selected>1 bar in</option><option value="2">2 bars in</option></select>
+    </div>
+    <label class="check"><input type="checkbox" id="descend"> descending</label>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn" id="play">Play</button>
+      <button class="btn quiet" id="lily">Download .ly</button>
+    </div>
+  </div>
+
+  <div class="group dr-ctl" style="display:none">
+    <label class="lbl" for="tier">Tier</label>
+    <select id="tier">
+      <option value="1">1 · Year 1 — closed, 1-2-3 &amp; 2-3-4</option>
+      <option value="2">2 · Year 2 — closed, 3-4-5 &amp; 4-5-6</option>
+      <option value="3">3 · Year 3 — open, middle &amp; bottom</option>
+      <option value="4">4 · open top row + everything</option>
+      <option value="custom">Custom</option>
+    </select>
+  </div>
+  <div class="group dr-ctl" style="display:none">
+    <span class="lbl">Ask me to</span>
+    <div class="seg" id="drMode">
+      <button data-m="reveal" aria-pressed="true">Reveal it</button>
+      <button data-m="choose" aria-pressed="false">Choose it</button>
+    </div>
+  </div>
+  <div class="group dr-ctl" id="customGroup" style="display:none"></div>
+
+  <div class="group">
+    <label class="check sh-ctl dr-ctl"><input type="checkbox" id="labels"> chord tones in the dots</label>
+    <label class="check"><input type="checkbox" id="sound" checked> play on click</label>
+  </div>
+</aside>
+
+<main class="stage">
+  <div id="stShapes">
+    <h2 class="title" id="title"></h2>
+    <p class="sub" id="sub"></p>
+    <div id="rows"></div>
+    <div class="neckbox" id="neckbox"><h3 id="neckTitle"></h3><div id="neck"></div></div>
+  </div>
+  <div id="stKey" style="display:none">
+    <h2 class="title" id="ksTitle"></h2>
+    <p class="sub" id="ksSub"></p>
+    <div class="row" id="ksRow"></div>
+    <p class="hint" id="ksHint"></p>
+  </div>
+  <div id="stDrill" style="display:none">
+    <h2 class="title" id="qTitle"></h2>
+    <p class="sub" id="qText"></p>
+    <div id="qStage"></div>
+    <div class="score" id="score">Streak 0</div>
+    <div style="margin-top:12px;display:flex;gap:8px"><button class="btn quiet" id="revealBtn" style="display:none">Reveal</button><button class="btn" id="next">Next</button></div>
+  </div>
+</main>
+</div>
+
+<script>
+/* ---------- engine (pitch-based, as box-buddy / inversion-drill) ---------- */
+const OPEN = [null,64,59,55,50,45,40];
+const ROOTS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const KEYS = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"];
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a,c)=>a+(c==='#'?1:-1),0)) % 12 + 12) % 12;
+const TRI = {
+  maj:{name:'Major',      sym:'',  iv:[0,4,7], degs:['R','3','5']},
+  min:{name:'Minor',      sym:'-', iv:[0,3,7], degs:['R','b3','5']},
+  dim:{name:'Diminished', sym:'°', iv:[0,3,6], degs:['R','b3','b5']},
+  aug:{name:'Augmented',  sym:'+', iv:[0,4,8], degs:['R','3','#5']},
+};
+const INV = ['root position','1st inversion','2nd inversion'];
+const CSETS = {
+  '123':{name:'Set 1-2-3', strings:[3,2,1], tag:'G B E'},
+  '234':{name:'Set 2-3-4', strings:[4,3,2], tag:'D G B'},
+  '345':{name:'Set 3-4-5', strings:[5,4,3], tag:'A D G'},
+  '456':{name:'Set 4-5-6', strings:[6,5,4], tag:'E A D'},
+};
+const OROWS = { top:{name:'Top row', s:1, tag:'top voice on the 1st string'},
+                middle:{name:'Middle row', s:2, tag:'top voice on the 2nd string'},
+                bottom:{name:'Bottom row', s:3, tag:'top voice on the 3rd string'} };
+const MAXF = 15;       // top-voice ceiling (Ex. 8 reaches 14; the book's 11fr °7 cell reaches 15)
+const OPEN_SPAN = 5;   // fretted max−min; p. 42's G- middle-row 2nd inversion needs 5
+
+/* chord-tone spelling: letters R +2 +4 from the root letter, enharmonic
+   simple name when a double accidental would appear (as fretboard does) */
+const SIMPLE = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+function toneNames(rootName, q){
+  const pc = pcOf(rootName);
+  return TRI[q].iv.map((iv,i)=>{
+    const letter = 'CDEFGAB'[('CDEFGAB'.indexOf(rootName[0])+[0,2,4][i])%7];
+    let d = (((pc+iv)%12 - LPC[letter])%12+12)%12; if(d>6) d-=12;
+    const n = letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
+    return n.length>2 ? SIMPLE[(pc+iv)%12] : n;
+  });
+}
+
+/* closed: three tones within an octave, one per string of an adjacent set;
+   exactly one placement per octave, enumerated from the bass fret */
+function closedAll(pc, q, setId, inv){
+  const strings = CSETS[setId].strings, iv = TRI[q].iv, degs = TRI[q].degs;
+  const order = [0,1,2].map(i=>(i+inv)%3);
+  const pcs = order.map(i=>(pc+iv[i])%12);
+  const out = [];
+  for(let f0=0; f0<=MAXF; f0++){
+    if((OPEN[strings[0]]+f0)%12 !== pcs[0]) continue;
+    let prev = OPEN[strings[0]]+f0, ok = true;
+    const notes = [{s:strings[0], f:f0, deg:degs[order[0]], midi:prev}];
+    for(let j=1;j<3;j++){
+      let p = prev+1; while(p%12 !== pcs[j]) p++;
+      const fr = p-OPEN[strings[j]];
+      if(fr<0 || fr>MAXF) ok = false;
+      notes.push({s:strings[j], f:fr, deg:degs[order[j]], midi:p}); prev = p;
+    }
+    if(ok) out.push({notes, inv, pos:'closed', setId, low:Math.min(...notes.map(n=>n.f)),
+      top:degs[order[2]], bass:degs[order[0]]});
+  }
+  return out;
+}
+const closedLowest = (pc,q,setId,inv) => closedAll(pc,q,setId,inv)[0] || null;
+
+/* open: drop the middle voice of a closed inversion one octave; the result is a
+   pitch set, so placements are enumerated (distinct strings, frets 0-15,
+   fretted span ≤ OPEN_SPAN; open strings don't count toward the span) */
+function openPlacements(pc, q, openInv){
+  const c = (openInv+2)%3;                       // closed source: root→1st, 1st→2nd, 2nd→root
+  const iv = TRI[q].iv, degs = TRI[q].degs;
+  const order = [0,1,2].map(i=>(i+c)%3);
+  const rel = [0,(iv[order[1]]-iv[order[0]]+12)%12,(iv[order[2]]-iv[order[0]]+12)%12];
+  const relUp = [0, 12-rel[1], rel[2]+12-rel[1]];          // bottom→top after the drop
+  const tones = [order[1], order[0], order[2]];
+  const bassPc = (pc+iv[order[1]])%12;
+  const out = [];
+  for(let bass=36; bass<=OPEN[1]+MAXF-relUp[2]; bass++){
+    if(bass%12 !== bassPc) continue;
+    const m = relUp.map(r=>bass+r);
+    for(let s3=1; s3<=3; s3++) for(let s2=s3+1; s2<=5; s2++) for(let s1=s2+1; s1<=6; s1++){
+      const ss = [s1,s2,s3];
+      const fr = m.map((mi,i)=>mi-OPEN[ss[i]]);
+      if(fr.some(f=>f<0||f>MAXF)) continue;
+      const fretted = fr.filter(f=>f>0);
+      const span = fretted.length ? Math.max(...fretted)-Math.min(...fretted) : 0;
+      if(span > OPEN_SPAN) continue;
+      out.push({notes: m.map((mi,i)=>({s:ss[i], f:fr[i], deg:degs[tones[i]], midi:mi})),
+        inv:openInv, pos:'open', row:s3, span, bass,
+        low: fretted.length ? Math.min(...fretted) : 0, top:degs[tones[2]], bassDeg:degs[tones[0]]});
+    }
+  }
+  return out;
+}
+/* one row of the book page. The book's rows sit in four-string windows —
+   top voice on string 1/2/3, bass preferably on string 4/5/6 respectively —
+   so the row's octave is the lowest with a window-bass placement, and the
+   default prefers no open strings, then the smallest span, then the lowest
+   fret. The rest of that octave are the "or" alternates. */
+function openRow(pc, q, openInv, topString){
+  const all = openPlacements(pc,q,openInv).filter(p=>p.row===topString);
+  if(!all.length) return null;
+  const windowed = all.filter(p=>p.notes[0].s===topString+3);
+  const bass0 = Math.min(...(windowed.length?windowed:all).map(p=>p.bass));
+  const win = p=>p.notes[0].s===topString+3 ? 0 : 1;
+  const rank = (a,b)=>win(a)-win(b)||a.span-b.span||a.low-b.low;
+  const oct = all.filter(p=>p.bass===bass0).sort(rank);
+  const up = all.filter(p=>p.bass===bass0+12).sort(rank);
+  return {def:oct[0], alts:oct.slice(1), up:up[0]||null};
+}
+
+/* ---------- key study (Ex. 8, p. 81) ---------- */
+const SCALEDEF = {major:[0,2,4,5,7,9,11], harm:[0,2,3,5,7,8,11]};
+const RN = ['I','II','III','IV','V','VI','VII'];
+function diatonicTriads(tonicPc, scaleKey){
+  const sc = SCALEDEF[scaleKey];
+  return sc.map((d,i)=>{
+    const third=(sc[(i+2)%7]-d+12)%12, fifth=(sc[(i+4)%7]-d+12)%12;
+    const q = third===4 ? (fifth===8?'aug':'maj') : (fifth===6?'dim':'min');
+    const rn = ((q==='min'||q==='dim') ? RN[i].toLowerCase() : RN[i]) + (q==='dim'?'°':q==='aug'?'+':'');
+    return {pc:(tonicPc+d)%12, q, rn, deg:i};
+  });
+}
+function keySpell(keyName, scaleKey){          // 7 note names of the scale
+  if(scaleKey==='major') return SPELL[keyName];
+  const rel = KEYS.find(k=>pcOf(k)===(pcOf(keyName)+3)%12);
+  const i0 = SPELL[rel].findIndex(n=>pcOf(n)===pcOf(keyName));
+  const names = SPELL[rel].map((_,j)=>SPELL[rel][(i0+j)%7]);
+  names[6] = names[6].endsWith('b') ? names[6].slice(0,-1) : names[6]+'#';
+  return names;
+}
+function entryNote(keyName, scaleKey, setId){  // lowest in-key note on the set's top string
+  const tonicPc = pcOf(keyName), sc = SCALEDEF[scaleKey];
+  const top = CSETS[setId].strings[2];
+  let f = 0; while(!sc.some(d=>(tonicPc+d)%12 === (OPEN[top]+f)%12)) f++;
+  const deg = sc.findIndex(d=>(tonicPc+d)%12 === (OPEN[top]+f)%12);
+  return {string:top, fret:f, midi:OPEN[top]+f, deg};
+}
+function harmonizations(keyName, scaleKey, setId){    // the 3 diatonic triads containing the entry note
+  const tri = diatonicTriads(pcOf(keyName), scaleKey), names = keySpell(keyName, scaleKey);
+  const e = entryNote(keyName, scaleKey, setId);
+  return [ {as:'root', chordDeg:e.deg, inv:1},
+           {as:'3rd',  chordDeg:(e.deg+5)%7, inv:2},
+           {as:'5th',  chordDeg:(e.deg+3)%7, inv:0} ]
+    .map((h,i)=>{
+      const run = keyRunRaw(keyName, scaleKey, setId, h);
+      return {...h, sym:names[h.chordDeg]+TRI[tri[h.chordDeg].q].sym, tri:tri[h.chordDeg],
+        playable: run.every(c=>c.notes.every(n=>n.f>=0))};   // a low entry can push a voice off the nut
+    });
+}
+function keyRun(keyName, scaleKey, setId, choice){
+  return keyRunRaw(keyName, scaleKey, setId, harmonizations(keyName, scaleKey, setId)[choice]);
+}
+function keyRunRaw(keyName, scaleKey, setId, h){
+  const tonicPc = pcOf(keyName), sc = SCALEDEF[scaleKey];
+  const triads = diatonicTriads(tonicPc, scaleKey), names = keySpell(keyName, scaleKey);
+  const strings = CSETS[setId].strings, e = entryNote(keyName, scaleKey, setId);
+  const out = []; let topMidi = e.midi;
+  for(let i=0; i<8; i++){
+    const td = (e.deg+i)%7, cd = (h.chordDeg+i)%7, tri = triads[cd];
+    const cps = new Set(TRI[tri.q].iv.map(v=>(tri.pc+v)%12));
+    let m = topMidi-1; while(!cps.has(((m%12)+12)%12)) m--;
+    let b = m-1; while(!cps.has(((b%12)+12)%12)) b--;
+    const rootName = names[cd];
+    const tn = toneNames(rootName, tri.q);
+    const degOf = midi => TRI[tri.q].iv.findIndex(v=>(tri.pc+v)%12===((midi%12)+12)%12);
+    const notes = [ {s:strings[0], midi:b}, {s:strings[1], midi:m}, {s:strings[2], midi:topMidi} ]
+      .map(n=>({...n, f:n.midi-OPEN[n.s], deg:TRI[tri.q].degs[degOf(n.midi)], name:tn[degOf(n.midi)]}));
+    out.push({notes, rootName, q:tri.q, rn:tri.rn, inv:h.inv});
+    topMidi += (sc[(td+1)%7]-sc[td]+12)%12;
+  }
+  return out;
+}
+</script>
+<script>
+/* ---------- renderers ---------- */
+/* LilyPond glyph outlines (shared NOTE_DEFS; clef + accidentals used here) */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"f2\" d=\"M94 66c-60 0 -39 -66 -72 -66c-11 0 -22 7 -22 21c0 154 232 162 232 334c0 50 -17 102 -61 102c-33 0 -66 -14 -66 -44c0 -24 31 -37 31 -61c0 -34 -27 -61 -61 -61s-61 27 -61 61c0 84 72 148 157 148c98 0 190 -55 190 -145c0 -140 -131 -154 -225 -205 c85 -2 113 -61 165 -61c45 0 28 41 57 41c11 0 22 -8 22 -21c0 -29 -48 -109 -144 -109c-92 0 -96 66 -142 66z\" fill=\"currentColor\"/><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"f4\" d=\"M148 501c10 0 41 -15 72 -15c32 0 63 15 76 15c15 0 26 -11 26 -21c0 -4 -1 -7 -4 -10l-264 -291h134v4c0 60 50 41 75 85c7 11 8 24 14 36c3 7 10 10 17 10c11 0 24 -8 24 -25v-110h70c18 0 27 -14 27 -27s-9 -27 -27 -27h-70c2 -45 36 -82 80 -82c14 0 22 -10 22 -21 s-8 -22 -22 -22c-49 0 -96 14 -145 14s-97 -14 -146 -14c-14 0 -21 11 -21 22s7 21 21 21c44 0 79 37 81 82h-134c-43 0 -57 25 -57 42c0 5 1 10 3 12c73 81 123 182 123 291c0 17 11 31 25 31z\" fill=\"currentColor\"/><path id=\"f1\" d=\"M194 486c16 0 29 15 41 15c13 0 24 -13 24 -31v-341c0 -47 35 -86 81 -86c14 0 21 -10 21 -21s-7 -22 -21 -22c-49 0 -97 14 -146 14s-96 -14 -145 -14c-14 0 -22 11 -22 22s8 21 22 21c46 0 80 39 80 86v137c0 23 -16 35 -30 35c-7 0 -13 -4 -17 -11l-34 -65 c-5 -10 -14 -15 -23 -15c-14 0 -28 12 -28 27c0 4 1 8 3 13l129 250c2 4 7 6 11 6c18 0 37 -20 54 -20z\" fill=\"currentColor\"/><path id=\"f3\" d=\"M261 266c0 -54 85 -40 85 -125c0 -94 -83 -141 -186 -141c-84 0 -160 54 -160 133c0 32 26 58 58 58s58 -26 58 -58c0 -22 -36 -26 -36 -48c0 -33 42 -42 80 -42c41 0 56 50 56 98v21c0 44 -2 77 -43 77h-65c-18 0 -27 14 -27 27s9 27 27 27h65c42 0 43 36 43 83v11 c0 43 -20 70 -61 70c-34 0 -71 -8 -71 -38c0 -19 32 -23 32 -42c0 -28 -23 -51 -51 -51s-51 23 -51 51c0 72 66 123 141 123c93 0 174 -31 174 -113c0 -94 -68 -67 -68 -121z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+/* chord box (box-buddy's diagramSVG, family palette): × muted, O open, Nfr
+   label off the nut, box grows for wide spans; frets only, no fingers */
+function boxSVG(v, showLabels, W){
+  W = W||150; const sx=W/8.2, x0=sx*1.4, fy=sx*1.05, y0=fy*.95;
+  const fretted = v.notes.map(n=>n.f).filter(f=>f>0);
+  const minF = fretted.length?Math.min(...fretted):1, maxF = fretted.length?Math.max(...fretted):1;
+  const hasOpen = v.notes.some(n=>n.f===0);
+  let base = (minF<=1 || hasOpen) ? 1 : minF;          // opens only read against a drawn nut
+  const nF = Math.max(5, maxF-base+1);
+  const H = y0+nF*fy+fy*.6;
+  const used = new Set(v.notes.map(n=>n.s));
+  let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; o+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+nF*fy}" stroke="#a89f8c" stroke-width="${s>=5?1.4:1}"/>`; }
+  for(let i=0;i<=nF;i++){ const y=y0+i*fy; o+=`<line x1="${x0}" y1="${y}" x2="${x0+5*sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i===0&&base===1?4:1}"/>`; }
+  if(base>1) o+=`<text x="${x0-sx*.35}" y="${y0+fy/2+4}" font-size="${sx*.6}" text-anchor="end" fill="#6f8a92">${base}fr</text>`;
+  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx;
+    if(!used.has(s)) o+=`<text x="${x}" y="${y0-fy*.3}" font-size="${sx*.65}" text-anchor="middle" fill="#6f8a92">×</text>`; }
+  v.notes.forEach(n=>{ const x=x0+(6-n.s)*sx;
+    if(n.f===0){ o+=`<circle cx="${x}" cy="${y0-fy*.38}" r="${sx*.3}" fill="none" stroke="${n.deg==='R'?'#c9a24a':'#e8e1d1'}" stroke-width="1.6"/>`; return; }
+    const y=y0+(n.f-base)*fy+fy/2;
+    o+=`<circle cx="${x}" cy="${y}" r="${sx*.42}" fill="${n.deg==='R'?'#c9a24a':'#e8e1d1'}"/>`;
+    if(showLabels) o+=`<text x="${x}" y="${y+sx*.16}" font-size="${sx*.42}" text-anchor="middle" fill="#0b1a1f">${n.deg}</text>`; });
+  return o+'</svg>';
+}
+/* stacked chord on a treble_8 staff (whole-note heads on the shared LilyPond
+   glyph outlines), optional TAB column under it */
+const ACCV = {'':0,'#':1,'##':2,'b':-1,'bb':-2};
+function chordStaffSVG(notes, opts={}){
+  const T0 = 9.4, TS = 1.5;
+  const heads = notes.map(n=>{
+    const name = n.name, letter = name[0], acc = name.slice(1);
+    const written = n.midi+12, natural = written-(ACCV[acc]||0), oct = Math.floor(natural/12)-1;
+    return {...n, acc, y: 4-((oct*7+'CDEFGAB'.indexOf(letter))-30)*0.5};
+  });
+  const placed = [];
+  heads.slice().sort((a,b)=>a.y-b.y).forEach(h=>{
+    if(!h.acc) return;
+    let col = 0; while(placed.some(p=>p.col===col && Math.abs(p.y-h.y)<2.4)) col++;
+    placed.push({y:h.y, col}); h.accCol = col;
+  });
+  const accW = placed.length ? (Math.max(...placed.map(p=>p.col))+1)*1.5 : 0;
+  const X = 4.2+accW, W = X+3.4;
+  const use = (id,x,y,sz)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${sz||0.004},${-(sz||0.004)})"/>`;
+  let o = '';
+  for(let i=0;i<5;i++) o+=`<line x1="0" y1="${i}" x2="${W}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+  o += use('clef',0.5,3)+`<text x="0.85" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+  heads.forEach(h=>{
+    for(let ly=5; ly<=h.y; ly++) o+=`<line x1="${(X-0.45).toFixed(2)}" y1="${ly}" x2="${(X+1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    for(let ly=-1; ly>=h.y; ly--) o+=`<line x1="${(X-0.45).toFixed(2)}" y1="${ly}" x2="${(X+1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    if(h.acc!==''){
+      const ax = X-1.35-h.accCol*1.5;
+      if(h.acc==='#') o+=use('sharp',ax,h.y);
+      else if(h.acc==='b') o+=use('flat',ax+0.1,h.y);
+      else if(h.acc==='bb') o+=use('flat',ax-0.85,h.y)+use('flat',ax+0.1,h.y);
+      else if(h.acc==='##') o+=`<text x="${(ax+0.45).toFixed(2)}" y="${(h.y+0.5).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">𝄪</text>`;
+    }
+    o += `<ellipse cx="${(X+0.72).toFixed(2)}" cy="${h.y.toFixed(2)}" rx="0.82" ry="0.52" transform="rotate(-18 ${(X+0.72).toFixed(2)} ${h.y.toFixed(2)})" fill="none" stroke="currentColor" stroke-width="0.26"/>`;
+  });
+  let bottom = 6.4;
+  if(opts.tab){
+    for(let i=0;i<6;i++) o+=`<line x1="0" y1="${T0+i*TS}" x2="${W}" y2="${T0+i*TS}" stroke="currentColor" stroke-width="0.11"/>`;
+    ['T','A','B'].forEach((L,i)=>o+=`<text x="0.9" y="${(T0+2.05+i*2.05).toFixed(2)}" font-family="sans-serif" font-weight="700" font-size="2.2" text-anchor="middle" fill="currentColor">${L}</text>`);
+    notes.forEach(n=>o+=`<text x="${(X+0.72).toFixed(2)}" y="${(T0+(n.s-1)*TS+0.6).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.7" text-anchor="middle" fill="currentColor">${n.f}</text>`);
+    bottom = T0+5*TS+1.2;
+  }
+  const top = Math.min(-2.6, ...heads.map(h=>h.y-1.4));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${(W*13).toFixed(0)}" viewBox="-0.3 ${top.toFixed(2)} ${(W+0.6).toFixed(2)} ${(bottom-top).toFixed(2)}" preserveAspectRatio="xMidYMid meet" style="color:var(--bone)">${o}</svg>`;
+}
+/* full neck, frets 0-15: selected inversion bright, siblings faint; click any
+   position to re-root (Arpeggio Practice's Root tab gesture) */
+function neckSVG(sel, faint, rootPc){
+  const NF=15, cw=46, ch=30, padL=14, padT=16, padB=30, r=10;
+  const W=padL+NF*cw+padL, H=padT+5*ch+padB;
+  const x=f=>padL+(f-0.5)*cw, y=s=>padT+(s-1)*ch;
+  let o=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="full neck, frets 0 to ${NF}">`;
+  for(const f of [3,5,7,9,15]) o+=`<circle cx="${x(f)}" cy="${padT+2.5*ch}" r="4" fill="var(--petrol-2)"/>`;
+  o+=`<circle cx="${x(12)}" cy="${padT+1.5*ch}" r="4" fill="var(--petrol-2)"/><circle cx="${x(12)}" cy="${padT+3.5*ch}" r="4" fill="var(--petrol-2)"/>`;
+  for(let f=0;f<=NF;f++){ const fx=padL+f*cw; o+=`<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f===0?4:1}" opacity="${f===0?.9:.45}"/>`; }
+  for(let s=1;s<=6;s++) o+=`<line x1="${padL}" y1="${y(s)}" x2="${W-padL}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8+s*0.3}" opacity=".6"/>`;
+  for(let f=1;f<=NF;f++) o+=`<text x="${x(f)}" y="${H-10}" font-family="var(--mono)" font-size="10.5" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
+  for(let s=1;s<=6;s++) for(let f=0;f<=NF;f++)
+    o+=`<rect x="${x(f)-cw/2}" y="${y(s)-ch/2}" width="${cw}" height="${ch}" fill="transparent" style="cursor:pointer" data-cs="${s}" data-cf="${f}"/>`;
+  faint.forEach(n=>o+=`<circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r-3}" fill="none" stroke="var(--bone-dim)" stroke-width="1.4" opacity=".35" pointer-events="none"/>`);
+  sel.forEach(n=>{
+    o+=`<circle cx="${x(n.f)}" cy="${y(n.s)}" r="${r}" fill="${n.deg==='R'?'var(--brass)':'var(--bone)'}" pointer-events="none"/>`;
+    o+=`<text x="${x(n.f)}" y="${y(n.s)+3.8}" font-family="var(--mono)" font-size="11" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${n.deg}</text>`;
+  });
+  return o+'</svg>';
+}
+
+/* ---------- audio: strum + lookahead scheduler (shared pattern) ---------- */
+let ac=null; const ctx=()=>ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+function strumAt(notes, at, dur){
+  const c=ctx(); dur=dur||1.6;
+  [...notes].sort((a,b)=>b.s-a.s).forEach((n,i)=>{
+    const f=440*Math.pow(2,(OPEN[n.s]+n.f-69)/12);
+    const o=c.createOscillator(), g=c.createGain(), o2=c.createOscillator(), g2=c.createGain();
+    o.type='triangle'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*2; g2.gain.value=.25;
+    const t=at+i*0.04;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.2,t+.008); g.gain.exponentialRampToValueAtTime(.0008,t+dur);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination); o.start(t); o2.start(t); o.stop(t+dur+.05); o2.stop(t+dur+.05);
+  });
+}
+function strum(notes){ if(!el('sound').checked) return; const c=ctx(); c.resume(); strumAt(notes, c.currentTime+0.02, 2.0); }
+function click(at,hz,g0){ const c=ctx(); const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=hz;
+  g.gain.setValueAtTime(g0,at); g.gain.exponentialRampToValueAtTime(.001,at+.05); o.connect(g); g.connect(c.destination); o.start(at); o.stop(at+.06); }
+
+/* ---------- LilyPond export (shared lyDocument; triad chord names) ---------- */
+const LY_TRI = {maj:'', min:':m', dim:':dim', aug:':aug'};
+function lyRootName(rootName){ const l=rootName[0].toLowerCase(); const a=rootName.slice(1); return l+(a==='b'?'es':(a==='#'?'is':'')); }
+function lyChordName(ch, dur){ return lyRootName(ch.rootName)+dur+LY_TRI[ch.quality]; }
+function lyPitch(midi, flats){
+  const names = flats ? ['c','des','d','ees','e','f','ges','g','aes','a','bes','b'] : ['c','cis','d','dis','e','f','fis','g','gis','a','ais','b'];
+  const oct = Math.floor(midi/12)-1;
+  return names[midi%12] + (oct>=4 ? "'".repeat(oct-3) : ",".repeat(3-oct));
+}
+function lyVoicing(v, ch, dur){
+  const flats = !/#/.test(ch.rootName);
+  const ns = [...v.notes].sort((a,b)=>b.s-a.s).map(n=>lyPitch(OPEN[n.s]+n.f, flats)+'\\'+n.s);
+  return '<'+ns.join(' ')+'>'+dur;
+}
+function lyDocument(bars, opts){
+  const chords=[], music=[];
+  bars.forEach((bar,i)=>{
+    const d = bar.length===2 ? '2' : (bar.length===4 ? '4' : '1');
+    const cn=[], mu=[];
+    bar.forEach(it=>{ cn.push(lyChordName(it.ch, d)); mu.push(lyVoicing(it.v, it.ch, d)); });
+    const brk = (i+1)%4===0 && i+1<bars.length ? ' \\break' : '';
+    chords.push(cn.join(' ')+' |'); music.push(mu.join(' ')+' |'+brk);
+  });
+  const tempo = opts.bpm ? '\\tempo \\markup { \\concat { \\general-align #Y #DOWN \\smaller \\note {4} #1 " = '+opts.bpm+'  " \\bold "'+(opts.style||'Swing')+'" } }' : '';
+  return `\\version "2.24.0"
+\\paper {
+  #(set-paper-size "letter")
+  top-margin = 12.5\\mm bottom-margin = 12.5\\mm left-margin = 12.5\\mm right-margin = 12.5\\mm
+  indent = 0 ragged-right = ##f ragged-last = ##t print-page-number = ##f
+  system-system-spacing.basic-distance = #18
+  bookTitleMarkup = \\markup \\column {
+    \\fill-line { "${opts.part||'Guitar'}" \\column { ${(opts.source||'').split('\n').map(l=>'\\line { "'+l.replace(/"/g,'\\"')+'" }').join(' ')} } }
+    \\vspace #2.2 \\fill-line { \\fontsize #6 \\bold "${(opts.title||'').replace(/"/g,'\\"')}" } \\vspace #0.5 }
+}
+\\header { tagline = ##f }
+#(set-global-staff-size 20)
+\\layout { \\context { \\Score
+  \\override BarNumber.break-visibility = #end-of-line-invisible
+  \\override BarNumber.direction = #DOWN \\override BarNumber.self-alignment-X = #LEFT
+  \\override BarNumber.font-size = #-2
+  barNumberVisibility = #all-bar-numbers-visible } }
+mus = { \\clef "treble_8" \\time 4/4 ${tempo}
+  ${music.join('\n  ')} \\bar "|." }
+\\score { <<
+  \\new ChordNames \\chordmode {
+  ${chords.join('\n  ')}
+  }
+  \\new Staff \\with { \\override StringNumber.stencil = ##f } { \\mus }
+  \\new TabStaff \\with { \\override Stem.stencil = ##f \\override Beam.stencil = ##f \\override Dots.stencil = ##f } { \\mus }
+>> }
+`;
+}
+function lyDownload(text, filename){
+  const blob = new Blob([text], {type:'text/plain'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=filename; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);
+}
+</script>
+<script>
+/* ===== ui ===== */
+const st = {tab:'shapes', pc:7, q:'maj', pos:'closed', set:'123', row:'top', sel:0, oct:{},
+            key:'F', scaleKey:'major', ksSet:'234', ksChoice:0,
+            tier:'1', drMode:'reveal', custom:{pos:['closed'], sets:['123','234'], rows:['middle','bottom'], quals:['maj','min','dim','aug'], invs:[0,1,2]}};
+const el = id=>document.getElementById(id);
+const fmt = (root,sym)=>root+(sym?'<span class="q">'+sym+'</span>':'');
+const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function toneNamed(v, rootName, q){    // attach spelled names to a voicing's notes
+  const tn = toneNames(rootName, q);
+  const degIdx = {R:0}; degIdx[TRI[q].degs[1]]=1; degIdx[TRI[q].degs[2]]=2;
+  return {...v, notes: v.notes.map(n=>({...n, name:tn[degIdx[n.deg]]}))};
+}
+
+/* ---------- Shapes tab ---------- */
+function shapeCells(pc, q, pos, setOrRow){
+  if(pos==='closed'){
+    const cells = [0,1,2].map(inv=>{ const v=closedLowest(pc,q,setOrRow,inv); return v?{v, all:closedAll(pc,q,setOrRow,inv)}:null; }).filter(Boolean);
+    cells.sort((a,b)=>a.v.low-b.v.low);
+    return cells;
+  }
+  const cells = [0,1,2].map(inv=>{ const r=openRow(pc,q,inv,OROWS[setOrRow].s); return r?{v:r.def, alts:r.alts, up:r.up}:null; }).filter(Boolean);
+  cells.sort((a,b)=>a.v.low-b.v.low);
+  return cells;
+}
+function cardHTML(cell, i, rootName, q, keyOct, keyAlt){
+  const octUp = st.oct[keyOct+i];
+  let v = cell.v;
+  if(cell.all && octUp){ const up = cell.all.find(x=>x.low>=v.low+10); if(up) v=up; }
+  if(cell.alts && keyAlt!=null && keyAlt>=0 && cell.alts[keyAlt]) v = cell.alts[keyAlt];
+  const named = toneNamed(v, rootName, q);
+  let chips = '';
+  if(cell.alts && cell.alts.length)
+    chips = `<div class="chips"><button data-alt="-1" aria-pressed="${keyAlt==null||keyAlt<0}">${cell.v.notes.map(n=>n.f).join('-')}</button>`+
+      cell.alts.map((a,j)=>`<button data-alt="${j}" aria-pressed="${keyAlt===j}">or ${a.notes.map(n=>n.f).join('-')}</button>`).join('')+'</div>';
+  else if(cell.all && cell.all.find(x=>x.low>=cell.v.low+10))
+    chips = `<div class="chips"><button data-oct="1" aria-pressed="${!!octUp}">+8va</button></div>`;
+  else chips = '<div class="chips"></div>';
+  return `<div class="card ${st.sel===i?'sel':''}" data-i="${i}" data-notes='${JSON.stringify(named.notes)}'>
+    <div class="nm">${fmt(rootName, TRI[q].sym)}</div>
+    <div class="tag">${INV[v.inv]}<br>${v.bassDeg||v.bass} in the bass · ${v.top} on top</div>
+    ${boxSVG(named, el('labels').checked)}
+    ${chordStaffSVG(named.notes)}
+    ${chips}</div>`;
+}
+function renderShapes(){
+  syncControls();
+  const rootName = ROOTS[st.pc], q = st.q;
+  el('title').innerHTML = fmt(rootName, TRI[q].sym||'') + ' <span style="font-size:.6em;color:var(--bone-dim)">' + TRI[q].name.toLowerCase() + ' · ' + st.pos + ' position</span>';
+  const all = el('allSets').checked;
+  const rows = st.pos==='closed' ? Object.keys(CSETS) : Object.keys(OROWS);
+  const shown = all ? rows : [st.pos==='closed'?st.set:st.row];
+  el('sub').textContent = (st.pos==='closed'
+    ? 'Three chord tones within an octave, one per string. Cells run up the neck, as on pp. 40–41; the inversion is named on each card.'
+    : 'The closed voicing with its middle voice dropped an octave (pp. 42–43). Placements are found by pitch — "or" chips are the book\'s alternates.')
+    + ' Click a card to hear it and see it on the neck.';
+  el('rows').innerHTML = shown.map(k=>{
+    const cells = shapeCells(st.pc, q, st.pos, k);
+    const lbl = st.pos==='closed' ? CSETS[k].name.replace('Set ','') : OROWS[k].name;
+    return `<div class="setrow"><div class="rlbl">${lbl}</div><div class="row" data-k="${k}">`+
+      cells.map((c,i)=>cardHTML(c, i, rootName, q, st.pos+k, st.altPick&&st.altPick[k+i])).join('')+'</div></div>';
+  }).join('');
+  renderNeck();
+}
+function renderNeck(){
+  const k = st.pos==='closed'?st.set:st.row;
+  const cells = shapeCells(st.pc, st.q, st.pos, k);
+  const sel = cells[Math.min(st.sel, cells.length-1)];
+  if(!sel){ el('neck').innerHTML=''; return; }
+  const faint = cells.flatMap((c,i)=>i===Math.min(st.sel,cells.length-1)?[]:c.v.notes).filter(n=>n.f<=15);
+  el('neckTitle').textContent = 'neck · '+INV[sel.v.inv]+' of the '+(st.pos==='closed'?CSETS[k].name.toLowerCase():OROWS[k].name.toLowerCase())+' — click any position to change the root';
+  el('neck').innerHTML = neckSVG(sel.v.notes.filter(n=>n.f<=15), faint, st.pc);
+}
+
+/* ---------- Key study tab ---------- */
+function renderKey(){
+  syncControls();
+  const e = entryNote(st.key, st.scaleKey, st.ksSet);
+  const hs = harmonizations(st.key, st.scaleKey, st.ksSet);
+  if(!hs[st.ksChoice].playable) st.ksChoice = hs.findIndex(h=>h.playable);
+  el('harm').innerHTML = hs.map((h,i)=>`<button data-h="${i}" aria-pressed="${st.ksChoice===i}" ${h.playable?'':'disabled'}>${h.as} of ${esc(h.sym)}<small>${h.playable?'fixes '+INV[h.inv]+' for the run':'first chord falls off the nut here'}</small></button>`).join('');
+  const run = keyRun(st.key, st.scaleKey, st.ksSet, st.ksChoice);
+  st.run = el('descend').checked ? run.slice().reverse() : run;
+  const scaleName = st.scaleKey==='major'?'major':'harmonic minor';
+  el('ksTitle').innerHTML = st.key+' <span class="q" style="font-size:.7em;vertical-align:0">'+scaleName+'</span>';
+  const names = keySpell(st.key, st.scaleKey);
+  el('ksSub').textContent = 'Exploring Triads, Ex. 8 (p. 81). Entry note: the lowest in-key note on the '+
+    ['','1st','2nd','3rd'][CSETS[st.ksSet].strings[2]]+' string — '+names[e.deg]+' at fret '+e.fret+
+    ', harmonized as the '+hs[st.ksChoice].as+' of '+hs[st.ksChoice].sym+' ('+INV[hs[st.ksChoice].inv]+' throughout). '+
+    (el('descend').checked?'Descending.':'Ascending through all seven diatonic chords plus the octave.');
+  el('ksRow').innerHTML = st.run.map((c,i)=>`<div class="card" data-run="${i}" data-notes='${JSON.stringify(c.notes)}'>
+      <div class="rn">${c.rn}</div><div class="nm">${fmt(c.rootName, TRI[c.q].sym)}</div>
+      ${boxSVG(c, el('labels').checked, 132)}
+      ${chordStaffSVG(c.notes,{tab:true})}</div>`).join('');
+  el('ksHint').textContent = 'Say the roman numeral as you play each chord, and think about how every note relates to the key. Change the harmonization and the whole ladder re-voices; change the set and the entry note moves.';
+}
+/* metronome: 25 ms interval / 130 ms lookahead; chords strummed on the beat,
+   count-in clicks quarters. No visual motion — audio only. */
+const sched = {timer:null, next:0, beat:0, on:false};
+function play(){
+  if(sched.on) return stop();
+  if(!st.run || st.tab!=='key') return;
+  const c=ctx(); c.resume();
+  sched.on=true; sched.beat = -4*(+el('countin').value); sched.next=c.currentTime+0.1;
+  el('play').textContent='Stop'; sched.timer=setInterval(tick,25);
+}
+function stop(){ sched.on=false; clearInterval(sched.timer); el('play').textContent='Play'; }
+function tick(){
+  const c=ctx(), spb=60/(+el('bpm').value||80);
+  while(sched.next < c.currentTime+0.13){
+    if(!schedBeat(sched.beat, sched.next, spb)) return stop();
+    sched.next+=spb; sched.beat++;
+  }
+}
+function schedBeat(beat, t, spb){
+  const b=((beat%4)+4)%4;
+  if(beat<0){ click(t, b===0?2100:1600, .4); return true; }
+  const per = el('rate').value==='bar'?4:1;
+  const i = Math.floor(beat/per);
+  if(i>=st.run.length) return false;
+  if(b===1||b===3) click(t,1600,.3);
+  if(beat%per===0 && el('sound').checked) strumAt(st.run[i].notes, t, spb*per*0.95);
+  return true;
+}
+
+/* ---------- Drill tab ---------- */
+const TIERS = {
+  '1':{pos:['closed'], sets:['123','234'], rows:[], quals:['maj','min','dim','aug'], invs:[0,1,2]},
+  '2':{pos:['closed'], sets:['345','456'], rows:[], quals:['maj','min','dim','aug'], invs:[0,1,2]},
+  '3':{pos:['open'], sets:[], rows:['middle','bottom'], quals:['maj','min','dim','aug'], invs:[0,1,2]},
+  '4':{pos:['closed','open'], sets:['123','234','345','456'], rows:['top','middle','bottom'], quals:['maj','min','dim','aug'], invs:[0,1,2]},
+};
+const quiz = {cur:null, streak:0, best:0};
+const rnd = a=>a[Math.floor(Math.random()*a.length)];
+function tierCfg(){ return st.tier==='custom' ? st.custom : TIERS[st.tier]; }
+function voicingFor(pc,q,inv,pos,where){
+  if(pos==='closed') return closedLowest(pc,q,where,inv);
+  const r=openRow(pc,q,inv,OROWS[where].s); return r&&r.def;
+}
+function newQ(){
+  const cfg = tierCfg();
+  for(let tries=0; tries<40; tries++){
+    const pos = rnd(cfg.pos); if(!pos) break;
+    const where = pos==='closed' ? rnd(cfg.sets) : rnd(cfg.rows);
+    if(!where) continue;
+    const q = rnd(cfg.quals), inv = rnd(cfg.invs), pc = Math.floor(Math.random()*12);
+    if(q==null || inv==null) continue;
+    const v = voicingFor(pc,q,inv,pos,where);
+    if(!v) continue;
+    const whereName = pos==='closed' ? CSETS[where].name.toLowerCase() : OROWS[where].name.toLowerCase()+' (open)';
+    quiz.cur = {pc,q,inv,pos,where,v, whereName, done:false};
+    if(st.drMode==='reveal') return renderReveal();
+    return renderChoose();
+  }
+  el('qText').textContent='Nothing to drill — pick at least one position, set/row, quality and inversion.';
+  el('qStage').innerHTML='';
+}
+function promptText(c){ return ROOTS[c.pc]+TRI[c.q].sym+' · '+INV[c.inv]+' · '+c.whereName; }
+function renderReveal(){
+  const c=quiz.cur;
+  el('qTitle').innerHTML = fmt(ROOTS[c.pc], TRI[c.q].sym);
+  el('qText').textContent = 'Find it before you look: '+INV[c.inv]+', '+c.whereName+'.';
+  el('qStage').innerHTML='';
+  el('revealBtn').style.display='';
+  el('score').textContent='Streak is for Choose mode — this one is on your honor.';
+}
+function doReveal(){
+  const c=quiz.cur; if(!c) return;
+  const named=toneNamed(c.v, ROOTS[c.pc], c.q);
+  el('qStage').innerHTML = `<div class="card" style="cursor:default" data-notes='${JSON.stringify(named.notes)}'>
+    <div class="tag">${c.v.bassDeg||c.v.bass} in the bass · ${c.v.top} on top</div>
+    ${boxSVG(named, el('labels').checked, 180)}${chordStaffSVG(named.notes)}</div>`;
+  strum(named.notes);
+}
+function renderChoose(){
+  const c=quiz.cur;
+  el('revealBtn').style.display='none';
+  el('qTitle').innerHTML = fmt(ROOTS[c.pc], TRI[c.q].sym);
+  el('qText').textContent = 'Which one is '+promptText(c)+'? Same root in every box — don\'t trust the shape alone.';
+  const pool=[];
+  for(const q2 of Object.keys(TRI)) for(let i2=0;i2<3;i2++){
+    if(q2===c.q && i2===c.inv) continue;
+    const v2 = voicingFor(c.pc,q2,i2,c.pos,c.where);
+    if(v2) pool.push({q:q2, inv:i2, v:v2});
+  }
+  const ds=[]; while(ds.length<3 && pool.length){ const p=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    if(!ds.some(d=>JSON.stringify(d.v.notes)===JSON.stringify(p.v.notes))) ds.push(p); }
+  const opts=[{q:c.q, inv:c.inv, v:c.v, right:true}, ...ds].sort(()=>Math.random()-.5);
+  quiz.opts=opts; quiz.cur.done=false;
+  el('qStage').innerHTML = '<div class="choices4">'+opts.map((o,i)=>{
+    const named=toneNamed(o.v, ROOTS[c.pc], o.q);
+    return `<div class="card" data-c="${i}" data-notes='${JSON.stringify(named.notes)}'>${boxSVG(named,false,150)}</div>`;
+  }).join('')+'</div>';
+  el('score').textContent = 'Streak '+quiz.streak+(quiz.best?' · best '+quiz.best:'');
+}
+function answerChoose(i){
+  const c=quiz.cur; if(c.done) return; c.done=true;
+  const right = !!quiz.opts[i].right;
+  if(right){ quiz.streak++; quiz.best=Math.max(quiz.best,quiz.streak); } else quiz.streak=0;
+  document.querySelectorAll('#qStage .card').forEach((card,j)=>{
+    if(quiz.opts[j].right) card.classList.add('right'); else if(j===i) card.classList.add('wrong');
+    card.querySelector('svg').outerHTML = boxSVG(toneNamed(quiz.opts[j].v, ROOTS[c.pc], quiz.opts[j].q), true, 150);
+  });
+  el('qText').textContent = (right?'Yes — ':'That was '+TRI[quiz.opts[i].q].name.toLowerCase()+', '+INV[quiz.opts[i].inv]+'. The answer: ')+promptText(c)+'.';
+  el('score').textContent = 'Streak '+quiz.streak+(quiz.best?' · best '+quiz.best:'');
+}
+
+/* ---------- wiring ---------- */
+function syncControls(){
+  el('roots').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.pc===st.pc));
+  el('keys').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.k===st.key));
+  el('quals').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.q===st.q));
+  el('posPick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.p===st.pos));
+  el('sets').innerHTML = (st.pos==='closed'
+    ? Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===st.set}">${s.name}<small>${s.tag}</small></button>`)
+    : Object.entries(OROWS).map(([k,r])=>`<button data-id="${k}" aria-pressed="${k===st.row}">${r.name}<small>${r.tag}</small></button>`)).join('');
+  el('setLbl').textContent = st.pos==='closed' ? 'String set' : 'Row (by top voice)';
+  el('ksSets').innerHTML = Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===st.ksSet}">${s.name}<small>${s.tag}</small></button>`).join('');
+}
+function setTab(t){
+  st.tab=t; stop();
+  [['tShapes','shapes'],['tKey','key'],['tDrill','drill']].forEach(([id,k])=>el(id).setAttribute('aria-pressed',k===t));
+  el('stShapes').style.display = t==='shapes'?'':'none';
+  el('stKey').style.display = t==='key'?'':'none';
+  el('stDrill').style.display = t==='drill'?'':'none';
+  document.querySelectorAll('.sh-ctl').forEach(x=>x.style.display=t==='shapes'?'':'none');
+  document.querySelectorAll('.ks-ctl').forEach(x=>x.style.display=t==='key'?'':'none');
+  document.querySelectorAll('.dr-ctl').forEach(x=>x.style.display=t==='drill'?'':'none');
+  el('customGroup').style.display = (t==='drill' && st.tier==='custom')?'':'none';
+  if(t==='shapes') renderShapes(); else if(t==='key') renderKey(); else newQ();
+}
+function renderCustom(){
+  const g=el('customGroup'); const c=st.custom;
+  const box=(name,items,cur)=>'<span class="lbl">'+name+'</span>'+items.map(([id,lbl])=>
+    `<label class="check"><input type="checkbox" data-g="${name}" data-id="${id}" ${cur.includes(id)?'checked':''}> ${lbl}</label>`).join('');
+  g.innerHTML = box('Position',[['closed','closed'],['open','open']],c.pos)
+    + box('Sets',Object.entries(CSETS).map(([k,s])=>[k,s.name]),c.sets)
+    + box('Rows',Object.entries(OROWS).map(([k,r])=>[k,r.name+' (open)']),c.rows)
+    + box('Qualities',Object.entries(TRI).map(([k,q])=>[k,q.name]),c.quals)
+    + box('Inversions',INV.map((n,i)=>[i,n]),c.invs);
+  g.querySelectorAll('input').forEach(i=>i.addEventListener('change',()=>{
+    const key={Position:'pos',Sets:'sets',Rows:'rows',Qualities:'quals',Inversions:'invs'}[i.dataset.g];
+    const val = key==='invs' ? +i.dataset.id : i.dataset.id;
+    const arr = st.custom[key];
+    if(i.checked){ if(!arr.includes(val)) arr.push(val); } else st.custom[key]=arr.filter(x=>x!==val);
+    newQ();
+  }));
+}
+(function init(){
+  document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
+  el('roots').innerHTML = ROOTS.map((r,i)=>`<button data-pc="${i}">${r}</button>`).join('');
+  el('keys').innerHTML = KEYS.map(k=>`<button data-k="${k}">${k}</button>`).join('');
+  el('quals').innerHTML = Object.entries(TRI).map(([k,q])=>`<button data-q="${k}">${q.sym||'maj'}</button>`).join('');
+  el('roots').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.pc=+b.dataset.pc; st.sel=0; st.oct={}; st.altPick={}; renderShapes(); }});
+  el('keys').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.key=b.dataset.k; st.ksChoice=0; renderKey(); }});
+  el('quals').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.q=b.dataset.q; st.sel=0; st.oct={}; st.altPick={}; renderShapes(); }});
+  el('posPick').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.pos=b.dataset.p; st.sel=0; st.oct={}; st.altPick={}; renderShapes(); }});
+  el('sets').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+    if(st.pos==='closed') st.set=b.dataset.id; else st.row=b.dataset.id; st.sel=0; renderShapes(); });
+  el('ksSets').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.ksSet=b.dataset.id; st.ksChoice=0; renderKey(); }});
+  el('harm').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.ksChoice=+b.dataset.h; renderKey(); }});
+  el('allSets').addEventListener('change', renderShapes);
+  el('labels').addEventListener('change',()=>{ if(st.tab==='shapes') renderShapes(); else if(st.tab==='key') renderKey(); });
+  el('scale').addEventListener('change',e=>{ st.scaleKey=e.target.value; st.ksChoice=0; renderKey(); });
+  el('descend').addEventListener('change', renderKey);
+  el('tShapes').addEventListener('click',()=>setTab('shapes'));
+  el('tKey').addEventListener('click',()=>setTab('key'));
+  el('tDrill').addEventListener('click',()=>setTab('drill'));
+  el('tier').addEventListener('change',e=>{ st.tier=e.target.value; el('customGroup').style.display=st.tier==='custom'?'':'none'; if(st.tier==='custom') renderCustom(); newQ(); });
+  el('drMode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; st.drMode=b.dataset.m;
+    el('drMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); newQ(); });
+  el('next').addEventListener('click',()=>{ if(st.tab==='drill') newQ(); });
+  el('revealBtn').addEventListener('click', doReveal);
+  el('play').addEventListener('click', play);
+  el('lily').addEventListener('click',()=>{
+    if(!st.run) return;
+    const bars=[]; for(let i=0;i<st.run.length;i+=4) bars.push(st.run.slice(i,i+4).map(c=>({ch:{rootName:c.rootName, quality:c.q}, v:{notes:c.notes}})));
+    const hs=harmonizations(st.key, st.scaleKey, st.ksSet)[st.ksChoice];
+    lyDownload(lyDocument(bars,{title:st.key+' '+(st.scaleKey==='major'?'major':'harmonic minor')+' — Exploring Triads',
+      part:'Guitar', source:'Flynn, Jazz Guitar Technique Handbook\nEx. 8 · '+CSETS[st.ksSet].name+' · '+hs.as+' of '+hs.sym, style:'Swing', bpm:+el('bpm').value||80}),'triad-key-study.ly');
+  });
+  document.addEventListener('click',e=>{
+    const chip=e.target.closest('.chips button');
+    if(chip){ const card=chip.closest('.card'), row=card.closest('[data-k]');
+      if(chip.dataset.oct!==undefined){ const k2=(st.pos+(row?row.dataset.k:''))+card.dataset.i; st.oct[k2]=!st.oct[k2]; }
+      else { st.altPick=st.altPick||{}; st.altPick[(row?row.dataset.k:'')+card.dataset.i]=+chip.dataset.alt; }
+      renderShapes(); e.stopPropagation(); return; }
+    const card=e.target.closest('.card[data-notes]');
+    if(!card) return;
+    if(card.dataset.c!==undefined && st.tab==='drill'){ strum(JSON.parse(card.dataset.notes)); answerChoose(+card.dataset.c); return; }
+    if(card.dataset.i!==undefined && st.tab==='shapes'){ st.sel=+card.dataset.i; renderShapes(); }
+    strum(JSON.parse(card.dataset.notes));
+  });
+  el('neck').addEventListener('click',e=>{
+    const r=e.target.closest('rect[data-cs]'); if(!r) return;
+    st.pc=(OPEN[+r.dataset.cs]+ +r.dataset.cf)%12; st.sel=0; st.oct={}; st.altPick={}; renderShapes();
+  });
+  document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+    if(e.code==='Space' && st.tab==='key'){ e.preventDefault(); play(); } });
+  st.altPick={};
+  renderShapes();
+})();
+</script>
+</body>
+</html>

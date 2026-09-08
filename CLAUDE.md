@@ -10,6 +10,7 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
 - `line-ladder/` — drill lines over the practice progressions (pp. 76–78, 86–95)
+- `triad-voicings/` — closed/open triads and the Ex. 8 key study (pp. 39–43, 81)
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its
