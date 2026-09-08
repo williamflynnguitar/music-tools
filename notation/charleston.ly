@@ -8,9 +8,11 @@
   print-page-number = ##f
   bookTitleMarkup = \markup {
     \column {
-      \fill-line { \fontsize #0 "Guitar" \fontsize #0 \column { \line { "Flynn," \italic "Jazz Guitar Technique Handbook" } \line { "p. 83, Ex. 9–11" } } }
+      \fill-line { \fontsize #0 "Guitar" \fontsize #0 \column { \line { "Flynn," \italic "Jazz Guitar Technique Handbook" } \line { "pp. 83–84 and extensions" } } }
       \vspace #2.2
-      \fill-line { \fontsize #6 \bold "THE CHARLESTON RHYTHM" }
+      \fill-line { \fontsize #6 \bold "CHARLESTON" }
+      \vspace #0.4
+      \fill-line { \fontsize #1 \italic "swing comping vocabulary — five families" }
       \vspace #0.5
     }
   }
@@ -37,30 +39,69 @@ rhy = { \improvisationOn \override Staff.TimeSignature.style = #'default }
     \clef treble \time 4/4 \key c \major
     \tempo \markup { \concat { \general-align #Y #DOWN \smaller \note {4} #1 " = 140  " \bold "Swing" } }
     \rhy
-    % —— A: Prime — beat 1 and the "and" of 2 ——
-    \mark \default
+    % ===== A: Charleston, first half =====
+    % —— prime — beat 1 and the "and" of 2 ——
+    \mark \markup \bold "Charleston, first half — prime"
     \once \override TextScript.font-size = #-1
     b'4.^\markup \italic "long–short" b'8 r2 \bar "||"
     b'4.^\markup \italic "long–long" b'8~ b'2 \bar "||"
     b'4-.^\markup \italic "short–short" r8 b'8 r2 \bar "||"
     b'4-.^\markup \italic "short–long" r8 b'8~ b'2 \break
-    % —— B: Delayed — an eighth later ——
-    \bar "||" \mark \default
+    % —— delayed — an eighth later ——
+    \bar "||" \mark \markup \bold "delayed"
     r8 b'4.^\markup \italic "long–short" b'4-. r4 \bar "||"
     r8 b'4.^\markup \italic "long–long" b'2 \bar "||"
     r8 b'8^\markup \italic "short–short" r4 b'4-. r4 \bar "||"
     r8 b'8^\markup \italic "short–long" r4 b'2 \break
-    % —— C: Anticipated — an eighth earlier; the first hit is the "and" of 4 of the bar before ——
-    \bar "||" \mark \default
+    % —— anticipated — an eighth earlier; the first hit is the "and" of 4 of the bar before ——
+    \bar "||" \mark \markup \bold "anticipated"
     r2^\markup \italic "pickup" r4 r8 b'8~ |
     b'4.^\markup \italic "long–short" b'8 r4 r8 b'8~ \bar "||"
     b'4.^\markup \italic "long–long" b'8~ b'4 r8 b'8 \bar "||"
     r4^\markup \italic "short–short" r8 b'8 r4 r8 b'8 \bar "||"
     r4^\markup \italic "short–long" r8 b'8~ b'2 \bar "||" \break
-    % —— D: Bossa nova, one-bar pattern ——
-    \mark \default
-    \tempo \markup { \concat { \general-align #Y #DOWN \smaller \note {4} #1 " = 120  " \bold "Straight 8ths" } }
-    b'4.^\markup \italic "beat 1 long" b'8 r4 b'4-. \bar "||"
-    b'4-.^\markup \italic "beat 1 short" r8 b'8 r4 b'4-. \bar "|."
+    % ===== B: Charleston, second half =====
+    % —— prime — beat 3 and the "and" of 4; a long second hit rings openly into the next bar ——
+    \mark \markup \bold "Charleston, second half — prime"
+    r2 b'4.^\markup \italic "long–short" b'8 \bar "||"
+    r2 b'4.^\markup \italic "long–long" b'8\laissezVibrer \bar "||"
+    r2 b'4-.^\markup \italic "short–short" r8 b'8 \bar "||"
+    r2 b'4-.^\markup \italic "short–long" r8 b'8\laissezVibrer \break
+    % —— delayed — the "and" of 3, then beat 1 of the following bar (two-bar cell) ——
+    \bar "||" \mark \markup \bold "delayed"
+    r2^\markup \italic "long–short" r8 b'8~ b'4 | b'4-. r4 r2 \bar "||"
+    r2^\markup \italic "long–long" r8 b'8~ b'4 | b'4 r4 r2 \bar "||" \break
+    r2^\markup \italic "short–short" r8 b'8 r4 | b'4-. r4 r2 \bar "||"
+    r2^\markup \italic "short–long" r8 b'8 r4 | b'4 r4 r2 \break
+    % —— anticipated — the "and" of 2 and the "and" of 4 ——
+    \bar "||" \mark \markup \bold "anticipated"
+    r4^\markup \italic "long–short" r8 b'8~ b'4. b'8 \bar "||"
+    r4^\markup \italic "long–long" r8 b'8~ b'4. b'8\laissezVibrer \bar "||"
+    r4^\markup \italic "short–short" r8 b'8 r4 r8 b'8 \bar "||"
+    r4^\markup \italic "short–long" r8 b'8 r4 r8 b'8\laissezVibrer \bar "||" \break
+    % ===== C: on-beat pairs — two quarters; a long second note sustains past the barline in playback only =====
+    \mark \markup \bold "On-beat pair — beat 1"
+    b'4^\markup \italic "long–short" b'4-. r2 \bar "||"
+    b'4^\markup \italic "long–long" b'2. \bar "||"
+    b'4-.^\markup \italic "short–short" b'4-. r2 \bar "||"
+    b'4-.^\markup \italic "short–long" b'2. \break
+    \bar "||" \mark \markup \bold "beat 2"
+    r4 b'4^\markup \italic "long–short" b'4-. r4 \bar "||"
+    r4 b'4^\markup \italic "long–long" b'2 \bar "||"
+    r4 b'4-.^\markup \italic "short–short" b'4-. r4 \bar "||"
+    r4 b'4-.^\markup \italic "short–long" b'2 \break
+    \bar "||" \mark \markup \bold "beat 3"
+    r2 b'4^\markup \italic "long–short" b'4-. \bar "||"
+    r2 b'4^\markup \italic "long–long" b'4 \bar "||"
+    r2 b'4-.^\markup \italic "short–short" b'4-. \bar "||"
+    r2 b'4-.^\markup \italic "short–long" b'4 \bar "||" \break
+    % ===== D: whole notes =====
+    \mark \markup \bold "Whole note"
+    b'1^\markup \italic "prime" \bar "||"
+    r8^\markup \italic "delayed" b'8~ b'4~ b'2 \bar "||"
+    r2^\markup \italic "anticipated — pickup" r4 r8 b'8~ | b'1 \bar "||" \break
+    % ===== E: rest bar =====
+    \mark \markup \bold "Rest bar"
+    R1 \bar "|."
   }
 }

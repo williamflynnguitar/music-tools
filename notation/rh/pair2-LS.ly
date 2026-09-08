@@ -3,5 +3,5 @@
 \header { tagline = ##f }
 #(set-global-staff-size 20)
 \score { \new RhythmicStaff \with { \remove "Time_signature_engraver" \remove "Bar_number_engraver" \override StaffSymbol.thickness = #1.2 }
-  { \time 4/4 c4-. r8 c8 r4 c4-. \bar "|" }
+  { \time 4/4 r4 c4 c4-. r4 \bar "|" }
   \layout { \context { \Score \remove "Bar_number_engraver" } } }
