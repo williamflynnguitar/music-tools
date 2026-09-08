@@ -45,11 +45,11 @@ a concatenation script or by inlining at commit time.
 
 ## Spine menu
 
-Every tool page carries a fixed "☰ tools" chip (top right) opening a menu of
+Every tool page opens with a slim right-aligned "☰ tools" chip — in normal flow at the top of the page, never fixed, so it cannot cover app headers — opening a menu of
 the landing page's spine — home plus all seven linked tools, current page
 marked. It is one self-contained block (own `sp-` classes, hardcoded family
 palette, explicit `index.html` hrefs so file:// works) duplicated between
-`===== spine menu =====` markers at the end of each tool's `index.html` —
+`===== spine menu =====` markers at the top of each tool's body —
 keep the copies byte-identical, like the `SCALES` block. The landing page
 itself doesn't carry it; authoring pages (`edit.html`) stay unlinked.
 
