@@ -1,6 +1,6 @@
 /* LilyPond source for one fingering shape. notes: [{string, fret, finger, note}] (note spelled: "Eb", "F#", "Cb").
    Ascending in pitch (or descending with opts.desc), eighth notes, fingerings above, TAB beneath, optional chord symbol.
-   Beaming: groups of four, with the remainder absorbed as groups of three (9 → 3+3+3, 13 → 4+3+3+3), like an engraver would.
+   Beaming: eighths in groups of four (remainder as its own group), ending on a quarter note.
    opts.compact drops the page header (for the inline SVG cells); otherwise a letter-size page in the Argue layout. */
 const LY_MIDI = {1:64,2:59,3:55,4:50,5:45,6:40};
 function lyNote(n) {
@@ -10,17 +10,13 @@ function lyNote(n) {
   const midi = LY_MIDI[n.string] + n.fret, natural = midi - accSemi, oct = Math.floor(natural / 12) - 1;
   return letter + accLy + (oct >= 4 ? "'".repeat(oct - 3) : ",".repeat(3 - oct));
 }
-function beatStructure(n) {
-  const groups = [];
-  let left = n;
-  while (left > 0) { if (left % 4 === 0 || left > 6 && left % 4 !== 1 && left % 4 !== 2) { groups.push(4); left -= 4; } else if (left >= 3) { groups.push(3); left -= 3; } else { groups.push(left); left = 0; } }
-  return groups;
-}
 function lyShape(notes, opts = {}) {
-  let seq = notes.slice().sort((a, b) => (LY_MIDI[a.string] + a.fret) - (LY_MIDI[b.string] + b.fret));
+  const seq = notes.slice().sort((a, b) => (LY_MIDI[a.string] + a.fret) - (LY_MIDI[b.string] + b.fret));
   if (opts.desc) seq.reverse();
-  const body = seq.map(n => lyNote(n) + "8\\" + n.string + (n.finger ? "-" + n.finger : "")).join(" ");
-  const bs = beatStructure(seq.length).join(" ");
+  // eighths beamed in fours (remainder as its own group), ending on a quarter note
+  const last = seq.length - 1;
+  const bracket = i => { if (i >= last) return ""; const size = Math.min(4, last - (i - i % 4)); if (size < 2) return ""; if (i % 4 === 0) return "["; if (i % 4 === 3 || i === last - 1) return "]"; return ""; };
+  const body = seq.map((n, i) => lyNote(n) + (i === last ? "4" : "8") + "\\" + n.string + (n.finger ? "-" + n.finger : "") + bracket(i)).join(" ");
   const chord = opts.chord ? `\\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } minorChordModifier = \\markup { "-" } } { ${opts.chord} }` : "";
   const paper = opts.compact
     ? `\\paper { indent = 0 ragged-right = ##t } \\header { tagline = ##f } #(set-global-staff-size 17)`
@@ -30,7 +26,7 @@ function lyShape(notes, opts = {}) {
   return `\\version "2.24.0"
 ${paper}
 \\layout { \\context { \\Score \\remove "Bar_number_engraver" \\override Fingering.direction = #UP } }
-mus = { \\time ${seq.length}/8 \\set Timing.baseMoment = #(ly:make-moment 1/8) \\set Timing.beatStructure = #'(${bs}) \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature ${body} \\bar "" }
+mus = { \\time ${last + 2}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature \\autoBeamOff ${body} \\bar "" }
 \\score { <<
   ${chord}
   \\new Staff \\with { \\override StringNumber.stencil = ##f \\remove "Time_signature_engraver" } { \\clef "treble_8" \\mus }
