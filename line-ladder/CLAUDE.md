@@ -88,7 +88,11 @@ Argue rules: 4-bar systems, eighths beamed in fours from beats 1 and 3, the
 held 7th written 8~2 so beat 3 shows, chord symbols left-aligned to their
 beat (Δ for major 7, superscript suffixes), a bar number under every bar,
 numeric 4/4, treble_8 staff + TAB, fingerings above the staff. Current-bar
-highlight is a background rect per bar — no moving element. "LilyPond
+highlight is a background rect per bar — no moving element. The chart sits
+in a scrolling window two systems tall (`sizeChart`) — the playing system
+plus the next, so the eye reads ahead; playback jumps the window a system at
+a time (an instant jump, not a crawl, per the restrained-motion rule), and
+it scrolls freely by hand when stopped. "LilyPond
 source" copies a .ly (same rules, `\accidentalStyle modern`; falls back to
 downloading when the clipboard API is unavailable).
 

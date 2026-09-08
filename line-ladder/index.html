@@ -47,6 +47,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
 
 .stage .title{font-family:var(--mono);font-size:20px;margin:0 0 4px}
 .stage .sub{color:var(--bone-dim);font-size:14px;margin:0 0 14px;max-width:70ch}
+#chartwrap{overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--line);border-radius:8px;padding:6px}
 #chart{display:grid;gap:6px}
 #chart .sys{background:var(--petrol);border-radius:6px;padding:8px 10px}
 #chart svg{width:100%;height:auto;display:block;color:var(--bone)}
@@ -166,7 +167,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
 <main class="stage">
   <h2 class="title" id="title"></h2>
   <p class="sub" id="sub"></p>
-  <div id="chart"></div>
+  <div id="chartwrap"><div id="chart"></div></div>
   <p class="legend" id="legend"></p>
 </main>
 </div>
@@ -739,15 +740,16 @@ function buildLine(progId, mode, startFing){
    7th written 8~2 (beat 3 shows), chord symbols left-aligned to the beat,
    a bar number under every bar, numeric 4/4. Units: 1 staff space = 1. ---------- */
 const ACC = { "":0, "#":1, "##":2, "b":-1, "bb":-2, "n":0 };
-const SLOT=2.9, BARW=1.6+8*SLOT, SYS_X0=6.6, T0=13.2, TS=1.5, SYS_BARS=4;
-function engrave(bars){
+const SLOT=2.9, BARW=1.6+8*SLOT, SYS_X0=6.6, T0=13.2, TS=1.5;
+function engrave(bars, perSys){
+  perSys = perSys||4;                  // 2 on narrow screens, for arm's-length reading
   const out=[];
-  for(let s0=0; s0<bars.length; s0+=SYS_BARS)
-    out.push(engraveSystem(bars.slice(s0,s0+SYS_BARS), s0===0, s0+SYS_BARS>=bars.length));
+  for(let s0=0; s0<bars.length; s0+=perSys)
+    out.push(engraveSystem(bars.slice(s0,s0+perSys), s0===0, s0+perSys>=bars.length, perSys));
   return out;
 }
-function engraveSystem(bars, first, last){
-  const W = SYS_X0 + SYS_BARS*BARW + 0.6;
+function engraveSystem(bars, first, last, perSys){
+  const W = SYS_X0 + perSys*BARW + 0.6;
   const use=(id,x,y,sz)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${sz||0.004},${-(sz||0.004)})"/>`;
   let o="", music="";
   const endX = SYS_X0 + bars.length*BARW;
@@ -950,17 +952,30 @@ function rebuild(){
     ? 'Arp mode: R 3 5 7 of each chord from the 1-octave shape whose root sits in the position.'
     : 'Scale mode: each chord runs its scale — the parent scale of the key, started from the chord root — inside the position.')
     + ' Fingering '+st.fing+' to start; the position only moves when the key does.';
-  el('chart').innerHTML = engrave(st.line.bars).map(s=>'<div class="sys">'+s+'</div>').join('');
+  st.perSys = el('chartwrap').clientWidth && el('chartwrap').clientWidth < 620 ? 2 : 4;
+  el('chart').innerHTML = engrave(st.line.bars, st.perSys).map(s=>'<div class="sys">'+s+'</div>').join('');
   el('legend').innerHTML = (st.line.anyFlag?'<span class="flagmark">†</span> no function annotation in the data — scale guessed from the chord quality. ':'')
     + '→ = one adjacent-fingering shift for that chord (VDA).';
-  showBar(1, false);
+  sizeChart();
+  showBar(1, true);
 }
+/* the chart lives in a window two systems tall — the playing system and the
+   next — and scrolls; the whole line is still there to scroll through by hand */
+function sizeChart(){
+  const wrap=el('chartwrap'), sys=wrap.querySelector('.sys');
+  wrap.style.maxHeight = sys ? Math.min(sys.offsetHeight*2+20, Math.max(300, innerHeight*0.72))+'px' : '';
+}
+addEventListener('resize', ()=>{
+  const want = el('chartwrap').clientWidth < 620 ? 2 : 4;
+  if(st.line && want !== st.perSys) rebuild(); else sizeChart();
+});
 function showBar(n, scroll){
   document.querySelectorAll('#chart rect[data-bar]').forEach(r=>r.setAttribute('opacity', +r.dataset.bar===n?'1':'0'));
   const p=st.line && st.line.barPanels[n-1];
   el('panelTitle').innerHTML = p ? 'bar '+n+' · <b>'+p.title.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>' : 'position';
   el('panel').innerHTML = panelSVG(p);
-  if(scroll){ const r=document.querySelector('#chart rect[data-bar="'+n+'"]'); if(r) r.closest('.sys').scrollIntoView({block:'nearest'}); }
+  if(scroll){ const r=document.querySelector('#chart rect[data-bar="'+n+'"]');
+    if(r) el('chartwrap').scrollTop = r.closest('.sys').offsetTop - el('chart').offsetTop; }
 }
 
 /* metronome: lookahead scheduler (voice-leading trainer; 25 ms / 130 ms).
