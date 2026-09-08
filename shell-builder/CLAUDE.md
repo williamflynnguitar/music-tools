@@ -44,8 +44,24 @@ visual conventions.
   voicings on the same root. "Hard" adds altered dominants, 6th chords and
   minor-major. Dots are unlabeled until answered.
 
+## Through changes (added)
+- Third mode: the current structure through the Handbook's practice progressions
+  (pp. 86–95) and the leadsheets (pp. 109–123), or a pasted chart. The
+  progressions/tunes table and the chord parser are copied from Inversion Drill
+  between `===== progressions ===== ` markers — keep byte-identical.
+- `buildAt(pc, quality, structure, rs, rf, off)` is `buildVoicing` parameterized
+  by explicit root fret; `buildVoicing` still picks the lowest position.
+- Voice leading: each root takes 6R or 5R and the octave whose root fret moves
+  least from the previous chord (`progVoiceLead`); travelling extra frets is
+  accepted when it is the only way to voice a requested alteration
+  (`pickOffsets` — e.g. b9 only exists on the 5R B string, so G7b9 goes 5R).
+  Alterations in the symbol go to B/E via legal offsets when the structure has
+  those strings; unreachable ones stay in the label only.
+- Rendered as a slash chart (4-bar systems, symbols above their beats, shell
+  diagram with ghost roots above each symbol, 6R/5R + fret tag). `diagram()`
+  gained a `W` option that scales the drawing; small sizes drop labels.
+- Audio: one-shot strum on click (chart chords and the Build/quiz diagram);
+  not a time reference, so no lookahead scheduler.
+
 ## Next
-- Audio: a Web Audio strum of the voicing (use the shared scheduler pattern).
-- ii-V-I mode: cycle a structure through the Handbook's progressions with
-  nearest-position voice leading, reusing Box Buddy's chooser.
 - Extension Quiz variant where the student must *build* a named chord.
