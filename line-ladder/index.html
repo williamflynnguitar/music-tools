@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Line Ladder</title>
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a; --warn:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:6px 16px;cursor:pointer;color:var(--bone-dim)}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.app{display:grid;grid-template-columns:300px 1fr;padding:18px 28px 60px;gap:0 26px}
+@media (max-width:900px){.app{grid-template-columns:1fr;gap:24px}}
+.group{margin-bottom:18px}
+.group .lbl{display:block;font-size:14px;color:var(--bone-dim);margin-bottom:6px}
+select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
+.hint{font-size:13px;color:var(--bone-dim);margin-top:6px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--bone-dim);cursor:pointer;margin-top:6px}
+.check input{accent-color:var(--brass);width:auto}
+.tempo{display:flex;gap:8px;align-items:center}
+.tempo input{width:80px;font-family:var(--mono)}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.fings{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.fings button{font-family:var(--mono);font-size:13px;background:var(--petrol);border:1px solid transparent;border-radius:4px;padding:8px 4px;cursor:pointer;line-height:1.2}
+.fings button[aria-pressed=true]{background:var(--brass);color:var(--ink)}
+.fings button small{display:block;font-size:10px;opacity:.75}
+
+.panelbox{margin-top:22px;background:var(--petrol);border-radius:6px;padding:12px 14px 10px}
+.panelbox h3{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--bone-dim);margin:0 0 8px;line-height:1.4}
+.panelbox h3 b{color:var(--bone);font-weight:400}
+.panelbox svg{width:100%;height:auto;display:block}
+
+.stage .title{font-family:var(--mono);font-size:20px;margin:0 0 4px}
+.stage .sub{color:var(--bone-dim);font-size:14px;margin:0 0 14px;max-width:70ch}
+#chart{display:grid;gap:6px}
+#chart .sys{background:var(--petrol);border-radius:6px;padding:8px 10px}
+#chart svg{width:100%;height:auto;display:block;color:var(--bone)}
+.legend{font-family:var(--mono);font-size:12px;color:var(--bone-dim);margin-top:12px;line-height:1.7}
+.legend .flagmark{color:var(--warn)}
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Practice progressions</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder<span class="sp-pp">pp. 86&#8211;95</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+<div class="top">
+  <h1 class="wordmark">Line <em>Ladder</em></h1>
+  <div class="modes" role="group" aria-label="Mode">
+    <button id="mArp" aria-pressed="true">Arp</button>
+    <button id="mScale" aria-pressed="false">Scale</button>
+  </div>
+</div>
+
+<div class="app">
+<aside class="controls">
+  <div class="group">
+    <label class="lbl" for="prog">Progression</label>
+    <select id="prog"></select>
+  </div>
+  <div class="group">
+    <span class="lbl">Starting fingering</span>
+    <div class="fings" id="fings"></div>
+  </div>
+  <div class="group">
+    <label class="lbl" for="poslogic">Position logic</label>
+    <select id="poslogic">
+      <option value="vda">VDA — one position, vertical</option>
+      <option value="hda" disabled>HDA — root-string, horizontal (v2)</option>
+    </select>
+  </div>
+  <div class="group">
+    <span class="lbl">Metronome</span>
+    <div class="tempo"><input type="number" id="bpm" value="120" min="40" max="300"> <span class="hint" style="margin:0">bpm, clicks on 2 and 4</span></div>
+    <div class="tempo" style="margin-top:8px"><select id="countin" style="width:120px"><option value="0">no count-in</option><option value="1" selected>1 bar in</option><option value="2">2 bars in</option></select>
+      <label class="check" style="margin:0"><input type="checkbox" id="loop"> loop</label></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn" id="play">Play</button>
+      <button class="btn quiet" id="lily" title="copy the line as a LilyPond file">LilyPond source</button>
+    </div>
+    <p class="hint">Count-in clicks quarters. Space starts and stops.</p>
+  </div>
+  <div class="panelbox">
+    <h3 id="panelTitle">position</h3>
+    <div id="panel"></div>
+  </div>
+</aside>
+
+<main class="stage">
+  <h2 class="title" id="title"></h2>
+  <p class="sub" id="sub"></p>
+  <div id="chart"></div>
+  <p class="legend" id="legend"></p>
+</main>
+</div>
+
+<script>
+/* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
+const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};                             // open-string pitch classes
+const CYCLE = ["P6","P5","M6","M5","I6","I5"];                        // p. 61, cycle of fingerings
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+/* SCALES[id]: steps/degrees are parallel arrays (length 8 for the bebop scales later);
+   apply is the application line from the scale's intro page, verbatim as printed (in C);
+   spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
+   passing = index into steps of the added bebop passing tone (rendered as a diamond);
+   shapes hold [string, offset-from-root, finger] with finger 0 = no finger printed;
+   a shape may carry named fingering variants: notes (labelled variantName) is the
+   default, variants = { name: full notes list }; the apps remember the chosen
+   variant per shape for the session, in memory only;
+   shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
+   open (placement floor 0, not 1). */
+const SCALES = {
+  major: { name:"Major", steps:[0,2,4,5,7,9,11], degrees:["R","2","3","4","5","6","7"], spellFrom:0,
+    apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",variantName:"B on 4th string",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]],
+        variants:{"B on 3rd string":[[1,-3,1],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,2],[3,-1,4],[4,-3,1],[4,-1,3],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]}},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  dorian: { name:"Dorian", steps:[0,2,3,5,7,9,10], degrees:["R","2","b3","4","5","6","b7"], spellFrom:10,
+    apply:{ chords:"C-7 · F7", uses:["ii chords in major keys","V7 chords in major keys","iv chords in minor keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  mixolydian: { name:"Mixolydian", steps:[0,2,4,5,7,9,10], degrees:["R","2","3","4","5","6","b7"], spellFrom:5,
+    apply:{ chords:"C7 · C9 · C7(sus4) · G-7", uses:["unaltered dominant chords","ii chords in major keys"] }, pages:"pp. 8–9",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,1],[1,3,2],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  harmonic: { name:"Harmonic minor", steps:[0,2,3,5,7,8,11], degrees:["R","2","b3","4","5","b6","7"],
+    apply:{ chords:"C-(\u25b37)", uses:["tonic minor chords"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-1,2],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-4,1],[3,-3,2],[3,-1,4],[3,0,4],[4,-3,1],[4,-2,2],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[1,1,4],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,3],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[3,-1,1],[3,0,2],[3,2,4],[4,1,2],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  phrygdom: { name:"Phrygian dominant", steps:[0,1,4,5,7,8,10], degrees:["R","b2","3","4","5","b6","b7"],
+    apply:{ chords:"C7(b9) \u00b7 C7(b13/b9) \u00b7 G\u00f87", uses:["V7 chords in minor keys","ii chords in minor keys"] }, pages:"pp. 12\u201313",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-4,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[4,-3,1],[4,-2,2],[4,0,4],[5,-4,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-2,2],[2,-1,3],[3,-3,1],[3,-2,2],[3,0,4],[4,-4,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,1],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,-1,1],[5,0,1],[5,2,3],[5,3,4],[6,0,2],[6,1,3]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,3,4],[2,-1,1],[2,2,3],[2,3,4],[3,0,1],[3,2,3],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,0,2],[5,1,3]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,1,2],[2,3,4],[3,1,2],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,1,2],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,1,2],[1,3,4],[2,-1,1],[2,2,3],[2,3,4],[3,0,1],[3,2,3],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,1,2],[5,4,4]]},
+    }},
+  melodic: { name:"Melodic minor", steps:[0,2,3,5,7,9,11], degrees:["R","2","b3","4","5","6","7"],
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords","3rd mode: Eb\u25b37(#5) \u00b7 Eb+\u25b37 \u2014 Lydian augmented","4th mode: F7(#11) \u00b7 F9(#11) \u00b7 F13 \u2014 Lydian dominant","6th mode: A\u00f87 \u00b7 A\u00f89 \u2014 Locrian #2","7th mode: B7alt \u2014 altered / dim whole-tone / super Locrian"] }, pages:"pp. 10\u201311",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[6,0,1],[6,2,3],[6,3,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,1],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  majorBebop: { name:"Major bebop", steps:[0,2,4,5,7,8,9,11], degrees:["R","2","3","4","5","#5","6","7"], passing:5,
+    apply:{ chords:"C\u25b37 \u00b7 C6 \u00b7 C6/9", uses:[] }, pages:"pp. 14\u201315",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,2],[3,2,3],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,1],[3,4,3],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,2],[2,5,4],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,1],[2,5,3],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  mixoBebop: { name:"Mixolydian bebop", steps:[0,2,4,5,7,9,10,11], degrees:["R","2","3","4","5","6","b7","7"], passing:7,
+    apply:{ chords:"G-7 \u00b7 C7", uses:[] }, pages:"pp. 16\u201317",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,2],[3,-1,3],[4,-3,1],[4,-1,2],[4,0,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+    }},
+  phrygdomBebop: { name:"Phrygian dominant bebop", steps:[0,1,4,5,7,8,10,11], degrees:["R","b2","3","4","5","b6","b7","7"], passing:7,
+    apply:{ chords:"G\u00f87 \u00b7 C7(b9) \u00b7 C7(b13/b9)", uses:[] }, pages:"pp. 18\u201319",
+    cycle:["P6","P5","M6","M5","I6","I5"],
+    shapes:{
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-4,0],[1,-2,0],[1,-1,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[3,-4,0],[3,-3,0],[3,-2,0],[4,-3,0],[4,-2,0],[4,0,0],[5,-4,0],[5,-1,0],[5,0,0],[6,0,0]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,0],[1,-2,0],[1,0,0],[2,-3,0],[2,-2,0],[2,-1,0],[3,-3,0],[3,-2,0],[3,0,0],[4,-4,0],[4,-1,0],[4,0,0],[5,0,0]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,3,0],[3,1,0],[3,2,0],[4,0,0],[4,1,0],[4,2,0],[4,3,0],[5,-1,0],[5,0,0],[5,2,0],[5,3,0],[6,0,0],[6,1,0]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,0],[1,1,0],[1,3,0],[2,-1,0],[2,2,0],[2,3,0],[3,0,0],[3,1,0],[3,2,0],[4,-1,0],[4,0,0],[4,2,0],[4,3,0],[5,0,0],[5,1,0]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,3,0],[3,1,0],[3,2,0],[4,0,0],[4,1,0],[4,2,0],[4,3,0],[5,0,0],[5,2,0],[5,3,0],[6,0,0],[6,1,0],[6,4,0]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,0],[1,1,0],[1,3,0],[2,-1,0],[2,2,0],[2,3,0],[3,0,0],[3,1,0],[3,2,0],[4,0,0],[4,2,0],[4,3,0],[5,0,0],[5,1,0],[5,4,0]]},
+    }},
+  melodicBebop: { name:"Melodic minor bebop", steps:[0,2,3,5,7,8,9,11], degrees:["R","2","b3","4","5","#5","6","7"], passing:5,
+    apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords"] }, pages:"pp. 20\u201321",
+    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    shapes:{
+      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
+      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[3,1,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
+      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
+      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
+      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
+      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
+      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
+      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+    }},
+  hwdim: { name:"Half-whole diminished", steps:[0,1,3,4,6,7,9,10], degrees:["R","b9","#9","3","#11","5","13","b7"],
+    apply:{ chords:"C7(b9) · Eb7(b9) · F#7(b9) · A7(b9) · C#°7 · E°7 · G°7 · Bb°7", uses:[] }, pages:"pp. 22–23",
+    cycle:["R6","R5","M6","M5","I6","I5"],
+    shapes:{
+      R6:{rootString:6,name:"Ring 6",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-1,3],[2,0,4],[3,-3,1],[3,-2,2],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,-2,1],[5,-1,2],[5,1,4],[6,0,3],[6,1,4]]},
+      R5:{rootString:5,name:"Ring 5",notes:[[1,-1,1],[1,0,2],[1,2,4],[2,-1,1],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,0,3],[5,1,4]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,0,2],[2,0,1],[2,2,3],[2,3,4],[3,0,1],[3,1,2],[3,3,4],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,-2,1],[5,-1,1],[5,1,3],[5,2,4],[6,0,2],[6,1,3]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,-1,1],[1,0,2],[1,2,4],[2,-1,1],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,2],[4,1,3],[4,2,4],[5,0,2],[5,1,3]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,1],[2,3,4],[3,0,1],[3,1,2],[3,3,4],[4,0,1],[4,2,3],[4,3,4],[5,1,1],[5,2,2],[5,4,4],[6,0,1],[6,1,1],[6,3,3],[6,4,4]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,-1,1],[1,0,2],[1,2,4],[2,-1,1],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,1,2],[5,3,4]]},
+    }},
+};
+const SHAPES = SCALES.major.shapes;   // back-compat alias
+const MAJOR  = SCALES.major.steps;    // back-compat alias
+/* ===== end shared scale data ===== */
+
+/* ---------- 1-octave arpeggio shapes: the seven 7th-chord qualities of ARP[1],
+   copied verbatim from arpeggios-deck (pp. 25-31); keep in sync ---------- */
+const ARP1 = {
+  maj7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,1,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,1,3]]},{rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,1,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,1,3]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[2,-3,1]],alt:[[3,1,4]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,2,2],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,2,3],[2,2,4]]},{rs:4,n:[[4,0,3],[3,-1,2],[2,-2,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-1,3],[2,-2,2],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,3,4],[1,2,3]]},{rs:3,n:[[3,0,1],[3,4,4],[2,3,3],[1,2,2]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-2,1],[1,2,4]]}],
+  m7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,0,1]]},{rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,0,2]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,0,1]]},{rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,0,2]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,2,3],[2,1,2]]},{rs:4,n:[[4,0,2],[3,-2,1],[3,2,4],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-2,1],[2,-2,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-2,3],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[3,3,3],[2,3,4],[1,1,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-2,1],[1,1,4]]}],
+  dom7: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,2,2],[4,0,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,2,4],[4,0,2]]},{rs:6,n:[[6,0,4],[5,-1,3],[4,-3,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,2,2],[3,0,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,2,4],[3,0,2]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-3,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,2,2],[2,1,1]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,2,4],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-1,2],[2,-2,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-1,3],[2,-2,2],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,3,4],[1,1,2]]},{rs:3,n:[[3,0,1],[3,4,4],[2,3,3],[1,1,1]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-2,1],[1,1,4]]}],
+  m7b5: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,0,1]]},{rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,0,3]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,0,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,0,1]]},{rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,0,3]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,0,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,1,2],[2,1,3]]},{rs:4,n:[[4,0,3],[3,-2,1],[3,1,4],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-3,1],[2,1,4]]},{rs:4,n:[[4,0,4],[3,-2,3],[2,-3,2],[1,-4,1]]},
+   {rs:3,n:[[3,0,1],[3,3,4],[2,2,3],[1,1,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-3,1],[1,1,4]]}],
+  dim7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,1,1],[5,4,4]]},{rs:6,n:[[6,0,1],[6,3,4],[5,1,2],[4,-1,1]]},{rs:6,n:[[6,0,3],[5,-2,1],[5,1,4],[4,-1,2]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-4,1],[4,-1,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,1,1],[4,4,4]]},{rs:5,n:[[5,0,1],[5,3,4],[4,1,2],[3,-1,1]]},{rs:5,n:[[5,0,3],[4,-2,1],[4,1,4],[3,-1,2]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-4,1],[3,-1,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,1,2],[2,0,1]]},{rs:4,n:[[4,0,3],[3,-2,1],[3,1,3],[2,0,3]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-3,1],[2,0,4]]},
+   {rs:3,n:[[3,0,1],[3,3,4],[2,2,3],[1,0,1]]},{rs:3,n:[[3,0,3],[2,-1,3],[1,-3,1],[1,0,4]]}],
+  mMaj7: [
+   {rs:6,n:[[6,0,1],[6,3,4],[5,2,3],[4,1,2]]},{rs:6,n:[[6,0,2],[5,-2,1],[5,2,4],[4,1,3]]},{rs:6,n:[[6,0,4],[5,-2,2],[4,-3,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,3,4],[4,2,3],[3,1,2]]},{rs:5,n:[[5,0,2],[4,-2,1],[4,2,4],[3,1,3]]},{rs:5,n:[[5,0,4],[4,-2,2],[3,-3,1],[3,1,4]]},
+   {rs:4,n:[[4,0,1],[4,3,4],[3,2,2],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-2,1],[3,2,3],[2,2,4]]},{rs:4,n:[[4,0,3],[3,-2,1],[2,-2,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-2,2],[2,-2,3],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[3,3,3],[2,3,4],[1,2,2]]},{rs:3,n:[[3,0,3],[2,-1,2],[1,-2,1],[1,2,4]]}],
+  maj7s5: [
+   {rs:6,n:[[6,0,1],[6,4,4],[5,3,3],[4,1,1]]},{rs:6,n:[[6,0,2],[5,-1,1],[5,3,4],[4,1,3]]},{rs:6,n:[[6,0,3],[5,-1,2],[4,-2,1],[4,1,4]]},
+   {rs:5,n:[[5,0,1],[5,4,4],[4,3,3],[3,1,1]]},{rs:5,n:[[5,0,2],[4,-1,1],[4,3,4],[3,1,3]]},{rs:5,n:[[5,0,3],[4,-1,2],[3,-2,1],[3,1,4]]},{rs:5,n:[[5,0,4],[4,-1,3],[3,-2,2],[2,-3,1]]},
+   {rs:4,n:[[4,0,1],[4,4,4],[3,3,3],[2,2,2]]},{rs:4,n:[[4,0,2],[3,-1,1],[3,3,4],[2,2,3]]},{rs:4,n:[[4,0,2],[3,-1,1],[2,-1,1],[2,2,4]]},{rs:4,n:[[4,0,4],[3,-1,2],[2,-1,3],[1,-3,1]]},
+   {rs:3,n:[[3,0,1],[2,0,1],[2,4,4],[1,2,3]]},{rs:3,n:[[3,0,2],[2,0,3],[1,-1,1],[1,2,4]]}],
+};
+
+/* LilyPond glyph outlines for the engraver (shared with the decks) */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"f2\" d=\"M94 66c-60 0 -39 -66 -72 -66c-11 0 -22 7 -22 21c0 154 232 162 232 334c0 50 -17 102 -61 102c-33 0 -66 -14 -66 -44c0 -24 31 -37 31 -61c0 -34 -27 -61 -61 -61s-61 27 -61 61c0 84 72 148 157 148c98 0 190 -55 190 -145c0 -140 -131 -154 -225 -205 c85 -2 113 -61 165 -61c45 0 28 41 57 41c11 0 22 -8 22 -21c0 -29 -48 -109 -144 -109c-92 0 -96 66 -142 66z\" fill=\"currentColor\"/><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"f4\" d=\"M148 501c10 0 41 -15 72 -15c32 0 63 15 76 15c15 0 26 -11 26 -21c0 -4 -1 -7 -4 -10l-264 -291h134v4c0 60 50 41 75 85c7 11 8 24 14 36c3 7 10 10 17 10c11 0 24 -8 24 -25v-110h70c18 0 27 -14 27 -27s-9 -27 -27 -27h-70c2 -45 36 -82 80 -82c14 0 22 -10 22 -21 s-8 -22 -22 -22c-49 0 -96 14 -145 14s-97 -14 -146 -14c-14 0 -21 11 -21 22s7 21 21 21c44 0 79 37 81 82h-134c-43 0 -57 25 -57 42c0 5 1 10 3 12c73 81 123 182 123 291c0 17 11 31 25 31z\" fill=\"currentColor\"/><path id=\"f1\" d=\"M194 486c16 0 29 15 41 15c13 0 24 -13 24 -31v-341c0 -47 35 -86 81 -86c14 0 21 -10 21 -21s-7 -22 -21 -22c-49 0 -97 14 -146 14s-96 -14 -145 -14c-14 0 -22 11 -22 22s8 21 22 21c46 0 80 39 80 86v137c0 23 -16 35 -30 35c-7 0 -13 -4 -17 -11l-34 -65 c-5 -10 -14 -15 -23 -15c-14 0 -28 12 -28 27c0 4 1 8 3 13l129 250c2 4 7 6 11 6c18 0 37 -20 54 -20z\" fill=\"currentColor\"/><path id=\"f3\" d=\"M261 266c0 -54 85 -40 85 -125c0 -94 -83 -141 -186 -141c-84 0 -160 54 -160 133c0 32 26 58 58 58s58 -26 58 -58c0 -22 -36 -26 -36 -48c0 -33 42 -42 80 -42c41 0 56 50 56 98v21c0 44 -2 77 -43 77h-65c-18 0 -27 14 -27 27s9 27 27 27h65c42 0 43 36 43 83v11 c0 43 -20 70 -61 70c-34 0 -71 -8 -71 -38c0 -19 32 -23 32 -42c0 -28 -23 -51 -51 -51s-51 23 -51 51c0 72 66 123 141 123c93 0 174 -31 174 -113c0 -94 -68 -67 -68 -121z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+
+/* ---------- chord vocabulary (as voice-leading / Box Buddy; keep in sync) ---------- */
+const NOTE_PC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const NAMES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,bb7:9,b7:10,'7':11};
+const QUAL = {
+  maj7 :{sym:'Δ7',   third:'3', seventh:'7',  fifth:'5',  allowed:['9','#11','13']},
+  '6'  :{sym:'6',    third:'3', seventh:'6',  fifth:'5',  allowed:['9','#11']},
+  '7'  :{sym:'7',    third:'3', seventh:'b7', fifth:'5',  dom:true, allowed:['9','#11','13','b9','#9','b5','#5','b13']},
+  sus7 :{sym:'7sus4',third:'4', seventh:'b7', fifth:'5',  dom:true, allowed:['9','13','b9']},
+  m7   :{sym:'-7',   third:'b3',seventh:'b7', fifth:'5',  allowed:['9','11','13']},
+  m6   :{sym:'-6',   third:'b3',seventh:'6',  fifth:'5',  allowed:['9','11']},
+  m7b5 :{sym:'ø7',   third:'b3',seventh:'b7', fifth:'b5', allowed:['9','11','b13']},
+  dim7 :{sym:'°7',   third:'b3',seventh:'bb7',fifth:'b5', allowed:['9','b13']},
+  mMaj7:{sym:'-Δ7',  third:'b3',seventh:'7',  fifth:'5',  allowed:['9','11','13']},
+  maj7s5:{sym:'Δ7#5',third:'3', seventh:'7',  fifth:'#5', allowed:['9','#11']},
+};
+function parseChordToken(tok){
+  const raw = tok;
+  if(/^(%|\/|x)$/i.test(tok)) return {kind:'repeat', raw};
+  const m = tok.match(/^([A-G])([#b♭♯]?)(.*)$/); if(!m) return {kind:'bad', raw};
+  let pc = NOTE_PC[m[1]] + (m[2]==='#'||m[2]==='♯'?1:(m[2]==='b'||m[2]==='♭'?-1:0)); pc=(pc+12)%12;
+  const rootName = m[1]+m[2].replace('♭','b').replace('♯','#');
+  let suf = m[3]; const sl=suf.indexOf('/'); if(sl>=0) suf=suf.slice(0,sl);
+  let s = suf.replace(/[()]/g,'').replace(/Δ|\^/g,'maj').replace(/M(?=\d)/g,'maj').replace(/ø/g,'m7b5').replace(/[°ºo](?=7|$)/g,'dim').replace(/[-–−]/g,'m').replace(/min/g,'m').replace(/aug/g,'+');
+  let ext=[]; s = s.replace(/(b9|#9|b5|#5|#11|b13|alt|sus4|sus2|sus|add9)/g, x=>{ext.push(x);return '';});
+  let q=null;
+  if(/^mmaj(7|9)?$/.test(s)) q='mMaj7';
+  else if(/^maj\+?(7|9|13)?$/.test(s)||/^\+maj7$/.test(s)) q='maj7';
+  else if(/^dim7?$/.test(s)) q='dim7';
+  else if(/^m(6\/?9|69)$/.test(s)){q='m6';ext.push('9');}
+  else if(/^m6$/.test(s)) q='m6';
+  else if(/^(6\/?9|69)$/.test(s)){q='6';ext.push('9');}
+  else if(/^6$/.test(s)) q='6';
+  else if(/^m(7|9|11|13)?$/.test(s)) q='m7';
+  else if(/^(7|9|11|13)$/.test(s)) q='7';
+  else if(/^\+7|^7\+|^\+$/.test(s)){q='7';ext.push('#5');}
+  else if(s==='') q='6';
+  else return {kind:'bad', raw};
+  const num=s.match(/(9|11|13)$/); if(num&&!ext.includes(num[1])) ext.push(num[1]);
+  if(q==='maj7'&&(s.includes('+')||ext.includes('#5'))){q='maj7s5';ext=ext.filter(e=>e!=='#5');}
+  if(q==='m7'&&ext.includes('b5')){q='m7b5';ext=ext.filter(e=>e!=='b5');}
+  if(q==='7'&&ext.some(e=>/^sus/.test(e))) q='sus7';
+  if(ext.includes('alt')) ext.push('b9','b13');
+  if(ext.includes('add9')) ext.push('9');
+  return {kind:'chord', raw, rootName, pc, quality:q, ext:ext.filter(e=>!/^(alt|add9|sus)/.test(e))};
+}
+function parseInput(text){
+  const bars=[]; text.split(/\n/).forEach(line=>line.split('|').forEach(seg=>{ const t=seg.trim().split(/\s+/).filter(Boolean); if(t.length) bars.push(t.map(parseChordToken)); }));
+  let prev=null; bars.forEach(b=>b.forEach((t,i)=>{ if(t.kind==='repeat'&&prev) b[i]={...prev, raw:'%'}; else if(t.kind==='chord') prev=t; }));
+  return bars.map(b=>b.filter(t=>t.kind==='chord'));
+}
+
+/* ---------- pitch and spelling ---------- */
+const MIDI_OPEN = {1:64,2:59,3:55,4:50,5:45,6:40};
+const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const SIMPLE = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const MODE_NAMES = ['major','Dorian','Phrygian','Lydian','Mixolydian','Aeolian','Locrian'];
+const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a,c)=>a+(c==='#'?1:-1),0)) % 12 + 12) % 12;
+const keyName = pc => KEYS.find(k=>PC[k]===((pc%12)+12)%12);
+const rotateTo = (names, pc) => { const i=names.findIndex(n=>pcOf(n)===pc); return i<0?null:names.map((_,j)=>names[(i+j)%7]); };
+const raiseName = n => n.endsWith('b') ? n.slice(0,-1) : n+'#';
+function hmSpell(key){                       // harmonic minor of key, spelled from the relative major
+  const pc = pcOf(key);                      // key may be a sharp-side minor (G#) outside KEYS
+  const names = rotateTo(SPELL[keyName((pc+3)%12)], pc).slice();
+  names[6] = raiseName(names[6]); return names;
+}
+function ownSpell(rootPc, scaleId){          // spelled notes of SCALES[scaleId] rooted at rootPc
+  const sc = SCALES[scaleId];
+  if(sc.spellFrom!=null) return rotateTo(SPELL[keyName((rootPc+sc.spellFrom)%12)], rootPc);
+  if(scaleId==='harmonic') return hmSpell(keyName(rootPc));
+  if(scaleId==='phrygdom') return rotateTo(hmSpell(keyName((rootPc+5)%12)), rootPc);
+  return null;
+}
+const stepsFrom = names => names.map(n=>(pcOf(n)-pcOf(names[0])+12)%12);
+
+/* ---------- chord scales: one rule — parent scale rotated to the chord root.
+   Annotations: fn:{key,mode,degree} (diatonic) or fn:'sec' (secondary dominant).
+   No/contradictory annotation → quality-only default, flagged for William. ---------- */
+function chordScale(ch){
+  if(ch.q==='dim7') return {arp:true, label:'arp'};
+  const fn = ch.fn;
+  if(fn && fn.key){
+    if(fn.mode==='major' && pcOf(SPELL[fn.key][fn.degree-1])===ch.pc){
+      const names = rotateTo(SPELL[fn.key], ch.pc);
+      return {names, steps:stepsFrom(names), parent:{scaleId:'major', key:fn.key},
+        label: names[0]+' '+MODE_NAMES[fn.degree-1]};
+    }
+    if(fn.mode==='minor'){
+      const hm = hmSpell(fn.key);
+      if(pcOf(hm[fn.degree-1])===ch.pc){
+        const names = rotateTo(hm, ch.pc);
+        const label = fn.degree===1 ? names[0]+' harmonic minor'
+          : (fn.degree===2||fn.degree===5) ? hm[4]+' Phrygian dominant (V of '+fn.key+' minor)'
+          : fn.key+' harmonic minor from '+names[0];
+        return {names, steps:stepsFrom(names), parent:{scaleId:'harmonic', key:fn.key}, label};
+      }
+    }
+  }
+  const flag = fn!=='sec';
+  const b9 = (ch.ext||[]).includes('b9');
+  let scaleId, rootPc=ch.pc, label;
+  if(ch.q==='7'||ch.q==='sus7'){ scaleId=b9?'phrygdom':'mixolydian'; label=ch.root+(b9?' Phrygian dominant':' Mixolydian'); }
+  else if(ch.q==='m7'){ scaleId='dorian'; label=ch.root+' Dorian'; }
+  else if(ch.q==='m6'||ch.q==='mMaj7'){ scaleId='harmonic'; label=ch.root+' harmonic minor'; }
+  else if(ch.q==='m7b5'){ scaleId='phrygdom'; rootPc=(ch.pc+5)%12; label=keyName(rootPc)+' Phrygian dominant'; }
+  else { scaleId='major'; label=ch.root+' major'; }
+  let names = ownSpell(rootPc, scaleId);
+  if(rootPc!==ch.pc) names = rotateTo(names, ch.pc);
+  return {names, steps:stepsFrom(names), label, own:{scaleId, key:keyName(rootPc)}, flag};
+}
+
+/* ---------- progressions (Handbook pp. 86-95, leadsheets pp. 109-123).
+   Chords are {root, q, beats, ext?, fn?}. The cycles are generated with their
+   annotations built in; the leadsheets parse at load and fall back by quality
+   (flagged) until annotated. Adjacent identical whole bars merge to
+   8/12/16-beat chords, as the printed cycles hold the I for two bars. ---------- */
+const WS = ['C','Bb','Ab','Gb','E','D','F','Eb','Db','B','A','G'];
+const C4 = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
+const M = (key,degree)=>({key,mode:'major',degree}), N = (key,degree)=>({key,mode:'minor',degree});
+const CH = (root,q,beats,fn,ext)=>({root, q, beats, fn, ext:ext||[], pc:pcOf(root)});
+function flatten(perKey){ return [].concat(...perKey); }
+const PROGRESSIONS = {
+  ii51maj:{name:'Major ii-V-I, descending whole steps', pages:'p. 87', group:'prog',
+    chords: flatten(WS.map(k=>{const s=SPELL[k]; return [
+      CH(s[1],'m7',4,M(k,2)), CH(s[4],'7',4,M(k,5)), CH(s[0],'maj7',8,M(k,1))];}))},
+  ii51min:{name:'Minor ii-V-i, descending whole steps', pages:'p. 88', group:'prog',
+    chords: flatten(WS.map(k=>{const s=hmSpell(k); return [
+      CH(s[1],'m7b5',4,N(k,2)), CH(s[4],'7',4,N(k,5),['b9']), CH(s[0],'m6',8,N(k,1))];}))},
+  i6251:{name:'I-vi-ii-V around the cycle', pages:'p. 89', group:'prog',
+    chords: flatten(C4.map(k=>{const s=SPELL[k]; return [
+      CH(s[0],'maj7',4,M(k,1)), CH(s[5],'m7',4,M(k,6)), CH(s[1],'m7',4,M(k,2)), CH(s[4],'7',4,M(k,5))];}))},
+  tonal:{name:'Tonal progressions around the cycle', pages:'p. 90', group:'prog',
+    chords: flatten(C4.map(k=>{const s=SPELL[k], rm=s[5]; return [
+      CH(s[1],'m7',2,M(k,2)), CH(s[4],'7',2,M(k,5)), CH(s[0],'maj7',2,M(k,1)), CH(s[3],'maj7',2,M(k,4)),
+      CH(s[6],'m7b5',2,N(rm,2)), CH(s[2],'7',2,N(rm,5),['b9']), CH(rm,'m6',2,N(rm,1)), CH(rm,'7',2,'sec',['b9'])];}))},
+  bluesBb:{name:'Blues in Bb', pages:'p. 93', group:'blues', chords:[
+    CH('Bb','7',4,'sec'), CH('Eb','7',4,'sec'), CH('Bb','7',4,'sec'),
+    CH('F','m7',2,M('Eb',2)), CH('Bb','7',2,M('Eb',5)),
+    CH('Eb','7',8,'sec'), CH('Bb','7',4,'sec'),
+    CH('D','m7',2,M('Bb',3)), CH('G','7',2,'sec',['b9']),
+    CH('C','m7',4,M('Bb',2)), CH('F','7',4,M('Bb',5)),
+    CH('Bb','7',2,'sec'), CH('G','7',2,'sec',['b9']),
+    CH('C','m7',2,M('Bb',2)), CH('F','7',2,M('Bb',5))]},
+  bluesF:{name:'Blues in F', pages:'p. 93', group:'blues', chords:[
+    CH('F','7',4,'sec'), CH('Bb','7',4,'sec'), CH('F','7',4,'sec'),
+    CH('C','m7',2,M('Bb',2)), CH('F','7',2,M('Bb',5)),
+    CH('Bb','7',8,'sec'), CH('F','7',4,'sec'),
+    CH('A','m7',2,M('F',3)), CH('D','7',2,'sec',['b9']),
+    CH('G','m7',4,M('F',2)), CH('C','7',4,M('F',5)),
+    CH('F','7',2,'sec'), CH('D','7',2,'sec',['b9']),
+    CH('G','m7',2,M('F',2)), CH('C','7',2,M('F',5))]},
+  rhythm:{name:'Rhythm changes, A section', pages:'p. 94', group:'blues', chords:[
+    CH('Bb','maj7',2,M('Bb',1)), CH('G','7',2,'sec',['b9']), CH('C','m7',2,M('Bb',2)), CH('F','7',2,M('Bb',5)),
+    CH('D','m7',2,M('Bb',3)), CH('G','7',2,'sec',['b9']), CH('C','m7',2,M('Bb',2)), CH('F','7',2,M('Bb',5)),
+    CH('F','m7',2,M('Eb',2)), CH('Bb','7',2,M('Eb',5)), CH('Eb','maj7',2,M('Bb',4)), CH('E','dim7',2),
+    CH('D','m7',2,M('Bb',3)), CH('G','7',2,'sec',['b9']), CH('C','m7',2,M('Bb',2)), CH('F','7',2,M('Bb',5))]},
+};
+/* leadsheets, from inversion-drill's TUNES (pp. 109-123); annotate in place over time */
+const TUNES = {
+  attya: {name:'All The Things You Are', text:'Fm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Dm7b5 G7b9 | Cmaj7 | Cmaj7 |\nCm7 | Fm7 | Bb7 | Ebmaj7 |\nAbmaj7 | Am7b5 D7b9 | Gmaj7 | Gmaj7 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nF#m7b5 | B7b9 | Emaj7 | C7#5 |\nFm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Gb7 | Cm7 | Bdim7 |\nBbm7 | Eb7 | Abmaj7 | Gm7b5 C7b9'},
+  auprivave: {name:'Au Privave', text:'F7 | F7 | F7 | Cm7 F7 |\nBb7 | Bb7 | F7 | Am7 D7b9 |\nGm7 | C7 | F7 D7b9 | Gm7 C7'},
+  autumnleaves: {name:'Autumn Leaves', text:'Cm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | G7b9 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm7 C7 | Fm7 Bb7 |\nEbmaj7 | Am7b5 D7b9 | Gm6 | Gm6'},
+  beatrice: {name:'Beatrice', text:'Fmaj7 | Gbmaj7#11 | Fmaj7 | Ebmaj7#11 |\nDm7 | Ebmaj7#11 | Dm7 | Bbm7 |\nAm7 | Bbmaj7 | Em7b5 A7b9 | Dm7 |\nGm7 | Gbmaj7#11 | Fm7 | Gbmaj7#11'},
+  bluebossa: {name:'Blue Bossa', text:'Cm7 | Cm7 | Fm7 | Fm7 |\nDm7b5 | G7#9 | Cm7 | Cm7 |\nEbm7 | Ab7 | Dbmaj7 | Dbmaj7 |\nDm7b5 | G7#9 | Cm7 | Cm7'},
+  honeysuckle: {name:'Honeysuckle Rose', text:'Gm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 | Fmaj7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nDm7 | G7 | C7 | C7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7'},
+  ladybird: {name:'Lady Bird', text:'Cmaj7 | Cmaj7 | Fm7 | Bb7 |\nCmaj7 | Cmaj7 | Bbm7 | Eb7 |\nAbmaj7 | Abmaj7 | Am7 | D7 |\nDm7 | G7 | Cmaj7 Eb7 | Abmaj7 Db7'},
+  mrpc: {name:'Mr. P.C.', text:'Cm7 | Cm7 | Cm7 | Cm7 |\nFm7 | Fm7 | Cm7 | Cm7 |\nAb7#11 | G7b9 | Cm7 | G7b9'},
+  someday: {name:'Someday My Prince Will Come', text:'Bbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nBbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nFm7 | Bb7 | Ebmaj7 | Edim7 |\nBbmaj7 | G7 | Cm7 | F7'},
+  atrain: {name:'Take the "A" Train', text:'Cmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Em7 A7 | Dm7 G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Gm7 C7 |\nFmaj7 | Fmaj7 | Fmaj7 | Fmaj7 |\nD7 | D7 | Dm7 | G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Dm7 G7'},
+  tenormadness: {name:'Tenor Madness', text:'Bb7 | Eb7 | Bb7 | Fm7 Bb7 |\nEb7 | Eb7 | Bb7 | G7b9 |\nCm7 | F7 | Bb7 G7b9 | Cm7 F7'},
+  gdsC: {name:'On Green Dolphin Street (C)', text:'Cmaj7 | Cmaj7 | Cm7 | Cm7 |\nD7 | Dbmaj7 | Cmaj7 | A7b9 |\nDm7 | G7 | Cmaj7 | Cmaj7 |\nFm7 | Bb7 | Ebmaj7 | G7 |\nCmaj7 | Cmaj7 | Cm7 | Cm7 |\nD7 | Dbmaj7 | Cmaj7 | A7b9 |\nDm7 | Bm7b5 E7b9 | Am7 | F#m7b5 B7b9 |\nEm7 A7b9 | Dm7 G7 | Cmaj7 | Dm7 G7'},
+  gdsEb: {name:'On Green Dolphin Street (Eb)', text:'Ebmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Bb7 | Ebmaj7 | Ebmaj7 |\nAbm7 | Db7 | Gbmaj7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Dm7b5 G7b9 | Cm7 | Am7b5 D7b9 |\nGm7 C7b9 | Fm7 Bb7 | Ebmaj7 | Fm7 Bb7'},
+  strasbourg: {name:'Strasbourg/St. Denis', text:'Bbm7 Cm7 | Dbmaj7 F7b9 | Bbm7 Cm7 | Dbmaj7 F7b9 |\nBbm7 Cm7 | Dbmaj7 Eb7 | Abmaj7 | F7b9'},
+};
+function parseProg(text){
+  const chords=[];
+  parseInput(text).forEach(bar=>{
+    const per = bar.length===2 ? 2 : bar.length===1 ? 4 : null;
+    if(per===null) throw new Error('bars must hold 1 or 2 chords');
+    bar.forEach(t=>{
+      const prev=chords[chords.length-1];
+      if(per===4 && prev && prev.beats%4===0 && prev.beats<16 && prev.root===t.rootName &&
+         prev.q===t.quality && prev.ext.join()===t.ext.join()) prev.beats+=4;
+      else chords.push(CH(t.rootName, t.quality, per, undefined, t.ext));
+    });
+  });
+  return chords;
+}
+Object.entries(TUNES).forEach(([k,t])=>{ PROGRESSIONS['tune_'+k]={name:t.name, pages:'pp. 109–123', group:'tune', chords:parseProg(t.text)}; });
+
+/* ---------- fingerings and windows (VDA) ---------- */
+function placeScale(scaleId, shapeId, key){
+  const sh = SCALES[scaleId].shapes[shapeId];
+  let rf = ((pcOf(key)-OPEN[sh.rootString])%12+12)%12;
+  const offs = sh.notes.map(n=>n[1]);
+  if(rf+Math.min(...offs) < 1) rf += 12;
+  if(rf+Math.max(...offs) > 19 && rf-12+Math.min(...offs) >= 1) rf -= 12;
+  const notes = sh.notes.map(([s,off,f])=>({string:s, fret:rf+off, finger:f, midi:MIDI_OPEN[s]+rf+off}));
+  return {scaleId, key, id:shapeId, rf, notes,
+    lo:Math.min(...notes.map(n=>n.fret)), hi:Math.max(...notes.map(n=>n.fret))};
+}
+function placements(scaleId, key){
+  return SCALES[scaleId].cycle.map(id=>placeScale(scaleId,id,key)).sort((a,b)=>a.lo-b.lo||a.hi-b.hi);
+}
+const overlap = (a,b) => Math.max(0, Math.min(a.hi,b.hi) - Math.max(a.lo,b.lo) + 1);
+function bestOverlap(list, win){ let best=list[0], bo=-1; for(const p of list){ const o=overlap(p,win); if(o>bo){bo=o;best=p;} } return best; }
+function hdaStub(){ throw new Error('HDA (root-string, horizontal) position logic is v2 — not implemented'); }
+
+const degMidi = (root, d, steps) => root + steps[(d-1)%7] + 12*Math.floor((d-1)/7);
+function fitInPlacement(pl, rootPc, steps, degs, prevRoot){
+  const at = new Map(); pl.notes.forEach(n=>at.set(n.midi, n));
+  const roots = pl.notes.filter(n=>n.midi%12===rootPc).map(n=>n.midi)
+    .filter((m,i,a)=>a.indexOf(m)===i).sort((a,b)=>a-b);
+  const fits = roots.filter(r=>degs.every(d=>at.has(degMidi(r,d,steps))));
+  if(!fits.length) return null;
+  let root = fits[0];
+  if(prevRoot!=null){ let bd=1e9; for(const c of fits){ const d=Math.abs(c-prevRoot); if(d<bd){bd=d; root=c;} } }
+  return {root, note:d=>at.get(degMidi(root,d,steps))};
+}
+
+/* arp shapes: root inside the window, scored VDA-style (arpeggios-deck):
+   reject >2 notes outside window±1, prefer fewer outside, then notes shared
+   with the scale placement, then nearness to the previous root */
+const ARPQ = {maj7:'maj7','6':'maj7','7':'dom7',sus7:'dom7',m7:'m7',m6:'mMaj7',m7b5:'m7b5',dim7:'dim7',mMaj7:'mMaj7',maj7s5:'maj7s5'};
+function arpCandidates(ch, win, prevRoot){
+  const out=[];
+  for(const sh of ARP1[ARPQ[ch.q]]){
+    const base = ((ch.pc-OPEN[sh.rs])%12+12)%12;
+    for(let rf=base; rf<=19; rf+=12){
+      if(rf<1) continue;
+      const notes = sh.n.map(([s,off,f])=>({string:s, fret:rf+off, finger:f, midi:MIDI_OPEN[s]+rf+off}));
+      if(notes.some(n=>n.fret<1||n.fret>19)) continue;
+      if(win && (rf<win.lo||rf>win.hi)) continue;
+      const outside = win ? notes.filter(n=>n.fret<win.lo-1||n.fret>win.hi+1).length : 0;
+      if(outside>2) continue;
+      const coincide = win ? notes.filter(n=>win.notes.some(m=>m.string===n.string&&m.fret===n.fret)).length : 0;
+      out.push({notes, outside, coincide, root:notes[0].midi, rs:sh.rs});
+    }
+  }
+  out.sort((a,b)=>a.outside-b.outside || b.coincide-a.coincide ||
+    (prevRoot!=null ? Math.abs(a.root-prevRoot)-Math.abs(b.root-prevRoot) : a.root-b.root));
+  return out;
+}
+const ARPQ_TONES = {maj7:'maj7','6':'maj7','7':'7',sus7:'7',m7:'m7',m6:'mMaj7',m7b5:'m7b5',dim7:'dim7',mMaj7:'mMaj7',maj7s5:'maj7s5'};
+function chordToneNames(ch){
+  const q=QUAL[ARPQ_TONES[ch.q]];   // -6 borrows the -Δ7 shape, so its tones too
+  return ['R',q.third,q.fifth,q.seventh].map((dg,i)=>{
+    const letter='CDEFGAB'[('CDEFGAB'.indexOf(ch.root[0])+[0,2,4,6][i])%7];
+    const pc=(ch.pc+DEG[dg])%12;
+    let diff=((pc-LPC[letter])%12+12)%12; if(diff>6) diff-=12;
+    const n=letter+(diff>0?'#'.repeat(diff):'b'.repeat(-diff));
+    return n.length>2 ? SIMPLE[pc] : n;
+  });
+}
+
+/* ---------- the line: formulas (every bar must sum to 4 beats — asserted) ----------
+   events per unit: [degree-or-tone-index, eighth offset, duration in eighths]
+   dur 5 = eighth on the & of 2 held to the barline, engraved 8~2 so beat 3 shows */
+const ARP_EV = { '2':[[0,0,1],[1,1,1],[2,2,1],[3,3,1]],
+  '4':[[0,0,1],[1,1,1],[2,2,1],[3,3,5]],
+  '8':[[0,0,1],[1,1,1],[2,2,1],[3,3,5],[3,8,1],[2,9,1],[1,10,1],[0,11,5]] };
+const SCALE_EV = { '2':[[1,0,1],[2,1,1],[3,2,1],[5,3,1]],
+  '4':[[1,0,1],[2,1,1],[3,2,1],[4,3,1],[5,4,1],[6,5,1],[7,6,2]],
+  '8':[[1,0,1],[2,1,1],[3,2,1],[4,3,1],[5,4,1],[6,5,1],[7,6,1],[8,7,1],
+       [9,8,1],[8,9,1],[7,10,1],[6,11,1],[5,12,1],[4,13,1],[3,14,2]] };
+const unitPlan = b => b===2?['2']:b===4?['4']:b===8?['8']:b===12?['8','4']:b===16?['8','8']:null;
+const scaleDegs = b => b===2?[1,2,3,5]:b===4?[1,2,3,4,5,6,7]:[1,2,3,4,5,6,7,8,9];
+function chordSym(ch){
+  const q=QUAL[ch.q];
+  const ex=(ch.ext||[]).filter(e=>q.allowed.includes(e));
+  return ch.root + q.sym + (ex.length?'('+ex.join('')+')':'');
+}
+
+function buildLine(progId, mode, startFing){
+  const prog = PROGRESSIONS[progId];
+  const events=[], chordMarks=[], labelMarks=[], panels=[];
+  let region=null, prevRoot=null, at=0, anyFlag=false;
+  const seedRegion = (scaleId, key) => {
+    const pls = placements(scaleId, key);
+    const pl = region ? bestOverlap(pls, region.pl)
+                      : placeScale(scaleId, SCALES[scaleId].cycle[startFing-1], key);
+    region = {scaleId, key, pls, pl:pls.find(p=>p.id===pl.id), idx:pls.findIndex(p=>p.id===pl.id)};
+  };
+  for(const ch of prog.chords){
+    if(unitPlan(ch.beats)===null) throw new Error(chordSym(ch)+': unsupported length '+ch.beats+' beats');
+    const cs = chordScale(ch);
+    if(cs.flag) anyFlag=true;
+    if(cs.parent && (!region || region.scaleId!==cs.parent.scaleId || region.key!==cs.parent.key))
+      seedRegion(cs.parent.scaleId, cs.parent.key);
+    if(!region && cs.own) seedRegion(cs.own.scaleId, cs.own.key);
+    const useArp = mode==='arp' || cs.arp;
+    let emitted, label, panelNotes, panelWin;
+    if(useArp){
+      let cands = arpCandidates(ch, region && region.pl, prevRoot), shifted=null, outPos=false;
+      if(!cands.length && region){
+        for(const d of [-1,1]){ const q=region.pls[region.idx+d]; if(!q) continue;
+          const c2=arpCandidates(ch,q,prevRoot); if(c2.length){cands=c2; shifted=q.id; break;} }
+      }
+      if(!cands.length){ cands=arpCandidates(ch,null,prevRoot); outPos=true; }
+      if(!cands.length) throw new Error(chordSym(ch)+': no arpeggio shape fits');
+      const sel=cands[0], names=chordToneNames(ch);
+      prevRoot = sel.root;
+      emitted = (ti)=>({...sel.notes[ti], note:names[ti]});
+      label = (cs.arp && mode!=='arp' ? 'arp' : 'arp · R on '+sel.rs) +
+              (shifted?' →'+shifted:'') + (outPos?' (out of position)':'') + (cs.flag?' †':'');
+      panelNotes = sel.notes; panelWin = region && region.pl;
+      let u0=0;
+      for(const kind of unitPlan(ch.beats)){
+        for(const [ti,off,dur] of ARP_EV[kind]) events.push({at:at+u0+off, dur, ...emitted(ti)});
+        u0 += kind==='2'?4:kind==='4'?8:16;
+      }
+    } else {
+      const degs = scaleDegs(ch.beats);
+      let pl, fit=null, shifted=null;
+      if(cs.parent){
+        pl=region.pl; fit=fitInPlacement(pl, ch.pc, cs.steps, degs, prevRoot);
+        if(!fit) for(const d of [-1,1]){ const q=region.pls[region.idx+d]; if(!q) continue;
+          const f=fitInPlacement(q, ch.pc, cs.steps, degs, prevRoot);
+          if(f && (!fit || overlap(q,region.pl)>overlap(pl,region.pl))){ fit=f; pl=q; shifted=q.id; } }
+      } else {
+        const own = placements(cs.own.scaleId, cs.own.key)
+          .map(p=>({p, o:region?overlap(p,region.pl):0})).sort((a,b)=>b.o-a.o);
+        for(const {p} of own){ const f=fitInPlacement(p, ch.pc, cs.steps, degs, prevRoot); if(f){ fit=f; pl=p; break; } }
+      }
+      if(!fit) throw new Error(chordSym(ch)+': run does not fit any fingering');
+      prevRoot = fit.root;
+      label = cs.label+' · '+(shifted?'→':'')+pl.id + (cs.flag?' †':'');
+      panelNotes=[]; panelWin=pl;
+      let u0=0;
+      for(const kind of unitPlan(ch.beats)){
+        for(const [d,off,dur] of SCALE_EV[kind]){
+          const n=fit.note(d);
+          events.push({at:at+u0+off, dur, string:n.string, fret:n.fret, finger:n.finger, midi:n.midi, note:cs.names[(d-1)%7]});
+          if(!panelNotes.some(p=>p.string===n.string&&p.fret===n.fret)) panelNotes.push({...n});
+        }
+        u0 += kind==='2'?4:kind==='4'?8:16;
+      }
+    }
+    chordMarks.push({at, text:chordSym(ch)});
+    labelMarks.push({at, text:label, flag:!!cs.flag});
+    panels.push({from:at, to:at+ch.beats*2, win:panelWin, notes:panelNotes.length?panelNotes:events.filter(e=>e.at>=at).map(e=>e), rootPc:ch.pc,
+      title:chordSym(ch)+' — '+label});
+    at += ch.beats*2;
+  }
+  if(at%8) throw new Error('line does not end on a barline');
+  const bars=[]; for(let b=0;b<at/8;b++) bars.push({n:b+1, events:[], chords:[], labels:[]});
+  events.forEach(e=>{ const b=Math.floor(e.at/8), off=e.at%8;
+    if(off+e.dur>8) throw new Error('event crosses the barline at bar '+(b+1));
+    bars[b].events.push({...e, at:off}); });
+  chordMarks.forEach(c=>bars[Math.floor(c.at/8)].chords.push({at:c.at%8, text:c.text}));
+  labelMarks.forEach(l=>bars[Math.floor(l.at/8)].labels.push({at:l.at%8, text:l.text, flag:l.flag}));
+  bars.forEach(bar=>{ const s=bar.events.reduce((a,e)=>a+e.dur,0);
+    if(s!==8) throw new Error('bar '+bar.n+' sums to '+(s/2)+' beats, not 4'); });
+  const barPanels = bars.map((_,b)=>panels.find(p=>p.from<=b*8 && b*8<p.to));
+  return {bars, barPanels, name:prog.name, pages:prog.pages, anyFlag};
+}
+
+/* ---------- engraver: staff + TAB on LilyPond's glyphs (NOTE_DEFS), following
+   Argue: 4-bar systems, eighths beamed in fours from beats 1 and 3, the held
+   7th written 8~2 (beat 3 shows), chord symbols left-aligned to the beat,
+   a bar number under every bar, numeric 4/4. Units: 1 staff space = 1. ---------- */
+const ACC = { "":0, "#":1, "##":2, "b":-1, "bb":-2, "n":0 };
+const SLOT=2.9, BARW=1.6+8*SLOT, SYS_X0=6.6, T0=13.2, TS=1.5, SYS_BARS=4;
+function engrave(bars){
+  const out=[];
+  for(let s0=0; s0<bars.length; s0+=SYS_BARS)
+    out.push(engraveSystem(bars.slice(s0,s0+SYS_BARS), s0===0, s0+SYS_BARS>=bars.length));
+  return out;
+}
+function engraveSystem(bars, first, last){
+  const W = SYS_X0 + SYS_BARS*BARW + 0.6;
+  const use=(id,x,y,sz)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${sz||0.004},${-(sz||0.004)})"/>`;
+  let o="", music="";
+  const endX = SYS_X0 + bars.length*BARW;
+  // staff and TAB lines
+  for(let i=0;i<5;i++) music+=`<line x1="0" y1="${i}" x2="${endX}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+  for(let i=0;i<6;i++) music+=`<line x1="0" y1="${T0+i*TS}" x2="${endX}" y2="${T0+i*TS}" stroke="currentColor" stroke-width="0.11"/>`;
+  music += use("clef",0.8,3)+`<text x="1.15" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+  ["T","A","B"].forEach((L,i)=>music+=`<text x="1.3" y="${(T0+2.05+i*2.05).toFixed(2)}" font-family="sans-serif" font-weight="700" font-size="2.3" text-anchor="middle" fill="currentColor">${L}</text>`);
+  if(first) music+=`<text x="5.3" y="2.05" font-family="serif" font-weight="700" font-size="2.6" text-anchor="middle" fill="currentColor">4</text><text x="5.3" y="4.05" font-family="serif" font-weight="700" font-size="2.6" text-anchor="middle" fill="currentColor">4</text>`;
+  const tops=[];
+  bars.forEach((bar,bi)=>{
+    const barX = SYS_X0 + bi*BARW;
+    // barline (left edge of the bar)
+    music+=`<line x1="${barX}" y1="0" x2="${barX}" y2="4" stroke="currentColor" stroke-width="0.13"/><line x1="${barX}" y1="${T0}" x2="${barX}" y2="${T0+5*TS}" stroke="currentColor" stroke-width="0.13"/>`;
+    music+=`<text x="${(barX+0.35).toFixed(2)}" y="5.85" font-family="sans-serif" font-size="1.05" fill="var(--bone-dim)">${bar.n}</text>`;
+    // drawn notes: dur 5 splits into eighth ~ half (the half lands on beat 3)
+    const drawn=[];
+    bar.events.forEach(e=>{
+      if(e.dur===5){ const a={slot:e.at, kind:'e', e, tieStart:true}, b={slot:e.at+1, kind:'h', e, tieEnd:true};
+        a.tieTo=b; drawn.push(a,b); }
+      else drawn.push({slot:e.at, kind:e.dur===1?'e':'q', e});
+    });
+    const state={};
+    drawn.forEach(d=>{
+      const letter=d.e.note[0], acc=d.e.note.slice(1);
+      const written=d.e.midi+12, natural=written-(ACC[acc]||0), oct=Math.floor(natural/12)-1;
+      const idx=oct*7+"CDEFGAB".indexOf(letter);
+      d.y=4-(idx-30)*0.5; d.x=barX+1.5+d.slot*SLOT;
+      const k=letter+oct, cur=state[k]||"";
+      d.showAcc = d.tieEnd ? "" : (acc!==cur ? (acc||"n") : "");
+      state[k]=acc;
+    });
+    // beams: fours from beats 1 and 3; consecutive eighths only
+    const groups=[];
+    for(const lo of [0,4]){
+      let run=[];
+      for(let sl=lo; sl<lo+4; sl++){
+        const d=drawn.find(x=>x.slot===sl);
+        if(d && d.kind==='e') run.push(d);
+        else { if(run.length) groups.push(run); run=[];
+               if(d) groups.push([d]); }
+      }
+      if(run.length) groups.push(run);
+    }
+    groups.forEach(grp=>{
+      const up = grp.reduce((a,c)=>a+c.y,0)/grp.length > 2;
+      const dir = up?-1:1, sx=c=>c.x+(up?1.23:0.07);
+      grp.forEach(c=>c.stemUp=up);
+      if(grp.length===1){
+        const c=grp[0], tip=c.y+dir*3.5;
+        music+=`<line x1="${sx(c).toFixed(2)}" y1="${c.y}" x2="${sx(c).toFixed(2)}" y2="${tip.toFixed(2)}" stroke="currentColor" stroke-width="0.13"/>`;
+        if(c.kind==='e') music+=use(up?"flagUp":"flagDown",sx(c),tip);
+        tops.push({x:c.x, top:up?tip-0.6:c.y});
+      } else {
+        const f=grp[0], l=grp[grp.length-1];
+        let slope=(l.y-f.y)/(l.x-f.x); slope=Math.max(-0.22,Math.min(0.22,slope));
+        let base=f.y+dir*3.5;
+        grp.forEach(c=>{ const by=base+slope*(c.x-f.x); const len=(by-c.y)*dir; if(len<2.8) base+=dir*(2.8-len); });
+        const beamY=c=>base+slope*(c.x-f.x);
+        grp.forEach(c=>{ music+=`<line x1="${sx(c).toFixed(2)}" y1="${c.y.toFixed(2)}" x2="${sx(c).toFixed(2)}" y2="${beamY(c).toFixed(2)}" stroke="currentColor" stroke-width="0.13"/>`; tops.push({x:c.x, top:up?beamY(c)-0.5:c.y}); });
+        music+=`<line x1="${sx(f).toFixed(2)}" y1="${beamY(f).toFixed(2)}" x2="${sx(l).toFixed(2)}" y2="${beamY(l).toFixed(2)}" stroke="currentColor" stroke-width="0.5"/>`;
+      }
+    });
+    // heads, ledgers, accidentals, fingerings, TAB, ties
+    drawn.forEach(c=>{
+      for(let ly=5; ly<=c.y; ly++) music+=`<line x1="${(c.x-0.33).toFixed(2)}" y1="${ly}" x2="${(c.x+1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+      for(let ly=-1; ly>=c.y; ly--) music+=`<line x1="${(c.x-0.33).toFixed(2)}" y1="${ly}" x2="${(c.x+1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+      if(c.showAcc){
+        if(c.showAcc==="#") music+=use("sharp",c.x-1.45,c.y);
+        else if(c.showAcc==="##") music+=`<text x="${(c.x-1.0).toFixed(2)}" y="${(c.y+0.5).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">𝄪</text>`;
+        else if(c.showAcc==="b") music+=use("flat",c.x-1.35,c.y);
+        else if(c.showAcc==="bb") music+=use("flat",c.x-2.2,c.y)+use("flat",c.x-1.25,c.y);
+        else music+=use("natural",c.x-1.35,c.y);
+        tops.push({x:c.x, top:c.y-1.9});
+      }
+      if(c.kind==='h') music+=`<ellipse cx="${(c.x+0.62).toFixed(2)}" cy="${c.y.toFixed(2)}" rx="0.66" ry="0.44" transform="rotate(-21 ${(c.x+0.62).toFixed(2)} ${c.y.toFixed(2)})" fill="none" stroke="currentColor" stroke-width="0.24"/>`;
+      else music+=use("nh",c.x,c.y);
+      if(!c.tieEnd){
+        const f=c.e.finger; if(f>=1&&f<=4) c.fing=f;
+        music+=`<text x="${(c.x+0.62).toFixed(2)}" y="${(T0+(c.e.string-1)*TS+0.63).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.75" text-anchor="middle" fill="currentColor">${c.e.fret}</text>`;
+      }
+      if(c.tieTo){
+        const t=c.tieTo, ty=c.y+(c.stemUp?1:-1)*0.95, x1=c.x+1.35, x2=t.x-0.15;
+        music+=`<path d="M ${x1.toFixed(2)} ${ty.toFixed(2)} Q ${((x1+x2)/2).toFixed(2)} ${(ty+(c.stemUp?0.8:-0.8)).toFixed(2)} ${x2.toFixed(2)} ${ty.toFixed(2)}" fill="none" stroke="currentColor" stroke-width="0.16"/>`;
+      }
+    });
+    bar._drawn = drawn; bar._barX = barX;
+  });
+  // final barline
+  music+=`<line x1="${endX}" y1="0" x2="${endX}" y2="4" stroke="currentColor" stroke-width="${last?0.45:0.13}"/><line x1="${endX}" y1="${T0}" x2="${endX}" y2="${T0+5*TS}" stroke="currentColor" stroke-width="${last?0.45:0.13}"/>`;
+  if(last) music+=`<line x1="${(endX-0.8).toFixed(2)}" y1="0" x2="${(endX-0.8).toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/><line x1="${(endX-0.8).toFixed(2)}" y1="${T0}" x2="${(endX-0.8).toFixed(2)}" y2="${T0+5*TS}" stroke="currentColor" stroke-width="0.13"/>`;
+  // fingerings on one row above everything on the staff
+  const fingerRow = Math.min(-0.9, ...tops.map(t=>t.top-1.0));
+  bars.forEach(bar=>bar._drawn.forEach(c=>{ if(c.fing) music+=use("f"+c.fing, c.x+0.25, fingerRow, 0.0022); }));
+  // chord symbols, left-aligned to their beat
+  const chordRow = fingerRow-1.5;
+  bars.forEach(bar=>bar.chords.forEach(cm=>{
+    const m=cm.text.match(/^([A-G][#b]?)(.*)$/);
+    const root=m[1].replace('#','♯').replace('b','♭'), suf=(m[2]||'').replace(/b(?=[0-9])/g,'♭').replace(/#/g,'♯');
+    music+=`<text x="${(bar._barX+1.1+cm.at*SLOT).toFixed(2)}" y="${chordRow.toFixed(2)}" font-family="sans-serif" font-size="2.1" fill="currentColor">${root}<tspan font-size="1.4" dy="-0.9">${suf}</tspan></text>`;
+  }));
+  // per-chord labels under the TAB
+  const labelRow = T0+5*TS+2.1;
+  bars.forEach(bar=>bar.labels.forEach(lm=>{
+    music+=`<text x="${(bar._barX+1.1+lm.at*SLOT).toFixed(2)}" y="${labelRow.toFixed(2)}" font-family="SF Mono,Menlo,monospace" font-size="1.02" fill="${lm.flag?'var(--warn)':'var(--bone-dim)'}">${lm.text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+  }));
+  const top = chordRow-2.6, bottom = labelRow+1.2;
+  // bar highlight rects behind everything
+  bars.forEach(bar=>{ o+=`<rect data-bar="${bar.n}" x="${bar._barX}" y="${(top+0.2).toFixed(2)}" width="${BARW}" height="${(bottom-top-0.6).toFixed(2)}" rx="0.6" fill="var(--petrol-2)" opacity="0"/>`; bar._drawn=undefined; bar._barX=undefined; });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.4 ${top.toFixed(2)} ${(W+0.8).toFixed(2)} ${(bottom-top).toFixed(2)}" preserveAspectRatio="xMidYMid meet">${o}${music}</svg>`;
+}
+
+/* ---------- fretboard panel: the position window, current chord's notes on top.
+   Book orientation — strings horizontal, 1st string on top, roots brass. ---------- */
+function panelSVG(p){
+  if(!p) return '';
+  const notes=p.notes, win=p.win;
+  const frets=notes.map(n=>n.fret).concat(win?[win.lo,win.hi]:[]);
+  const lo=Math.min(...frets), hi=Math.max(...frets);
+  const FW=46, SH=26, x0=14, y0=26, nF=hi-lo+1, W=x0+nF*FW+12, H=y0+5*SH+18;
+  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  o+=`<text x="${x0+FW/2}" y="15" font-size="12" text-anchor="middle" fill="var(--bone-dim)">${lo}</text>`;
+  o+=`<line x1="${x0+FW/2}" y1="18" x2="${x0+FW/2}" y2="${y0-6}" stroke="var(--bone-dim)" stroke-width="1"/>`;
+  for(let s=0;s<6;s++) o+=`<line x1="${x0}" y1="${y0+s*SH}" x2="${x0+nF*FW}" y2="${y0+s*SH}" stroke="var(--bone-dim)" stroke-width="${1+(s>=4?0.6:0)}"/>`;
+  for(let f=0;f<=nF;f++) o+=`<line x1="${x0+f*FW}" y1="${y0}" x2="${x0+f*FW}" y2="${y0+5*SH}" stroke="var(--line)" stroke-width="1"/>`;
+  const cx=f=>x0+(f-lo)*FW+FW/2, cy=s=>y0+(s-1)*SH;
+  if(win) win.notes.forEach(n=>{ if(!notes.some(m=>m.string===n.string&&m.fret===n.fret))
+    o+=`<circle cx="${cx(n.fret)}" cy="${cy(n.string)}" r="5" fill="var(--petrol-2)" stroke="var(--bone-dim)" stroke-width="0.8"/>`; });
+  notes.forEach(n=>{ const root=n.midi%12===p.rootPc;
+    o+=`<circle cx="${cx(n.fret)}" cy="${cy(n.string)}" r="8.5" fill="${root?'var(--brass)':'var(--bone)'}"/>`;
+    if(n.finger) o+=`<text x="${cx(n.fret)}" y="${cy(n.string)+3.6}" font-size="10" text-anchor="middle" fill="var(--ink)">${n.finger}</text>`; });
+  return o+'</svg>';
+}
+
+/* ---------- LilyPond export (Argue head as the other apps; keep in sync) ---------- */
+function lyNote(name, midi){
+  const acc=name.slice(1);
+  const suf = acc==='b'?'es':acc==='bb'?'eses':acc==='#'?'is':acc==='##'?'isis':'';
+  const oct = Math.floor((midi-(ACC[acc]||0))/12)-1;
+  return name[0].toLowerCase()+suf+(oct>=4?"'".repeat(oct-3):",".repeat(3-oct));
+}
+const LY_Q = {maj7:'maj7','6':'6','7':'7',sus7:'7sus4',m7:'m7',m6:'m6',m7b5:'m7.5-',dim7:'dim7',mMaj7:'m7+',maj7s5:'maj7.5+'};
+const LY_EXT = {'9':'9',b9:'9-','#9':'9+','11':'11','#11':'11+','13':'13',b13:'13-',b5:'5-','#5':'5+'};
+function lyExport(line, progId, opts){
+  const prog=PROGRESSIONS[progId];
+  const mus = line.bars.map((bar,i)=>{
+    const toks=bar.events.map(e=>{
+      const p=lyNote(e.note,e.midi), s='\\'+e.string;
+      return e.dur===1 ? p+'8'+s : e.dur===2 ? p+'4'+s : p+'8'+s+'~ '+p+'2'+s;
+    });
+    return toks.join(' ')+' |'+((i+1)%4===0&&i+1<line.bars.length?' \\break':'');
+  });
+  const chords = prog.chords.map(ch=>{
+    const l=ch.root[0].toLowerCase(), a=ch.root.slice(1);
+    const root=l+(a==='b'?'es':a==='#'?'is':'');
+    const dur = ch.beats===2?'2':'1'+(ch.beats>4?'*'+(ch.beats/4):'');
+    const ext=(ch.ext||[]).filter(e=>QUAL[ch.q].allowed.includes(e)&&LY_EXT[e]).map(e=>'.'+LY_EXT[e]).join('');
+    return root+dur+':'+LY_Q[ch.q]+ext;
+  });
+  const tempo = '\\tempo \\markup { \\concat { \\general-align #Y #DOWN \\smaller \\note {4} #1 " = '+(opts.bpm||120)+'  " \\bold "Swing" } }';
+  return `\\version "2.24.0"
+\\paper {
+  #(set-paper-size "letter")
+  top-margin = 12.5\\mm bottom-margin = 12.5\\mm left-margin = 12.5\\mm right-margin = 12.5\\mm
+  indent = 0 ragged-right = ##f ragged-last = ##t print-page-number = ##f
+  system-system-spacing.basic-distance = #18
+  bookTitleMarkup = \\markup \\column {
+    \\fill-line { "Guitar" \\column { ${(opts.source||'').split('\n').map(l=>'\\line { "'+l.replace(/"/g,'\\"')+'" }').join(' ')} } }
+    \\vspace #2.2 \\fill-line { \\fontsize #6 \\bold "${(line.name||'').replace(/"/g,'\\"')}" } \\vspace #0.5 }
+}
+\\header { tagline = ##f }
+#(set-global-staff-size 20)
+\\layout { \\context { \\Score
+  \\override BarNumber.break-visibility = #end-of-line-invisible
+  \\override BarNumber.direction = #DOWN \\override BarNumber.self-alignment-X = #LEFT
+  \\override BarNumber.font-size = #-2
+  barNumberVisibility = #all-bar-numbers-visible } }
+mus = { \\clef "treble_8" \\numericTimeSignature \\time 4/4 \\accidentalStyle modern ${tempo}
+  ${mus.join('\n  ')} \\bar "|." }
+\\score { <<
+  \\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } } \\chordmode {
+  ${chords.join(' ')}
+  }
+  \\new Staff \\with { \\override StringNumber.stencil = ##f } { \\mus }
+  \\new TabStaff \\with { \\override Stem.stencil = ##f \\override Beam.stencil = ##f \\override Dots.stencil = ##f } { \\mus }
+>> }
+`;
+}
+
+/* ===== ui ===== */
+const st={prog:'ii51maj', mode:'arp', fing:1, line:null};
+const el=id=>document.getElementById(id);
+
+function rebuild(){
+  try{ st.line = buildLine(st.prog, st.mode, st.fing); }
+  catch(err){ el('chart').innerHTML='<p class="sub" style="color:var(--warn)">'+err.message+'</p>'; st.line=null; return; }
+  const p=PROGRESSIONS[st.prog];
+  el('title').textContent = p.name;
+  el('sub').textContent = (st.mode==='arp'
+    ? 'Arp mode: R 3 5 7 of each chord from the 1-octave shape whose root sits in the position.'
+    : 'Scale mode: each chord runs its scale — the parent scale of the key, started from the chord root — inside the position.')
+    + ' Fingering '+st.fing+' to start; the position only moves when the key does.';
+  el('chart').innerHTML = engrave(st.line.bars).map(s=>'<div class="sys">'+s+'</div>').join('');
+  el('legend').innerHTML = (st.line.anyFlag?'<span class="flagmark">†</span> no function annotation in the data — scale guessed from the chord quality. ':'')
+    + '→ = one adjacent-fingering shift for that chord (VDA).';
+  showBar(1, false);
+}
+function showBar(n, scroll){
+  document.querySelectorAll('#chart rect[data-bar]').forEach(r=>r.setAttribute('opacity', +r.dataset.bar===n?'1':'0'));
+  const p=st.line && st.line.barPanels[n-1];
+  el('panelTitle').innerHTML = p ? 'bar '+n+' · <b>'+p.title.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b>' : 'position';
+  el('panel').innerHTML = panelSVG(p);
+  if(scroll){ const r=document.querySelector('#chart rect[data-bar="'+n+'"]'); if(r) r.closest('.sys').scrollIntoView({block:'nearest'}); }
+}
+
+/* metronome: lookahead scheduler (voice-leading trainer; 25 ms / 130 ms).
+   Count-in clicks quarters, bar starts accented; time clicks 2 and 4.
+   The bar highlight is a setTimeout derived from the scheduled audio time. */
+let ac=null; const ctx=()=>ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+function click(at, hz, gain){ const c=ctx(); const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=hz;
+  g.gain.setValueAtTime(gain,at); g.gain.exponentialRampToValueAtTime(.001,at+.05); o.connect(g); g.connect(c.destination); o.start(at); o.stop(at+.06); }
+const sched={timer:null, next:0, beat:0, on:false};
+const LOOKAHEAD=0.13, INTERVAL=25;
+function play(){
+  if(sched.on) return stop();
+  if(!st.line) return;
+  const c=ctx(); c.resume();
+  sched.on=true; sched.beat=-4*(+el('countin').value); sched.next=c.currentTime+0.1;
+  el('play').textContent='Stop'; sched.timer=setInterval(tick, INTERVAL);
+}
+function stop(){ sched.on=false; clearInterval(sched.timer); el('play').textContent='Play'; }
+function tick(){
+  const c=ctx(), spb=60/(+el('bpm').value||120);
+  while(sched.next < c.currentTime+LOOKAHEAD){
+    if(!scheduleBeat(sched.beat, sched.next)) return stop();
+    sched.next+=spb; sched.beat++;
+  }
+}
+function scheduleBeat(beat, time){
+  const nBars=st.line.bars.length, b=((beat%4)+4)%4;
+  if(beat>=nBars*4){ if(!el('loop').checked) return false; beat=sched.beat=beat-nBars*4; }
+  if(beat<0){ click(time, b===0?2100:1600, .4); return true; }
+  if(b===1||b===3) click(time, 1600, .35);
+  if(b===0){ const bar=Math.floor(beat/4)+1;
+    setTimeout(()=>{ if(sched.on) showBar(bar, true); }, Math.max(0,(time-ctx().currentTime)*1000)); }
+  return true;
+}
+
+(function init(){
+  document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
+  const groups=[['prog','Practice progressions · pp. 86–95'],['blues','Blues & rhythm changes · pp. 93–94'],['tune','Leadsheets · pp. 109–123']];
+  el('prog').innerHTML = groups.map(([g,label])=>'<optgroup label="'+label+'">'+
+    Object.entries(PROGRESSIONS).filter(([,p])=>p.group===g).map(([k,p])=>`<option value="${k}">${p.name} · ${p.pages}</option>`).join('')+'</optgroup>').join('');
+  el('fings').innerHTML = CYCLE.map((id,i)=>`<button data-f="${i+1}" aria-pressed="${i===0}">${i+1}<small>${id}</small></button>`).join('');
+  el('prog').addEventListener('change',e=>{ st.prog=e.target.value; stop(); rebuild(); });
+  el('fings').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+    st.fing=+b.dataset.f; el('fings').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); stop(); rebuild(); });
+  el('mArp').addEventListener('click',()=>setMode('arp'));
+  el('mScale').addEventListener('click',()=>setMode('scale'));
+  function setMode(m){ st.mode=m; el('mArp').setAttribute('aria-pressed',m==='arp'); el('mScale').setAttribute('aria-pressed',m==='scale'); stop(); rebuild(); }
+  el('play').addEventListener('click',play);
+  el('lily').addEventListener('click',()=>{ if(!st.line) return;
+    const text=lyExport(st.line, st.prog, {bpm:+el('bpm').value||120,
+      source:'Flynn, Jazz Guitar Technique Handbook\n'+PROGRESSIONS[st.prog].pages+' · '+(st.mode==='arp'?'Arp':'Scale')+' mode, fingering '+st.fing});
+    const done=()=>{ el('lily').textContent='Copied'; setTimeout(()=>el('lily').textContent='LilyPond source',1200); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(()=>lyDownload(text));
+    else lyDownload(text);
+  });
+  function lyDownload(text){ const blob=new Blob([text],{type:'text/plain'}); const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='line-ladder.ly'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500); }
+  document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+    if(e.code==='Space'){ e.preventDefault(); play(); } });
+  rebuild();
+})();
+</script>
+</body>
+</html>
