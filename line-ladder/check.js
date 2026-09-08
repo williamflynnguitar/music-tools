@@ -25,10 +25,10 @@ const ok = (cond, m) => { checks++; if (!cond) fail(m); };
 // 1. everything builds, every bar sums to 4 beats (approach and octave-cap
 //    combinations); with the cap on, nothing sits above the 12th fret
 for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++)
-for (const [app, oct] of [[false, false], [true, false], [false, true], [true, true]]) {
+for (const [app, oct, disp] of [[false, false, false], [true, false, false], [false, true, false], [true, true, false], [true, true, true], [false, false, true]]) {
   let line;
-  try { line = E.buildLine(progId, mode, f, app, oct); }
-  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}: ${err.message}`); continue; }
+  try { line = E.buildLine(progId, mode, f, {approach:app, octDown:oct, displace:disp}); }
+  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}/${disp}: ${err.message}`); continue; }
   line.bars.forEach(bar => {
     const s = bar.events.reduce((a, e) => a + e.dur, 0);
     ok(s === 8, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: ${s} eighths`);
@@ -49,7 +49,7 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
   let applied = 0;
   for (const progId of Object.keys(E.PROGRESSIONS)) for (let f = 1; f <= 6; f++) {
     const prog = E.PROGRESSIONS[progId];
-    const line = E.buildLine(progId, "arp", f, true, false);
+    const line = E.buildLine(progId, "arp", f, {approach:true});
     const flat = line.bars.flatMap((b, bi) => b.events.map(e => ({ ...e, abs: bi * 8 + e.at }))).sort((a, b) => a.abs - b.abs);
     let at = 0; const spans = prog.chords.map(ch => { const s = { from: at, to: at + ch.beats * 2 }; at += ch.beats * 2; return s; });
     prog.chords.forEach((ch, i) => {
@@ -82,25 +82,57 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
 {
   let seams = 0, connected = 0;
   for (const progId of ["ii51maj", "ii51min"]) for (let f = 1; f <= 6; f++) {
-    const line = E.buildLine(progId, "arp", f, true, false);
+    const line = E.buildLine(progId, "arp", f, {approach:true});
     line.bars.forEach(bar => {
       if (bar.n % 4 === 1 || bar.n % 4 === 2) { seams++; if (bar.events.some(e => e.dur === 3)) connected++; }
     });
   }
   ok(connected / seams > 0.75, `cycle seams connected: ${connected}/${seams}`);
-  const line = E.buildLine("tune_attya", "arp", 1, true, false);
+  const line = E.buildLine("tune_attya", "arp", 1, {approach:true});
   const b17 = line.bars[16];
   ok(b17.events.length === 6 && b17.events[4].note === "F#" && b17.events[5].note === "E",
      "attya bar 17 (A-7): expected F# E into D7, got " + b17.events.map(e => e.note).join(" "));
   ok(line.bars[17].events[0].note === "D", "attya bar 18 should start on D");
 }
 
+// 1g. octave displacement: at a register break only the chord's FIRST note
+// moves an octave toward the previous note, reshaping that arpeggio — the
+// screenshot case: ii-V-I in Gb (bars 13-14), Ab-7 holds Gb4, Db7 starts on
+// Db4 instead of Db3, which also unlocks the approach (F Eb into Db4).
+// With displacement + approach, every ii/V seam of both whole-step cycles
+// connects.
+{
+  const line = E.buildLine("ii51maj", "arp", 1, {approach:true, displace:true});
+  const b13 = line.bars[12], b14 = line.bars[13];
+  ok(b13.events[3].dur === 3 && b13.events[4].note === "F" && b13.events[5].note === "Eb",
+     "bar 13 (Ab-7) should approach with F Eb, got " + b13.events.map(e => e.note).join(" "));
+  ok(b14.events[0].midi === 61 && b14.labels[0].text.includes("R↑8"),
+     "bar 14 (Db7) first note should be the displaced Db4: " + b14.events[0].midi + " / " + b14.labels[0].text);
+  ok(b13.events[5].midi - 2 === b14.events[0].midi, "Eb should step into the displaced Db4");
+  // only the first note moves; rhythm and the rest of the bar are untouched
+  const d = E.buildLine("ii51maj", "arp", 1, {displace:true});
+  const p = E.buildLine("ii51maj", "arp", 1, {});
+  d.bars.forEach((bar, bi) => {
+    ok(bar.events.length === p.bars[bi].events.length && bar.events.every((e, k) => e.dur === p.bars[bi].events[k].dur),
+       "displacement alone must not change the rhythm (bar " + bar.n + ")");
+    bar.events.forEach((e, k) => { const q = p.bars[bi].events[k];
+      if (e.midi !== q.midi) ok(Math.abs(e.midi - q.midi) === 12 && e.at === q.at,
+        "a displaced note must differ by exactly an octave (bar " + bar.n + ")"); });
+  });
+  let seams = 0, conn = 0;
+  for (const progId of ["ii51maj", "ii51min"]) for (let f = 1; f <= 6; f++) {
+    const l2 = E.buildLine(progId, "arp", f, {approach:true, displace:true});
+    l2.bars.forEach(b => { if (b.n % 4 === 1 || b.n % 4 === 2) { seams++; if (b.events.some(e => e.dur === 3)) conn++; } });
+  }
+  ok(conn === seams, `with displacement, every cycle seam should connect: ${conn}/${seams}`);
+}
+
 // 1d. octave cap semantics: ↓8 bars sound exactly an octave lower than the
 // uncapped line, ↓pos bars sound identical (only refingered), all others
 // are untouched — All The Things You Are, Arp mode, the screenshot case
 {
-  const plain = E.buildLine("tune_attya", "arp", 3, false, false);
-  const capped = E.buildLine("tune_attya", "arp", 3, false, true);
+  const plain = E.buildLine("tune_attya", "arp", 3, {});
+  const capped = E.buildLine("tune_attya", "arp", 3, {octDown:true});
   ok(plain.bars.some(b => b.events.some(e => e.fret > 12)), "attya/arp/3 should climb above fret 12 uncapped");
   let d8 = 0, dpos = 0;
   capped.bars.forEach((bar, bi) => {
@@ -122,7 +154,7 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
 // then walks B A into G7's G; G7 holds F then E D into C; the 8-beat I chord
 // still holds to the barline (next root is the same pitch, no approach)
 {
-  const line = E.buildLine("ii51maj", "arp", 1, true);
+  const line = E.buildLine("ii51maj", "arp", 1, {approach:true});
   const b1 = line.bars[0].events, b2 = line.bars[1].events, b4 = line.bars[3].events;
   const held1 = b1[3];
   ok(held1.at === 3 && held1.dur === 3, "approach: D-7's 7th should be 8~4 (held to beat 3 only)");
@@ -134,7 +166,7 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
   const last4 = b4[b4.length - 1];
   ok(last4.dur === 5, "approach: the I chord's held R should stay 8~2 (next root is the same C)");
   // without the toggle nothing changes
-  const plain = E.buildLine("ii51maj", "arp", 1, false);
+  const plain = E.buildLine("ii51maj", "arp", 1, {});
   ok(plain.bars[0].events.length === 4 && plain.bars[0].events[3].dur === 5, "approach off: bar 1 unchanged");
 }
 
@@ -214,10 +246,10 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
 // 6. lilypond round-trip
 {
   const scratch = process.env.LL_SCRATCH || require("os").tmpdir();
-  for (const [mode, app] of [["arp", false], ["scale", false], ["arp", true]]) {
-    const line = E.buildLine("ii51maj", mode, 1, app);
+  for (const [mode, opts, tag] of [["arp", {}, ""], ["scale", {}, ""], ["arp", {approach:true, displace:true}, "-approach"]]) {
+    const line = E.buildLine("ii51maj", mode, 1, opts);
     const ly = E.lyExport(line, "ii51maj", { bpm: 120, source: "check.js" });
-    const f = path.join(scratch, "line-ladder-check-" + mode + (app ? "-approach" : "") + ".ly");
+    const f = path.join(scratch, "line-ladder-check-" + mode + tag + ".ly");
     fs.writeFileSync(f, ly);
     try {
       cp.execFileSync("lilypond", ["-dno-point-and-click", "-o", f.replace(/\.ly$/, ""), f], { stdio: "pipe", cwd: scratch });

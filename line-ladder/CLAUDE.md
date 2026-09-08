@@ -27,6 +27,28 @@ binary is present).
 (Arp: the quality's chord tones; Scale: indexes into the chord's scale,
 8/9 = octave and the 2nd above).
 
+**The line pipeline**: `buildLine(progId, mode, startFing, opts)` is one
+placement pass (the chord loop, VDA) followed by ordered line-editing
+passes over the flat event list — **octave cap → octave displacement →
+stepwise approach** — so each pass sees the previous pass's notes, and the
+approach targets capped/displaced pitches. The passes share `winsFor`
+(ordered fingering windows for a chord: region placement first, then the
+chord's own scale's placements nearest the frets under the hand) and
+`noteFor` (a fingering for one pitch; the octave cap is a hard limit —
+`noteFor` and the approach's pair search return nothing above fret 12 when
+the cap is on). New line features should be new passes in this chain, not
+additions to the chord loop.
+
+**Octave displacement** (Arp mode toggle, off by default): when a chord's
+first note lands more than an octave from the previous chord's last note,
+that one note — and only that note — moves an octave toward it, reshaping
+the arpeggio (A♭-7 holds G♭4; D♭7 starts D♭4 F3 A♭3 C♭4 instead of D♭3 F3
+A♭3 C♭4). Marked R↑8 / R↓8. This closes the register wraps the lookahead
+can't avoid: with displacement + approach on, **every** ii/V seam of both
+whole-step cycles connects (288/288, asserted). Triggers in both
+directions on any gap over an octave; skipped when no fingering for the
+displaced pitch exists (or none under fret 12 with the cap on).
+
 **Stepwise approach** (Arp mode toggle, off by default): a held note (the
 8~2 at a 4- or 8-beat unit's end) shortens to 8~4 — held through beat 3
 only — and beat 4 walks down the chord's scale in two eighths into the next

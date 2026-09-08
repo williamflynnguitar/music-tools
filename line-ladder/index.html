@@ -145,6 +145,8 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
   <div class="group">
     <label class="check" style="margin:0"><input type="checkbox" id="approach"> stepwise approach into the next chord</label>
     <p class="hint">Arp mode: hold the last note through beat 3 only, then walk down the scale in eighths to the next chord's root.</p>
+    <label class="check"><input type="checkbox" id="displace"> octave displacement at register breaks</label>
+    <p class="hint">Arp mode: when a chord starts over an octave away from the last note, only its first note moves an octave toward it — the arpeggio changes shape.</p>
     <label class="check"><input type="checkbox" id="octdown"> drop lines above the 12th fret an octave</label>
   </div>
   <div class="group">
@@ -658,7 +660,12 @@ function chordSym(ch){
   return ch.root + q.sym + (ex.length?'('+ex.join('')+')':'');
 }
 
-function buildLine(progId, mode, startFing, approach, octDown){
+/* buildLine: one placement pass (the chord loop) followed by ordered
+   line-editing passes over the flat event list — octave cap, then octave
+   displacement, then the stepwise approach — so each pass sees the previous
+   pass's notes. Options: {approach, octDown, displace}. */
+function buildLine(progId, mode, startFing, opts){
+  const {approach=false, octDown=false, displace=false} = opts || {};
   const prog = PROGRESSIONS[progId];
   const events=[], chordMarks=[], labelMarks=[], panels=[], recs=[];
   let region=null, prevRoot=null, at=0, anyFlag=false;
@@ -754,6 +761,22 @@ function buildLine(progId, mode, startFing, approach, octDown){
     rec.end = events.length; rec.panel = panels[panels.length-1];
     at += ch.beats*2;
   }
+  /* shared by the passes below: ordered fingering windows for a chord —
+     its region placement first, then its own scale's placements nearest
+     the frets already under the hand */
+  const winsFor = r => {
+    const evs = events.slice(r.start, r.end);
+    const hand = {lo:Math.min(...evs.map(e=>e.fret)), hi:Math.max(...evs.map(e=>e.fret))};
+    const src = r.cs.parent || r.cs.own;
+    return (r.panel.win ? [r.panel.win] : []).concat(!src ? [] :
+      placements(src.scaleId, src.key).slice().sort((a,b)=>overlap(b,hand)-overlap(a,hand)||a.lo-b.lo));
+  };
+  const noteFor = (midi, r) => {                   // a fingering for one pitch; the octave cap is a hard limit
+    let any=null;
+    for(const w of winsFor(r)){ const n=w.notes.find(x=>x.midi===midi); if(!n) continue;
+      if(!octDown || n.fret<=12) return n; any=any||n; }
+    return octDown ? null : any;
+  };
   /* octave cap: any chord that climbed above the 12th fret is re-placed an
      octave down where the neck allows it — arp shapes rerooted at −12, scale
      runs refit into whichever fingering of the same scale holds them under
@@ -801,6 +824,28 @@ function buildLine(progId, mode, startFing, approach, octDown){
     r.panel.notes=[...new Map(events.slice(r.start,r.end).map(e=>[e.string+':'+e.fret,{string:e.string,fret:e.fret,finger:e.finger,midi:e.midi}])).values()];
     r.panel.title=r.panel.title.split(' — ')[0]+' — '+res.newLabel;
   }
+  /* octave displacement (Arp mode): when a chord's first note lands more
+     than an octave from the previous chord's last note, that one note —
+     and only that note — moves an octave toward it, reshaping the arpeggio
+     (Ab-7 holds Gb4, and Db7 starts on Db4 instead of Db3: the leap
+     becomes a 4th, and the stepwise approach becomes possible). Marked
+     R↑8 / R↓8; the rest of the bar keeps its shape and octave. */
+  if(mode==='arp' && displace) for(let i=1; i<recs.length; i++){
+    const r=recs[i], prev=events[recs[i-1].end-1], first=events[r.start];
+    if(!prev || !first) continue;
+    const gap = prev.midi - first.midi;
+    const dir = gap>11 ? 12 : gap<-11 ? -12 : 0;   // only true register breaks
+    if(!dir) continue;
+    const n = noteFor(first.midi+dir, r);
+    if(!n) continue;
+    events[r.start] = {...first, string:n.string, fret:n.fret, finger:n.finger, midi:n.midi};
+    const mark = dir>0 ? ' R↑8' : ' R↓8';
+    labelMarks[i].text += mark;
+    r.panel.title += mark;
+    if(!r.panel.notes.some(x=>x.string===n.string&&x.fret===n.fret)) r.panel.notes.push({...n});
+    if(!events.slice(r.start,r.end).some(e=>e.string===first.string&&e.fret===first.fret))
+      r.panel.notes = r.panel.notes.filter(x=>!(x.string===first.string&&x.fret===first.fret));
+  }
   /* stepwise approach (Arp mode): the held note shortens to a quarter on
      beat 3 (8~4) and beat 4 walks down the chord's scale into the next
      chord's first note — wherever the target sits exactly three scale steps
@@ -820,15 +865,12 @@ function buildLine(progId, mode, startFing, approach, octDown){
     for(let k=0;k<3;k++){ const j2=(j+6)%7; m -= (steps[j]-steps[j2]+12)%12; j=j2; pass.push({midi:m, name:names[j]}); }
     const target = events[nxt.start];
     if(!target || pass[2].midi!==target.midi) continue;
-    const evs = events.slice(r.start, r.end);
-    const hand = {lo:Math.min(...evs.map(e=>e.fret)), hi:Math.max(...evs.map(e=>e.fret))};
-    const src = r.cs.parent || r.cs.own;
-    const wins = (r.panel.win ? [r.panel.win] : []).concat(!src ? [] :
-      placements(src.scaleId, src.key).slice().sort((a,b)=>overlap(b,hand)-overlap(a,hand)||a.lo-b.lo));
     let pn = null;
-    for(const w of wins){
+    for(const w of winsFor(r)){
       const n1=w.notes.find(x=>x.midi===pass[0].midi), n2=w.notes.find(x=>x.midi===pass[1].midi);
-      if(n1 && n2){ pn=[{...n1, note:pass[0].name},{...n2, note:pass[1].name}]; break; }
+      if(!n1 || !n2) continue;
+      if(octDown && (n1.fret>12 || n2.fret>12)) continue;   // the octave cap is a hard limit
+      pn=[{...n1, note:pass[0].name},{...n2, note:pass[1].name}]; break;
     }
     if(!pn) continue;                               // passing tones nowhere in the fingering data
     held.dur = 3;
@@ -1062,7 +1104,10 @@ const st={prog:'ii51maj', mode:'arp', fing:1, line:null};
 const el=id=>document.getElementById(id);
 
 function rebuild(){
-  try{ st.line = buildLine(st.prog, st.mode, st.fing, st.mode==='arp' && el('approach').checked, el('octdown').checked); }
+  try{ st.line = buildLine(st.prog, st.mode, st.fing, {
+    approach: st.mode==='arp' && el('approach').checked,
+    displace: st.mode==='arp' && el('displace').checked,
+    octDown: el('octdown').checked }); }
   catch(err){ el('chart').innerHTML='<p class="sub" style="color:var(--warn)">'+err.message+'</p>'; st.line=null; return; }
   const p=PROGRESSIONS[st.prog];
   el('title').textContent = p.name;
@@ -1077,7 +1122,8 @@ function rebuild(){
   el('chart').innerHTML = engrave(st.line.bars, st.perSys).map(s=>'<div class="sys">'+s+'</div>').join('');
   el('legend').innerHTML = (st.line.anyFlag?'<span class="flagmark">†</span> no function annotation in the data — scale guessed from the chord quality. ':'')
     + '→ = one adjacent-fingering shift for that chord (VDA).'
-    + (el('octdown').checked?' ↓8 = dropped an octave (was above the 12th fret); ↓pos = same notes refingered below the 12th.':'');
+    + (el('octdown').checked?' ↓8 = dropped an octave (was above the 12th fret); ↓pos = same notes refingered below the 12th.':'')
+    + (st.mode==='arp' && el('displace').checked?' R↑8/R↓8 = first note displaced an octave to close a register break.':'');
   sizeChart();
   showBar(1, true);
 }
@@ -1145,9 +1191,8 @@ function scheduleBeat(beat, time){
   el('mArp').addEventListener('click',()=>setMode('arp'));
   el('mScale').addEventListener('click',()=>setMode('scale'));
   function setMode(m){ st.mode=m; el('mArp').setAttribute('aria-pressed',m==='arp'); el('mScale').setAttribute('aria-pressed',m==='scale');
-    el('approach').disabled = m==='scale'; stop(); rebuild(); }
-  el('approach').addEventListener('change',()=>{ stop(); rebuild(); });
-  el('octdown').addEventListener('change',()=>{ stop(); rebuild(); });
+    el('approach').disabled = el('displace').disabled = m==='scale'; stop(); rebuild(); }
+  ['approach','displace','octdown'].forEach(id=>el(id).addEventListener('change',()=>{ stop(); rebuild(); }));
   el('play').addEventListener('click',play);
   el('lily').addEventListener('click',()=>{ if(!st.line) return;
     const text=lyExport(st.line, st.prog, {bpm:+el('bpm').value||120,
