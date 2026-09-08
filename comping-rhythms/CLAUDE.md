@@ -80,6 +80,12 @@ One rhythm per bar / per 2 / per 4 and "new phrase each time round" work as
 before. A phrase draws only from the checked families; with nothing sounding
 checked, Play is disabled with a hint.
 
+With reshuffle on, the next phrase is **pregenerated a full pass early**
+(`st.next`, seeded with the current phrase's last bar so rules 1/2 and the
+no-immediate-repeat draw also hold across the pass boundary). The boundary
+swaps it in; during the last bar, the read-ahead card for bar 1 shows
+`st.next[0]` — the preview must always be the bar that actually plays.
+
 ## Modes
 
 - **Read and play**: as before — phrase grid, count-in, chords/stab/silent,

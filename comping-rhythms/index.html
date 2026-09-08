@@ -241,7 +241,7 @@ const OPEN=[null,64,59,55,50,45,40];
 const LOOP=[ [[4,7],[3,7],[2,6],[1,8]], [[4,5],[3,7],[2,6],[1,7]], [[4,5],[3,5],[2,5],[1,7]], [[4,5],[3,5],[2,5],[1,7]] ];
 
 /* ---------- state ---------- */
-const st={mode:'read', len:4, every:1, phrase:[], swingRatio:0.62};
+const st={mode:'read', len:4, every:1, phrase:[], next:null, swingRatio:0.62};
 const el=id=>document.getElementById(id);
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
 const shuffled=a=>a.slice().sort(()=>Math.random()-.5);
@@ -264,10 +264,13 @@ function violates(v, prev, barIdx){
   if(v.family==='rest'&&(barIdx===0||(prev&&prev.family==='rest'))) return true;
   return false;
 }
-function makePhrase(){
+/* seed = the bar the new phrase will follow in playback (the current phrase's
+   last bar), so rules 1/2 and the no-immediate-repeat draw hold across the
+   pass boundary too */
+function genPhrase(seed){
   const full=pool();
-  if(!soundingPool().length){ st.phrase=[]; return; }
-  const out=[]; let cur=null;
+  if(!soundingPool().length) return [];
+  const out=[]; let cur=seed||null;
   for(let g=0; g*st.every<st.len; g++){
     const start=g*st.every, span=Math.min(st.every, st.len-start), coversLast=start+span>=st.len;
     let pick=null;
@@ -284,8 +287,9 @@ function makePhrase(){
     for(let b=0;b<span;b++) out.push(pick);
     cur=pick;
   }
-  st.phrase=out;
+  return out;
 }
+function makePhrase(){ st.phrase=genPhrase(null); st.next=null; }
 
 /* ---------- pre-rendered LilyPond notation (currentColor, so CSS colors it) ----------
    packed by notation/rh/render.sh — paste rhy_svg.js between these markers */
@@ -324,8 +328,13 @@ function renderPhrase(){
   el('title').textContent='Swing comping vocabulary';
   el('sub').textContent='Five families: both halves of the Charleston, on-beat pairs, whole notes, rest bars. Long hits ring until the next hit; short ones are clipped.';
   const veil = el('ahead').checked && sched.on;
+  // in the last bar with "new phrase each time round", the wrap swaps the
+  // phrase — so the read-ahead card for bar 1 must show the NEXT phrase's bar 1
+  const peek = veil && sched.bar===st.len-1 && el('reshuffle').checked && st.next && st.next[0] ? st.next[0] : null;
   el('phrase').innerHTML = st.phrase.map((v,i)=>{
-    const prev=st.phrase[i-1];
+    const peeked = peek && i===0;
+    if(peeked) v=peek;
+    const prev= peeked ? null : st.phrase[i-1];
     const spill = prev&&isCh2Delayed(prev)&&!el('notation').checked
       ? {long:prev.len[1]>1, end:Math.min(prev.len[1], v.cells.find(c=>c>=0)??8)} : null;
     return `<div class="bar ${veil&&i!==sched.bar&&i!==(sched.bar+1)%st.len?'veiled':''}" data-i="${i}"><span class="n">${i+1}</span><div class="nm"><b>${v.name.split(', ')[0]}</b><br>${v.name.split(', ').slice(1).join(', ')||'&nbsp;'}</div>${cell(v,{noCarry:true,spill})}</div>`;
@@ -392,9 +401,12 @@ function tick(){
     {
       // schedule each pass one beat early so an anticipated pickup (and of 4) can land before beat 1
       if(b===3 && ((Math.floor((beat+1)/4)) % st.len)===0){
-        if(sched.pass>0 && el('reshuffle').checked) makePhrase();
+        if(sched.pass>0 && el('reshuffle').checked) st.phrase = st.next || genPhrase(st.phrase[st.phrase.length-1]);
         sched.pass++;
         const start=time+s; const hits=buildHits(st.phrase);
+        // pregenerate the NEXT phrase now, so the read-ahead preview of bar 1
+        // during this pass's last bar shows what will actually play
+        st.next = genPhrase(st.phrase[st.phrase.length-1]);
         hits.forEach(h=>hit(start+h.t*s, h.dur*s, h.bar));
         setTimeout(()=>{ if(sched.on) renderPhrase(); }, Math.max(0,(start-c.currentTime)*1000));
       }
