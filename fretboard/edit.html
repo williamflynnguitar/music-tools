@@ -53,6 +53,7 @@
   figcaption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   figcaption b { font-weight: 400; font-size: 17px; }
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .passnote { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 10px 0 0; }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
   .editing circle[data-i], .editing polygon[data-i] { cursor: pointer; }
@@ -109,6 +110,7 @@
   </aside>
 
   <main class="diagrams" id="diagrams"></main>
+  <p class="passnote" id="passNote" hidden><svg width="12" height="12" viewBox="0 0 26 26" style="vertical-align:-1px"><polygon points="13,0 26,13 13,26 0,13" fill="var(--bone)"/></svg> diamond = the scale’s added passing tone</p>
 </div>
 
 <details>
@@ -488,6 +490,7 @@ function render() {
     `${sc.pages} · application <b>${sc.apply.chords}</b>` +
     (sc.apply.uses.length ? `<br>${sc.apply.uses.join("<br>")}` : "") +
     `<br>(as printed, in C)`;
+  document.getElementById("passNote").hidden = sc.passing == null || state.fingering === "neck";
 
   const main = document.getElementById("diagrams");
   const neck = state.fingering === "neck";

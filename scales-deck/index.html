@@ -562,7 +562,7 @@ function show() {
   card.innerHTML = `<header><span class="where">${c.n}. ${c.name} · ${state.tier}</span><span class="where">${state.i+1} / ${steps.length}</span></header>
     <p class="title"><span class="key">${s.key}</span><span class="name">${SCALE().name.toLowerCase()}</span><span class="shape">${s.shape}</span></p>
     <p class="sub">${s.sub}</p>${visual}<p class="instr">${s.instr}</p>${s.flag ? `<p class="flag">${s.flag}</p>` : ""}
-    ${s.p ? `<div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>book dot</span>${s.opts && s.opts.ext ? `<span><i style="border:1.5px solid var(--bone)"></i>below the root (computed)</span>` : ""}${s.opts && s.opts.ring ? `<span><i style="border:2px solid var(--brass)"></i>start here</span>` : ""}</div>` : ""}`;
+    ${s.p ? `<div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>book dot</span>${SCALE().passing != null ? `<span><i style="background:var(--bone);border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></i>passing tone (diamond)</span>` : ""}${s.opts && s.opts.ext ? `<span><i style="border:1.5px solid var(--bone)"></i>below the root (computed)</span>` : ""}${s.opts && s.opts.ring ? `<span><i style="border:2px solid var(--brass)"></i>start here</span>` : ""}</div>` : ""}`;
   const sh = s.p && SH()[s.p.id], fsV = document.getElementById("fsVariant");
   fsV.hidden = !(sh && sh.variants);
   if (sh && sh.variants) {
