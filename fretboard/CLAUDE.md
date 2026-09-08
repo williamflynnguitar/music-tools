@@ -85,8 +85,15 @@ the in-memory SCALES data), "Copy shape" (the current shape/variant as
 copy of the shared SCALES block: keep it byte-identical with the other three files.
 Deliberately not linked from the landing page.
 
-## Not yet transcribed
-Half-whole diminished (pp. 22–23).
+## Half-whole diminished (pp. 22–23)
+Transcribed. Its six fingerings have no pinky-root shapes — the book gives
+index/middle/ring roots on strings 6 and 5 (the symmetric scale puts the
+pinky-root frame out of reach, the same substitution the arpeggio pages make
+for ø7/°7). Ids `R6 R5 M6 M5 I6 I5`, cycle in that order, paralleling
+P6→I5 for the other scales. The printed charts sit at 8/6/5fr (string 6) and
+2/1/13fr (string 5) in C; the unlabeled chart is 1fr, and 13fr is M5's
+pattern rooted a ring finger up — the transcription was verified headlessly:
+every dot a scale tone, every hollow a root.
 
 ## Notation (added)
 - Every card shows staff + TAB in the card's actual key, engraved by LilyPond. Cells are

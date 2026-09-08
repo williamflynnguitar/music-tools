@@ -36,7 +36,7 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
 
 The `SCALES` registry (per-scale steps, degree labels, applications, fingering
 shapes; major, dorian, mixolydian, harmonic minor, phrygian dominant, melodic
-minor and the four bebop scales so far) is duplicated in fretboard,
+minor, the four bebop scales and half-whole diminished so far) is duplicated in fretboard,
 scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
 Keep the three copies byte-identical — `SHAPES` and `MAJOR` are aliases into
 `SCALES.major` for older code. Factoring the renderer and data into a shared

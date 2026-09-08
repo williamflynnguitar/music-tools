@@ -9,7 +9,7 @@ Requires: node, python3, lilypond (2.24+) on the PATH.
 
     cd notation/pipeline
     node gen-arpeggios.js        # → ly/arpeggios/*.ly   (2,376 cells: 198 shapes × 12 keys)
-    node gen-fretboard.js        # → ly/fretboard/*.ly   (948 cells: 79 fingerings × 12 keys)
+    node gen-fretboard.js        # → ly/fretboard/*.ly   (1,020 cells: 85 fingerings × 12 keys)
     ./render.sh all              # → ../svg/arpeggios/*.svg, ../svg/fretboard/*.svg
 
 `render.sh` runs LilyPond in parallel (JOBS=n to override) and skips cells that already
