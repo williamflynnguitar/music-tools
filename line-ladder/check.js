@@ -22,20 +22,40 @@ let fails = 0, checks = 0;
 const fail = m => { fails++; console.log("FAIL", m); };
 const ok = (cond, m) => { checks++; if (!cond) fail(m); };
 
-// 1. everything builds, every bar sums to 4 beats
-for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++) {
+// 1. everything builds, every bar sums to 4 beats (with and without the approach)
+for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++) for (const app of [false, true]) {
   let line;
-  try { line = E.buildLine(progId, mode, f); }
-  catch (err) { fail(`${progId}/${mode}/${f}: ${err.message}`); continue; }
+  try { line = E.buildLine(progId, mode, f, app); }
+  catch (err) { fail(`${progId}/${mode}/${f}/${app}: ${err.message}`); continue; }
   line.bars.forEach(bar => {
     const s = bar.events.reduce((a, e) => a + e.dur, 0);
-    ok(s === 8, `${progId}/${mode}/${f} bar ${bar.n}: ${s} eighths`);
+    ok(s === 8, `${progId}/${mode}/${f}/${app} bar ${bar.n}: ${s} eighths`);
     bar.events.forEach(e => {
-      ok(e.string >= 1 && e.string <= 6 && e.fret >= 1 && e.fret <= 19, `${progId}/${mode}/${f} bar ${bar.n}: bad position ${e.string}/${e.fret}`);
-      ok(e.midi === E.MIDI_OPEN[e.string] + e.fret, `${progId}/${mode}/${f} bar ${bar.n}: midi/fret mismatch`);
-      ok(e.midi % 12 === E.pcOf(e.note), `${progId}/${mode}/${f} bar ${bar.n}: spelling ${e.note} != pitch`);
+      ok(e.string >= 1 && e.string <= 6 && e.fret >= 1 && e.fret <= 19, `${progId}/${mode}/${f}/${app} bar ${bar.n}: bad position ${e.string}/${e.fret}`);
+      ok(e.midi === E.MIDI_OPEN[e.string] + e.fret, `${progId}/${mode}/${f}/${app} bar ${bar.n}: midi/fret mismatch`);
+      ok(e.midi % 12 === E.pcOf(e.note), `${progId}/${mode}/${f}/${app} bar ${bar.n}: spelling ${e.note} != pitch`);
     });
   });
+}
+
+// 1c. stepwise approach: ii-V-I in C, Arp mode — D-7 holds C through beat 3
+// then walks B A into G7's G; G7 holds F then E D into C; the 8-beat I chord
+// still holds to the barline (next root is the same pitch, no approach)
+{
+  const line = E.buildLine("ii51maj", "arp", 1, true);
+  const b1 = line.bars[0].events, b2 = line.bars[1].events, b4 = line.bars[3].events;
+  const held1 = b1[3];
+  ok(held1.at === 3 && held1.dur === 3, "approach: D-7's 7th should be 8~4 (held to beat 3 only)");
+  ok(b1.length === 6 && b1[4].at === 6 && b1[5].at === 7, "approach: beat 4 should carry two eighths");
+  ok(b1[4].note === "B" && b1[5].note === "A", `approach: D-7 passing tones should be B A, got ${b1[4].note} ${b1[5].note}`);
+  ok(b2[0].midi === b1[5].midi - 2, "approach: A should step into G7's G a whole step below");
+  ok(b2[4].note === "E" && b2[5].note === "D", `approach: G7 passing tones should be E D, got ${b2[4].note} ${b2[5].note}`);
+  ok(line.bars[2].events[0].midi === b2[5].midi - 2, "approach: D should step into the I chord's C");
+  const last4 = b4[b4.length - 1];
+  ok(last4.dur === 5, "approach: the I chord's held R should stay 8~2 (next root is the same C)");
+  // without the toggle nothing changes
+  const plain = E.buildLine("ii51maj", "arp", 1, false);
+  ok(plain.bars[0].events.length === 4 && plain.bars[0].events[3].dur === 5, "approach off: bar 1 unchanged");
 }
 
 // 1b. the 8-beat scale unit ends on the 3rd, a quarter on beat 4
@@ -114,10 +134,10 @@ for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "sc
 // 6. lilypond round-trip
 {
   const scratch = process.env.LL_SCRATCH || require("os").tmpdir();
-  for (const mode of ["arp", "scale"]) {
-    const line = E.buildLine("ii51maj", mode, 1);
+  for (const [mode, app] of [["arp", false], ["scale", false], ["arp", true]]) {
+    const line = E.buildLine("ii51maj", mode, 1, app);
     const ly = E.lyExport(line, "ii51maj", { bpm: 120, source: "check.js" });
-    const f = path.join(scratch, "line-ladder-check-" + mode + ".ly");
+    const f = path.join(scratch, "line-ladder-check-" + mode + (app ? "-approach" : "") + ".ly");
     fs.writeFileSync(f, ly);
     try {
       cp.execFileSync("lilypond", ["-dno-point-and-click", "-o", f.replace(/\.ly$/, ""), f], { stdio: "pipe", cwd: scratch });

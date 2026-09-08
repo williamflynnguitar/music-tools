@@ -27,6 +27,17 @@ binary is present).
 (Arp: the quality's chord tones; Scale: indexes into the chord's scale,
 8/9 = octave and the 2nd above).
 
+**Stepwise approach** (Arp mode toggle, off by default): a held note (the
+8~2 at a 4- or 8-beat unit's end) shortens to 8~4 — held through beat 3
+only — and beat 4 walks down the chord's scale in two eighths into the next
+chord's first note (D-7: C held, B A into G7's G; G7: F held, E D into C).
+Applied only where it fits exactly: the target must sit three scale steps
+below the held note and both passing tones must exist in the current
+fingering's data — otherwise that bar keeps its tie (so the I chord before
+a same-root key change, º7 bars, and secondary chords whose scale leaves
+the position all stay held). Descending only; no approach out of the last
+chord (loop playback is a playback option, the engraving is one line).
+
 ## Chord scales
 
 One rule: **parent scale rotated to start on the chord root.**
