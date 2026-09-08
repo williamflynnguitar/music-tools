@@ -22,20 +22,46 @@ let fails = 0, checks = 0;
 const fail = m => { fails++; console.log("FAIL", m); };
 const ok = (cond, m) => { checks++; if (!cond) fail(m); };
 
-// 1. everything builds, every bar sums to 4 beats (with and without the approach)
-for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++) for (const app of [false, true]) {
+// 1. everything builds, every bar sums to 4 beats (approach and octave-cap
+//    combinations); with the cap on, nothing sits above the 12th fret
+for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++)
+for (const [app, oct] of [[false, false], [true, false], [false, true], [true, true]]) {
   let line;
-  try { line = E.buildLine(progId, mode, f, app); }
-  catch (err) { fail(`${progId}/${mode}/${f}/${app}: ${err.message}`); continue; }
+  try { line = E.buildLine(progId, mode, f, app, oct); }
+  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}: ${err.message}`); continue; }
   line.bars.forEach(bar => {
     const s = bar.events.reduce((a, e) => a + e.dur, 0);
-    ok(s === 8, `${progId}/${mode}/${f}/${app} bar ${bar.n}: ${s} eighths`);
+    ok(s === 8, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: ${s} eighths`);
+    if (oct) ok(bar.events.every(e => e.fret <= 12), `${progId}/${mode}/${f}/${app} bar ${bar.n}: above fret 12 with the cap on`);
     bar.events.forEach(e => {
-      ok(e.string >= 1 && e.string <= 6 && e.fret >= 1 && e.fret <= 19, `${progId}/${mode}/${f}/${app} bar ${bar.n}: bad position ${e.string}/${e.fret}`);
-      ok(e.midi === E.MIDI_OPEN[e.string] + e.fret, `${progId}/${mode}/${f}/${app} bar ${bar.n}: midi/fret mismatch`);
-      ok(e.midi % 12 === E.pcOf(e.note), `${progId}/${mode}/${f}/${app} bar ${bar.n}: spelling ${e.note} != pitch`);
+      ok(e.string >= 1 && e.string <= 6 && e.fret >= 1 && e.fret <= 19, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: bad position ${e.string}/${e.fret}`);
+      ok(e.midi === E.MIDI_OPEN[e.string] + e.fret, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: midi/fret mismatch`);
+      ok(e.midi % 12 === E.pcOf(e.note), `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: spelling ${e.note} != pitch`);
     });
   });
+}
+
+// 1d. octave cap semantics: ↓8 bars sound exactly an octave lower than the
+// uncapped line, ↓pos bars sound identical (only refingered), all others
+// are untouched — All The Things You Are, Arp mode, the screenshot case
+{
+  const plain = E.buildLine("tune_attya", "arp", 3, false, false);
+  const capped = E.buildLine("tune_attya", "arp", 3, false, true);
+  ok(plain.bars.some(b => b.events.some(e => e.fret > 12)), "attya/arp/3 should climb above fret 12 uncapped");
+  let d8 = 0, dpos = 0;
+  capped.bars.forEach((bar, bi) => {
+    const before = plain.bars[bi];
+    ok(bar.events.length === before.events.length, "cap must not change the rhythm");
+    const drop8 = bar.labels.some(l => l.text.includes("↓8")), dropP = bar.labels.some(l => l.text.includes("↓pos"));
+    if (drop8 && bar.labels.length === 1) {
+      d8++; bar.events.forEach((e, k) => ok(e.midi === before.events[k].midi - 12, "↓8 bar should sound an octave lower"));
+    } else if (dropP && bar.labels.length === 1) {
+      dpos++; bar.events.forEach((e, k) => ok(e.midi === before.events[k].midi, "↓pos bar should sound the same pitches"));
+    } else if (bar.labels.length && !drop8 && !dropP) {   // label-less bars continue the previous chord
+      bar.events.forEach((e, k) => ok(e.fret === before.events[k].fret && e.string === before.events[k].string, "unmarked bar should be untouched"));
+    }
+  });
+  ok(d8 > 0, "attya/arp/3 capped: expected some ↓8 bars");
 }
 
 // 1c. stepwise approach: ii-V-I in C, Arp mode — D-7 holds C through beat 3

@@ -76,6 +76,15 @@ One rule: **parent scale rotated to start on the chord root.**
   plain 6 borrows Δ7 — both *(assumption)*.
 - Every output note carries `{string, fret, finger}` straight from the
   fingering/shape data; nothing is computed.
+- **Octave cap** (toggle, off by default, both modes): after the line is
+  built, any chord with a note above the 12th fret is re-placed — first as a
+  true octave drop (marked ↓8: arp shapes rerooted at −12, scale runs refit
+  into whichever fingering of the same scale holds them under fret 12), and
+  where the pitch is already too low to drop (an Eb3 played at the 13th
+  fret), the same pitches are refingered low instead (marked ↓pos). With the
+  cap on, nothing in any progression exceeds fret 12 — asserted across every
+  progression × mode × fingering in check.js. Runs before the approach pass
+  so approaches target the dropped notes; panels and labels follow.
 
 ## Data
 

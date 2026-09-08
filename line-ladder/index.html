@@ -145,6 +145,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
   <div class="group">
     <label class="check" style="margin:0"><input type="checkbox" id="approach"> stepwise approach into the next chord</label>
     <p class="hint">Arp mode: hold the last note through beat 3 only, then walk down the scale in eighths to the next chord's root.</p>
+    <label class="check"><input type="checkbox" id="octdown"> drop lines above the 12th fret an octave</label>
   </div>
   <div class="group">
     <label class="lbl" for="poslogic">Position logic</label>
@@ -657,7 +658,7 @@ function chordSym(ch){
   return ch.root + q.sym + (ex.length?'('+ex.join('')+')':'');
 }
 
-function buildLine(progId, mode, startFing, approach){
+function buildLine(progId, mode, startFing, approach, octDown){
   const prog = PROGRESSIONS[progId];
   const events=[], chordMarks=[], labelMarks=[], panels=[], recs=[];
   let region=null, prevRoot=null, at=0, anyFlag=false;
@@ -675,7 +676,7 @@ function buildLine(progId, mode, startFing, approach){
       seedRegion(cs.parent.scaleId, cs.parent.key);
     if(!region && cs.own) seedRegion(cs.own.scaleId, cs.own.key);
     const useArp = mode==='arp' || cs.arp;
-    const rec = {pc:ch.pc, cs, start:events.length}; recs.push(rec);
+    const rec = {pc:ch.pc, ch, cs, useArp, start:events.length}; recs.push(rec);
     let emitted, label, panelNotes, panelWin;
     if(useArp){
       let cands = arpCandidates(ch, region && region.pl, prevRoot), shifted=null, outPos=false;
@@ -729,6 +730,53 @@ function buildLine(progId, mode, startFing, approach){
       title:chordSym(ch)+' — '+label});
     rec.end = events.length; rec.panel = panels[panels.length-1];
     at += ch.beats*2;
+  }
+  /* octave cap: any chord that climbed above the 12th fret is re-placed an
+     octave down where the neck allows it — arp shapes rerooted at −12, scale
+     runs refit into whichever fingering of the same scale holds them under
+     fret 12. Runs before the approach pass so approaches target the dropped
+     notes. Marked ↓8 in the bar label. */
+  if(octDown) for(let i=0;i<recs.length;i++){
+    const r=recs[i], evs=events.slice(r.start,r.end);
+    if(!evs.length || Math.max(...evs.map(e=>e.fret))<=12) continue;
+    const midis=[...new Set(evs.map(e=>e.midi))];
+    const src=r.cs.parent||r.cs.own;
+    const tryShift = shift => {                    // 12 = true octave drop; 0 = same pitches refingered low
+      const mark = shift ? ' ↓8' : ' ↓pos';
+      if(r.useArp){
+        const root=events[r.start].midi-shift;
+        const cands=arpCandidates(r.ch, null, root).filter(c=>c.root===root)
+          .filter(c=>c.notes.every(n=>n.fret<=12))
+          .sort((a,b)=>Math.max(...a.notes.map(n=>n.fret))-Math.max(...b.notes.map(n=>n.fret))||b.rs-a.rs);
+        if(!cands.length) return null;
+        const map=new Map(cands[0].notes.map(n=>[n.midi,n]));
+        let newWin=null;
+        if(src){ let best=null, bs=-1; for(const pl of placements(src.scaleId,src.key)){
+          const s=midis.filter(m=>pl.notes.some(n=>n.midi===m-shift)).length;
+          if(s>bs || (s===bs && best && pl.lo<best.lo)){ bs=s; best=pl; } } newWin=best; }
+        return {map, newWin, newLabel:'arp · R on '+cands[0].rs+mark+(r.cs.flag?' †':'')};
+      }
+      if(!src) return null;
+      let best=null;
+      for(const pl of placements(src.scaleId,src.key)){
+        const pm=new Map(pl.notes.map(n=>[n.midi,n]));
+        if(!midis.every(m=>pm.has(m-shift))) continue;
+        const top=Math.max(...midis.map(m=>pm.get(m-shift).fret));
+        if(top>12) continue;
+        if(!best || top<best.top || (top===best.top && pl.lo<best.pl.lo)) best={pl,pm,top};
+      }
+      if(!best) return null;
+      return {map:best.pm, newWin:best.pl, newLabel:r.cs.label+' · '+best.pl.id+mark+(r.cs.flag?' †':'')};
+    };
+    let shift=12, res=tryShift(12);
+    if(!res){ shift=0; res=tryShift(0); }
+    if(!res || !midis.every(m=>res.map.has(m-shift))) continue;
+    for(let k=r.start;k<r.end;k++){ const e=events[k], n=res.map.get(e.midi-shift);
+      events[k]={...e, string:n.string, fret:n.fret, finger:n.finger, midi:n.midi}; }
+    labelMarks[i].text=res.newLabel;
+    r.panel.win=res.newWin;
+    r.panel.notes=[...new Map(events.slice(r.start,r.end).map(e=>[e.string+':'+e.fret,{string:e.string,fret:e.fret,finger:e.finger,midi:e.midi}])).values()];
+    r.panel.title=r.panel.title.split(' — ')[0]+' — '+res.newLabel;
   }
   /* stepwise approach (Arp mode): the held note shortens to a quarter on
      beat 3 (8~4) and beat 4 walks down the chord's scale into the next
@@ -980,7 +1028,7 @@ const st={prog:'ii51maj', mode:'arp', fing:1, line:null};
 const el=id=>document.getElementById(id);
 
 function rebuild(){
-  try{ st.line = buildLine(st.prog, st.mode, st.fing, st.mode==='arp' && el('approach').checked); }
+  try{ st.line = buildLine(st.prog, st.mode, st.fing, st.mode==='arp' && el('approach').checked, el('octdown').checked); }
   catch(err){ el('chart').innerHTML='<p class="sub" style="color:var(--warn)">'+err.message+'</p>'; st.line=null; return; }
   const p=PROGRESSIONS[st.prog];
   el('title').textContent = p.name;
@@ -994,7 +1042,8 @@ function rebuild(){
   st.perSys = el('chartwrap').clientWidth && el('chartwrap').clientWidth < 620 ? 2 : 4;
   el('chart').innerHTML = engrave(st.line.bars, st.perSys).map(s=>'<div class="sys">'+s+'</div>').join('');
   el('legend').innerHTML = (st.line.anyFlag?'<span class="flagmark">†</span> no function annotation in the data — scale guessed from the chord quality. ':'')
-    + '→ = one adjacent-fingering shift for that chord (VDA).';
+    + '→ = one adjacent-fingering shift for that chord (VDA).'
+    + (el('octdown').checked?' ↓8 = dropped an octave (was above the 12th fret); ↓pos = same notes refingered below the 12th.':'');
   sizeChart();
   showBar(1, true);
 }
@@ -1064,6 +1113,7 @@ function scheduleBeat(beat, time){
   function setMode(m){ st.mode=m; el('mArp').setAttribute('aria-pressed',m==='arp'); el('mScale').setAttribute('aria-pressed',m==='scale');
     el('approach').disabled = m==='scale'; stop(); rebuild(); }
   el('approach').addEventListener('change',()=>{ stop(); rebuild(); });
+  el('octdown').addEventListener('change',()=>{ stop(); rebuild(); });
   el('play').addEventListener('click',play);
   el('lily').addEventListener('click',()=>{ if(!st.line) return;
     const text=lyExport(st.line, st.prog, {bpm:+el('bpm').value||120,
