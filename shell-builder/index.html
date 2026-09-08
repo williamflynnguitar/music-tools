@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shell Voicing Builder</title>
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a; --brass-deep:#8c7030;
+  --good:#7fb28a; --warn:#d99a5b; --bad:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.modes{display:flex;gap:2px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:6px 14px;cursor:pointer;color:var(--bone-dim)}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.app{display:grid;grid-template-columns:300px 1fr 300px;gap:0;min-height:calc(100vh - 70px);padding:18px 28px 40px}
+@media (max-width:1100px){.app{grid-template-columns:1fr;gap:26px}}
+
+/* --- controls --- */
+.controls{padding-right:26px}
+.group{margin-bottom:20px}
+.group .lbl{display:block;font-size:14px;color:var(--bone-dim);margin-bottom:6px}
+.roots{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.roots button,.seg button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:6px 0;cursor:pointer;font-family:var(--mono);font-size:14px}
+.roots button[aria-pressed=true],.seg button[aria-pressed=true]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.seg{display:grid;gap:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+select{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
+.structs{display:flex;flex-direction:column;gap:4px}
+.structs button{text-align:left;background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.structs button small{font-family:var(--mono);color:var(--bone-dim);font-size:11px}
+.structs button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
+.structs button[aria-pressed=true] small{color:var(--brass)}
+
+/* --- stage --- */
+.stage{display:flex;flex-direction:column;align-items:center;padding:0 20px}
+.chordname{font-size:44px;line-height:1;margin:6px 0 2px;font-family:var(--mono);letter-spacing:-.01em;min-height:48px}
+.chordname .q{color:var(--brass);font-size:.55em;vertical-align:.55em;margin-left:.06em}
+.choices .q{color:var(--brass);font-size:.65em;vertical-align:.45em;margin-left:.04em}
+.readout{font-size:14px;color:var(--bone-dim);min-height:22px;text-align:center;max-width:46ch}
+.readout.warn{color:var(--warn)}
+.readout.bad{color:var(--bad)}
+.readout.good{color:var(--good)}
+.dia{margin:12px 0 6px}
+.dia svg{display:block;max-width:100%;height:auto}
+.movers{display:grid;grid-template-columns:repeat(2,minmax(120px,160px));gap:12px;margin-top:6px}
+.mover{border:1px solid var(--line);border-radius:4px;padding:8px 10px;text-align:center}
+.mover .name{font-size:13px;color:var(--bone-dim)}
+.mover .deg{font-family:var(--mono);font-size:22px;margin:2px 0}
+.mover .btns{display:flex;justify-content:center;gap:6px}
+.mover button{background:transparent;border:1px solid var(--line);border-radius:3px;width:38px;height:30px;cursor:pointer;font-family:var(--mono)}
+.mover button:hover{border-color:var(--brass)}
+.mover.off{opacity:.35}
+.mover.off button{cursor:default}
+.stage .tools{display:flex;gap:10px;margin-top:14px}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.hint{font-size:13px;color:var(--bone-dim);margin-top:14px;text-align:center;max-width:52ch}
+
+/* --- reference --- */
+.ref{padding-left:26px;border-left:1px solid var(--line);font-size:14px}
+@media (max-width:1100px){.ref{border-left:0;padding-left:0}}
+.ref h2{font-size:15px;font-weight:400;margin:0 0 6px}
+.ref p{margin:0 0 14px;color:var(--bone-dim);line-height:1.45}
+.ref table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:13px;margin-bottom:18px}
+.ref th{font-weight:400;color:var(--bone-dim);text-align:left;padding:3px 6px;border-bottom:1px solid var(--line)}
+.ref td{padding:4px 6px;border-bottom:1px solid #1e3f49}
+.ref td.now{color:var(--brass)}
+.ref td.no{color:var(--bone-dim);text-decoration:line-through}
+.allowed{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px}
+.allowed span{font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:3px;padding:2px 8px}
+.allowed span.on{border-color:var(--brass);color:var(--brass)}
+
+/* --- quiz --- */
+.quiz{display:none;flex-direction:column;align-items:center;gap:12px}
+.quiz .choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:min(420px,100%)}
+.quiz .choices button{background:transparent;border:1px solid var(--line);border-radius:4px;padding:12px;font-family:var(--mono);font-size:18px;cursor:pointer}
+.quiz .choices button:hover{border-color:var(--brass)}
+.quiz .choices button.right{border-color:var(--good);color:var(--good)}
+.quiz .choices button.wrong{border-color:var(--bad);color:var(--bad)}
+.quiz .score{font-family:var(--mono);color:var(--bone-dim);font-size:14px}
+.quiz .opts{display:flex;gap:14px;font-size:14px;color:var(--bone-dim);flex-wrap:wrap;justify-content:center}
+.quiz label{display:flex;gap:6px;align-items:center;cursor:pointer}
+body.quiz-on .build-only{display:none}
+body.quiz-on .quiz{display:flex}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1 class="wordmark">Shell Voicing <em>Builder</em></h1>
+  <div class="modes" role="group" aria-label="Mode">
+    <button id="modeBuild" aria-pressed="true">Build</button>
+    <button id="modeQuiz" aria-pressed="false">Name that chord</button>
+  </div>
+</div>
+
+<div class="app">
+
+<aside class="controls build-only">
+  <div class="group">
+    <span class="lbl">Root</span>
+    <div class="roots" id="roots"></div>
+  </div>
+  <div class="group">
+    <span class="lbl">Root string</span>
+    <div class="seg two" id="rootString">
+      <button data-v="6" aria-pressed="true">6R</button>
+      <button data-v="5" aria-pressed="false">5R</button>
+    </div>
+  </div>
+  <div class="group">
+    <label class="lbl" for="quality">Quality</label>
+    <select id="quality"></select>
+  </div>
+  <div class="group">
+    <span class="lbl">Structure</span>
+    <div class="structs" id="structs"></div>
+  </div>
+</aside>
+
+<main class="stage">
+  <div class="chordname" id="chordname"></div>
+  <div class="readout" id="readout"></div>
+  <div class="dia" id="dia"></div>
+
+  <div class="build-only" style="display:contents">
+    <div class="movers">
+      <div class="mover" id="moverB">
+        <div class="name">B string</div>
+        <div class="deg" id="degB">5</div>
+        <div class="btns"><button data-s="2" data-d="-1" aria-label="B string down a fret">−</button><button data-s="2" data-d="1" aria-label="B string up a fret">+</button></div>
+      </div>
+      <div class="mover" id="moverE">
+        <div class="name">E string</div>
+        <div class="deg" id="degE">R</div>
+        <div class="btns"><button data-s="1" data-d="-1" aria-label="E string down a fret">−</button><button data-s="1" data-d="1" aria-label="E string up a fret">+</button></div>
+      </div>
+    </div>
+    <div class="tools">
+      <button class="btn quiet" id="reset">Back to defaults</button>
+      <button class="btn quiet" id="ghost" aria-pressed="true">Ghost root: on</button>
+    </div>
+    <p class="hint">Arrow keys move the B string; shift + arrows move the E string. Fret numbers count from the nut.</p>
+  </div>
+
+  <div class="quiz">
+    <div class="choices" id="choices"></div>
+    <div class="score" id="score">Streak 0</div>
+    <div class="opts">
+      <label><input type="checkbox" id="qGhost" checked> show ghost root</label>
+      <label><input type="checkbox" id="qHard"> include altered dominants and 6th chords</label>
+    </div>
+    <button class="btn" id="next">Next chord</button>
+  </div>
+</main>
+
+<aside class="ref build-only">
+  <h2>What this chord will take</h2>
+  <p>From the extension list in the Technique Handbook (p. 49). Brass means it's in the voicing right now.</p>
+  <div class="allowed" id="allowed"></div>
+
+  <h2>B string</h2>
+  <p>Default sits in the root's fret. Move it up to two frets either way.</p>
+  <table id="tblB"></table>
+
+  <h2>E string</h2>
+  <p>Default sits in the root's fret. Move it up two or down one.</p>
+  <table id="tblE"></table>
+</aside>
+
+</div>
+
+<script>
+/* ---------- engine (shared with Box Buddy) ---------- */
+const OPEN = [null,64,59,55,50,45,40];
+const ROOTS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,bb7:9,b7:10,'7':11};
+const QUAL = {
+  maj7 :{name:'Major 7',        sym:'Δ7',   third:'3', seventh:'7',  fifth:'5',  allowed:['9','#11','13']},
+  '6'  :{name:'Major 6',        sym:'6',    third:'3', seventh:'6',  fifth:'5',  allowed:['9','#11']},
+  '7'  :{name:'Dominant 7',     sym:'7',    third:'3', seventh:'b7', fifth:'5',  dom:true, allowed:['9','#11','13'], altered:['b9','#9','b5','#5','#11','b13']},
+  m7   :{name:'Minor 7',        sym:'-7',   third:'b3',seventh:'b7', fifth:'5',  allowed:['9','11','13']},
+  m6   :{name:'Minor 6',        sym:'-6',   third:'b3',seventh:'6',  fifth:'5',  allowed:['9','11']},
+  m7b5 :{name:'Half-diminished',sym:'ø7',   third:'b3',seventh:'b7', fifth:'b5', allowed:['9','11','b13']},
+  dim7 :{name:'Diminished 7',   sym:'°7',   third:'b3',seventh:'bb7',fifth:'b5', allowed:['9','b13']},
+  mMaj7:{name:'Minor-major 7',  sym:'-Δ7',  third:'b3',seventh:'7',  fifth:'5',  allowed:['9','11','13']},
+  maj7s5:{name:'Augmented major 7',sym:'Δ7#5',third:'3',seventh:'7', fifth:'#5', allowed:['9','#11']},
+};
+const STRUCT = [
+  {id:0, name:'3 notes, with root',    tag:'R + 3/7',       strings:rs=>[rs,4,3]},
+  {id:1, name:'4 notes, with root',    tag:'R + 3/7 + B',   strings:rs=>[rs,4,3,2]},
+  {id:2, name:'2 notes, rootless',     tag:'3/7',           strings:()=>[4,3]},
+  {id:3, name:'3 notes, rootless',     tag:'3/7 + B',       strings:()=>[4,3,2]},
+  {id:4, name:'4 notes, rootless',     tag:'3/7 + B + E',   strings:()=>[4,3,2,1]},
+];
+
+function nearestFret(s, pc, around){
+  const base = ((pc - OPEN[s]) % 12 + 12) % 12;
+  let best = null;
+  for(let k=0;k<=2;k++){ const f = base + 12*k; if(f>19) continue;
+    if(best===null || Math.abs(f-around) < Math.abs(best-around) || (Math.abs(f-around)===Math.abs(best-around) && f<best)) best=f; }
+  return best;
+}
+
+// name a semitone offset (0-11) above the root, in the extension zone
+function degName(off, qKey){
+  const q = QUAL[qKey];
+  const minor = q.third==='b3';
+  const table = {0:'R',1:'b9',2:'9',3:minor?'b3':'#9',4:'3',5:'11',6:(q.fifth==='b5')?'b5':'#11',7:'5',8:(q.fifth==='#5')?'#5':(q.dom?'#5':'b13'),9:(q.seventh==='6')?'6':'13',10:'b7',11:'7'};
+  return table[off];
+}
+const EXT = ['b9','9','#9','11','#11','b5','b13','#5','13'];
+
+function nameChord(root, qKey, degs){
+  const q = QUAL[qKey];
+  const set = new Set(degs.filter(d=>EXT.includes(d) && d!==q.fifth));
+  let core = q.sym, absorbed = null;
+  const climb = ['Δ7','7','-7','-Δ7','ø7','Δ7#5'];
+  if(climb.includes(q.sym)){
+    if(set.has('13') && (set.has('9') || q.dom)) absorbed='13';
+    else if(set.has('11') && (set.has('9') || q.third==='b3')) absorbed='11';
+    else if(set.has('9')) absorbed='9';
+    if(absorbed) core = q.sym.replace('7', absorbed);
+  } else if((qKey==='6'||qKey==='m6') && set.has('9')){ core = q.sym+'/9'; absorbed='9'; }
+  const rest = [...set].filter(e=>e!==absorbed && !((absorbed==='13'||absorbed==='11') && e==='9'));
+  const alt = rest.filter(e=>/^[b#]/.test(e)), nat = rest.filter(e=>!/^[b#]/.test(e));
+  return root + core + alt.join('') + (nat.length ? '('+nat.join(',')+')' : '');
+}
+
+function fmt(name, root){ return root + '<span class="q">' + name.slice(root.length) + '</span>'; }
+
+/* build the voicing for current state; offsets are frets relative to default */
+function buildVoicing(st){
+  const q = QUAL[st.q];
+  const rs = st.rs;
+  let rf = ((st.pc - OPEN[rs]) % 12 + 12) % 12; if(rf===0) rf=12;
+  const rootMidi = OPEN[rs] + rf;
+  const rootPc = rootMidi % 12;
+  const strings = STRUCT[st.struct].strings(rs);
+  const dimish = st.q==='m7b5'||st.q==='dim7';
+  const bDef = rs===6 ? (q.dom ? '13' : q.fifth) : (dimish ? 'b3' : '9');
+  const eDef = rs===6 ? 'R' : q.fifth;
+  const notes = [];
+  strings.forEach(s=>{
+    let deg, f;
+    if(s===rs){ deg='R'; f=rf; }
+    else if(s===4){ deg = rs===6 ? q.seventh : q.third; f = nearestFret(4,(rootPc+DEG[deg])%12, rf); }
+    else if(s===3){ deg = rs===6 ? q.third : q.seventh; f = nearestFret(3,(rootPc+DEG[deg])%12, rf); }
+    else if(s===2){ f = nearestFret(2,(rootPc+DEG[bDef])%12, rf) + st.off[2]; deg = degName(((OPEN[2]+f)-rootMidi)%12+((OPEN[2]+f)<rootMidi?12:0), st.q); }
+    else if(s===1){ f = nearestFret(1,(rootPc+DEG[eDef])%12, rf) + st.off[1]; deg = degName(((OPEN[1]+f)-rootMidi)%12+((OPEN[1]+f)<rootMidi?12:0), st.q); }
+    notes.push({s,f,deg,mobile:s===2||s===1,def:s===2?bDef:s===1?eDef:null});
+  });
+  const rootless = !strings.includes(rs);
+  return {notes, rf, rs, rootMidi, ghost: rootless ? {s:rs,f:rf} : null, bDef, eDef, hasB:strings.includes(2), hasE:strings.includes(1)};
+}
+
+/* judge the mobilized notes */
+function judge(v, st){
+  const q = QUAL[st.q];
+  const msgs = [];
+  const core = [q.third, q.seventh].map(d=>DEG[d]%12);
+  v.notes.filter(n=>n.mobile).forEach(n=>{
+    const off = DEG[n.deg];
+    const label = n.s===2 ? 'B string' : 'E string';
+    if(n.deg==='R') { if(!v.ghost && v.rs) msgs.push({k:'ok', t:label+' is the root.'}); return; }
+    if(n.deg===q.fifth || (n.deg==='5' && q.fifth==='5')) return;
+    if(n.deg==='b3' && st.rs===5 && n.s===2 && (st.q==='m7b5'||st.q==='dim7')) { msgs.push({k:'ok', t:'The Handbook\'s 5R shape for this quality: b3 on the B string. Not strictly a shell, but it\'s the one that lies well.'}); return; }
+    if(core.includes(off) || n.deg===q.third || n.deg===q.seventh) { msgs.push({k:'warn', t:label+' is doubling the '+n.deg+' already on the middle strings.'}); return; }
+    if(q.altered && q.altered.includes(n.deg)) { msgs.push({k:'ok', t:'The '+n.deg+' makes this an altered dominant.'}); return; }
+    if(EXT.includes(n.deg) && !q.allowed.includes(n.deg)) { msgs.push({k:'bad', t:'The '+n.deg+' isn\'t used on a '+q.name.toLowerCase()+' chord.'}); return; }
+    if(n.deg==='b3' && q.third!=='b3') { msgs.push({k:'bad', t:label+' is a minor 3rd against a major 3rd. On a dominant that reads as #9.'}); return; }
+    if(n.deg==='b7' && q.seventh!=='b7') { msgs.push({k:'bad', t:label+' is a b7 against the '+q.seventh+' on the middle strings.'}); return; }
+    if(n.deg==='7' && q.seventh!=='7') { msgs.push({k:'bad', t:label+' is a major 7th against the '+q.seventh+' on the middle strings.'}); return; }
+    if(n.deg==='6' && q.seventh!=='6') { msgs.push({k:'warn', t:label+' is the 6th; on this chord that reads as 13.'}); return; }
+  });
+  return msgs;
+}
+
+/* ---------- rendering ---------- */
+function diagram(v, opts){
+  const showGhost = opts.ghost, showLabels = opts.labels!==false;
+  const W=300,H=330,x0=60,y0=54,sx=36,fy=44,nF=6;
+  const frets = v.notes.map(n=>n.f).concat(v.ghost?[v.ghost.f]:[]);
+  const minF=Math.min(...frets), maxF=Math.max(...frets);
+  let base = minF<=1 ? 1 : minF-1; if(minF>1 && maxF-base+1>nF) base = maxF-nF+1; if(base<1) base=1;
+  if(maxF-base+1>nF) base = minF;
+  const used = new Set(v.notes.map(n=>n.s));
+  let o=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; o+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+nF*fy}" stroke="#a89f8c" stroke-width="${s>=5?1.6:1}"/>`;
+    o+=`<text x="${x}" y="${y0+nF*fy+18}" font-size="11" text-anchor="middle" fill="#6f8a92">${['E','A','D','G','B','E'][6-s]}</text>`; }
+  for(let i=0;i<=nF;i++){ const y=y0+i*fy; o+=`<line x1="${x0}" y1="${y}" x2="${x0+5*sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i===0&&base===1?5:1}"/>`;
+    if(i<nF) o+=`<text x="${x0-16}" y="${y+fy/2+4}" font-size="11" text-anchor="end" fill="#6f8a92">${base+i}</text>`; }
+  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; if(!used.has(s) && !(v.ghost&&v.ghost.s===s)) o+=`<text x="${x}" y="${y0-14}" font-size="14" text-anchor="middle" fill="#6f8a92">×</text>`; }
+  if(v.ghost && showGhost){ const x=x0+(6-v.ghost.s)*sx, y=y0+(v.ghost.f-base)*fy+fy/2;
+    o+=`<polygon points="${x},${y-11} ${x+11},${y} ${x},${y+11} ${x-11},${y}" fill="#0b1a1f" stroke="#c9a24a" stroke-width="1.5"/>`; }
+  v.notes.forEach(n=>{ const x=x0+(6-n.s)*sx, y=y0+(n.f-base)*fy+fy/2;
+    const fill = n.mobile ? '#c9a24a' : '#e8e1d1';
+    o+=`<circle cx="${x}" cy="${y}" r="14" fill="${fill}"/>`;
+    if(showLabels) o+=`<text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle" fill="#0b1a1f">${n.deg}</text>`; });
+  o+='</svg>'; return o;
+}
+
+/* ---------- state & UI ---------- */
+const st = {pc:0, root:'C', rs:6, q:'maj7', struct:1, off:{2:0,1:0}};
+let ghostOn = true;
+
+const el = id=>document.getElementById(id);
+
+function initControls(){
+  el('roots').innerHTML = ROOTS.map((r,i)=>`<button data-pc="${i}" aria-pressed="${i===0}">${r}</button>`).join('');
+  el('roots').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; st.pc=+b.dataset.pc; st.root=ROOTS[st.pc]; update(); });
+  el('rootString').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; st.rs=+b.dataset.v; st.off={2:0,1:0}; update(); });
+  el('quality').innerHTML = Object.entries(QUAL).map(([k,q])=>`<option value="${k}">${q.name}</option>`).join('');
+  el('quality').addEventListener('change', e=>{ st.q=e.target.value; st.off={2:0,1:0}; update(); });
+  el('structs').innerHTML = STRUCT.map(s=>`<button data-id="${s.id}" aria-pressed="${s.id===st.struct}">${s.name}<small>${s.tag}</small></button>`).join('');
+  el('structs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; st.struct=+b.dataset.id; update(); });
+  document.querySelectorAll('.mover button').forEach(b=>b.addEventListener('click', ()=>move(+b.dataset.s, +b.dataset.d)));
+  el('reset').addEventListener('click', ()=>{ st.off={2:0,1:0}; update(); });
+  el('ghost').addEventListener('click', ()=>{ ghostOn=!ghostOn; el('ghost').textContent='Ghost root: '+(ghostOn?'on':'off'); el('ghost').setAttribute('aria-pressed',ghostOn); update(); });
+  document.addEventListener('keydown', e=>{
+    if(quiz.on) return;
+    if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); move(e.shiftKey?1:2, e.key==='ArrowUp'?1:-1); }
+  });
+  el('modeBuild').addEventListener('click', ()=>setMode(false));
+  el('modeQuiz').addEventListener('click', ()=>setMode(true));
+  el('next').addEventListener('click', newQuestion);
+  el('qGhost').addEventListener('change', ()=>{ if(quiz.cur) drawQuiz(); });
+}
+
+function move(s, d){
+  const v = buildVoicing(st);
+  if((s===2&&!v.hasB)||(s===1&&!v.hasE)) return;
+  const lim = s===2 ? [-2,2] : [-1,3];
+  st.off[s] = Math.max(lim[0], Math.min(lim[1], st.off[s]+d));
+  update();
+}
+
+function update(){
+  el('roots').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.pc===st.pc));
+  el('rootString').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.v===st.rs));
+  el('quality').value = st.q;
+  el('structs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.id===st.struct));
+
+  const v = buildVoicing(st);
+  const degs = v.notes.map(n=>n.deg);
+  const name = nameChord(st.root, st.q, degs);
+  el('chordname').innerHTML = fmt(name, st.root);
+  el('dia').innerHTML = diagram(v, {ghost:ghostOn});
+
+  const msgs = judge(v, st);
+  const r = el('readout');
+  if(!msgs.length){ r.className='readout'; r.textContent = v.notes.map(n=>(['','E','B','G','D','A','E'][n.s])+': '+n.deg).join('   '); }
+  else { const worst = msgs.find(m=>m.k==='bad')||msgs.find(m=>m.k==='warn')||msgs[0]; r.className='readout '+(worst.k==='ok'?'good':worst.k); r.textContent = worst.t; }
+
+  const nB = v.notes.find(n=>n.s===2), nE = v.notes.find(n=>n.s===1);
+  el('moverB').classList.toggle('off', !v.hasB); el('moverE').classList.toggle('off', !v.hasE);
+  el('degB').textContent = nB ? nB.deg : '–'; el('degE').textContent = nE ? nE.deg : '–';
+
+  const q = QUAL[st.q];
+  el('allowed').innerHTML = q.allowed.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') + (q.altered ? `<span style="border:0;color:var(--bone-dim);padding-left:2px">altered:</span>` + q.altered.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') : '');
+  el('tblB').innerHTML = mobTable(v, 2, [-2,-1,0,1,2], nB);
+  el('tblE').innerHTML = mobTable(v, 1, [-1,0,1,2], nE);
+}
+
+function mobTable(v, s, range, cur){
+  const q = QUAL[st.q];
+  const def = s===2 ? v.bDef : v.eDef;
+  const defFret = nearestFret(s,(v.rootMidi%12+DEG[def])%12, v.rf);
+  let h = '<tr><th>move</th><th>fret</th><th>you get</th></tr>';
+  range.forEach(o=>{
+    const f = defFret+o; const off = ((OPEN[s]+f)-v.rootMidi)%12; const d = degName((off+12)%12, st.q);
+    const ok = d==='R' || d===q.fifth || d===q.third || d===q.seventh || q.allowed.includes(d) || (q.altered && q.altered.includes(d));
+    const now = cur && cur.f===f;
+    h += `<tr><td>${o>0?'+':''}${o}</td><td>${f}</td><td class="${now?'now':(ok?'':'no')}">${d}</td></tr>`;
+  });
+  return h;
+}
+
+/* ---------- quiz ---------- */
+const quiz = {on:false, cur:null, streak:0, best:0};
+function setMode(on){
+  quiz.on = on;
+  document.body.classList.toggle('quiz-on', on);
+  el('modeBuild').setAttribute('aria-pressed', !on); el('modeQuiz').setAttribute('aria-pressed', on);
+  if(on) newQuestion(); else update();
+}
+function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+function newQuestion(){
+  const hard = el('qHard').checked;
+  const quals = hard ? ['maj7','7','m7','m7b5','6','m6','mMaj7'] : ['maj7','7','m7','m7b5'];
+  const q = rnd(quals);
+  const s = {pc:Math.floor(Math.random()*12), rs:rnd([6,5]), q, struct:rnd([3,4]), off:{2:0,1:0}};
+  s.root = ROOTS[s.pc];
+  // mobilize until the result is legal (allowed extensions or chord tones only)
+  for(let tries=0; tries<20; tries++){
+    s.off = {2:rnd([-2,-1,0,0,1,2]), 1:s.struct===4?rnd([-1,0,0,1,2]):0};
+    const v = buildVoicing(s);
+    const altered = v.notes.some(n=>n.mobile && QUAL[s.q].altered && QUAL[s.q].altered.includes(n.deg));
+    if(!judge(v,s).some(m=>m.k!=='ok') && (hard || !altered)) break;
+    if(tries===19) s.off={2:0,1:0};
+  }
+  const v = buildVoicing(s);
+  const answer = nameChord(s.root, s.q, v.notes.map(n=>n.deg));
+  // distractors: same root, other qualities / extensions
+  const pool = new Set();
+  for(let i=0;i<60 && pool.size<3;i++){
+    const alt = {...s, q:rnd(Object.keys(QUAL).filter(k=>hard||['maj7','7','m7','m7b5','6','mMaj7'].includes(k))), off:{2:rnd([-2,-1,0,0,1,2]), 1:rnd([-1,0,0,1,2])}};
+    const av = buildVoicing(alt);
+    if(judge(av,alt).some(m=>m.k!=='ok')) continue;
+    if(!hard && av.notes.some(n=>n.mobile && QUAL[alt.q].altered && QUAL[alt.q].altered.includes(n.deg))) continue;
+    const n = nameChord(alt.root, alt.q, av.notes.map(x=>x.deg));
+    if(n!==answer) pool.add(n);
+  }
+  const choices = [answer, ...pool].sort(()=>Math.random()-.5);
+  quiz.cur = {s, v, answer, choices, done:false};
+  drawQuiz();
+}
+function drawQuiz(){
+  const c = quiz.cur;
+  el('chordname').innerHTML = '<span class="q">?</span>';
+  el('readout').className='readout'; el('readout').textContent = (c.s.rs===6?'6R':'5R')+' shape, '+STRUCT[c.s.struct].name+'. Which chord is this?';
+  el('dia').innerHTML = diagram(c.v, {ghost:el('qGhost').checked, labels:false});
+  el('choices').innerHTML = c.choices.map(n=>`<button data-n="${n}">${fmt(n, c.s.root)}</button>`).join('');
+  el('choices').querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>answerQuiz(b)));
+  el('score').textContent = 'Streak '+quiz.streak+(quiz.best?' · best '+quiz.best:'');
+}
+function answerQuiz(b){
+  const c = quiz.cur; if(c.done) return; c.done=true;
+  const right = b.dataset.n===c.answer;
+  if(right){ quiz.streak++; quiz.best=Math.max(quiz.best,quiz.streak); } else quiz.streak=0;
+  el('choices').querySelectorAll('button').forEach(x=>{ if(x.dataset.n===c.answer) x.classList.add('right'); else if(x===b) x.classList.add('wrong'); });
+  el('chordname').innerHTML = fmt(c.answer, c.s.root);
+  el('dia').innerHTML = diagram(c.v, {ghost:el('qGhost').checked, labels:true});
+  el('readout').textContent = c.v.notes.map(n=>(['','E','B','G','D','A','E'][n.s])+': '+n.deg).join('   ');
+  el('score').textContent = 'Streak '+quiz.streak+(quiz.best?' · best '+quiz.best:'');
+}
+
+initControls();
+update();
+</script>
+</body>
+</html>
