@@ -303,32 +303,54 @@
     .section { break-inside: avoid; }
   }
 </style>
-<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md) ===== -->
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
 <style>
   .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
   .sp-anchor{position:relative;}
   .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
   .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
-  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:8px 0;box-shadow:0 8px 28px rgba(0,0,0,.45);}
-  .sp-group{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c9a44c;padding:10px 16px 4px;}
-  .sp-panel a{display:block;padding:10px 16px;color:#e9e2d2;text-decoration:none;font-family:inherit;font-size:12.5px;letter-spacing:.04em;}
-  .sp-panel a:hover{background:#163f4b;color:#e9e2d2;}
-  .sp-panel a[aria-current="page"]{color:#c9a44c;}
-  .sp-panel a[aria-current="page"]::after{content:" ·";}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
 </style>
 <nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
   <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
   <div class="sp-panel" hidden>
-    <a data-sp="" href="../index.html">Music tools — home</a>
-    <div class="sp-group">Handbook</div>
-    <a data-sp="fretboard" href="../fretboard/index.html">Fretboard</a>
-    <a data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder</a>
-    <a data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill</a>
-    <a data-sp="scales-deck" href="../scales-deck/index.html">Scales deck</a>
-    <a data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggios deck</a>
-    <div class="sp-group">Stand-alone</div>
-    <a data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
-    <a data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+    </div>
   </div>
 </div></nav>
 <script>

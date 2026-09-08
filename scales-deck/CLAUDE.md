@@ -1,5 +1,8 @@
 # Scales deck
 
+Shown in the UI as **Scale practice** (renamed Sep 2026); the folder and
+URLs are unchanged.
+
 Interactive walkthrough of Scale Practice 101 (JGTH pp. 61–64). Self-contained `index.html`.
 Carries the shared `SCALES` block (see `../fretboard/CLAUDE.md`); keep it byte-identical
 across the three apps until the renderer is factored out.

@@ -1,5 +1,8 @@
 # Arpeggios deck
 
+Shown in the UI as **Arpeggio practice** (renamed Sep 2026); the folder and
+URLs are unchanged.
+
 Shape browser and practice walkthrough for JGTH arpeggios (shapes pp. 25–36,
 Arpeggio Practice pp. 76–78). Self-contained `index.html`.
 

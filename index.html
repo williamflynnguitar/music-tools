@@ -39,8 +39,12 @@
   li .desc { color: var(--bone-dim); font-size: 15px; line-height: 1.45; }
   .src { display: block; font-family: var(--mono); font-size: 11px; color: var(--brass); letter-spacing: .04em; margin-bottom: 6px; }
 
+  li.sub { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--bone-dim); padding-top: 8px; }
+  li.sub:first-child { padding-top: 0; }
+
   /* ticks from the rule to each derived tool */
   .book-line li { position: relative; }
+  .book-line li.sub::before { display: none; }
   .book-line li::before {
     content: ""; position: absolute;
     left: calc(-1 * var(--rulepad)); top: 50%;
@@ -72,11 +76,24 @@
   <p class="book-note">The tools on this line are drawn from the handbook — same fingerings, same order, same terminology. They're meant to be used alongside the book, not instead of it.</p>
 
   <ul>
+    <li class="sub">Scales</li>
     <li><a href="fretboard/">
       <span class="src">Movable scale fingerings · pp. 6–23</span>
       <b>Fretboard<span class="path">fretboard/</span></b>
       <span class="desc">The movable scale fingerings — eleven scales, every key, drawn in the book's orientation.</span>
     </a></li>
+    <li><a href="scales-deck/">
+      <span class="src">Scale Practice 101 · pp. 61–64</span>
+      <b>Scale practice<span class="path">scales-deck/</span></b>
+      <span class="desc">The chapter's practice concepts, one exercise at a time: pick a key, a concept and a tier, and step through.</span>
+    </a></li>
+    <li class="sub">Arpeggios</li>
+    <li><a href="arpeggios-deck/">
+      <span class="src">Arpeggio Practice · pp. 76–78</span>
+      <b>Arpeggio practice<span class="path">arpeggios-deck/</span></b>
+      <span class="desc">The full shape library on a browsable neck — by finger, or from any root you click — plus arpeggio practice three ways.</span>
+    </a></li>
+    <li class="sub">Chord voicings</li>
     <li><a href="shell-builder/">
       <span class="src">Shell Voicings 101 · pp. 45–51</span>
       <b>Shell voicing builder<span class="path">shell-builder/</span></b>
@@ -86,16 +103,6 @@
       <span class="src">Drop-2 and Drop-3 · pp. 52–59 · key study p. 82</span>
       <b>Inversion drill<span class="path">inversion-drill/</span></b>
       <span class="desc">Drop-2 and drop-3 inversions on every string set, drilled up the neck, through the key studies — and through the leadsheet changes.</span>
-    </a></li>
-    <li><a href="scales-deck/">
-      <span class="src">Scale Practice 101 · pp. 61–64</span>
-      <b>Scales deck<span class="path">scales-deck/</span></b>
-      <span class="desc">The practice concepts as a deck of cards: pick a key, a concept and a tier, and step through the exercises.</span>
-    </a></li>
-    <li><a href="arpeggios-deck/">
-      <span class="src">Arpeggio Practice · pp. 76–78</span>
-      <b>Arpeggios deck<span class="path">arpeggios-deck/</span></b>
-      <span class="desc">The full shape library on a browsable neck — by finger, or from any root you click — plus arpeggio practice three ways.</span>
     </a></li>
   </ul>
 </section>

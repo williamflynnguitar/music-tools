@@ -46,8 +46,10 @@ a concatenation script or by inlining at commit time.
 ## Spine menu
 
 Every tool page opens with a slim right-aligned "☰ tools" chip — in normal flow at the top of the page, never fixed, so it cannot cover app headers — opening a menu of
-the landing page's spine — home plus all seven linked tools, current page
-marked. It is one self-contained block (own `sp-` classes, hardcoded family
+the landing page's spine: a home header row, then the handbook group
+(Scales / Arpeggios / Chord voicings sub-sections, page refs mirroring the
+index cards' source labels) and the stand-alone group, current page marked
+with a brass bar and brass text. It is one self-contained block (own `sp-` classes, hardcoded family
 palette, explicit `index.html` hrefs so file:// works) duplicated between
 `===== spine menu =====` markers at the top of each tool's body —
 keep the copies byte-identical, like the `SCALES` block. The landing page
