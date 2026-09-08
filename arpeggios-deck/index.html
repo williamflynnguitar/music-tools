@@ -844,7 +844,7 @@ function hydrateNotation(root) {
     const fallback = () => { el.innerHTML = notate(JSON.parse(el.dataset.notes), JSON.parse(el.dataset.opts || "{}")); el.classList.add("fallback"); const n = el.nextElementSibling; if (n && n.classList.contains("lynote")) n.querySelector("span").textContent += " · offline: drawn from LilyPond's glyphs"; };
     try {
       let svg = NOTATION_CACHE.get(src);
-      if (!svg) { const r = await fetch(src); if (!r.ok) throw new Error(r.status); svg = await r.text(); if (!svg.startsWith("<svg")) throw new Error("not svg"); NOTATION_CACHE.set(src, svg); }
+      if (!svg) { const r = await fetch(src, { cache: "no-cache" }); if (!r.ok) throw new Error(r.status); svg = await r.text(); if (!svg.startsWith("<svg")) throw new Error("not svg"); NOTATION_CACHE.set(src, svg); }
       el.innerHTML = svg;
     } catch (e) { fallback(); }
   });

@@ -53,7 +53,7 @@
   figcaption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   figcaption b { font-weight: 400; font-size: 17px; }
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
-  .passnote { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 10px 0 0; }
+  .passnote { font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; color: var(--bone); margin: 0 0 14px; }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
   .ly { color: var(--bone); margin: 12px 0 4px; }
@@ -154,7 +154,6 @@
   </aside>
 
   <main class="diagrams" id="diagrams"></main>
-  <p class="passnote" id="passNote" hidden><svg width="12" height="12" viewBox="0 0 26 26" style="vertical-align:-1px"><polygon points="13,0 26,13 13,26 0,13" fill="var(--bone)"/></svg> diamond = the scale’s added passing tone</p>
 </div>
 
 <script>
@@ -536,7 +535,7 @@ function hydrateNotation(root) {
     const fallback = () => { el.innerHTML = notate(JSON.parse(el.dataset.notes), JSON.parse(el.dataset.opts || "{}")); el.classList.add("fallback"); const n = el.nextElementSibling; if (n && n.classList.contains("lynote")) n.querySelector("span").textContent += " · offline: drawn from LilyPond's glyphs"; };
     try {
       let svg = NOTATION_CACHE.get(src);
-      if (!svg) { const r = await fetch(src); if (!r.ok) throw new Error(r.status); svg = await r.text(); if (!svg.startsWith("<svg")) throw new Error("not svg"); NOTATION_CACHE.set(src, svg); }
+      if (!svg) { const r = await fetch(src, { cache: "no-cache" }); if (!r.ok) throw new Error(r.status); svg = await r.text(); if (!svg.startsWith("<svg")) throw new Error("not svg"); NOTATION_CACHE.set(src, svg); }
       el.innerHTML = svg;
     } catch (e) { fallback(); }
   });
@@ -709,14 +708,14 @@ function render() {
     `${sc.pages} · application <b>${sc.apply.chords}</b>` +
     (sc.apply.uses.length ? `<br>${sc.apply.uses.join("<br>")}` : "") +
     `<br>(as printed, in C)`;
-  document.getElementById("passNote").hidden = sc.passing == null || state.fingering === "neck";
 
   const main = document.getElementById("diagrams");
   const neck = state.fingering === "neck";
   const ids = neck ? [] : state.fingering === "all" ? Object.keys(sc.shapes) : [state.fingering];
   main.classList.toggle("grid", ids.length > 1);
   const placed = ids.map(id => place(state.scale, id, state.key));
-  main.innerHTML = neck ? drawNeck() : placed.map(p => figure(p, state.mode)).join("");
+  const passnote = sc.passing != null && !neck ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><polygon points="13,0 26,13 13,26 0,13" fill="var(--bone)"/></svg> diamond = the scale’s added passing tone</p>` : "";
+  main.innerHTML = neck ? drawNeck() : passnote + placed.map(p => figure(p, state.mode)).join("");
   if (!neck) hydrateNotation(main);
 
   const hint = document.getElementById("cycleHint");
