@@ -5,6 +5,79 @@ out over the round so the player's inner pulse has to carry more of the
 time. Sessions run in rounds (optionally at random tempos) with rests
 between them.
 
+A top-level mode switch adds **Training Wheels** (`appMode = "tw"`), an
+on-ramp for students who phase-flip — they hear the click fine but assign
+it to beat 1. It shares the one lookahead scheduler (`scheduleBeat`
+dispatches to `twScheduleBeat`), has its own settings object `T` and
+frozen-at-round-start copy `RW`, and never mixes state with the dropout
+settings `S`. The standard mode is unchanged.
+
+## Training Wheels: rungs
+
+The 2&4 click is present on every rung. Free choice — the student picks
+any rung at any time; nothing auto-advances. Per-rung count-in default in
+parentheses (overridable, wood block on all 4, accent on 1; taps during it
+are ignored).
+
+| Rung | Downbeat evidence added | Count-in |
+|---|---|---|
+| 1 | Wood block on all 4 (accent on 1) + kick on 1 & 3 | 2 bars |
+| 2 | Kick on 1 & 3 | 2 |
+| 3 | Kick on 1, every bar | 2 |
+| 4 | Kick on 1, every other bar | 1 |
+| 5 | Kick on 1, every 4th bar | 1 |
+| 6 | Kick on 1 at 35% (`kickBus.gain`), every 4th bar | 0 |
+| 7 | Click only — sonically identical to the standard mode | 0 |
+
+`twVoices(rung, bar, beat)` is the single source of truth for what sounds
+when; the plan chart draws from it, so chart and audio cannot disagree.
+Voices are symmetric: click, kick and wood block each have their own gain
+node (`clickBus` / `kickBus` / `blockBus`) into `master`. Kick = sine,
+150→50 Hz over 40 ms, ~120 ms decay. Block = bandpassed noise (~1.8 kHz,
+Q 6, brighter when accented) + 900 Hz triangle blip; accent ≈ 2.5× gain.
+
+## Training Wheels: tap time and scoring
+
+Taps (spacebar or the tap pad, `pointerdown` not `click`) are timestamped
+with the event's performance-clock time and converted to audio time via an
+offset sampled once at round start — `ctx.getOutputTimestamp()` when
+available (tracks what is actually heard, incl. output latency), plain
+`ctx.currentTime − performance.now()/1000` as fallback, and the output
+timestamp is distrusted if it disagrees with the fallback by >0.5 s
+(fresh/suspended contexts report garbage). The user-facing latency offset
+field (±100 ms) is subtracted from every tap. Never score against
+wall-clock reads taken after the event.
+
+Each tap gets a beat phase within its bar against the scheduled grid.
+`tol` = 0.15 beats, clamped to a 40–100 ms window (±75 ms at q=120).
+Buckets: **down** |ph−0| < tol (wrapping at 4) · **flip** near 1 or 3 (on
+the click) · **half** near 2 · **drift** otherwise. A tap belongs to the
+bar window [4b−0.5, 4b+3.5) beats, so early downbeat taps stay with their
+bar. Verdicts: **flip** = ≥2 consecutive flip-bucket taps (first bar
+recorded); **held** = no flip and ≥90% of bars got a down tap.
+**Ready** (per rung, this page load only — no storage) = 8 consecutive
+bars, each with taps, every tap down-bucket, mean |offset| ≤ 60 ms.
+Readiness on rung 7 shows Graduate → Two-and-Four (same tempo). All of
+this is in `twScore`, which is pure — simulate it in node when touching it.
+
+## Training Wheels: nothing moves during a round
+
+Project rule applied hard here: during a round there is no cursor, no bar
+counter, no beat indicator, no live tap feedback (the tap pad deliberately
+has no `:active` style), and readiness badges update only after the round.
+The one permitted change is the static "recording…" status label at round
+start. The plan chart is drawn before the round and not touched; the
+results chart replaces it only after the audible end. Escape stops a
+round; stopping early scores the bars completed.
+
+## Training Wheels: deferred
+
+- Perception-only identification mode (bass line + click; "is the click on
+  1&3 or 2&4?") — reuse Comping Rhythms ear-training scaffolding.
+- Persisting readiness across sessions (blocked by the no-storage
+  constraint; would need an export/import string).
+- Per-student latency calibration routine.
+
 ## Timing: the lookahead scheduler
 
 Standard Web Audio lookahead pattern (see root CLAUDE.md):

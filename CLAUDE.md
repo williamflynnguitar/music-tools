@@ -5,7 +5,8 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 
 ## Apps
 
-- `two-and-four/` — metronome (beats 2 and 4, dropout modes)
+- `two-and-four/` — metronome (beats 2 and 4, dropout modes; Training Wheels
+  rung ladder for students who phase-flip)
 - `fretboard/` — renderer + major-scale fingering data (JGTH p. 7)
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)

@@ -223,12 +223,103 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
 .note{font-family:var(--mono);font-size:10px;line-height:1.65;color:var(--dimmer);
   margin-top:15px;padding-top:13px;border-top:1px solid var(--rule);}
 
+/* ---------- training wheels ---------- */
+.mode-switch{margin:16px 0 0;}
+.mode-switch .seg{max-width:380px;}
+.mode-switch .seg button{padding:11px 6px;font-size:11px;}
+body.tw .std-only{display:none!important;}
+body:not(.tw) .tw-only{display:none!important;}
+
+/* tap pad — deliberately no :active / feedback style: no motion during a round */
+.tap-pad{
+  width:100%;min-height:110px;margin:0 0 34px;
+  background:var(--panel);border:1px solid var(--rule);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+  font-family:var(--mono);letter-spacing:.26em;text-transform:uppercase;
+  color:var(--dim);font-size:13px;cursor:pointer;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+}
+.tap-pad small{font-size:10px;letter-spacing:.14em;color:var(--dimmer);text-transform:none;}
+
+/* rung ladder */
+.ladder{display:flex;flex-direction:column;border:1px solid var(--rule);}
+.rung{
+  display:flex;align-items:center;gap:12px;text-align:left;
+  background:transparent;border:none;border-bottom:1px solid var(--rule);
+  border-left:3px solid transparent;
+  padding:10px 12px;color:var(--dim);font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+}
+.rung:last-child{border-bottom:none;}
+.rung:hover{color:var(--bone);background:var(--panel);}
+.rung[aria-pressed=true]{border-left-color:var(--brass);color:var(--bone);background:var(--panel);}
+.rung[aria-pressed=true] .rung-n{color:var(--brass);}
+.rung-n{font-size:15px;font-weight:700;width:16px;flex:none;font-variant-numeric:tabular-nums;color:var(--dimmer);}
+.rung-desc{flex:1;line-height:1.45;}
+.rung-ready{
+  font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#0C1517;
+  background:var(--brass);padding:3px 7px;flex:none;
+}
+
+input[type=number]{
+  background:var(--panel);border:1px solid var(--rule);color:var(--bone);
+  font-family:var(--mono);font-size:13px;padding:8px 10px;width:90px;
+  font-variant-numeric:tabular-nums;
+}
+input[type=number]:focus-visible{outline:2px solid var(--brass-hot);outline-offset:2px;}
+
+/* TW plan chart: a cell per bar, borders read as bar lines */
+.chart-body.tw-plan{display:grid;height:auto;grid-template-columns:repeat(8,1fr);}
+.tw-bar{border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 6px 5px;min-width:0;}
+.tw-beats{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;justify-items:center;}
+.twb-col{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.twb{display:block;visibility:hidden;}
+.twb.on{visibility:visible;}
+.twb-block{width:7px;height:4px;background:var(--dim);}
+.twb-block.acc{background:var(--bone);height:6px;}
+.twb-click{width:7px;height:13px;background:var(--brass);clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);}
+.twb-kick{width:8px;height:8px;border-radius:50%;background:var(--bone);}
+.twb-kick.faint{opacity:.35;}
+.tw-bar .stage-label{margin-top:5px;min-height:12px;}
+.chart-legend .lg-kick{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bone);}
+.chart-legend .lg-block{display:inline-block;width:8px;height:5px;background:var(--dim);}
+.chart-legend .lg-dot{display:inline-block;width:7px;height:7px;border-radius:50%;}
+
+/* TW results chart: one row per bar, dots where taps landed */
+.chart-body.tw-results{display:block;height:auto;padding:12px 13px;}
+.twr-row{display:flex;align-items:center;gap:10px;margin:0 0 4px;}
+.twr-row:last-child{margin-bottom:0;}
+.twr-num{font-family:var(--mono);font-size:9.5px;color:var(--dimmer);width:22px;text-align:right;flex:none;font-variant-numeric:tabular-nums;}
+.twr-track{flex:1;height:13px;position:relative;background:var(--panel-2);}
+.twr-tick{position:absolute;top:0;bottom:0;width:1px;background:var(--rule);}
+.twr-tick.down{width:2px;background:var(--brass);opacity:.85;}
+.twr-tick.clickpos{background:var(--dimmer);opacity:.55;}
+.twr-dot{position:absolute;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;}
+.twr-dot.down{background:var(--brass-hot);}
+.twr-dot.flip{background:#C4635A;}
+.twr-dot.half{background:#7E98AC;}
+.twr-dot.drift{background:transparent;box-shadow:inset 0 0 0 1.5px var(--dim);}
+.tw-verdict{
+  padding:12px 13px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;letter-spacing:.05em;line-height:1.7;
+}
+.tw-verdict .vline{color:var(--bone);}
+.tw-verdict .vline.flip{color:#C4635A;}
+.tw-verdict .vsub{color:var(--dim);font-size:10.5px;letter-spacing:.1em;}
+.tw-verdict .vready{display:inline-block;background:var(--brass);color:#0C1517;font-size:9px;
+  letter-spacing:.18em;text-transform:uppercase;padding:3px 7px;margin-left:8px;}
+.btn-grad{
+  margin-top:10px;background:var(--brass);color:#0C1517;border:none;
+  padding:12px 22px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;
+}
+.btn-grad:hover{background:var(--brass-hot);}
+
 @media (max-width:660px){
   .panels{grid-template-columns:1fr;}
   .readout{grid-template-columns:1fr;gap:22px;}
   .chart-body{height:74px;}
   .stage-cell{padding:8px 5px 6px;}
   .stage-label{font-size:8px;letter-spacing:.04em;}
+  .chart-body.tw-plan{grid-template-columns:repeat(4,1fr);}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -308,16 +399,26 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
     <p class="tagline">fading backbeat · inner pulse trainer</p>
   </div>
 
+  <div class="mode-switch">
+    <div class="seg" role="group" aria-label="mode">
+      <button id="modeTw" aria-pressed="false">Training wheels</button>
+      <button id="modeStd" aria-pressed="true">Two &amp; four</button>
+    </div>
+  </div>
+
   <section class="readout">
     <div>
       <p class="bpm" id="bpmDisplay">120</p>
       <p class="bpm-unit" id="bpmUnit">beats per minute</p>
     </div>
     <div class="meta">
-      <div class="meta-row"><span>Round</span><span id="roundOut">—</span></div>
-      <div class="meta-row" id="rowTime"><span>Remaining</span><span id="timeOut">3:00</span></div>
-      <div class="meta-row" id="rowBar"><span>Bar</span><span id="barOut">—</span></div>
-      <div class="lamps" id="lamps">
+      <div class="meta-row std-only"><span>Round</span><span id="roundOut">—</span></div>
+      <div class="meta-row std-only" id="rowTime"><span>Remaining</span><span id="timeOut">3:00</span></div>
+      <div class="meta-row std-only" id="rowBar"><span>Bar</span><span id="barOut">—</span></div>
+      <div class="meta-row tw-only"><span>Rung</span><span id="twRungOut">1 of 7</span></div>
+      <div class="meta-row tw-only"><span>Round</span><span id="twLenOut">16 bars</span></div>
+      <div class="meta-row tw-only"><span>Count-in</span><span id="twCntOut">2 bars</span></div>
+      <div class="lamps std-only" id="lamps">
         <div class="lamp" data-b="0"></div>
         <div class="lamp backbeat" data-b="1"></div>
         <div class="lamp" data-b="2"></div>
@@ -338,12 +439,67 @@ input[type=range]:focus-visible{outline:2px solid var(--brass-hot);outline-offse
 
   <div class="transport">
     <button class="btn-go" id="goBtn">Start</button>
-    <button class="btn-ghost" id="repeatBtn">Repeat tempo</button>
-    <button class="btn-ghost" id="skipBtn">Next tempo</button>
-    <span class="hint">Space start / stop &nbsp;·&nbsp; R repeat &nbsp;·&nbsp; N next &nbsp;·&nbsp; T tap tempo</span>
+    <button class="btn-ghost std-only" id="repeatBtn">Repeat tempo</button>
+    <button class="btn-ghost std-only" id="skipBtn">Next tempo</button>
+    <span class="hint std-only">Space start / stop &nbsp;·&nbsp; R repeat &nbsp;·&nbsp; N next &nbsp;·&nbsp; T tap tempo</span>
+    <span class="hint tw-only">Space or pad = tap beat 1 &nbsp;·&nbsp; Esc stop</span>
   </div>
 
-  <div class="panels">
+  <div class="tap-pad tw-only" id="tapPad" role="button" tabindex="0" aria-label="tap on beat 1">
+    <span>tap on beat 1</span>
+    <small>the silent beat — spacebar works too · taps during the count-in are ignored</small>
+  </div>
+
+  <div class="panels tw-only">
+    <div class="panel">
+      <h2>Round</h2>
+
+      <div class="field">
+        <label for="twBpm">Tempo <span class="val"><b id="twBpmVal">120</b> bpm</span></label>
+        <input type="range" id="twBpm" min="60" max="200" step="1" value="120">
+      </div>
+
+      <div class="field">
+        <label>Round length <span class="val" id="twBarsVal">16 bars</span></label>
+        <div class="seg" role="group" id="twBarsSeg">
+          <button data-n="8" aria-pressed="false">8</button>
+          <button data-n="16" aria-pressed="true">16</button>
+          <button data-n="32" aria-pressed="false">32</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Count-in <span class="val" id="twCountVal">auto · 2 bars</span></label>
+        <div class="seg" role="group" id="twCountSeg">
+          <button data-n="auto" aria-pressed="true">Auto</button>
+          <button data-n="0" aria-pressed="false">0</button>
+          <button data-n="1" aria-pressed="false">1</button>
+          <button data-n="2" aria-pressed="false">2</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="twLat">Latency offset <span class="val">ms</span></label>
+        <input type="number" id="twLat" min="-100" max="100" step="1" value="0"
+          title="If your taps read consistently early or late, adjust this.">
+      </div>
+
+      <p class="note">Slower is harder here — the gap between clicks widens and it's easier
+      to flip. The wood-block count-in orients you on 1; the round starts on the bar after
+      it. Tap only beat 1, the silent beat.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Rungs</h2>
+      <div class="ladder" id="ladder"></div>
+      <p class="note">Every rung keeps the click on 2 &amp; 4; each one withdraws some
+      downbeat evidence. Ready = one stretch of 8 straight bars with every tap on the
+      downbeat, within 60 ms on average. Ready marks last for this page visit only —
+      nothing is stored.</p>
+    </div>
+  </div>
+
+  <div class="panels std-only">
     <div class="panel">
       <h2>Session</h2>
 
@@ -516,6 +672,7 @@ const S = {
 /* ---------- audio ---------- */
 const AC = window.AudioContext || window.webkitAudioContext;
 let ctx=null, master=null, noiseBuf=null;
+let clickBus=null, kickBus=null, blockBus=null;   // one gain node per voice
 
 function initAudio(){
   if(ctx) return;
@@ -523,6 +680,9 @@ function initAudio(){
   master = ctx.createGain();
   master.gain.value = S.vol;
   master.connect(ctx.destination);
+  clickBus = ctx.createGain(); clickBus.connect(master);
+  kickBus  = ctx.createGain(); kickBus.connect(master);
+  blockBus = ctx.createGain(); blockBus.connect(master);
   const len = Math.floor(ctx.sampleRate * 0.25);
   noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
@@ -545,7 +705,7 @@ function click(t, o){
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(gain*nAmt, t+0.0009);
     g.gain.exponentialRampToValueAtTime(0.0001, t+decay);
-    src.connect(bp).connect(g).connect(master);
+    src.connect(bp).connect(g).connect(clickBus);
     src.start(t); src.stop(t+decay+0.03);
   }
   const osc = ctx.createOscillator(); osc.type="triangle";
@@ -555,8 +715,44 @@ function click(t, o){
   g2.gain.setValueAtTime(0.0001, t);
   g2.gain.linearRampToValueAtTime(gain*0.5, t+0.0012);
   g2.gain.exponentialRampToValueAtTime(0.0001, t+decay*1.5);
-  osc.connect(g2).connect(master);
+  osc.connect(g2).connect(clickBus);
   osc.start(t); osc.stop(t+decay*1.8);
+}
+
+// Kick: sine with a 150→50 Hz pitch drop over 40 ms, ~120 ms exponential decay.
+// Rung-level volume is one line: kickBus.gain (rung 6 sets it to 0.35).
+function kick(t){
+  const o = ctx.createOscillator(); o.type = "sine";
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(50, t + 0.04);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(1, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  o.connect(g).connect(kickBus);
+  o.start(t); o.stop(t + 0.16);
+}
+
+// Wood block: bandpassed noise burst (~1.8 kHz, Q 6) + a short 900 Hz triangle
+// blip, ~25 ms decay. Accent = ~2.5x gain and a slightly brighter filter.
+function block(t, accent){
+  const amp = accent ? 0.85 : 0.34;
+  const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+  const bp = ctx.createBiquadFilter(); bp.type = "bandpass";
+  bp.frequency.value = accent ? 2150 : 1800; bp.Q.value = 6;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(amp, t + 0.001);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  src.connect(bp).connect(g).connect(blockBus);
+  src.start(t); src.stop(t + 0.08);
+  const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = 900;
+  const g2 = ctx.createGain();
+  g2.gain.setValueAtTime(0.0001, t);
+  g2.gain.linearRampToValueAtTime(amp * 0.5, t + 0.001);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+  o.connect(g2).connect(blockBus);
+  o.start(t); o.stop(t + 0.04);
 }
 const VOICE = {
   back:   {freq:1950, body:440, gain:0.95, decay:0.052, noise:0.72},
@@ -592,6 +788,7 @@ function scheduler(){
 }
 
 function scheduleBeat(t, spb){
+  if(appMode === "tw") return twScheduleBeat(t, spb);
   if(phase === "countin"){
     const b = countBeat % 4;
     click(t, b === 0 ? VOICE.cnt1 : VOICE.cnt);      // "1 2 3 4"
@@ -631,6 +828,216 @@ function scheduleBeat(t, spb){
   visQ.push({t, beat:beatInBar, audible, bar});
   beatInBar = (beatInBar + 1) % 4;
   return true;
+}
+
+/* ============================================================
+   Training Wheels.
+
+   Students who "can't hear the click on 2 and 4" are phase-flipping: the
+   click is fine, they've assigned it to beat 1. Each rung adds downbeat
+   evidence on top of the 2&4 click, and the ladder withdraws it a step at
+   a time. Rung 7 is sonically identical to the standard mode. The student
+   taps beat 1 (the silent beat); after the round we score every tap
+   against the scheduled grid and report held / flipped.
+
+   Shares the one lookahead scheduler with the standard mode — scheduleBeat
+   dispatches here when appMode === "tw". Nothing on screen moves during a
+   round: no counters, no lamps, no tap feedback. The only change at round
+   start is the static "recording…" label.
+   ============================================================ */
+const RUNGS = [
+  {desc:"wood block on all 4 + kick on 1 & 3", count:2},
+  {desc:"kick on 1 & 3", count:2},
+  {desc:"kick on 1, every bar", count:2},
+  {desc:"kick on 1, every other bar", count:1},
+  {desc:"kick on 1, every 4th bar", count:1},
+  {desc:"faint kick on 1, every 4th bar", count:0},
+  {desc:"click only — the real thing", count:0}
+];
+let appMode = "std";
+const T = { rung:1, bpm:120, bars:16, count:"auto", latency:0 };
+const twReady = new Set();   // rungs marked Ready this page load — never stored
+let RW = null;               // params frozen at round start; mid-round tweaks wait
+let twTaps = [];             // tap times on the audio clock, seconds
+let twRecording = false;
+let perfToAudio = 0;         // performance.now()/1000 + this = ctx.currentTime
+
+function twCountBars(){ return T.count === "auto" ? RUNGS[T.rung-1].count : +T.count; }
+
+// Is there a kick on beat 1 of 0-based bar b0 at this rung?
+function twKickOn1(rung, b0){
+  if(rung <= 3) return true;
+  if(rung === 4) return b0 % 2 === 0;
+  if(rung <= 6) return b0 % 4 === 0;
+  return false;
+}
+
+// What sounds on beat bi (0–3) of 0-based bar b0. Shared by the scheduler
+// and the plan chart, so what the chart shows is exactly what plays.
+// block: 0 none, 1 soft, 2 accented. Rung 6's 35% kick lives in kickBus.gain.
+function twVoices(rung, b0, bi){
+  return {
+    block: rung === 1 ? (bi === 0 ? 2 : 1) : 0,
+    click: bi === 1 || bi === 3,
+    kick:  (bi === 0 && twKickOn1(rung, b0)) || (bi === 2 && rung <= 2)
+  };
+}
+
+function twScheduleBeat(t, spb){
+  if(phase === "countin"){
+    block(t, countBeat % 4 === 0);          // wood block "1 2 3 4", accent on 1
+    countBeat++;
+    if(countBeat >= countLen){
+      phase = "play"; beatInBar = 0; bar = 0;
+      playStart = RW.playStart = t + spb;
+      twRecording = true;
+      chartStatus.textContent = "recording…";   // the one permitted change
+    }
+    return true;
+  }
+  // phase === "play"
+  if(beatInBar === 0){
+    if(bar >= RW.bars){ twEndRound(t); return false; }
+    bar++;
+  }
+  const v = twVoices(RW.rung, bar - 1, beatInBar);
+  if(v.block) block(t, v.block === 2);
+  if(v.kick)  kick(t);
+  if(v.click) click(t, VOICE.back);
+  beatInBar = (beatInBar + 1) % 4;
+  return true;
+}
+
+function twStart(){
+  initAudio();
+  if(ctx.state === "suspended") ctx.resume();
+  const cnt = twCountBars();
+  RW = { rung:T.rung, bpm:T.bpm, bars:T.bars, spb:60/T.bpm, latency:T.latency, playStart:0 };
+  twTaps.length = 0;
+  kickBus.gain.value = RW.rung === 6 ? 0.35 : 1;
+  beatInBar = 0; bar = 0; countBeat = 0; countLen = cnt * 4;
+  nextNoteTime = ctx.currentTime + 0.15;
+  phase = cnt ? "countin" : "play";
+  if(!cnt){ playStart = RW.playStart = nextNoteTime; twRecording = true; }
+  // Performance-clock → audio-clock offset, sampled once per round.
+  // getOutputTimestamp tracks what is actually being heard (includes output
+  // latency); fall back to a plain currentTime sample, and distrust an
+  // output timestamp that disagrees wildly (fresh/suspended contexts).
+  let off = ctx.currentTime - performance.now()/1000;
+  if(ctx.getOutputTimestamp){
+    const ots = ctx.getOutputTimestamp();
+    if(ots && typeof ots.contextTime === "number" && ots.performanceTime > 0){
+      const o2 = ots.contextTime - ots.performanceTime/1000;
+      if(Math.abs(o2 - off) < 0.5) off = o2;
+    }
+  }
+  perfToAudio = off;
+  requestWake();
+  if(!timerID) timerID = setInterval(scheduler, LOOKAHEAD);
+  goBtn.textContent = "Stop";
+  goBtn.classList.add("running");
+  drawTwPlan();
+  chartStatus.textContent = cnt ? "counting in" : "recording…";
+}
+
+function twTap(perfMs){
+  if(!twRecording || !RW) return;   // idle, or count-in: taps ignored
+  twTaps.push(perfMs/1000 + perfToAudio - RW.latency/1000);
+}
+
+function twEndRound(t){
+  click(t, VOICE.chime);
+  click(t + 0.16, VOICE.chime);
+  phase = "rest";                    // keep recording until the audible end
+  const lead = Math.max(0, t - ctx.currentTime) * 1000;
+  restTimer = setTimeout(() => twFinish(RW.bars), lead + 350);
+}
+
+// Stop early (Stop button / Escape): score the bars actually completed.
+function twStop(){
+  if(phase === "idle") return;
+  clearTimeout(restTimer); restTimer = null;
+  let completed = 0;
+  if(phase === "rest"){
+    completed = RW.bars;   // round already ended, results timer just hadn't fired
+  } else if(RW && RW.playStart){
+    completed = Math.max(0, Math.min(RW.bars,
+      Math.floor((ctx.currentTime - RW.playStart) / (4 * RW.spb))));
+  }
+  twFinish(completed);
+}
+
+function twFinish(completed){
+  clearInterval(timerID); timerID = null;
+  clearTimeout(restTimer); restTimer = null;
+  phase = "idle"; twRecording = false;
+  releaseWake();
+  goBtn.textContent = "Start";
+  goBtn.classList.remove("running");
+  if(!RW || completed < 1){ RW = null; drawTwPlan(); return; }
+  const res = twScore(RW, twTaps, completed);
+  if(res.ready && !twReady.has(RW.rung)){
+    twReady.add(RW.rung);
+    buildLadder();
+  }
+  drawTwResults(RW, res, completed);
+  RW = null;
+}
+
+/* ---------- scoring ----------
+   Each tap gets a position in beats within its bar (0 ≤ phase < 4) against
+   the scheduled grid. tol = 0.15 beats, clamped to a 40–100 ms window
+   (±75 ms at q=120; slower tempos cap at ±100 ms, faster floor at ±40 ms).
+   Buckets: down (|ph−0| < tol, wrapping), flip (near 1 or 3 — on the click),
+   half (near 2), drift (anything else). A tap belongs to the bar window
+   [4b−0.5, 4b+3.5) so early downbeat taps stay with their bar. */
+function twScore(R, taps, completed){
+  const spb = R.spb;
+  const tolMs = Math.min(100, Math.max(40, 0.15 * spb * 1000));
+  const tolB = tolMs / 1000 / spb;
+  const events = [];
+  for(const at of taps){
+    const tb = (at - R.playStart) / spb;          // beats since first downbeat
+    const rowBar = Math.floor((tb + 0.5) / 4);
+    if(rowBar < 0 || rowBar >= completed) continue;
+    const ph = ((tb % 4) + 4) % 4;
+    const d = x => Math.min(Math.abs(ph - x), 4 - Math.abs(ph - x));
+    let bucket = "drift";
+    if(d(0) < tolB) bucket = "down";
+    else if(d(1) < tolB || d(3) < tolB) bucket = "flip";
+    else if(d(2) < tolB) bucket = "half";
+    const offsetMs = (tb - Math.round(tb / 4) * 4) * spb * 1000;  // signed, vs nearest downbeat
+    events.push({tb, bar:rowBar, x:tb - 4 * rowBar, bucket, offsetMs});
+  }
+  events.sort((a, b) => a.tb - b.tb);
+
+  // Flip = two or more consecutive taps on the click; record where it started.
+  let flipBar = 0;
+  for(let i = 1; i < events.length; i++){
+    if(events[i].bucket === "flip" && events[i-1].bucket === "flip"){
+      flipBar = events[i-1].bar + 1; break;
+    }
+  }
+  const downBars = new Set(events.filter(e => e.bucket === "down").map(e => e.bar));
+  const held = !flipBar && downBars.size / completed >= 0.9;
+  const downs = events.filter(e => e.bucket === "down");
+  const meanOff = downs.length ? downs.reduce((s, e) => s + e.offsetMs, 0) / downs.length : 0;
+
+  // Readiness: 8 consecutive bars, each with taps and every tap a downbeat,
+  // mean |offset| over the window ≤ 60 ms.
+  const byBar = Array.from({length: completed}, () => []);
+  events.forEach(e => byBar[e.bar].push(e));
+  const clean = byBar.map(list => list.length > 0 && list.every(e => e.bucket === "down"));
+  let ready = false;
+  for(let s = 0; s + 8 <= completed && !ready; s++){
+    let ok = true, sum = 0, n = 0;
+    for(let b = s; b < s + 8; b++){
+      if(!clean[b]){ ok = false; break; }
+      byBar[b].forEach(e => { sum += Math.abs(e.offsetMs); n++; });
+    }
+    if(ok && n && sum / n <= 60) ready = true;
+  }
+  return {events, tolMs, flipBar, held, meanOff, ready, downCount: downBars.size};
 }
 
 /* ---------- rounds ---------- */
@@ -886,6 +1293,201 @@ function fmt(s){
   return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
 }
 
+/* ---------- training-wheels visuals ---------- */
+function resetChartShell(){
+  const v = chart.querySelector(".tw-verdict");
+  if(v) v.remove();
+  chartBody.className = "chart-body";
+}
+
+// Static pre-round plan: one cell per bar (borders read as bar lines), the
+// full kick / wood-block / click stack per beat. Drawn from twVoices, so the
+// chart shows exactly what will play. Never redrawn during a round.
+function drawTwPlan(){
+  resetChartShell();
+  chartBody.className = "chart-body tw-plan";
+  chartBody.innerHTML = "";
+  chartTitle.textContent = "Round plan — rung " + T.rung;
+  chartStatus.textContent = "idle";
+  for(let b = 0; b < T.bars; b++){
+    const cell = document.createElement("div");
+    cell.className = "tw-bar";
+    const grid = document.createElement("div");
+    grid.className = "tw-beats";
+    for(let bi = 0; bi < 4; bi++){
+      const v = twVoices(T.rung, b, bi);
+      const col = document.createElement("div");
+      col.className = "twb-col";
+      col.innerHTML =
+        '<i class="twb twb-block' + (v.block === 2 ? " acc" : "") + (v.block ? " on" : "") + '"></i>' +
+        '<i class="twb twb-click' + (v.click ? " on" : "") + '"></i>' +
+        '<i class="twb twb-kick'  + (T.rung === 6 ? " faint" : "") + (v.kick ? " on" : "") + '"></i>';
+      grid.appendChild(col);
+    }
+    cell.appendChild(grid);
+    const lab = document.createElement("div");
+    lab.className = "stage-label";
+    lab.textContent = b % 4 === 0 ? "bar " + (b + 1) : "";
+    cell.appendChild(lab);
+    chartBody.appendChild(cell);
+  }
+  chartLegend.style.display = "flex";
+  chartLegend.innerHTML =
+    '<span><i class="lg-sw"></i>click 2 &amp; 4</span>' +
+    '<span><i class="lg-kick"></i>kick</span>' +
+    '<span><i class="lg-block"></i>wood block</span>' +
+    '<span class="lg-note">' + T.bars + ' bars · count-in ' + twCountBars() + ' · tap the silent beat 1</span>';
+}
+
+// Post-round results: one row per bar spanning beats −½ … 3½ around the
+// downbeat, reference tick at the downbeat, dots where taps landed. Flipped
+// taps sit on the click positions (1 / 3) so the flip is visually obvious.
+function drawTwResults(R, res, completed){
+  resetChartShell();
+  chartBody.className = "chart-body tw-results";
+  chartBody.innerHTML = "";
+  chartTitle.textContent = "Results — rung " + R.rung;
+  chartStatus.textContent = completed < R.bars ? "stopped at bar " + completed : "round complete";
+  const byBar = Array.from({length: completed}, () => []);
+  res.events.forEach(e => byBar[e.bar].push(e));
+  for(let b = 0; b < completed; b++){
+    const row = document.createElement("div");
+    row.className = "twr-row";
+    const num = document.createElement("span");
+    num.className = "twr-num";
+    num.textContent = b + 1;
+    const track = document.createElement("div");
+    track.className = "twr-track";
+    [[0,"down"],[1,"clickpos"],[2,"halfpos"],[3,"clickpos"]].forEach(([beat, cls]) => {
+      const tk = document.createElement("i");
+      tk.className = "twr-tick " + cls;
+      tk.style.left = ((beat + 0.5) / 4 * 100) + "%";
+      track.appendChild(tk);
+    });
+    byBar[b].forEach(e => {
+      const dot = document.createElement("i");
+      dot.className = "twr-dot " + e.bucket;
+      dot.style.left = ((e.x + 0.5) / 4 * 100) + "%";
+      dot.title = (e.offsetMs >= 0 ? "+" : "") + Math.round(e.offsetMs) + " ms";
+      track.appendChild(dot);
+    });
+    row.appendChild(num);
+    row.appendChild(track);
+    chartBody.appendChild(row);
+  }
+  const v = document.createElement("div");
+  v.className = "tw-verdict";
+  let line, cls = "vline";
+  if(res.flipBar){
+    line = "Flipped on bar " + res.flipBar;
+    cls += " flip";
+  } else if(res.held){
+    line = "Held — mean offset " + (res.meanOff >= 0 ? "+" : "−")
+         + Math.abs(Math.round(res.meanOff)) + " ms";
+  } else {
+    line = "No flip, but only " + res.downCount + " of " + completed + " downbeats tapped";
+  }
+  let html = '<div class="' + cls + '">' + line +
+    (res.ready ? '<span class="vready">rung ' + R.rung + ' ready</span>' : "") + '</div>' +
+    '<div class="vsub">' + res.events.length + ' taps · tolerance ±' + Math.round(res.tolMs) + ' ms</div>';
+  if(res.ready && R.rung < 7)
+    html += '<div class="vsub">Rung ' + R.rung + ' ready — try rung ' + (R.rung + 1) + '.</div>';
+  v.innerHTML = html;
+  if(res.ready && R.rung === 7){
+    const btn = document.createElement("button");
+    btn.className = "btn-grad";
+    btn.textContent = "Graduate → Two-and-Four";
+    btn.addEventListener("click", graduate);
+    v.appendChild(btn);
+  }
+  chart.insertBefore(v, chartLegend);
+  chartLegend.style.display = "flex";
+  chartLegend.innerHTML =
+    '<span><i class="lg-dot" style="background:var(--brass-hot)"></i>downbeat</span>' +
+    '<span><i class="lg-dot" style="background:#C4635A"></i>flipped (on the click)</span>' +
+    '<span><i class="lg-dot" style="background:#7E98AC"></i>half-bar off</span>' +
+    '<span><i class="lg-dot" style="box-shadow:inset 0 0 0 1.5px var(--dim)"></i>drift</span>' +
+    '<span class="lg-note">one row per bar · dots sit where the tap landed</span>';
+}
+
+function buildLadder(){
+  const lad = $("ladder");
+  lad.innerHTML = "";
+  RUNGS.forEach((r, i) => {
+    const n = i + 1;
+    const b = document.createElement("button");
+    b.className = "rung";
+    b.type = "button";
+    b.setAttribute("aria-pressed", String(T.rung === n));
+    b.innerHTML = '<span class="rung-n">' + n + '</span><span class="rung-desc">' + r.desc + '</span>' +
+      (twReady.has(n) ? '<span class="rung-ready">ready</span>' : "");
+    b.addEventListener("click", () => {
+      if(appMode === "tw" && phase !== "idle") return;   // no changes mid-round
+      T.rung = n;
+      buildLadder();
+      updateCountLabel();
+      twMeta();
+      if(appMode === "tw") drawTwPlan();
+    });
+    lad.appendChild(b);
+  });
+}
+
+function twMeta(){
+  $("twRungOut").textContent = T.rung + " of 7";
+  $("twLenOut").textContent = T.bars + " bars";
+  const c = twCountBars();
+  $("twCntOut").textContent = c + (c === 1 ? " bar" : " bars");
+  if(appMode === "tw"){
+    bpmDisplay.textContent = T.bpm;
+    bpmDisplay.classList.remove("hidden-tempo");
+    bpmUnit.textContent = "beats per minute";
+  }
+}
+
+function updateCountLabel(){
+  const c = twCountBars();
+  $("twCountVal").textContent = (T.count === "auto" ? "auto · " : "") + c + (c === 1 ? " bar" : " bars");
+}
+
+function setAppMode(m){
+  if(m === appMode) return;
+  if(phase !== "idle"){
+    if(appMode === "tw"){
+      // abandon the round without producing results
+      clearInterval(timerID); timerID = null;
+      clearTimeout(restTimer); restTimer = null;
+      phase = "idle"; twRecording = false; RW = null;
+      releaseWake();
+      goBtn.textContent = "Start";
+      goBtn.classList.remove("running");
+    } else {
+      stopSession(false);
+    }
+  }
+  appMode = m;
+  document.body.classList.toggle("tw", m === "tw");
+  $("modeTw").setAttribute("aria-pressed", String(m === "tw"));
+  $("modeStd").setAttribute("aria-pressed", String(m !== "tw"));
+  if(m === "tw"){
+    chart.classList.remove("blind");
+    twMeta();
+    drawTwPlan();
+  } else {
+    resetChartShell();
+    stopSession(false);   // resets the standard readout and redraws its chart
+    applyBlind();
+  }
+}
+
+// Readiness on rung 7 earns this: same tempo, real mode.
+function graduate(){
+  S.bpm = Math.max(40, Math.min(300, T.bpm));
+  $("bpm").value = S.bpm;
+  $("bpmVal").textContent = S.bpm;
+  setAppMode("std");
+}
+
 /* ---------- wake lock ---------- */
 async function requestWake(){
   try{ if("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){}
@@ -1013,14 +1615,78 @@ function tapTempo(){
 }
 $("tapBtn").addEventListener("pointerdown", e => { e.preventDefault(); tapTempo(); });
 
-goBtn.addEventListener("click", () => phase === "idle" ? startSession() : stopSession(false));
+goBtn.addEventListener("click", () => {
+  if(appMode === "tw"){
+    phase === "idle" ? twStart() : twStop();
+    goBtn.blur();   // so spacebar taps don't re-trigger the button
+    return;
+  }
+  phase === "idle" ? startSession() : stopSession(false);
+});
 $("skipBtn").addEventListener("click", skipRound);
 $("repeatBtn").addEventListener("click", repeatRound);
+
+/* ---------- training-wheels wiring ---------- */
+$("modeTw").addEventListener("click", () => setAppMode("tw"));
+$("modeStd").addEventListener("click", () => setAppMode("std"));
+
+// Taps are timestamped from the event (performance clock) and converted to
+// audio time via the offset sampled at round start — never wall-clock reads
+// after the fact. pointerdown, not click: click fires on release.
+const tapPad = $("tapPad");
+tapPad.addEventListener("pointerdown", e => { e.preventDefault(); twTap(e.timeStamp); });
+tapPad.addEventListener("contextmenu", e => e.preventDefault());
+
+$("twBpm").addEventListener("input", e => {
+  T.bpm = +e.target.value;
+  $("twBpmVal").textContent = T.bpm;
+  if(phase === "idle") twMeta();
+});
+function twSeg(id, fn){
+  document.querySelectorAll("#" + id + " button").forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll("#" + id + " button").forEach(o =>
+        o.setAttribute("aria-pressed", String(o === b)));
+      fn(b.dataset.n);
+    });
+  });
+}
+twSeg("twBarsSeg", n => {
+  T.bars = +n;
+  $("twBarsVal").textContent = n + " bars";
+  if(phase === "idle"){ twMeta(); if(appMode === "tw") drawTwPlan(); }
+});
+twSeg("twCountSeg", n => {
+  T.count = n;
+  updateCountLabel();
+  if(phase === "idle"){ twMeta(); if(appMode === "tw") drawTwPlan(); }
+});
+$("twLat").addEventListener("change", e => {
+  const v = Math.max(-100, Math.min(100, Math.round(+e.target.value || 0)));
+  e.target.value = v;
+  T.latency = v;
+});
 
 function onSettings(){ if(phase === "idle") stopSession(false); }
 
 document.addEventListener("keydown", e => {
-  if(/INPUT|BUTTON|TEXTAREA/.test(e.target.tagName) || e.metaKey || e.ctrlKey) return;
+  if(e.metaKey || e.ctrlKey) return;
+  if(appMode === "tw"){
+    // Space is the tap key during a round (starts one when idle); Esc stops.
+    // Buttons are allowed as targets so a focused Start button can't swallow
+    // taps; preventDefault also cancels button space-activation.
+    if(/INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if(e.code === "Space"){
+      e.preventDefault();
+      if(e.repeat) return;   // no key-repeat taps
+      phase === "idle" ? twStart() : twTap(e.timeStamp);
+    } else if(e.key === "Escape" && phase !== "idle"){
+      e.preventDefault();
+      twStop();
+    }
+    return;
+  }
+  if(/INPUT|BUTTON|TEXTAREA/.test(e.target.tagName)) return;
   if(e.code === "Space"){
     e.preventDefault();
     phase === "idle" ? startSession() : stopSession(false);
@@ -1036,6 +1702,9 @@ document.addEventListener("visibilitychange", () => {
   if(document.visibilityState === "visible" && phase !== "idle" && !wakeLock) requestWake();
 });
 
+buildLadder();
+updateCountLabel();
+twMeta();
 drawChart();
 stopSession(false);
 </script>
