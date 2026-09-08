@@ -57,13 +57,16 @@ chord symbols (Δ7 for major 7); Box Buddy emits a slash-notation chart with
 ## Through changes (added)
 - Fourth mode. Takes the current voicing/string set through a progression, choosing for
   each chord the inversion whose top note moves least from the previous chord (hand travel
-  as tiebreaker) — the p. 79 rule, greedy on purpose. Cards show inversion and top-note
-  motion; a top-line strip reads the melody the voicings make; "Strum through" plays it;
-  "Download .ly" exports staff + TAB.
+  as tiebreaker) — the p. 79 rule, greedy on purpose. Rendered as a chart, not cards:
+  4-bar systems with barlines and bar numbers, four rhythm slashes per bar, chord
+  symbols above their beats (beat 1, or 1 and 3 in split bars), a fret diagram with
+  the brass top note above each symbol, and a small inversion/motion tag between
+  them. Click a chord to hear it; a top-line strip reads the melody the voicings
+  make; "Strum through" plays it; "Download .ly" exports staff + TAB.
 - Progressions are the Handbook's practice pages (pp. 86–95), generated: major and minor
   ii-V-I descending in whole steps, I-vi-ii-V and tonal progressions around the cycle,
-  blues in Bb and F, rhythm changes A section; plus a paste box. `TUNES` is an empty table
-  for the leadsheets (pp. 109–123) in the same `{name, text}` form; entries appear in the
+  blues in Bb and F, rhythm changes A section; plus a paste box. `TUNES` holds all 14
+  leadsheets (pp. 109–123) in the same `{name, text}` form; entries appear in the
   progression menu automatically. The chord parser is Box Buddy's (copied; keep in sync).
 - Voicings are the plain 7th-chord tones on the chosen set; alterations in a symbol
   (G7b9) are shown in the label but not voiced, since drop voicings here carry no
