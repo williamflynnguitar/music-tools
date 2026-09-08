@@ -84,7 +84,7 @@ untouched; `rebuild` is wrapped only to mark the other tabs dirty.
   chord tone in ascending pitch goes on the highest string that keeps it in the window;
   fingers follow the book's convention for a five-fret window (index shapes stretch
   the index down, pinky shapes stretch the pinky up); a one-fret stretch is allowed
-  when nothing else fits, as in the book's 5th-string 2-octave shapes. Generation yields 40 shapes; overrides fill slots generation cannot (middle roots) — 56 triad shapes at present, every one curated or pinned. No pinky-root shapes on root string 3, by decision: the octave falls outside the window and the R-to-5 fingerings don't make sense. Don't re-add.
+  when nothing else fits, as in the book's 5th-string 2-octave shapes. Generation yields 40 shapes; overrides fill slots generation cannot (middle roots) — 68 triad shapes at present, every one curated or pinned — middle roots on every root string. No pinky-root shapes on root string 3, by decision: the octave falls outside the window and the R-to-5 fingerings don't make sense. Don't re-add.
   Cards carry a "generated fingering" flag (`sh.gen`). `TRIAD_OVERRIDE["oct|q|rs|index|middle|pinky"]`
   replaces any generated shape with a curated `[[string, offset, finger], …]` list and
   clears the flag. Middle-root slots are off-book and never generated — they exist only
