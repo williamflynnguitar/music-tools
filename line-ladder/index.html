@@ -686,6 +686,29 @@ function buildLine(progId, mode, startFing, approach, octDown){
       }
       if(!cands.length){ cands=arpCandidates(ch,null,prevRoot); outPos=true; }
       if(!cands.length) throw new Error(chordSym(ch)+': no arpeggio shape fits');
+      /* approach-aware octave: with the approach on, prefer the in-window
+         shape whose held note can walk three scale steps down onto an
+         in-window root of the next chord. The position still forces one
+         register wrap per key; this puts it at the key seam (where roots
+         repeat and no approach happens) instead of mid-key at ii→V. */
+      const nextCh = prog.chords[recs.length];
+      if(approach && cands.length>1 && nextCh && cs.steps){
+        const lastKind = unitPlan(ch.beats).slice(-1)[0];
+        if(lastKind!=='2'){
+          const heldIdx = lastKind==='8' ? 0 : 3;
+          const nextRoots = new Set(arpCandidates(nextCh, region && region.pl, null).map(c=>c.root));
+          const conn = c => {
+            let j = cs.steps.indexOf(((c.notes[heldIdx].midi - ch.pc)%12+12)%12);
+            if(j<0) return 0;
+            let m = c.notes[heldIdx].midi;
+            for(let k=0;k<3;k++){ const j2=(j+6)%7; m -= (cs.steps[j]-cs.steps[j2]+12)%12; j=j2; }
+            return nextRoots.has(m) ? 1 : 0;
+          };
+          cands = cands.slice().sort((a,b)=>a.outside-b.outside || conn(b)-conn(a) ||
+            b.coincide-a.coincide ||
+            (prevRoot!=null ? Math.abs(a.root-prevRoot)-Math.abs(b.root-prevRoot) : a.root-b.root));
+        }
+      }
       const sel=cands[0], names=chordToneNames(ch);
       prevRoot = sel.root;
       emitted = (ti)=>({...sel.notes[ti], note:names[ti]});
@@ -780,8 +803,11 @@ function buildLine(progId, mode, startFing, approach, octDown){
   }
   /* stepwise approach (Arp mode): the held note shortens to a quarter on
      beat 3 (8~4) and beat 4 walks down the chord's scale into the next
-     chord's first note — only where the target sits exactly three scale
-     steps below and both passing tones exist in the current position */
+     chord's first note — wherever the target sits exactly three scale steps
+     below. Passing tones come from the region placement when it holds them
+     (the diatonic case); otherwise from the chord's own scale, in the
+     fingering nearest the frets already under the hand — so secondary and
+     fallback chords (a b9 dominant, a tune's †-chords) approach too. */
   if(mode==='arp' && approach) for(let i=0; i+1<recs.length; i++){
     const r=recs[i], nxt=recs[i+1];
     if(!r.cs.steps) continue;                       // º7 has no scale
@@ -794,9 +820,17 @@ function buildLine(progId, mode, startFing, approach, octDown){
     for(let k=0;k<3;k++){ const j2=(j+6)%7; m -= (steps[j]-steps[j2]+12)%12; j=j2; pass.push({midi:m, name:names[j]}); }
     const target = events[nxt.start];
     if(!target || pass[2].midi!==target.midi) continue;
-    const win = r.panel.win; if(!win) continue;
-    const pn = pass.slice(0,2).map(p=>{ const n=win.notes.find(x=>x.midi===p.midi); return n && {...n, note:p.name}; });
-    if(!pn[0] || !pn[1]) continue;                  // passing tone outside the fingering data
+    const evs = events.slice(r.start, r.end);
+    const hand = {lo:Math.min(...evs.map(e=>e.fret)), hi:Math.max(...evs.map(e=>e.fret))};
+    const src = r.cs.parent || r.cs.own;
+    const wins = (r.panel.win ? [r.panel.win] : []).concat(!src ? [] :
+      placements(src.scaleId, src.key).slice().sort((a,b)=>overlap(b,hand)-overlap(a,hand)||a.lo-b.lo));
+    let pn = null;
+    for(const w of wins){
+      const n1=w.notes.find(x=>x.midi===pass[0].midi), n2=w.notes.find(x=>x.midi===pass[1].midi);
+      if(n1 && n2){ pn=[{...n1, note:pass[0].name},{...n2, note:pass[1].name}]; break; }
+    }
+    if(!pn) continue;                               // passing tones nowhere in the fingering data
     held.dur = 3;
     events.splice(r.end, 0,
       {at:held.at+3, dur:1, string:pn[0].string, fret:pn[0].fret, finger:pn[0].finger, midi:pn[0].midi, note:pn[0].note},

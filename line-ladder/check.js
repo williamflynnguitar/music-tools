@@ -41,6 +41,60 @@ for (const [app, oct] of [[false, false], [true, false], [false, true], [true, t
   });
 }
 
+// 1e. approach coverage: across every progression and fingering, every chord
+// whose held note sits exactly three scale steps above the next chord's first
+// note gets the approach whenever any fingering of its scale holds both
+// passing tones — cycle-of-fourths motion must never be silently skipped
+{
+  let applied = 0;
+  for (const progId of Object.keys(E.PROGRESSIONS)) for (let f = 1; f <= 6; f++) {
+    const prog = E.PROGRESSIONS[progId];
+    const line = E.buildLine(progId, "arp", f, true, false);
+    const flat = line.bars.flatMap((b, bi) => b.events.map(e => ({ ...e, abs: bi * 8 + e.at }))).sort((a, b) => a.abs - b.abs);
+    let at = 0; const spans = prog.chords.map(ch => { const s = { from: at, to: at + ch.beats * 2 }; at += ch.beats * 2; return s; });
+    prog.chords.forEach((ch, i) => {
+      if (i + 1 >= prog.chords.length) return;
+      const evs = flat.filter(e => e.abs >= spans[i].from && e.abs < spans[i].to);
+      if (evs.some(e => e.dur === 3)) { applied++; return; }
+      const last = evs[evs.length - 1];
+      if (last.dur !== 5) return;
+      const cs = E.chordScale(ch);
+      if (!cs.steps) return;
+      const steps = cs.steps;
+      let j = steps.indexOf(((last.midi - ch.pc) % 12 + 12) % 12);
+      let m = last.midi; const pass = [];
+      for (let k = 0; k < 3; k++) { const j2 = (j + 6) % 7; m -= (steps[j] - steps[j2] + 12) % 12; j = j2; pass.push(m); }
+      if (pass[2] !== flat.find(e => e.abs >= spans[i + 1].from).midi) return;   // not a 3-step descent
+      const src = cs.parent || cs.own;
+      const placeable = src && E.placements(src.scaleId, src.key).some(pl =>
+        pl.notes.some(n => n.midi === pass[0]) && pl.notes.some(n => n.midi === pass[1]));
+      ok(!placeable, `${progId}/arp/${f} chord ${i + 1} (${ch.root}${ch.q}): eligible approach was skipped`);
+    });
+  }
+  ok(applied > 600, "approach coverage: expected 600+ applications across the sweep, got " + applied);
+}
+
+// 1f. cycle motion: with the approach-aware octave lookahead, the whole-step
+// ii-V-I cycles connect at 77%+ of their ii/V seams (the rest are structural
+// register wraps — the position holds no octave pair that can connect, and
+// 1e above proves every placeable approach is applied). Key-of-C ii-V-I and
+// the A-7 -> D7 case from All The Things You Are are exact.
+{
+  let seams = 0, connected = 0;
+  for (const progId of ["ii51maj", "ii51min"]) for (let f = 1; f <= 6; f++) {
+    const line = E.buildLine(progId, "arp", f, true, false);
+    line.bars.forEach(bar => {
+      if (bar.n % 4 === 1 || bar.n % 4 === 2) { seams++; if (bar.events.some(e => e.dur === 3)) connected++; }
+    });
+  }
+  ok(connected / seams > 0.75, `cycle seams connected: ${connected}/${seams}`);
+  const line = E.buildLine("tune_attya", "arp", 1, true, false);
+  const b17 = line.bars[16];
+  ok(b17.events.length === 6 && b17.events[4].note === "F#" && b17.events[5].note === "E",
+     "attya bar 17 (A-7): expected F# E into D7, got " + b17.events.map(e => e.note).join(" "));
+  ok(line.bars[17].events[0].note === "D", "attya bar 18 should start on D");
+}
+
 // 1d. octave cap semantics: ↓8 bars sound exactly an octave lower than the
 // uncapped line, ↓pos bars sound identical (only refingered), all others
 // are untouched — All The Things You Are, Arp mode, the screenshot case

@@ -31,12 +31,21 @@ binary is present).
 8~2 at a 4- or 8-beat unit's end) shortens to 8~4 — held through beat 3
 only — and beat 4 walks down the chord's scale in two eighths into the next
 chord's first note (D-7: C held, B A into G7's G; G7: F held, E D into C).
-Applied only where it fits exactly: the target must sit three scale steps
-below the held note and both passing tones must exist in the current
-fingering's data — otherwise that bar keeps its tie (so the I chord before
-a same-root key change, º7 bars, and secondary chords whose scale leaves
-the position all stay held). Descending only; no approach out of the last
-chord (loop playback is a playback option, the engraving is one line).
+Applied wherever the target sits exactly three scale steps below the held
+note. Passing tones come from the region placement when it holds them (the
+diatonic case); otherwise from the chord's own scale, in the fingering
+nearest the frets under the hand — so secondary dominants and a tune's
+†-chords approach too (A-7 walks F# E into D7 even when the region is F
+dorian). With the toggle on, the arp octave choice is approach-aware: among
+in-window shapes a chord prefers the one whose held note can reach an
+in-window root of the next chord, which moves the register wrap that a
+12-key cycle forces in a fixed position to the key seam (roots repeat
+there, no approach anyway) instead of mid-key. ~23% of ii/V seams in the
+whole-step cycles still wrap — the position simply holds no connectable
+octave pair — and those bars keep the tie; check.js proves every placeable
+approach is applied and that the cycles connect at 75%+ of seams.
+Descending only; no approach out of the last chord (loop playback is a
+playback option, the engraving is one line).
 
 ## Chord scales
 
