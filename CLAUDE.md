@@ -43,6 +43,16 @@ Keep the three copies byte-identical — `SHAPES` and `MAJOR` are aliases into
 file is the next structural change; the "no build step" rule can be kept with
 a concatenation script or by inlining at commit time.
 
+## Spine menu
+
+Every tool page carries a fixed "☰ tools" chip (top right) opening a menu of
+the landing page's spine — home plus all seven linked tools, current page
+marked. It is one self-contained block (own `sp-` classes, hardcoded family
+palette, explicit `index.html` hrefs so file:// works) duplicated between
+`===== spine menu =====` markers at the end of each tool's `index.html` —
+keep the copies byte-identical, like the `SCALES` block. The landing page
+itself doesn't carry it; authoring pages (`edit.html`) stay unlinked.
+
 ## Audio
 
 Anything that keeps time uses the **Web Audio lookahead scheduler** pattern: a

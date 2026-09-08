@@ -1162,5 +1162,46 @@ rebuild(true);
 initBrowser();
 switchTab("shapes");
 </script>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md) ===== -->
+<style>
+  .sp-menu{position:fixed;top:10px;right:10px;z-index:9999;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:8px 0;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-group{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#c9a44c;padding:10px 16px 4px;}
+  .sp-panel a{display:block;padding:10px 16px;color:#e9e2d2;text-decoration:none;font-family:inherit;font-size:12.5px;letter-spacing:.04em;}
+  .sp-panel a:hover{background:#163f4b;color:#e9e2d2;}
+  .sp-panel a[aria-current="page"]{color:#c9a44c;}
+  .sp-panel a[aria-current="page"]::after{content:" ·";}
+</style>
+<nav class="sp-menu" aria-label="all music tools">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a data-sp="" href="../index.html">Music tools — home</a>
+    <div class="sp-group">Handbook</div>
+    <a data-sp="fretboard" href="../fretboard/index.html">Fretboard</a>
+    <a data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder</a>
+    <a data-sp="scales-deck" href="../scales-deck/index.html">Scales deck</a>
+    <a data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggios deck</a>
+    <a data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer</a>
+    <div class="sp-group">Stand-alone</div>
+    <a data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+    <a data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+  </div>
+</nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
 </body>
 </html>
