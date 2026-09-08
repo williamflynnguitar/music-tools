@@ -10,7 +10,7 @@
 // renderRoot) — keep in sync.
 const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "../../arpeggios-deck/index.html"), "utf8");
-const js = src.split("<script>")[1].split("/* ---------- notation:")[0];
+const js = src.split("<script>").find(c => c.includes("const ARP")).split("/* ---------- notation:")[0];
 global.document = { getElementById: () => ({}) };
 const E = new Function(js + "; buildTriads(); return { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions, placeArp };")();
 const { ARP, QUAL, SIZE, KEYS, PC, OPEN, chordDots, rootFinger, rsOptions, placeArp } = E;

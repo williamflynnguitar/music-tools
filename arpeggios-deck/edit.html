@@ -139,6 +139,21 @@ const DEG = { 0:"R", 1:"b2", 2:"2", 3:"b3", 4:"3", 5:"4", 6:"b5", 7:"5", 8:"#5",
 const state = { oct: 1, q: "maj", rs: 6, rf: 1, labels: "fingers" };
 const edits = {};                              // per-shape working copies, in memory only
 
+/* Starting points for the 1-octave middle-root slots: the bottom octave of the
+   curated 2-octave middle shapes in index.html (derived, not authoritative —
+   regenerate if those change). Strings 4/3 have no 2-octave source; they start
+   from the root as usual. */
+const DRAFTS = {
+  "1|maj|6|middle": [[6,0,2],[5,-1,1],[5,2,4],[4,2,3]],
+  "1|min|6|middle": [[6,0,2],[5,-2,1],[5,2,4],[4,2,3]],
+  "1|dim|6|middle": [[6,0,2],[5,-2,1],[5,1,3],[4,2,4]],
+  "1|aug|6|middle": [[6,0,2],[5,-1,1],[5,3,4],[4,2,3]],
+  "1|maj|5|middle": [[5,0,2],[4,-1,1],[4,2,4],[3,2,2]],
+  "1|min|5|middle": [[5,0,2],[4,-2,1],[4,2,4],[3,2,3]],
+  "1|dim|5|middle": [[5,0,2],[4,-2,1],[4,1,3],[3,2,4]],
+  "1|aug|5|middle": [[5,0,2],[4,-1,1],[4,3,4],[3,2,2]],
+};
+
 const RFNAME = { 1: "index", 2: "middle", 4: "pinky" };
 const shapeKey = () => `${state.oct}|${state.q}|${state.rs}|${RFNAME[state.rf]}`;
 const semiOf = n => n[1] + STR[n[0]] - STR[state.rs];   // pitch relative to the root
@@ -147,8 +162,9 @@ const sorted = notes => notes.slice().sort((a, b) => semiOf(a) - semiOf(b) || b[
 function currentNotes() {
   const k = shapeKey();
   if (!edits[k]) {
-    // middle-root shapes are off-book and never generated; start from the root
-    const g = state.rf === 2 ? null : genTriad(state.oct, state.q, state.rs, state.rf);
+    // middle-root shapes are off-book and never generated; start from the
+    // prepopulated draft where one exists, else from the root
+    const g = state.rf === 2 ? (DRAFTS[k] || null) : genTriad(state.oct, state.q, state.rs, state.rf);
     edits[k] = g ? g.map(n => n.slice()) : [[state.rs, 0, state.rf]];
   }
   return edits[k];

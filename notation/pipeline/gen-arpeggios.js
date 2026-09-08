@@ -2,7 +2,7 @@
 const fs = require("fs"), path = require("path");
 const { lyShape } = require("./lyshape.js");
 const src = fs.readFileSync(path.join(__dirname, "../../arpeggios-deck/index.html"), "utf8");
-const js = src.split("<script>")[1].split("/* ---------- notation:")[0];
+const js = src.split("<script>").find(c => c.includes("const ARP")).split("/* ---------- notation:")[0];
 global.document = { getElementById: () => ({}) };
 const E = new Function(js + "; buildTriads(); return { QUAL, ARP, KEYS, PC, placeArp };")();
 const { QUAL, ARP, KEYS, PC, placeArp } = E;

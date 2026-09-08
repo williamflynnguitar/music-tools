@@ -2,7 +2,7 @@
 const fs = require("fs"), path = require("path");
 const { lyShape } = require("./lyshape.js");
 const src = fs.readFileSync(path.join(__dirname, "../../fretboard/index.html"), "utf8");
-const js = src.split("<script>")[1].split("/* ---------- renderer ---------- */")[0] + src.split("/* ---------- whole-neck view ---------- */")[1].split("function render()")[0];
+const js = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ---------- renderer ---------- */")[0] + src.split("/* ---------- whole-neck view ---------- */")[1].split("function render()")[0];
 global.document = { getElementById: () => ({}) };
 const E = new Function(js + "; return { SCALES, KEYS, state, place };")();
 const { SCALES, KEYS, state, place } = E;

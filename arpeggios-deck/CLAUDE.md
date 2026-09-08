@@ -114,7 +114,9 @@ The student page has no editing UI. `edit.html` is the triad-fingering editor �
 pick octaves/quality/root string/root finger (index, middle or pinky), click the board to add notes or
 cycle fingers (click wraps 1 → 2 → 3 → 4 → 1; right- or ⌥-click removes), and copy the emitted `TRIAD_OVERRIDE`
 line for index.html. Works in offset-from-root space with the book's five-fret
-window shaded; validates chord tones, missing tones, root-to-root span; output
+window shaded; 1-octave middle slots on strings 6/5 prepopulate from the bottom
+octave of the curated 2-octave middles (DRAFTS in edit.html — regenerate if
+those change); validates chord tones, missing tones, root-to-root span; output
 is sorted ascending by pitch. It prints the pipeline re-render command
 (whole octave+quality, since a new shape shifts cell indices). Duplicates
 `TRIAD_IV`/`genTriad`/`STR` between `===== triad generator =====` markers —
