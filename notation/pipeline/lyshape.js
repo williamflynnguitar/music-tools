@@ -13,8 +13,9 @@ function lyNote(n) {
 function lyShape(notes, opts = {}) {
   const seq = notes.slice().sort((a, b) => (LY_MIDI[a.string] + a.fret) - (LY_MIDI[b.string] + b.fret));
   if (opts.desc) seq.reverse();
-  // eighths beamed in fours (remainder as its own group), ending on a quarter note
-  const last = seq.length - 1;
+  // eighths beamed in fours (remainder as its own group), ending on a quarter note —
+  // except a 4-note example, which is a single beamed group of four eighths
+  const last = seq.length === 4 ? seq.length : seq.length - 1;
   const bracket = i => { if (i >= last) return ""; const size = Math.min(4, last - (i - i % 4)); if (size < 2) return ""; if (i % 4 === 0) return "["; if (i % 4 === 3 || i === last - 1) return "]"; return ""; };
   const body = seq.map((n, i) => lyNote(n) + (i === last ? "4" : "8") + "\\" + n.string + (n.finger ? "-" + n.finger : "") + bracket(i)).join(" ");
   const chord = opts.chord ? `\\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } minorChordModifier = \\markup { "-" } } { ${opts.chord} }` : "";
@@ -26,7 +27,7 @@ function lyShape(notes, opts = {}) {
   return `\\version "2.24.0"
 ${paper}
 \\layout { \\context { \\Score \\remove "Bar_number_engraver" \\override Fingering.direction = #UP } }
-mus = { \\time ${last + 2}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature \\autoBeamOff ${body} \\bar "" }
+mus = { \\time ${seq.length === 4 ? 4 : last + 2}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature \\autoBeamOff ${body} \\bar "" }
 \\score { <<
   ${chord}
   \\new Staff \\with { \\override StringNumber.stencil = ##f \\remove "Time_signature_engraver" } { \\clef "treble_8" \\mus }

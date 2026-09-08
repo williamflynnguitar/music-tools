@@ -777,8 +777,9 @@ const NOTE_MIDI = {1:64,2:59,3:55,4:50,5:45,6:40};
 function notate(notes, opts = {}) {
   const order = notes.slice().sort((a, b) => (NOTE_MIDI[a.string] + a.fret) - (NOTE_MIDI[b.string] + b.fret));
   if (opts.desc) order.reverse();
-  // eighths beamed in fours (remainder as its own group); the last note is a quarter
-  const nBeam = Math.max(0, order.length - 1);
+  // eighths beamed in fours (remainder as its own group); the last note is a
+  // quarter — except a 4-note example, which is four beamed eighths
+  const nBeam = order.length === 4 ? 4 : Math.max(0, order.length - 1);
   const groups = []; for (let left = nBeam; left > 0;) { const g = Math.min(4, left); groups.push(g); left -= g; }
   const ACC = { "": 0, "#": 1, "##": 2, "b": -1, "bb": -2 };
   // written pitch = sounding + 12 (treble_8); staff position from letter and octave
@@ -826,7 +827,7 @@ function notate(notes, opts = {}) {
     }
   }
   // final quarter note: stem only, no flag, no beam
-  if (cols.length) {
+  if (cols.length && nBeam < cols.length) {
     const c = cols[cols.length - 1], up = c.y > 2, dir = up ? -1 : 1;
     const sxq = c.x + (up ? 1.23 : 0.07), tip = c.y + dir * 3.5;
     o += `<line x1="${sxq}" y1="${c.y}" x2="${sxq}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>`;
@@ -890,8 +891,9 @@ function lyNote(n) {
 function lyShape(notes, opts = {}) {
   const seq = notes.slice().sort((a, b) => (LY_MIDI[a.string] + a.fret) - (LY_MIDI[b.string] + b.fret));
   if (opts.desc) seq.reverse();
-  // eighths beamed in fours (remainder as its own group), ending on a quarter note
-  const last = seq.length - 1;
+  // eighths beamed in fours (remainder as its own group), ending on a quarter note —
+  // except a 4-note example, which is a single beamed group of four eighths
+  const last = seq.length === 4 ? seq.length : seq.length - 1;
   const bracket = i => { if (i >= last) return ""; const size = Math.min(4, last - (i - i % 4)); if (size < 2) return ""; if (i % 4 === 0) return "["; if (i % 4 === 3 || i === last - 1) return "]"; return ""; };
   const body = seq.map((n, i) => lyNote(n) + (i === last ? "4" : "8") + "\\" + n.string + (n.finger ? "-" + n.finger : "") + bracket(i)).join(" ");
   const chord = opts.chord ? `\\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } minorChordModifier = \\markup { "-" } } { ${opts.chord} }` : "";
@@ -903,7 +905,7 @@ function lyShape(notes, opts = {}) {
   return `\\version "2.24.0"
 ${paper}
 \\layout { \\context { \\Score \\remove "Bar_number_engraver" \\override Fingering.direction = #UP } }
-mus = { \\time ${last + 2}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature \\autoBeamOff ${body} \\bar "" }
+mus = { \\time ${seq.length === 4 ? 4 : last + 2}/8 \\omit Staff.TimeSignature \\omit TabStaff.TimeSignature \\autoBeamOff ${body} \\bar "" }
 \\score { <<
   ${chord}
   \\new Staff \\with { \\override StringNumber.stencil = ##f \\remove "Time_signature_engraver" } { \\clef "treble_8" \\mus }
