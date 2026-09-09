@@ -103,6 +103,9 @@ body.prog-on .build-ctl{display:none}
 body.prog-on .build-only{display:none}
 body.prog-on .chordname,body.prog-on .readout,body.prog-on .dia{display:none}
 body.prog-on .app{grid-template-columns:300px 1fr}
+/* this rule outranks .app's own media query, so it needs its own override
+   or phones keep the 300px sidebar and the chart gets the sliver */
+@media (max-width:1100px){body.prog-on .app{grid-template-columns:1fr}}
 .progview{display:none;width:100%}
 body.prog-on .progview{display:block}
 #progCustom{width:100%;min-height:80px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone);font-family:var(--mono);font-size:13px}
@@ -111,6 +114,10 @@ body.prog-on .progview{display:block}
 .pchart{width:100%}
 .psys{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:22px;border-left:1px solid var(--bone-dim)}
 @media (max-width:900px){.psys{grid-template-columns:repeat(2,1fr)}}
+/* phones: one bar per line so a two-chord bar keeps two full-size shells
+   side by side and still reads as one bar (its own beat row underneath) */
+@media (max-width:560px){.psys{grid-template-columns:1fr}}
+.pslot svg{max-width:100%;height:auto}
 .pbarr{position:relative;border-right:1px solid var(--bone-dim);padding:13px 9px 9px;display:flex;flex-direction:column;justify-content:flex-end}
 .pbarr.last{border-right:4px double var(--bone-dim)}
 .pbn{position:absolute;top:3px;left:5px;font-family:var(--mono);font-size:9px;color:var(--bone-dim)}
@@ -283,7 +290,7 @@ body.prog-on .progview{display:block}
   <div class="allowed" id="allowed"></div>
 
   <h2>B string</h2>
-  <p>Default sits in the root's fret. Move it up to two frets either way.</p>
+  <p>Default sits in the root's fret; move within two frets of it either way. The 6R dominant's 13 starts two frets above the root's fret, so its walk down runs 13 &#8594; #5 &#8594; 5 &#8594; #11 &#8594; 11.</p>
   <table id="tblB"></table>
 
   <h2>E string</h2>
@@ -532,7 +539,8 @@ function pickOffsets(ch, rs, rf){
   if(!want.length || !hasB) return {off:{2:0,1:0}, extScore:0};
   const q = QUAL[ch.quality];
   let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
-  for(const ob of [-2,-1,0,1,2]) for(const oe of (hasE?[-1,0,1,2,3]:[0])){
+  const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
+  for(const ob of obs) for(const oe of (hasE?[-1,0,1,2,3]:[0])){
     const v = buildAt(ch.pc, ch.quality, st.struct, rs, rf, {2:ob,1:oe});
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
     let got = 0; want.forEach(w=>{ if(degs.includes(w)) got++; });
@@ -630,7 +638,10 @@ function initControls(){
 function move(s, d){
   const v = buildVoicing(st);
   if((s===2&&!v.hasB)||(s===1&&!v.hasE)) return;
-  const lim = s===2 ? [-2,2] : [-1,3];
+  /* B window is ±2 frets around the root's fret (where the 5th sits). The 6R
+     dominant's default (13) is two frets above it, so its offsets run to -4 —
+     otherwise #11, a standard dominant extension, is unreachable. */
+  const lim = s===2 ? (v.bDef==='13' ? [-4,2] : [-2,2]) : [-1,3];
   st.off[s] = Math.max(lim[0], Math.min(lim[1], st.off[s]+d));
   update();
 }
@@ -658,7 +669,7 @@ function update(){
 
   const q = QUAL[st.q];
   el('allowed').innerHTML = q.allowed.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') + (q.altered ? `<span style="border:0;color:var(--bone-dim);padding-left:2px">altered:</span>` + q.altered.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') : '');
-  el('tblB').innerHTML = mobTable(v, 2, [-2,-1,0,1,2], nB);
+  el('tblB').innerHTML = mobTable(v, 2, v.bDef==='13' ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2], nB);
   el('tblE').innerHTML = mobTable(v, 1, [-1,0,1,2], nE);
 }
 

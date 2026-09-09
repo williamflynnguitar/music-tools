@@ -71,3 +71,9 @@ chord symbols (Δ7 for major 7); Box Buddy emits a slash-notation chart with
 - Voicings are the plain 7th-chord tones on the chosen set; alterations in a symbol
   (G7b9) are shown in the label but not voiced, since drop voicings here carry no
   extensions. For altered voicings use the Voice-Leading Trainer.
+
+## Mobile chart (Sep 2026)
+Below 560px the through-changes chart (`.sys`) goes one bar per line so a
+two-chord bar keeps two full-size diagrams side by side and still reads as
+one bar (its own beat row underneath); slot SVGs are capped at 100% width.
+Same treatment as Shell Voicing Builder's chart — keep them in step.

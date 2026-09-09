@@ -81,6 +81,13 @@ select{width:100%;background:var(--ink);border:1px solid var(--line);border-radi
 .chart{display:grid;grid-template-columns:repeat(4,1fr);border-left:1px solid var(--paper-ink)}
 .bar{border:1px solid var(--paper-ink);border-left:0;border-top:0;min-height:44px;padding:6px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .chart .bar:nth-child(-n+4){border-top:1px solid var(--paper-ink)}
+/* phones: fewer bars per line so two-chord bars keep their symbols side by
+   side; screen only — printed handouts keep 4-bar systems */
+@media screen and (max-width:560px){
+  .chart{grid-template-columns:repeat(2,1fr)}
+  .chart .bar:nth-child(-n+4){border-top:0}
+  .chart .bar:nth-child(-n+2){border-top:1px solid var(--paper-ink)}
+}
 .bar .ch{font-size:15px;line-height:1.1}
 .bar .ch small{display:block;font-family:var(--mono);font-size:9px;color:#666;margin-top:2px}
 .bar .rep{font-size:16px;color:#777}

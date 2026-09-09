@@ -69,3 +69,9 @@ mark before the style word. Voicing apps emit treble_8 staff + TAB with
 chord symbols (Δ7 for major 7); Box Buddy emits a slash-notation chart with
 `\fret-diagram-verbose` boxes above each chord. Render with
 `lilypond file.ly`.
+
+## Mobile chart (Sep 2026)
+Below 560px the chart grid drops from 4 to 2 bars per line (screen only —
+printed handouts keep 4-bar systems), with the row-top border rule adjusted
+to the 2-column layout. Same fix family as the Shell Voicing Builder /
+Inversion Drill through-changes charts.
