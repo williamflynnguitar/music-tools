@@ -100,3 +100,17 @@ Through changes with triad-reduced progressions; pre-rendered LilyPond
 cells per key via `notation/pipeline`; melodic minor tonality in the key
 study; the open-rows toggle for the key study (assumption B); finger
 numbers if ever wanted (would need an assigner — see box-buddy's note).
+
+## Audit note (Sep 2026, report-first — no changes made)
+Modes and voicing types: Shapes = closed (4 sets) + open (3 rows); Drill =
+closed + open via tiers; Key study = **closed only, by design** (the book
+prescribes closed sets; the open-rows toggle is assumption B in "Next").
+Spread voicings exist nowhere in the app (pp. 39–43 cover closed and open
+only). Headless spot-check of bottom-row open triads for G, D, Am, E:
+every pitch correct, and `closedAll`/`openRow` never emit a voicing off
+the selected set/row (0 violations across all roots × qualities). Two
+things that can read as bugs but are current design: (1) every bottom-row
+open default basses on string 6 — openRow's four-string window prefers
+bass on top-string+3; (2) with "All sets" checked, the set picker no
+longer constrains the cards (it only drives the neck view), so the filter
+can look broken. Both flagged to William in the Sep 2026 bug-sweep report.
