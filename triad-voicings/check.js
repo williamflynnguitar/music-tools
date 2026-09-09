@@ -78,7 +78,8 @@ ok(openDefault('maj', 2, 3) === "6:10 4:9 3:12", "open maj bottom row 2nd inv de
 const anyPlacement = (q, inv, want) => E.openPlacements(G, q, inv).some(p => sig(p.notes) === want);
 ok(anyPlacement('maj', 1, "5:2 4:5 2:3"), "open maj middle 1st: book shape missing");
 ok(anyPlacement('maj', 1, "5:2 3:0 2:3"), "open maj middle 1st: book 'or' missing");
-ok(anyPlacement('maj', 2, "5:5 3:4 2:8"), "open maj middle 2nd: book shape missing");
+// the book's 5:5 3:4 2:8 cell (span 4) was cut in the Sep 2026 numbered
+// review (class #17) — asserted absent further down with the other cuts
 ok(anyPlacement('maj', 2, "5:5 3:4 1:3"), "open maj middle 2nd: book 'or' (top on string 1) missing");
 // G- middle 2nd inv — the book prints the span-5 5-3-8 shape (p. 42), but
 // William ruled its class unplayable (Sep 2026): a span-4/5 stretch that is
@@ -106,11 +107,33 @@ gone('dim', 0, "5:3 4:4 3:8");  gone('dim', 0, "5:15 3:11 1:11");
 gone('aug', 1, "5:7 3:5 1:4");
 // still-playable classes the book prints stay in:
 ok(anyPlacement('maj', 2, "5:5 3:4 1:3"), "book's compact five-string-spread 'or' (p. 42) must survive");
-ok(anyPlacement('maj', 2, "5:5 3:4 2:8"), "book's span-4 lone-top-reach cell (p. 42) must survive");
+// Span-4 numbered review (Sep 2026): William kept only the two bottom-row
+// 6-4-3 grips (#12 °, #22 minor) and cut the other 21 classes — including
+// the book's printed G middle-row 2nd-inversion cell (p. 42, 5:5 3:4 2:8,
+// class #17), a second printed-cell override after the G- 5-3-8.
+const keptAt = (pc, q, inv, want) => ok(E.openPlacements(pc, q, inv).some(p => sig(p.notes) === want),
+  `kept class must enumerate: pc${pc} ${q} inv${inv} ${want}`);
+keptAt(0, 'dim', 2, "6:2 4:1 3:5");   // #12: ° bottom-row 6-4-3 grip
+keptAt(0, 'min', 2, "6:3 4:1 3:5");   // #22: minor bottom-row 6-4-3 grip
+goneAt(7, 'maj', 2, "5:5 3:4 2:8");   // #17's G exemplar — the printed p. 42 cell
+goneAt(0, 'aug', 0, "5:3 3:1 2:5");  goneAt(2, 'aug', 0, "4:0 3:3 2:7");
+goneAt(8, 'aug', 1, "5:3 3:1 2:5");  goneAt(10, 'aug', 1, "4:0 3:3 2:7");
+goneAt(4, 'aug', 2, "5:3 3:1 2:5");  goneAt(6, 'aug', 2, "4:0 3:3 2:7");
+goneAt(7, 'dim', 0, "3:0 2:2 1:6");  goneAt(9, 'dim', 0, "5:0 4:1 3:5");
+goneAt(9, 'dim', 2, "4:1 2:1 1:5");  goneAt(1, 'dim', 2, "3:0 2:5 1:9");
+goneAt(4, 'dim', 2, "5:1 3:0 2:5");  goneAt(3, 'dim', 2, "5:0 4:4 3:8");
+goneAt(5, 'maj', 0, "4:3 2:1 1:5");  goneAt(7, 'maj', 0, "3:0 2:3 1:7");
+goneAt(9, 'maj', 0, "5:0 4:2 3:6");  goneAt(4, 'maj', 2, "5:2 3:1 2:5");
+goneAt(7, 'maj', 2, "4:0 3:4 2:8");
+goneAt(2, 'min', 0, "4:0 3:2 2:6");  goneAt(0, 'min', 2, "3:0 2:4 1:8");
+goneAt(9, 'min', 2, "4:2 2:1 1:5");  goneAt(2, 'min', 2, "5:0 4:3 3:7");
 // 4. augmented symmetry: alternates on every open row that exists
 for (const row of [1, 2, 3]) for (const inv of [0, 1, 2]) {
   const r = E.openRow(G, 'aug', inv, row);
-  if (r) ok(r.alts.length >= 1, `open aug inv${inv} row${row}: p. 43 prints 'or' pairs, engine found no alternate`);
+  // inv0/inv2 middle row lost their only alternates to the Sep 2026 span-4
+  // cuts (#1-#6) — the printed 'or' pairs there are overridden by the ruling
+  const cutByRuling = row === 2 && (inv === 0 || inv === 2);
+  if (r && !cutByRuling) ok(r.alts.length >= 1, `open aug inv${inv} row${row}: p. 43 prints 'or' pairs, engine found no alternate`);
 }
 // 5. Ex. 8, p. 81 — exact
 {

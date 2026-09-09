@@ -129,15 +129,22 @@ live session (~27 flagged shapes, all verified eliminated in check.js):
 - outer voices stay inside a **four-string window**; a five-string spread
   survives only when the fretted span is ≤ 2 (the book's p. 42 D–B–G "or"
   cell is that class);
-- fretted span ≤ 3 always allowed; **span 4 only as a lone reach up to the
-  top voice** with the other fretted notes within 2 frets of each other
-  (the 2-1-5 °-family, the book's G middle-row cell); span ≥ 5 is out
-  (`OPEN_SPAN` is now 4 and the span-4 shape test lives beside it).
-This removed 638 of 1508 placements; no quality × inversion × row lost its
-last placement; the ° 2nd-inversion middle row's default moved to the
-compact five-string-spread shape (6:2 4:1 2:1 class). **Book conflict,
-ruled by William**: p. 42's G- middle-row 2nd-inversion 5-3-8 cell (span
-5) no longer enumerates — check.js now asserts its absence with a comment.
+- fretted span ≤ 3 always allowed; span ≥ 5 is out (`OPEN_SPAN` is 4).
+  **Span 4 survives only as the two bottom-row 6-4-3 grips** William kept
+  from the numbered review of all 23 span-4 classes (Sep 2026): the °
+  2-1-5 family (`6-4-3|f1,f0,f4`) and its minor sibling (`6-4-3|f2,f0,f4`)
+  — `SPAN4_KEEP` in `openPlayable`. The other 21 classes were cut by hand,
+  **including the book's printed G middle-row 2nd-inversion 5-4-8 cell
+  (p. 42, class #17)** — a second printed-cell override — and the aug
+  middle-row "or" pairs (p. 43), so aug inv0/inv2 middle rows now show a
+  single shape. Defaults resettled onto compact five-string spreads for
+  major 2nd-inv middle row and ° 2nd-inv top row.
+Together the two passes removed 729 of 1508 placements; no quality ×
+inversion × row lost its last placement; the ° 2nd-inversion middle row's
+default is the compact five-string spread (6:2 4:1 2:1 class — the "B
+card", confirmed kept). **Book conflicts, all ruled by William**: p. 42's
+G- 5-3-8 cell, p. 42's G 5-4-8 cell (#17), and p. 43's aug middle-row
+"or" pairs no longer enumerate — check.js asserts each absence.
 
 ## Rendering bounds (Sep 2026)
 `chordStaffSVG`'s bottom edge follows the lowest head + ledger lines (low

@@ -346,22 +346,23 @@ function openShape(q, openInv){
    - outer voices stay inside a four-string window; a five-string spread is
      allowed only when the fretted span is ≤ 2 (the book's p. 42 D-B-G "or"
      cell) — wider spreads with real stretches are unplayable;
-   - fretted span of 4 is allowed only as a lone reach UP to the top voice
-     with the other fretted notes within 2 frets of each other (the 2-1-5
-     °-family and the book's G middle-row cell); a span-4 stretch to the
-     bass or middle voice is out. This removes p. 42's G- middle-row
-     2nd-inversion 5-3-8 cell (span 5), per William's ruling on its class.
+   - fretted span ≤ 3 is always fine; span 4 survives ONLY as the two
+     bottom-row 6-4-3 grips William kept from the numbered review (the °
+     2-1-5 family and its minor sibling) — every other span-4 class was cut
+     by hand, including the book's printed G middle-row 0-4-8 cell (p. 42)
+     and the G- 5-3-8 cell (span 5), both overridden by his ruling.
    fr is bottom→top; returns {fretted, span} or null. */
-function openPlayable(sBass, sTop, fr){
+const SPAN4_KEEP = new Set(["6-4-3|f1,f0,f4", "6-4-3|f2,f0,f4"]);
+function openPlayable(ss, fr){
   if(fr.some(f=>f<0||f>MAXF)) return null;
   const fretted = fr.filter(f=>f>0);
   const span = fretted.length ? Math.max(...fretted)-Math.min(...fretted) : 0;
   if(span > OPEN_SPAN) return null;
-  if(sBass - sTop > 3 && span > 2) return null;
+  if(ss[0] - ss[2] > 3 && span > 2) return null;
   if(span === 4){
-    const rest = [fr[0], fr[1]].filter(f=>f>0);
-    if(!(fr[2] > 0 && fr[2] === Math.max(...fretted) &&
-         (rest.length < 2 || Math.abs(rest[0]-rest[1]) <= 2))) return null;
+    const base = Math.min(...fretted);
+    const key = ss.join("-") + "|" + fr.map(f=>f>0 ? "f"+(f-base) : "open").join(",");
+    if(!SPAN4_KEEP.has(key)) return null;
   }
   return {fretted, span};
 }
@@ -376,7 +377,7 @@ function openPlacements(pc, q, openInv){
     for(let s3=1; s3<=3; s3++) for(let s2=s3+1; s2<=5; s2++) for(let s1=s2+1; s1<=6; s1++){
       const ss = [s1,s2,s3];
       const fr = m.map((mi,i)=>mi-OPEN[ss[i]]);
-      const p = openPlayable(s1, s3, fr);
+      const p = openPlayable(ss, fr);
       if(!p) continue;
       out.push({notes: m.map((mi,i)=>({s:ss[i], f:fr[i], deg:degs[tones[i]], midi:mi})),
         inv:openInv, pos:'open', row:s3, span:p.span, bass,
@@ -443,7 +444,7 @@ function openVoice(tri, openInv, topMidi, topString){
   for(let s2=topString+1; s2<=5; s2++) for(let s1=s2+1; s1<=6; s1++){
     const ss = [s1, s2, topString];
     const fr = m.map((mi,i)=>mi-OPEN[ss[i]]);
-    const p = openPlayable(s1, topString, fr);
+    const p = openPlayable(ss, fr);
     if(!p) continue;
     const cand = {ss, fr, m, tones, win: s1===topString+3?0:1, span:p.span,
                   low: p.fretted.length ? Math.min(...p.fretted) : 0};
