@@ -27,6 +27,22 @@ binary is present).
 (Arp: the quality's chord tones; Scale: indexes into the chord's scale,
 8/9 = octave and the 2nd above).
 
+**From the 3rd** (the Line control, `opts.third`): the same rhythm templates
+one third up. Arp = 3-5-7-9, implemented as the R-3-5-7 **shape of the chord
+on the 3rd** (`arpChordFor`: Δ7 → -7, 7 → ø7, 7♭9 → °7, -7 → Δ7,
+ø7 → -7, -6/-Δ7 → Δ7♯5, Δ7♯5 → 7), so every note still comes from the
+shape data; º7 has no 9th in the library and keeps its own arpeggio. Scale
+figures (`SCALE3_EV`): 2-beat 3-4-5-7 *(parallel of 1-2-3-5 — William
+didn't spec it)*; 8-beat is his 345678939R76543 exactly (up 3→10, down
+9 R 7 6 5 4, 3 as the beat-4 quarter); **4-beat is PROVISIONAL** — his
+"3456789R9" is nine notes against eight eighth-slots, shipped as
+3-4-5-6-7-8-9-R straight eighths until he rules on the ending (a 9-R-9
+beat-4 triplet would need triplet support in the engraver/durations).
+`fitInPlacement` anchors on the first *played* degree, so a third-based
+run fits wherever the 3rd..10th sit in the position even when the unplayed
+root doesn't. The approach/displacement/cap passes are basis-agnostic:
+a held 9 walks down into the next chord's 3rd on its own.
+
 **The line pipeline**: `buildLine(progId, mode, startFing, opts)` is one
 placement pass (the chord loop, VDA) followed by ordered line-editing
 passes over the flat event list — **octave cap → octave displacement →

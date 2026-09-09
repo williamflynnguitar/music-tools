@@ -25,10 +25,11 @@ const ok = (cond, m) => { checks++; if (!cond) fail(m); };
 // 1. everything builds, every bar sums to 4 beats (approach and octave-cap
 //    combinations); with the cap on, nothing sits above the 12th fret
 for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++)
-for (const [app, oct, disp] of [[false, false, false], [true, false, false], [false, true, false], [true, true, false], [true, true, true], [false, false, true]]) {
+for (const [app, oct, disp, third] of [[false, false, false], [true, false, false], [false, true, false], [true, true, false], [true, true, true], [false, false, true],
+                                       [false, false, false, true], [true, false, false, true], [true, true, true, true]]) {
   let line;
-  try { line = E.buildLine(progId, mode, f, {approach:app, octDown:oct, displace:disp}); }
-  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}/${disp}: ${err.message}`); continue; }
+  try { line = E.buildLine(progId, mode, f, {approach:app, octDown:oct, displace:disp, third:!!third}); }
+  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}/${disp}/${third}: ${err.message}`); continue; }
   line.bars.forEach(bar => {
     const s = bar.events.reduce((a, e) => a + e.dur, 0);
     ok(s === 8, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: ${s} eighths`);
@@ -75,6 +76,36 @@ for (const [app, oct, disp] of [[false, false, false], [true, false, false], [fa
   ok(at.bars[6].labels[0].text.startsWith("C major"), "ATTYA bar 7 resolves to major: " + at.bars[6].labels[0].text);
   ok(at.bars[23].labels[0].text.startsWith("Db melodic minor from the 7th"), "ATTYA C7#5: " + at.bars[23].labels[0].text);
   ok(at.bars[23].events.some(e => e.note === "Fb"), "C7#5 run should spell the flat side (Fb), got " + at.bars[23].events.map(e=>e.note).join(" "));
+}
+
+// 1i. third-based lines. Arp 3-5-7-9 = the R-3-5-7 shape of the chord on the
+// 3rd (D-7 plays FΔ7's shape, G7b9 plays B°7, C-6 plays EbΔ7#5; º7 keeps its
+// own arpeggio). Scale 8-beat figure is William's 345678939R76543 exactly;
+// the 4-beat figure is PROVISIONAL (3456789R as straight eighths — his
+// 3456789R9 is nine notes in eight slots, awaiting his ruling on the ending).
+{
+  const notes = b => b.events.map(e => e.note).join(" ");
+  const a = E.buildLine("ii51maj", "arp", 1, {third:true});
+  ok(notes(a.bars[0]) === "F A C E", "3579 of D-7 should be the FΔ7 shape: " + notes(a.bars[0]));
+  ok(a.bars[0].labels[0].text.startsWith("arp 3-5-7-9 · 3 on"), "third-based arp label: " + a.bars[0].labels[0].text);
+  ok(notes(a.bars[1]) === "B D F A", "3579 of G7 should be the Bø7 shape: " + notes(a.bars[1]));
+  ok(notes(a.bars[2]) === "E G B D" && notes(a.bars[3]) === "D B G E", "CΔ7 8-beat from the 3rd: " + notes(a.bars[2]) + " | " + notes(a.bars[3]));
+  ok(a.bars[3].events[3].dur === 5, "8-beat bar 2 should still hold its last note");
+  const m = E.buildLine("ii51min", "arp", 1, {third:true});
+  ok(notes(m.bars[1]) === "B D F Ab", "3579 of G7b9 should be the B°7 shape: " + notes(m.bars[1]));
+  ok(notes(m.bars[2]) === "Eb G B D", "3579 of C-6 should be the EbΔ7#5 shape: " + notes(m.bars[2]));
+  const r = E.buildLine("rhythm", "arp", 1, {third:true});
+  ok(notes(r.bars[5]).endsWith("E G Bb Db"), "º7 keeps its own R-based arpeggio: " + notes(r.bars[5]));
+  // approach composes: the held 9 walks down into the next chord's 3rd
+  const ap = E.buildLine("ii51maj", "arp", 1, {third:true, approach:true});
+  ok(ap.bars[0].events[3].dur === 3 && notes(ap.bars[0]) === "F A C E D C" && ap.bars[1].events[0].note === "B",
+     "third-based approach: E held, D C into G7's B — got " + notes(ap.bars[0]) + " -> " + ap.bars[1].events[0].note);
+  // scale figures
+  const s = E.buildLine("ii51maj", "scale", 1, {third:true});
+  ok(notes(s.bars[2]) === "E F G A B C D E", "scale 8-beat bar 1 from the 3rd (3..10): " + notes(s.bars[2]));
+  ok(notes(s.bars[3]) === "D C B A G F E", "scale 8-beat bar 2 (9 R 7 6 5 4, 3): " + notes(s.bars[3]));
+  ok(s.bars[3].events[6].at === 6 && s.bars[3].events[6].dur === 2, "the two-bar figure ends on the 3rd, a quarter on beat 4");
+  ok(notes(s.bars[0]) === "F G A B C D E D", "PROVISIONAL 4-beat figure (3456789R): " + notes(s.bars[0]));
 }
 
 // 1e. approach coverage: across every progression and fingering, every chord

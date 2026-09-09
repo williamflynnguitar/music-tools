@@ -143,6 +143,13 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
     <div class="fings" id="fings"></div>
   </div>
   <div class="group">
+    <span class="lbl">Line</span>
+    <div class="fings" style="grid-template-columns:1fr 1fr" id="basis">
+      <button data-b="root" aria-pressed="true">from the root</button>
+      <button data-b="third" aria-pressed="false">from the 3rd</button>
+    </div>
+  </div>
+  <div class="group">
     <label class="check" style="margin:0"><input type="checkbox" id="approach"> stepwise approach into the next chord</label>
     <p class="hint">Arp mode: hold the last note through beat 3 only, then walk down the scale in eighths to the next chord's root.</p>
     <label class="check"><input type="checkbox" id="displace"> octave displacement at register breaks</label>
@@ -643,7 +650,10 @@ function hdaStub(){ throw new Error('HDA (root-string, horizontal) position logi
 const degMidi = (root, d, steps) => root + steps[(d-1)%7] + 12*Math.floor((d-1)/7);
 function fitInPlacement(pl, rootPc, steps, degs, prevRoot){
   const at = new Map(); pl.notes.forEach(n=>at.set(n.midi, n));
-  const roots = pl.notes.filter(n=>n.midi%12===rootPc).map(n=>n.midi)
+  // anchor on the first degree the run actually plays (the root for R-based
+  // lines, the 3rd for third-based — the unplayed root needn't be in reach)
+  const off0 = steps[(degs[0]-1)%7] + 12*Math.floor((degs[0]-1)/7);
+  const roots = pl.notes.filter(n=>n.midi%12===(rootPc+off0)%12).map(n=>n.midi-off0)
     .filter((m,i,a)=>a.indexOf(m)===i).sort((a,b)=>a-b);
   const fits = roots.filter(r=>degs.every(d=>at.has(degMidi(r,d,steps))));
   if(!fits.length) return null;
@@ -686,6 +696,18 @@ function chordToneNames(ch){
     return n.length>2 ? SIMPLE[pc] : n;
   });
 }
+/* third-based arps: 3-5-7-9 of a chord is the R-3-5-7 shape of the chord
+   living on its 3rd — CΔ7 from the 3rd is the E-7 shape, C7 is Eø7, G7♭9 is
+   B°7, C-7 is EbΔ7, C-Δ7/-6 is EbΔ7♯5 — so every note still comes from the
+   1-octave shape data. º7 has no 9th in the shape library and keeps its own
+   R-based arpeggio. */
+const THIRD_ARPQ = {maj7:'m7','6':'m7', m7:'maj7', m7b5:'m7', m6:'maj7s5', mMaj7:'maj7s5', maj7s5:'7'};
+function arpChordFor(ch, third){
+  if(!third || ch.q==='dim7') return ch;
+  const q = (ch.q==='7'||ch.q==='sus7') ? ((ch.ext||[]).includes('b9') ? 'dim7' : 'm7b5') : THIRD_ARPQ[ch.q];
+  const root = chordToneNames(ch)[1];
+  return {root, q, pc:pcOf(root), ext:[]};
+}
 
 /* ---------- the line: formulas (every bar must sum to 4 beats — asserted) ----------
    events per unit: [degree-or-tone-index, eighth offset, duration in eighths]
@@ -697,8 +719,20 @@ const SCALE_EV = { '2':[[1,0,1],[2,1,1],[3,2,1],[5,3,1]],
   '4':[[1,0,1],[2,1,1],[3,2,1],[4,3,1],[5,4,1],[6,5,1],[7,6,2]],
   '8':[[1,0,1],[2,1,1],[3,2,1],[4,3,1],[5,4,1],[6,5,1],[7,6,1],[8,7,1],
        [9,8,1],[8,9,1],[7,10,1],[6,11,1],[5,12,1],[4,13,1],[3,14,2]] };
+/* third-based scale figures (degree 10 = the 3rd an octave up).
+   The 8-beat figure is William's 345678939R76543 exactly: up 3→10, then
+   9 R 7 6 5 4 down with 3 a quarter on beat 4. The 4-beat figure is
+   PROVISIONAL: his 3456789R9 is nine notes against eight eighth-slots, so
+   this ships 3 4 5 6 7 8 9 R as straight eighths until he rules on the
+   ending (a 9-R-9 triplet on beat 4 would need triplet support). The
+   2-beat digital 3-4-5-7 parallels the root-based 1-2-3-5 (unspecified). */
+const SCALE3_EV = { '2':[[3,0,1],[4,1,1],[5,2,1],[7,3,1]],
+  '4':[[3,0,1],[4,1,1],[5,2,1],[6,3,1],[7,4,1],[8,5,1],[9,6,1],[8,7,1]],
+  '8':[[3,0,1],[4,1,1],[5,2,1],[6,3,1],[7,4,1],[8,5,1],[9,6,1],[10,7,1],
+       [9,8,1],[8,9,1],[7,10,1],[6,11,1],[5,12,1],[4,13,1],[3,14,2]] };
 const unitPlan = b => b===2?['2']:b===4?['4']:b===8?['8']:b===12?['8','4']:b===16?['8','8']:null;
 const scaleDegs = b => b===2?[1,2,3,5]:b===4?[1,2,3,4,5,6,7]:[1,2,3,4,5,6,7,8,9];
+const scaleDegs3 = b => b===2?[3,4,5,7]:b===4?[3,4,5,6,7,8,9]:[3,4,5,6,7,8,9,10];
 function chordSym(ch){
   const q=QUAL[ch.q];
   const ex=(ch.ext||[]).filter(e=>q.allowed.includes(e));
@@ -708,9 +742,9 @@ function chordSym(ch){
 /* buildLine: one placement pass (the chord loop) followed by ordered
    line-editing passes over the flat event list — octave cap, then octave
    displacement, then the stepwise approach — so each pass sees the previous
-   pass's notes. Options: {approach, octDown, displace}. */
+   pass's notes. Options: {approach, octDown, displace, third}. */
 function buildLine(progId, mode, startFing, opts){
-  const {approach=false, octDown=false, displace=false} = opts || {};
+  const {approach=false, octDown=false, displace=false, third=false} = opts || {};
   const prog = PROGRESSIONS[progId];
   const events=[], chordMarks=[], labelMarks=[], panels=[], recs=[];
   let region=null, prevRoot=null, at=0, anyFlag=false;
@@ -728,15 +762,16 @@ function buildLine(progId, mode, startFing, opts){
       seedRegion(cs.parent.scaleId, cs.parent.key);
     if(!region && cs.own) seedRegion(cs.own.scaleId, cs.own.key);
     const useArp = mode==='arp' || cs.arp;
-    const rec = {pc:ch.pc, ch, cs, useArp, start:events.length}; recs.push(rec);
+    const aCh = useArp ? arpChordFor(ch, third) : ch;
+    const rec = {pc:ch.pc, ch, aCh, cs, useArp, start:events.length}; recs.push(rec);
     let emitted, label, panelNotes, panelWin;
     if(useArp){
-      let cands = arpCandidates(ch, region && region.pl, prevRoot), shifted=null, outPos=false;
+      let cands = arpCandidates(aCh, region && region.pl, prevRoot), shifted=null, outPos=false;
       if(!cands.length && region){
         for(const d of [-1,1]){ const q=region.pls[region.idx+d]; if(!q) continue;
-          const c2=arpCandidates(ch,q,prevRoot); if(c2.length){cands=c2; shifted=q.id; break;} }
+          const c2=arpCandidates(aCh,q,prevRoot); if(c2.length){cands=c2; shifted=q.id; break;} }
       }
-      if(!cands.length){ cands=arpCandidates(ch,null,prevRoot); outPos=true; }
+      if(!cands.length){ cands=arpCandidates(aCh,null,prevRoot); outPos=true; }
       if(!cands.length) throw new Error(chordSym(ch)+': no arpeggio shape fits');
       /* approach-aware octave: with the approach on, prefer the in-window
          shape whose held note can walk three scale steps down onto an
@@ -748,7 +783,7 @@ function buildLine(progId, mode, startFing, opts){
         const lastKind = unitPlan(ch.beats).slice(-1)[0];
         if(lastKind!=='2'){
           const heldIdx = lastKind==='8' ? 0 : 3;
-          const nextRoots = new Set(arpCandidates(nextCh, region && region.pl, null).map(c=>c.root));
+          const nextRoots = new Set(arpCandidates(arpChordFor(nextCh, third), region && region.pl, null).map(c=>c.root));
           const conn = c => {
             let j = cs.steps.indexOf(((c.notes[heldIdx].midi - ch.pc)%12+12)%12);
             if(j<0) return 0;
@@ -761,10 +796,11 @@ function buildLine(progId, mode, startFing, opts){
             (prevRoot!=null ? Math.abs(a.root-prevRoot)-Math.abs(b.root-prevRoot) : a.root-b.root));
         }
       }
-      const sel=cands[0], names=chordToneNames(ch);
+      const sel=cands[0], names=chordToneNames(aCh);
       prevRoot = sel.root;
       emitted = (ti)=>({...sel.notes[ti], note:names[ti]});
-      label = (cs.arp && mode!=='arp' ? 'arp' : 'arp · R on '+sel.rs) +
+      const arpTag = aCh!==ch ? 'arp 3-5-7-9 · 3 on '+sel.rs : 'arp · R on '+sel.rs;
+      label = (cs.arp && mode!=='arp' && aCh===ch ? 'arp' : arpTag) +
               (shifted?' →'+shifted:'') + (outPos?' (out of position)':'') + (cs.flag?' †':'');
       panelNotes = sel.notes; panelWin = region && region.pl;
       let u0=0;
@@ -773,7 +809,7 @@ function buildLine(progId, mode, startFing, opts){
         u0 += kind==='2'?4:kind==='4'?8:16;
       }
     } else {
-      const degs = scaleDegs(ch.beats);
+      const degs = third ? scaleDegs3(ch.beats) : scaleDegs(ch.beats);
       let pl, fit=null, shifted=null;
       if(cs.parent){
         pl=region.pl; fit=fitInPlacement(pl, ch.pc, cs.steps, degs, prevRoot);
@@ -791,7 +827,7 @@ function buildLine(progId, mode, startFing, opts){
       panelNotes=[]; panelWin=pl;
       let u0=0;
       for(const kind of unitPlan(ch.beats)){
-        for(const [d,off,dur] of SCALE_EV[kind]){
+        for(const [d,off,dur] of (third?SCALE3_EV:SCALE_EV)[kind]){
           const n=fit.note(d);
           events.push({at:at+u0+off, dur, string:n.string, fret:n.fret, finger:n.finger, midi:n.midi, note:cs.names[(d-1)%7]});
           if(!panelNotes.some(p=>p.string===n.string&&p.fret===n.fret)) panelNotes.push({...n});
@@ -836,7 +872,7 @@ function buildLine(progId, mode, startFing, opts){
       const mark = shift ? ' ↓8' : ' ↓pos';
       if(r.useArp){
         const root=events[r.start].midi-shift;
-        const cands=arpCandidates(r.ch, null, root).filter(c=>c.root===root)
+        const cands=arpCandidates(r.aCh, null, root).filter(c=>c.root===root)
           .filter(c=>c.notes.every(n=>n.fret<=12))
           .sort((a,b)=>Math.max(...a.notes.map(n=>n.fret))-Math.max(...b.notes.map(n=>n.fret))||b.rs-a.rs);
         if(!cands.length) return null;
@@ -845,7 +881,7 @@ function buildLine(progId, mode, startFing, opts){
         if(src){ let best=null, bs=-1; for(const pl of placements(src.scaleId,src.key)){
           const s=midis.filter(m=>pl.notes.some(n=>n.midi===m-shift)).length;
           if(s>bs || (s===bs && best && pl.lo<best.lo)){ bs=s; best=pl; } } newWin=best; }
-        return {map, newWin, newLabel:'arp · R on '+cands[0].rs+mark+(r.cs.flag?' †':'')};
+        return {map, newWin, newLabel:(r.aCh!==r.ch?'arp 3-5-7-9 · 3 on ':'arp · R on ')+cands[0].rs+mark+(r.cs.flag?' †':'')};
       }
       if(!src) return null;
       let best=null;
@@ -1145,20 +1181,25 @@ mus = { \\clef "treble_8" \\numericTimeSignature \\time 4/4 \\accidentalStyle mo
 }
 
 /* ===== ui ===== */
-const st={prog:'ii51maj', mode:'arp', fing:1, line:null};
+const st={prog:'ii51maj', mode:'arp', fing:1, basis:'root', line:null};
 const el=id=>document.getElementById(id);
 
 function rebuild(){
   try{ st.line = buildLine(st.prog, st.mode, st.fing, {
     approach: st.mode==='arp' && el('approach').checked,
     displace: st.mode==='arp' && el('displace').checked,
-    octDown: el('octdown').checked }); }
+    octDown: el('octdown').checked,
+    third: st.basis==='third' }); }
   catch(err){ el('chart').innerHTML='<p class="sub" style="color:var(--warn)">'+err.message+'</p>'; st.line=null; return; }
   const p=PROGRESSIONS[st.prog];
   el('title').textContent = p.name;
   el('sub').textContent = (st.mode==='arp'
-    ? 'Arp mode: R 3 5 7 of each chord from the 1-octave shape whose root sits in the position.'
-    : 'Scale mode: each chord runs its scale — the parent scale of the key, started from the chord root — inside the position.')
+    ? (st.basis==='third'
+      ? 'Arp mode, from the 3rd: 3 5 7 9 of each chord — the R-3-5-7 shape of the chord living on its 3rd (CΔ7 plays the E-7 shape, G7♭9 plays B°7). º7 keeps its own arpeggio.'
+      : 'Arp mode: R 3 5 7 of each chord from the 1-octave shape whose root sits in the position.')
+    : (st.basis==='third'
+      ? 'Scale mode, from the 3rd: each chord runs its scale from the 3rd up to the 10th and back, inside the position.'
+      : 'Scale mode: each chord runs its scale — the parent scale of the key, started from the chord root — inside the position.'))
     + ' Fingering '+st.fing+' to start; the position only moves when the key does.'
     + (st.mode==='arp' && el('approach').checked
       ? ' Approach on: where the next root sits three scale steps below the held note, beat 4 walks down to it in eighths; elsewhere the note holds to the barline.'
@@ -1231,6 +1272,8 @@ function scheduleBeat(beat, time){
     Object.entries(PROGRESSIONS).filter(([,p])=>p.group===g).map(([k,p])=>`<option value="${k}">${p.name} · ${p.pages}</option>`).join('')+'</optgroup>').join('');
   el('fings').innerHTML = CYCLE.map((id,i)=>`<button data-f="${i+1}" aria-pressed="${i===0}">${i+1}<small>${id}</small></button>`).join('');
   el('prog').addEventListener('change',e=>{ st.prog=e.target.value; stop(); rebuild(); });
+  el('basis').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+    st.basis=b.dataset.b; el('basis').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); stop(); rebuild(); });
   el('fings').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
     st.fing=+b.dataset.f; el('fings').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); stop(); rebuild(); });
   el('mArp').addEventListener('click',()=>setMode('arp'));
