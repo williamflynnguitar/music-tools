@@ -134,7 +134,12 @@ parser — still to be consolidated when the shared-file refactor happens.
 Chord scales are unchanged: parent scale rotated to the chord root,
 harmonic-minor parents in minor keys, melodic-minor parents labeled
 parent-first, quality fallback flagged †. See `annotations-worksheet.md`
-for William's rulings.
+for William's rulings. All 14 tunes are now annotated — ATTYA, Blue Bossa
+and Mr. P.C. from William's worksheet pass; the other 11 applied from his
+rulings (2026-09, pending his review), with the blues tunes mirroring the
+annotated blues presets and local ii–V arrivals tagged `@I` of the local
+key. check.js asserts every progression builds flag-free, which validates
+each annotation's degree against the chord root.
 
 ## Engraving and export
 

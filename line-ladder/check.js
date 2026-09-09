@@ -100,6 +100,14 @@ for (const rungs of RUNGSETS) {
   ok(rc.evs[eIdx].map(e => (e.midi - rc.evs[eIdx][0].midi)).join() === "0,3,6,9", "dim7 arp intervals");
 }
 
+// 3b. every progression is fully annotated: a wrong annotation (chord root
+//     not matching the claimed degree) falls back by quality and raises the
+//     † flag, so zero flags proves every annotation is consistent
+for (const progId of Object.keys(E.PROGRESSIONS)) {
+  const line = build(E.PROGRESSIONS[progId].chords, {});
+  ok(!line.anyFlag, `${progId}: † flag — ` + line.segs.filter(s => s.cs.flag).map(s => s.sym).join(", "));
+}
+
 // 4. rung isolation on the ii-V-I: a toggled rung changes only bars whose
 //    labels carry its mark
 {
