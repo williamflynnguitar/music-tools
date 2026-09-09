@@ -42,6 +42,10 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
 .sets button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
 .sets button[aria-pressed=true] small{color:var(--brass)}
 .check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--bone-dim);cursor:pointer;margin-top:6px}
+/* with "all sets" on, every row is already showing: the picker dims and
+   ignores clicks so it can't read as a broken filter */
+.sets.dimmed{opacity:.35;pointer-events:none}
+.setsNote{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin:6px 0 0}
 .check input{accent-color:var(--brass);width:auto}
 .btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
 .btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
@@ -178,6 +182,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
   <div class="group sh-ctl" id="setGroup">
     <span class="lbl" id="setLbl">String set</span>
     <div class="sets" id="sets"></div>
+    <p class="setsNote" id="setsNote" hidden></p>
     <label class="check"><input type="checkbox" id="allSets"> all sets, like the book page</label>
   </div>
 
@@ -716,6 +721,9 @@ function renderShapes(){
   const rootName = ROOTS[st.pc], q = st.q;
   el('title').innerHTML = fmt(rootName, TRI[q].sym||'') + ' <span style="font-size:.6em;color:var(--bone-dim)">' + TRI[q].name.toLowerCase() + ' · ' + st.pos + ' position</span>';
   const all = el('allSets').checked;
+  el('sets').classList.toggle('dimmed', all);
+  el('setsNote').hidden = !all;
+  el('setsNote').textContent = 'showing every ' + (st.pos==='closed' ? 'set' : 'row') + ' — uncheck to pick one';
   const rows = st.pos==='closed' ? Object.keys(CSETS) : Object.keys(OROWS);
   const shown = all ? rows : [st.pos==='closed'?st.set:st.row];
   el('sub').textContent = (st.pos==='closed'
