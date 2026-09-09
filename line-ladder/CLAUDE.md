@@ -74,9 +74,31 @@ playback option, the engraving is one line).
 One rule: **parent scale rotated to start on the chord root.**
 - Major-key annotation `{key, mode:"major", degree}` → parent major of the
   key; labels use mode names (1 → "C major", 2 → Dorian, 5 → Mixolydian …).
+  William teaches Lydian/Aeolian as "major scale from the 4th/6th" — the
+  position already IS the parent major fingering, so the mode label is
+  just a name on it.
 - Minor-key annotation → parent harmonic minor of i; degrees 2 (ø7) and
   5 (7♭9) are labeled "G Phrygian dominant (V of C minor)" — same notes,
   the book's name for them.
+- Melodic-minor annotation `{key, mode:"melodic", degree}` → parent melodic
+  minor, labeled **parent-first** ("Eb melodic minor from the 4th") because
+  that's how the sounds are taught: no separate Lydian-dominant/altered
+  fingerings, just the parent position entered from the chord root.
+  `mmSpell` spells by degree letters from the key root (Db melodic = Db Eb
+  Fb Gb Ab Bb C), borrowing the relative major only when double
+  accidentals would appear.
+- Tune texts carry annotations on the chord token: `Cm7@ii/Bb`,
+  `G7b9@v/Cm`, `Ab7#11@iv/Ebmel`, `F7@sec`, `Bbm7@own` (`own` = quality
+  default, confirmed, no †). Parsed by `parseFn`/`parseProg`; identical
+  adjacent whole bars only merge when the annotation matches too.
+- **William's rulings** (2026-09, see annotations-worksheet.md): minor
+  ii-Vs → harmonic minor, resolution chord transitions to major; minor
+  blues tonic -7 and iv → Dorian via the relative major; 7♯11 and alt →
+  melodic-minor parent (`@iv/Xmel` / `@vii/Xmel`); backdoor dominants
+  (root a whole step below the tonic) → Lydian dominant; ♭II/♭VII Δ7♯11 →
+  Lydian via the major parent; vi → Aeolian via the major parent.
+  ATTYA, Blue Bossa and Mr. P.C. are annotated; the other 11 tunes await
+  his worksheet pass.
 - `fn:"sec"` (secondary/non-diatonic dominants) → own Mixolydian; with a ♭9,
   own Phrygian dominant *(assumption — confirm)*.
 - No annotation → quality-only fallback (Δ7 → major, -7 → Dorian,

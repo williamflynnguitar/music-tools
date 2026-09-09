@@ -453,6 +453,19 @@ function hmSpell(key){                       // harmonic minor of key, spelled f
   const names = rotateTo(SPELL[keyName((pc+3)%12)], pc).slice();
   names[6] = raiseName(names[6]); return names;
 }
+function mmSpell(key){                       // melodic minor, spelled by degree letters from the key root
+  const pc = pcOf(key), MEL = [0,2,3,5,7,9,11];
+  const names = MEL.map((st,i)=>{
+    const letter = 'CDEFGAB'[('CDEFGAB'.indexOf(key[0])+i)%7];
+    let d = (((pc+st)%12 - LPC[letter])%12+12)%12; if(d>6) d-=12;
+    return letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
+  });
+  if(names.some(n=>n.length>2)){             // double accidentals → borrow the relative major (like Gb harmonic minor)
+    const alt = rotateTo(SPELL[keyName((pc+3)%12)], pc).slice();
+    alt[5] = raiseName(alt[5]); alt[6] = raiseName(alt[6]); return alt;
+  }
+  return names;
+}
 function ownSpell(rootPc, scaleId){          // spelled notes of SCALES[scaleId] rooted at rootPc
   const sc = SCALES[scaleId];
   if(sc.spellFrom!=null) return rotateTo(SPELL[keyName((rootPc+sc.spellFrom)%12)], rootPc);
@@ -463,8 +476,13 @@ function ownSpell(rootPc, scaleId){          // spelled notes of SCALES[scaleId]
 const stepsFrom = names => names.map(n=>(pcOf(n)-pcOf(names[0])+12)%12);
 
 /* ---------- chord scales: one rule — parent scale rotated to the chord root.
-   Annotations: fn:{key,mode,degree} (diatonic) or fn:'sec' (secondary dominant).
-   No/contradictory annotation → quality-only default, flagged for William. ---------- */
+   Annotations: fn:{key,mode,degree} — mode major, minor (harmonic) or melodic —
+   or fn:'sec' (secondary dominant on its own scale) or fn:'own' (the quality
+   default, confirmed). Melodic-minor parents label parent-first ("Eb melodic
+   minor from the 4th") because that's how the sounds are taught: no separate
+   Lydian-dominant/altered muscle memory, just the parent fingering entered
+   from the chord root. No/contradictory annotation → quality default, flagged. */
+const ORDINAL = ['','2nd','3rd','4th','5th','6th','7th'];
 function chordScale(ch){
   if(ch.q==='dim7') return {arp:true, label:'arp'};
   const fn = ch.fn;
@@ -484,8 +502,17 @@ function chordScale(ch){
         return {names, steps:stepsFrom(names), parent:{scaleId:'harmonic', key:fn.key}, label};
       }
     }
+    if(fn.mode==='melodic'){
+      const mm = mmSpell(fn.key);
+      if(pcOf(mm[fn.degree-1])===ch.pc){
+        const names = rotateTo(mm, ch.pc);
+        // label from the spelled tonic so it always matches the staff
+        const label = mm[0]+' melodic minor'+(fn.degree===1?'':' from the '+ORDINAL[fn.degree-1]);
+        return {names, steps:stepsFrom(names), parent:{scaleId:'melodic', key:fn.key}, label};
+      }
+    }
   }
-  const flag = fn!=='sec';
+  const flag = fn!=='sec' && fn!=='own';
   const b9 = (ch.ext||[]).includes('b9');
   let scaleId, rootPc=ch.pc, label;
   if(ch.q==='7'||ch.q==='sus7'){ scaleId=b9?'phrygdom':'mixolydian'; label=ch.root+(b9?' Phrygian dominant':' Mixolydian'); }
@@ -546,14 +573,14 @@ const PROGRESSIONS = {
 };
 /* leadsheets, from inversion-drill's TUNES (pp. 109-123); annotate in place over time */
 const TUNES = {
-  attya: {name:'All The Things You Are', text:'Fm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Dm7b5 G7b9 | Cmaj7 | Cmaj7 |\nCm7 | Fm7 | Bb7 | Ebmaj7 |\nAbmaj7 | Am7b5 D7b9 | Gmaj7 | Gmaj7 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nF#m7b5 | B7b9 | Emaj7 | C7#5 |\nFm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Gb7 | Cm7 | Bdim7 |\nBbm7 | Eb7 | Abmaj7 | Gm7b5 C7b9'},
+  attya: {name:'All The Things You Are', text:'Fm7@vi/Ab | Bbm7@ii/Ab | Eb7@V/Ab | Abmaj7@I/Ab |\nDbmaj7@IV/Ab | Dm7b5@ii/Cm G7b9@v/Cm | Cmaj7@I/C | Cmaj7@I/C |\nCm7@vi/Eb | Fm7@ii/Eb | Bb7@V/Eb | Ebmaj7@I/Eb |\nAbmaj7@IV/Eb | Am7b5@ii/Gm D7b9@v/Gm | Gmaj7@I/G | Gmaj7@I/G |\nAm7@ii/G | D7@V/G | Gmaj7@I/G | Gmaj7@I/G |\nF#m7b5@ii/Em | B7b9@v/Em | Emaj7@I/E | C7#5@vii/Dbmel |\nFm7@vi/Ab | Bbm7@ii/Ab | Eb7@V/Ab | Abmaj7@I/Ab |\nDbmaj7@IV/Ab | Gb7@iv/Dbmel | Cm7@iii/Ab | Bdim7 |\nBbm7@ii/Ab | Eb7@V/Ab | Abmaj7@I/Ab | Gm7b5@ii/Fm C7b9@v/Fm'},
   auprivave: {name:'Au Privave', text:'F7 | F7 | F7 | Cm7 F7 |\nBb7 | Bb7 | F7 | Am7 D7b9 |\nGm7 | C7 | F7 D7b9 | Gm7 C7'},
   autumnleaves: {name:'Autumn Leaves', text:'Cm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | G7b9 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm7 C7 | Fm7 Bb7 |\nEbmaj7 | Am7b5 D7b9 | Gm6 | Gm6'},
   beatrice: {name:'Beatrice', text:'Fmaj7 | Gbmaj7#11 | Fmaj7 | Ebmaj7#11 |\nDm7 | Ebmaj7#11 | Dm7 | Bbm7 |\nAm7 | Bbmaj7 | Em7b5 A7b9 | Dm7 |\nGm7 | Gbmaj7#11 | Fm7 | Gbmaj7#11'},
-  bluebossa: {name:'Blue Bossa', text:'Cm7 | Cm7 | Fm7 | Fm7 |\nDm7b5 | G7#9 | Cm7 | Cm7 |\nEbm7 | Ab7 | Dbmaj7 | Dbmaj7 |\nDm7b5 | G7#9 | Cm7 | Cm7'},
+  bluebossa: {name:'Blue Bossa', text:'Cm7@ii/Bb | Cm7@ii/Bb | Fm7@ii/Eb | Fm7@ii/Eb |\nDm7b5@ii/Cm | G7#9@v/Cm | Cm7@ii/Bb | Cm7@ii/Bb |\nEbm7@ii/Db | Ab7@V/Db | Dbmaj7@I/Db | Dbmaj7@I/Db |\nDm7b5@ii/Cm | G7#9@v/Cm | Cm7@ii/Bb | Cm7@ii/Bb'},
   honeysuckle: {name:'Honeysuckle Rose', text:'Gm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 | Fmaj7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nDm7 | G7 | C7 | C7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7'},
   ladybird: {name:'Lady Bird', text:'Cmaj7 | Cmaj7 | Fm7 | Bb7 |\nCmaj7 | Cmaj7 | Bbm7 | Eb7 |\nAbmaj7 | Abmaj7 | Am7 | D7 |\nDm7 | G7 | Cmaj7 Eb7 | Abmaj7 Db7'},
-  mrpc: {name:'Mr. P.C.', text:'Cm7 | Cm7 | Cm7 | Cm7 |\nFm7 | Fm7 | Cm7 | Cm7 |\nAb7#11 | G7b9 | Cm7 | G7b9'},
+  mrpc: {name:'Mr. P.C.', text:'Cm7@ii/Bb | Cm7@ii/Bb | Cm7@ii/Bb | Cm7@ii/Bb |\nFm7@ii/Eb | Fm7@ii/Eb | Cm7@ii/Bb | Cm7@ii/Bb |\nAb7#11@iv/Ebmel | G7b9@v/Cm | Cm7@ii/Bb | G7b9@v/Cm'},
   someday: {name:'Someday My Prince Will Come', text:'Bbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nBbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nFm7 | Bb7 | Ebmaj7 | Edim7 |\nBbmaj7 | G7 | Cm7 | F7'},
   atrain: {name:'Take the "A" Train', text:'Cmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Em7 A7 | Dm7 G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Gm7 C7 |\nFmaj7 | Fmaj7 | Fmaj7 | Fmaj7 |\nD7 | D7 | Dm7 | G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Dm7 G7'},
   tenormadness: {name:'Tenor Madness', text:'Bb7 | Eb7 | Bb7 | Fm7 Bb7 |\nEb7 | Eb7 | Bb7 | G7b9 |\nCm7 | F7 | Bb7 G7b9 | Cm7 F7'},
@@ -561,18 +588,36 @@ const TUNES = {
   gdsEb: {name:'On Green Dolphin Street (Eb)', text:'Ebmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Bb7 | Ebmaj7 | Ebmaj7 |\nAbm7 | Db7 | Gbmaj7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Dm7b5 G7b9 | Cm7 | Am7b5 D7b9 |\nGm7 C7b9 | Fm7 Bb7 | Ebmaj7 | Fm7 Bb7'},
   strasbourg: {name:'Strasbourg/St. Denis', text:'Bbm7 Cm7 | Dbmaj7 F7b9 | Bbm7 Cm7 | Dbmaj7 F7b9 |\nBbm7 Cm7 | Dbmaj7 Eb7 | Abmaj7 | F7b9'},
 };
+/* tune annotations ride on the chord token: "Cm7@ii/Bb" (major-key degree),
+   "G7b9@v/Cm" (harmonic minor), "Ab7#11@iv/Ebmel" (melodic minor),
+   "F7@sec", "Bbm7@own". Unannotated tokens keep the quality fallback + †. */
+function parseFn(ann, tok){
+  if(ann==null) return undefined;
+  if(ann==='sec' || ann==='own') return ann;
+  const m = ann.match(/^([iv]+)[°o+]?\/([A-G][b#]?)(mel|m)?$/i);
+  const degree = m && {i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7}[m[1].toLowerCase()];
+  if(!degree) throw new Error('unreadable annotation "'+tok+'"');
+  return {key:m[2], mode: m[3]==='mel'?'melodic': m[3]==='m'?'minor':'major', degree};
+}
 function parseProg(text){
   const chords=[];
-  parseInput(text).forEach(bar=>{
-    const per = bar.length===2 ? 2 : bar.length===1 ? 4 : null;
-    if(per===null) throw new Error('bars must hold 1 or 2 chords');
-    bar.forEach(t=>{
-      const prev=chords[chords.length-1];
+  text.split(/\n/).forEach(line=>line.split('|').forEach(seg=>{
+    const toks = seg.trim().split(/\s+/).filter(Boolean);
+    if(!toks.length) return;
+    if(toks.length>2) throw new Error('bars must hold 1 or 2 chords');
+    const per = toks.length===2 ? 2 : 4;
+    toks.forEach(tok=>{
+      const [sym, ann] = tok.split('@');
+      const t = parseChordToken(sym);
+      if(t.kind!=='chord') throw new Error('unreadable chord "'+tok+'"');
+      const fn = parseFn(ann, tok);
+      const prev = chords[chords.length-1];
       if(per===4 && prev && prev.beats%4===0 && prev.beats<16 && prev.root===t.rootName &&
-         prev.q===t.quality && prev.ext.join()===t.ext.join()) prev.beats+=4;
-      else chords.push(CH(t.rootName, t.quality, per, undefined, t.ext));
+         prev.q===t.quality && prev.ext.join()===t.ext.join() &&
+         JSON.stringify(prev.fn)===JSON.stringify(fn)) prev.beats+=4;
+      else chords.push(CH(t.rootName, t.quality, per, fn, t.ext));
     });
-  });
+  }));
   return chords;
 }
 Object.entries(TUNES).forEach(([k,t])=>{ PROGRESSIONS['tune_'+k]={name:t.name, pages:'pp. 109–123', group:'tune', chords:parseProg(t.text)}; });

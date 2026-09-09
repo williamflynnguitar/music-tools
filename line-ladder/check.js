@@ -41,6 +41,42 @@ for (const [app, oct, disp] of [[false, false, false], [true, false, false], [fa
   });
 }
 
+// 1h. melodic-minor parents and tune annotations (William's rulings):
+// Lydian dominant / altered are taught from the parent melodic minor — the
+// position is the parent fingering, the run starts on the chord root, and
+// the label names the parent ("Eb melodic minor from the 4th"). Minor ii-Vs
+// use harmonic minor and hand off to major at the resolution (D1); minor
+// blues tonics and iv chords are Dorian via the relative major (D2/D3).
+{
+  const ld = E.chordScale(E.CH('Ab', '7', 4, { key: 'Eb', mode: 'melodic', degree: 4 }, ['#11']));
+  ok(ld.label === 'Eb melodic minor from the 4th', "lydian dominant label: " + ld.label);
+  ok(ld.parent && ld.parent.scaleId === 'melodic' && ld.parent.key === 'Eb', "lydian dominant parent should be Eb melodic minor");
+  ok(ld.steps.join() === '0,2,4,6,7,9,10', "Ab lydian dominant steps: " + ld.steps.join());
+  const alt = E.chordScale(E.CH('C', '7', 4, { key: 'Db', mode: 'melodic', degree: 7 }, ['#5']));
+  ok(alt.label === 'Db melodic minor from the 7th', "altered label: " + alt.label);
+  ok(alt.steps.slice().sort((a, b) => a - b).join() === '0,1,3,4,6,8,10', "C altered steps: " + alt.steps.join());
+
+  const pc = E.buildLine("tune_mrpc", "scale", 1);
+  ok(!pc.anyFlag, "Mr. P.C.: fully annotated, no flags");
+  ok(pc.bars[8].labels[0].text.startsWith("Eb melodic minor from the 4th"), "Mr. P.C. bar 9: " + pc.bars[8].labels[0].text);
+  ok(pc.bars[8].events.some(e => e.midi % 12 === 2), "Mr. P.C. bar 9 should carry the D natural (#11 of Ab7)");
+  ok(pc.bars[0].labels[0].text.startsWith("C Dorian"), "Mr. P.C. tonic: " + pc.bars[0].labels[0].text);
+  ok(pc.bars[9].labels[0].text.startsWith("G Phrygian dominant (V of C minor)"), "Mr. P.C. bar 10: " + pc.bars[9].labels[0].text);
+
+  const bb = E.buildLine("tune_bluebossa", "scale", 1);
+  ok(!bb.anyFlag, "Blue Bossa: fully annotated, no flags");
+  ok(bb.bars[2].labels[0].text.startsWith("F Dorian"), "Blue Bossa iv: " + bb.bars[2].labels[0].text);
+  ok(bb.bars[4].labels[0].text.startsWith("G Phrygian dominant (V of C minor)"), "Blue Bossa ii of Cm: " + bb.bars[4].labels[0].text);
+
+  const at = E.buildLine("tune_attya", "scale", 1);
+  ok(!at.anyFlag, "ATTYA: fully annotated (Gb7 backdoor ruled Lydian dominant), no flags");
+  ok(at.bars[29].labels[0].text.startsWith("Db melodic minor from the 4th"), "ATTYA Gb7 backdoor: " + at.bars[29].labels[0].text);
+  ok(at.bars[5].labels.every(l => l.text.includes("(V of C minor)")), "ATTYA bar 6 minor ii-V: " + at.bars[5].labels.map(l => l.text).join(" / "));
+  ok(at.bars[6].labels[0].text.startsWith("C major"), "ATTYA bar 7 resolves to major: " + at.bars[6].labels[0].text);
+  ok(at.bars[23].labels[0].text.startsWith("Db melodic minor from the 7th"), "ATTYA C7#5: " + at.bars[23].labels[0].text);
+  ok(at.bars[23].events.some(e => e.note === "Fb"), "C7#5 run should spell the flat side (Fb), got " + at.bars[23].events.map(e=>e.note).join(" "));
+}
+
 // 1e. approach coverage: across every progression and fingering, every chord
 // whose held note sits exactly three scale steps above the next chord's first
 // note gets the approach whenever any fingering of its scale holds both
@@ -129,11 +165,14 @@ for (const [app, oct, disp] of [[false, false, false], [true, false, false], [fa
 
 // 1d. octave cap semantics: ↓8 bars sound exactly an octave lower than the
 // uncapped line, ↓pos bars sound identical (only refingered), all others
-// are untouched — All The Things You Are, Arp mode, the screenshot case
+// are untouched. (Green Dolphin Eb still climbs — it's unannotated;
+// annotated ATTYA no longer does, its key regions keep the line low.)
 {
-  const plain = E.buildLine("tune_attya", "arp", 3, {});
-  const capped = E.buildLine("tune_attya", "arp", 3, {octDown:true});
-  ok(plain.bars.some(b => b.events.some(e => e.fret > 12)), "attya/arp/3 should climb above fret 12 uncapped");
+  ok(!E.buildLine("tune_attya", "arp", 3, {}).bars.some(b => b.events.some(e => e.fret > 12)),
+     "annotated ATTYA should stay at or below fret 12 by itself now");
+  const plain = E.buildLine("tune_gdsEb", "arp", 5, {});
+  const capped = E.buildLine("tune_gdsEb", "arp", 5, {octDown:true});
+  ok(plain.bars.some(b => b.events.some(e => e.fret > 12)), "gdsEb/arp/5 should climb above fret 12 uncapped");
   let d8 = 0, dpos = 0;
   capped.bars.forEach((bar, bi) => {
     const before = plain.bars[bi];
@@ -147,7 +186,7 @@ for (const [app, oct, disp] of [[false, false, false], [true, false, false], [fa
       bar.events.forEach((e, k) => ok(e.fret === before.events[k].fret && e.string === before.events[k].string, "unmarked bar should be untouched"));
     }
   });
-  ok(d8 > 0, "attya/arp/3 capped: expected some ↓8 bars");
+  ok(d8 > 0, "gdsEb/arp/5 capped: expected some ↓8 bars");
 }
 
 // 1c. stepwise approach: ii-V-I in C, Arp mode — D-7 holds C through beat 3
