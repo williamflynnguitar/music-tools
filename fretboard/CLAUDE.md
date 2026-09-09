@@ -108,3 +108,27 @@ every dot a scale tone, every hollow a root.
   pipeline (it only renders what's missing).
 - "Download .ly" writes the card as a LilyPond page via `lyShape()` — the same generator the
   pipeline uses (shared with arpeggios-deck; keep in sync).
+
+## Fingering-label audit (Sep 2026)
+Audited every scale × fingering × variant: the finger stored on the lowest
+root always matches the label's letter (I=1, M=2, R=3, P=4) and string.
+The half-whole charts were re-checked dot-for-dot against p. 23 — the
+printed order is I6(8fr) M6(6fr) R6(5fr) / I5(2fr) M5(1fr, unlabeled)
+R5(13fr), all fingers as transcribed. Phrygian dominant bebop prints no
+fingers (finger 0 throughout), so its P/M/I ids are window-position slots,
+not printed fingers. Note the symmetric-scale labeling rule: hwdim's three
+5R shapes differ only on strings 4–5; the label letter is the finger on
+the root of the anchoring string (R5 at 13fr is M5's pattern rooted a ring
+finger up). A root is a *pitch* match — offset 0 on a non-root string is
+not a root; don't audit by offset.
+Known UI quirks (unfixed, awaiting William's ruling with the 3.1 report):
+render() builds the fingering picker before the stale-id guard resets
+state.fingering, so switching from a scale that has the current id to one
+that doesn't (major P6 → hwdim) draws the diagram at cycle[0] with no
+picker button pressed; "Next in cycle" indexOf's ids that may not be in
+the cycle (descending bebop ids → jumps to cycle[0]).
+
+## Deferred
+- Four-note-per-string symmetric half-whole fingering (half–whole–half on
+  one string, restarting a tritone up on the next, shift between strings
+  3 and 2). William will spec it separately (Sep 2026).
