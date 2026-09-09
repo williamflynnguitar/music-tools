@@ -17,7 +17,7 @@ const fs = require("fs"), path = require("path"), cp = require("child_process");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const chunks = src.split("<script>").map(c => c.split("</script>")[0]);
 const js = chunks.filter(c => c.includes("const OPEN =") || c.includes("function boxSVG")).join("\n");
-const E = new Function(js + `; return { OPEN, ROOTS, TRI, INV, CSETS, OROWS, MAXF, OPEN_SPAN,
+const E = new Function(js + `; return { OPEN, ROOTS, KEYS, TRI, INV, CSETS, OROWS, MAXF, OPEN_SPAN,
   toneNames, closedAll, closedLowest, openPlacements, openRow, diatonicTriads, keySpell,
   entryNote, harmonizations, keyRun, lyDocument, boxSVG, chordStaffSVG, pcOf };`)();
 
@@ -130,6 +130,42 @@ ok(E.diatonicTriads(E.pcOf('F'), 'major').map(t => t.rn).join(" ") === "I ii iii
    "major romans: " + E.diatonicTriads(E.pcOf('F'), 'major').map(t => t.rn).join(" "));
 // brief's C sanity value, as pitches: C root position on 3-4-5 is A3-D2-G0
 ok(sig(E.closedLowest(0, 'maj', '345', 0).notes) === "5:3 4:2 3:0", "closed C root 3-4-5 should be x-3-2-0-x-x");
+// 5b. key study open rows (Sep 2026, assumption B confirmed by William):
+// every playable choice yields 8 open voicings — top voice on the row's
+// string walking the scale, all notes chord tones, ascending in pitch,
+// every placement passing the Sep 2026 playability rule.
+{
+  let combos = 0, playableChoices = 0, emptyCombos = 0;
+  for (const key of E.KEYS) for (const sk of ['major', 'harm'])
+    for (const setId of ['open-top', 'open-middle', 'open-bottom']) {
+      combos++;
+      const hs = E.harmonizations(key, sk, setId);
+      if (!hs.some(h => h.playable)) { emptyCombos++; continue; }
+      hs.forEach((h, i) => {
+        if (!h.playable) return;
+        playableChoices++;
+        const run = E.keyRun(key, sk, setId, i);
+        ok(run.length === 8, `open run ${key} ${sk} ${setId} c${i}: 8 steps`);
+        const topS = { 'open-top': 1, 'open-middle': 2, 'open-bottom': 3 }[setId];
+        let prevTop = -1;
+        for (const c of run) {
+          ok(c.notes && c.notes.length === 3, `open run ${key} ${sk} ${setId} c${i} ${c.rootName}: 3 notes`);
+          if (!c.notes) continue;
+          const [b, m, t] = c.notes;
+          ok(t.s === topS, `open run ${key} ${sk} ${setId}: top voice on string ${topS}, got ${t.s}`);
+          ok(b.midi < m.midi && m.midi < t.midi, `open run ${key} ${sk} ${setId} ${c.rootName}: voices ascend`);
+          ok(t.midi > prevTop, `open run ${key} ${sk} ${setId}: top line ascends`); prevTop = t.midi;
+          const pcs = new Set(E.TRI[c.q].iv.map(v => (E.pcOf(c.rootName) + v) % 12));
+          ok(c.notes.every(n => pcs.has(((n.midi % 12) + 12) % 12)), `open run ${key} ${sk} ${setId} ${c.rootName}: chord tones only`);
+          const fr = c.notes.map(n => n.f), fretted = fr.filter(f => f > 0);
+          const span = fretted.length ? Math.max(...fretted) - Math.min(...fretted) : 0;
+          ok(span <= 4 && !(b.s - t.s > 3 && span > 2), `open run ${key} ${sk} ${setId} ${c.rootName}: playability rule`);
+        }
+      });
+    }
+  ok(playableChoices > 0, "open key study: some playable choices exist");
+  console.log(`open key study: ${combos} combos, ${playableChoices} playable choices, ${emptyCombos} with none`);
+}
 // 6. structure
 for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) {
   for (const set of Object.keys(E.CSETS)) for (const inv of [0, 1, 2]) {

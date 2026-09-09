@@ -57,8 +57,16 @@ one chord per beat or per bar, count-in, descending option, **no moving
 cursor** (no visual highlight at all while playing — the brief's rule).
 "Download .ly" uses the shared `lyDocument()` with a triad chord-name
 variant (`lyTriadName`); live rendering only, no pre-rendered cells in v1.
-The book prescribes closed sets only, so the brief's "include open rows"
-toggle (its assumption B, unconfirmed) is left out of v1.
+The book prescribes closed sets only; assumption B was confirmed by
+William (Sep 2026), so the set picker now also offers the three **open
+rows** ('open-top/middle/bottom' setIds). An open run pins the walked top
+voice to the row's string and voices each chord with `openVoice` (same
+`openShape`/`openPlayable` machinery and openRow-style ranking as the
+Shapes tab), labelled as an extension of Ex. 8 in the sub text. The
+top-voice-degree → inversion map flips for open (R/3/5 on top → open
+2nd/root/1st). Six low combos (all open-bottom) have no playable
+harmonization; renderKey shows a message instead of a run. check.js walks
+every key × tonality × open row structurally.
 
 ## Drill
 

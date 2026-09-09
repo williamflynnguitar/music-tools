@@ -1290,9 +1290,14 @@ function initBrowser() {
     const c = rootCellAt(e);
     if (!c) return;
     state.rootSel = { string: c.s, fret: c.f };
+    // Pin the scroll position across the re-render: the card list below
+    // changes height and mobile scroll anchoring otherwise jumps the page
+    // (the "auto-move" students found disorienting).
+    const y = window.scrollY;
     const k = pcToKey((OPEN[c.s] + c.f) % 12);
     if (k !== state.key) { state.key = k; onSharedChange(); }   // re-renders Root via onSharedChange
     else renderRoot();
+    window.scrollTo(0, y);
   });
 }
 

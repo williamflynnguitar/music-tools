@@ -190,7 +190,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
     <select id="scale"><option value="major">Major</option><option value="harm">Harmonic minor</option></select>
   </div>
   <div class="group ks-ctl" style="display:none">
-    <span class="lbl">String set (closed)</span>
+    <span class="lbl">String set (closed) or open row</span>
     <div class="sets" id="ksSets"></div>
   </div>
   <div class="group ks-ctl" style="display:none">
@@ -325,16 +325,45 @@ function closedAll(pc, q, setId, inv){
 const closedLowest = (pc,q,setId,inv) => closedAll(pc,q,setId,inv)[0] || null;
 
 /* open: drop the middle voice of a closed inversion one octave; the result is a
-   pitch set, so placements are enumerated (distinct strings, frets 0-15,
-   fretted span ≤ OPEN_SPAN; open strings don't count toward the span) */
-function openPlacements(pc, q, openInv){
+   pitch set, so placements are enumerated (distinct strings, frets 0-15;
+   open strings don't count toward the fretted span) */
+/* the open structure for an inversion: relUp = intervals bottom→top,
+   tones = degree index per voice bottom→top */
+function openShape(q, openInv){
   const c = (openInv+2)%3;                       // closed source: root→1st, 1st→2nd, 2nd→root
-  const iv = TRI[q].iv, degs = TRI[q].degs;
+  const iv = TRI[q].iv;
   const order = [0,1,2].map(i=>(i+c)%3);
   const rel = [0,(iv[order[1]]-iv[order[0]]+12)%12,(iv[order[2]]-iv[order[0]]+12)%12];
-  const relUp = [0, 12-rel[1], rel[2]+12-rel[1]];          // bottom→top after the drop
-  const tones = [order[1], order[0], order[2]];
-  const bassPc = (pc+iv[order[1]])%12;
+  return { relUp: [0, 12-rel[1], rel[2]+12-rel[1]],
+           tones: [order[1], order[0], order[2]] };
+}
+/* Playability (William, Sep 2026 — supersedes the raw span ≤ 5 rule):
+   - outer voices stay inside a four-string window; a five-string spread is
+     allowed only when the fretted span is ≤ 2 (the book's p. 42 D-B-G "or"
+     cell) — wider spreads with real stretches are unplayable;
+   - fretted span of 4 is allowed only as a lone reach UP to the top voice
+     with the other fretted notes within 2 frets of each other (the 2-1-5
+     °-family and the book's G middle-row cell); a span-4 stretch to the
+     bass or middle voice is out. This removes p. 42's G- middle-row
+     2nd-inversion 5-3-8 cell (span 5), per William's ruling on its class.
+   fr is bottom→top; returns {fretted, span} or null. */
+function openPlayable(sBass, sTop, fr){
+  if(fr.some(f=>f<0||f>MAXF)) return null;
+  const fretted = fr.filter(f=>f>0);
+  const span = fretted.length ? Math.max(...fretted)-Math.min(...fretted) : 0;
+  if(span > OPEN_SPAN) return null;
+  if(sBass - sTop > 3 && span > 2) return null;
+  if(span === 4){
+    const rest = [fr[0], fr[1]].filter(f=>f>0);
+    if(!(fr[2] > 0 && fr[2] === Math.max(...fretted) &&
+         (rest.length < 2 || Math.abs(rest[0]-rest[1]) <= 2))) return null;
+  }
+  return {fretted, span};
+}
+function openPlacements(pc, q, openInv){
+  const {relUp, tones} = openShape(q, openInv);
+  const degs = TRI[q].degs;
+  const bassPc = (pc+TRI[q].iv[tones[0]])%12;
   const out = [];
   for(let bass=36; bass<=OPEN[1]+MAXF-relUp[2]; bass++){
     if(bass%12 !== bassPc) continue;
@@ -342,30 +371,11 @@ function openPlacements(pc, q, openInv){
     for(let s3=1; s3<=3; s3++) for(let s2=s3+1; s2<=5; s2++) for(let s1=s2+1; s1<=6; s1++){
       const ss = [s1,s2,s3];
       const fr = m.map((mi,i)=>mi-OPEN[ss[i]]);
-      if(fr.some(f=>f<0||f>MAXF)) continue;
-      const fretted = fr.filter(f=>f>0);
-      const span = fretted.length ? Math.max(...fretted)-Math.min(...fretted) : 0;
-      if(span > OPEN_SPAN) continue;
-      /* Playability (William, Sep 2026 — supersedes the raw span ≤ 5 rule):
-         - outer voices stay inside a four-string window; a five-string
-           spread is allowed only when the fretted span is ≤ 2 (the book's
-           p. 42 D-B-G "or" cell) — wider spreads with real stretches are
-           unplayable;
-         - fretted span of 4 is allowed only as a lone reach UP to the top
-           voice with the other fretted notes within 2 frets of each other
-           (the 2-1-5 °-family and the book's G middle-row cell); a span-4
-           stretch to the bass or middle voice is out. This removes p. 42's
-           G- middle-row 2nd-inversion 5-3-8 cell (span 5), per William's
-           ruling on its class. */
-      if(s1 - s3 > 3 && span > 2) continue;
-      if(span === 4){
-        const rest = [fr[0], fr[1]].filter(f=>f>0);
-        if(!(fr[2] > 0 && fr[2] === Math.max(...fretted) &&
-             (rest.length < 2 || Math.abs(rest[0]-rest[1]) <= 2))) continue;
-      }
+      const p = openPlayable(s1, s3, fr);
+      if(!p) continue;
       out.push({notes: m.map((mi,i)=>({s:ss[i], f:fr[i], deg:degs[tones[i]], midi:mi})),
-        inv:openInv, pos:'open', row:s3, span, bass,
-        low: fretted.length ? Math.min(...fretted) : 0, top:degs[tones[2]], bassDeg:degs[tones[0]]});
+        inv:openInv, pos:'open', row:s3, span:p.span, bass,
+        low: p.fretted.length ? Math.min(...p.fretted) : 0, top:degs[tones[2]], bassDeg:degs[tones[0]]});
     }
   }
   return out;
@@ -407,23 +417,48 @@ function keySpell(keyName, scaleKey){          // 7 note names of the scale
   names[6] = names[6].endsWith('b') ? names[6].slice(0,-1) : names[6]+'#';
   return names;
 }
+/* Open rows in the key study (Sep 2026, off-book: Ex. 8 prescribes closed
+   sets — assumption B, confirmed by William). setId is a CSETS key or
+   'open-top' / 'open-middle' / 'open-bottom'. */
+const ksOpenRow = setId => setId.startsWith('open-') ? setId.slice(5) : null;
+const ksTopString = setId => { const r = ksOpenRow(setId); return r ? OROWS[r].s : CSETS[setId].strings[2]; };
 function entryNote(keyName, scaleKey, setId){  // lowest in-key note on the set's top string
   const tonicPc = pcOf(keyName), sc = SCALEDEF[scaleKey];
-  const top = CSETS[setId].strings[2];
+  const top = ksTopString(setId);
   let f = 0; while(!sc.some(d=>(tonicPc+d)%12 === (OPEN[top]+f)%12)) f++;
   const deg = sc.findIndex(d=>(tonicPc+d)%12 === (OPEN[top]+f)%12);
   return {string:top, fret:f, midi:OPEN[top]+f, deg};
 }
+/* the open voicing of a chord with its top voice pinned at (topString, topMidi):
+   candidates ranked like openRow — window bass first, then span, then position */
+function openVoice(tri, openInv, topMidi, topString){
+  const {relUp, tones} = openShape(tri.q, openInv);
+  const m = [topMidi-relUp[2], topMidi-relUp[2]+relUp[1], topMidi];
+  let best = null;
+  for(let s2=topString+1; s2<=5; s2++) for(let s1=s2+1; s1<=6; s1++){
+    const ss = [s1, s2, topString];
+    const fr = m.map((mi,i)=>mi-OPEN[ss[i]]);
+    const p = openPlayable(s1, topString, fr);
+    if(!p) continue;
+    const cand = {ss, fr, m, tones, win: s1===topString+3?0:1, span:p.span,
+                  low: p.fretted.length ? Math.min(...p.fretted) : 0};
+    if(!best || (cand.win-best.win || cand.span-best.span || cand.low-best.low) < 0) best = cand;
+  }
+  return best;
+}
 function harmonizations(keyName, scaleKey, setId){    // the 3 diatonic triads containing the entry note
   const tri = diatonicTriads(pcOf(keyName), scaleKey), names = keySpell(keyName, scaleKey);
   const e = entryNote(keyName, scaleKey, setId);
-  return [ {as:'root', chordDeg:e.deg, inv:1},
-           {as:'3rd',  chordDeg:(e.deg+5)%7, inv:2},
-           {as:'5th',  chordDeg:(e.deg+3)%7, inv:0} ]
+  // the choice fixes the inversion via the top-voice degree: closed top
+  // R/3/5 → 1st/2nd/root; open top R/3/5 → 2nd/root/1st
+  const invs = ksOpenRow(setId) ? [2,0,1] : [1,2,0];
+  return [ {as:'root', chordDeg:e.deg, inv:invs[0]},
+           {as:'3rd',  chordDeg:(e.deg+5)%7, inv:invs[1]},
+           {as:'5th',  chordDeg:(e.deg+3)%7, inv:invs[2]} ]
     .map((h,i)=>{
       const run = keyRunRaw(keyName, scaleKey, setId, h);
       return {...h, sym:names[h.chordDeg]+TRI[tri[h.chordDeg].q].sym, tri:tri[h.chordDeg],
-        playable: run.every(c=>c.notes.every(n=>n.f>=0))};   // a low entry can push a voice off the nut
+        playable: run.every(c=>c.notes && c.notes.every(n=>n.f>=0))};   // a low entry can push a voice off the nut
     });
 }
 function keyRun(keyName, scaleKey, setId, choice){
@@ -432,18 +467,28 @@ function keyRun(keyName, scaleKey, setId, choice){
 function keyRunRaw(keyName, scaleKey, setId, h){
   const tonicPc = pcOf(keyName), sc = SCALEDEF[scaleKey];
   const triads = diatonicTriads(tonicPc, scaleKey), names = keySpell(keyName, scaleKey);
-  const strings = CSETS[setId].strings, e = entryNote(keyName, scaleKey, setId);
+  const open = ksOpenRow(setId);
+  const strings = open ? null : CSETS[setId].strings, e = entryNote(keyName, scaleKey, setId);
   const out = []; let topMidi = e.midi;
   for(let i=0; i<8; i++){
     const td = (e.deg+i)%7, cd = (h.chordDeg+i)%7, tri = triads[cd];
-    const cps = new Set(TRI[tri.q].iv.map(v=>(tri.pc+v)%12));
-    let m = topMidi-1; while(!cps.has(((m%12)+12)%12)) m--;
-    let b = m-1; while(!cps.has(((b%12)+12)%12)) b--;
     const rootName = names[cd];
     const tn = toneNames(rootName, tri.q);
-    const degOf = midi => TRI[tri.q].iv.findIndex(v=>(tri.pc+v)%12===((midi%12)+12)%12);
-    const notes = [ {s:strings[0], midi:b}, {s:strings[1], midi:m}, {s:strings[2], midi:topMidi} ]
-      .map(n=>({...n, f:n.midi-OPEN[n.s], deg:TRI[tri.q].degs[degOf(n.midi)], name:tn[degOf(n.midi)]}));
+    let notes;
+    if(open){
+      // open voicing pinned to the walked top voice; a step with no playable
+      // placement leaves notes null and disables the harmonization choice
+      const v = openVoice(tri, h.inv, topMidi, e.string);
+      notes = v && v.ss.map((s,j)=>({s, midi:v.m[j], f:v.fr[j],
+        deg:TRI[tri.q].degs[v.tones[j]], name:tn[v.tones[j]]}));
+    } else {
+      const cps = new Set(TRI[tri.q].iv.map(v=>(tri.pc+v)%12));
+      let m = topMidi-1; while(!cps.has(((m%12)+12)%12)) m--;
+      let b = m-1; while(!cps.has(((b%12)+12)%12)) b--;
+      const degOf = midi => TRI[tri.q].iv.findIndex(v=>(tri.pc+v)%12===((midi%12)+12)%12);
+      notes = [ {s:strings[0], midi:b}, {s:strings[1], midi:m}, {s:strings[2], midi:topMidi} ]
+        .map(n=>({...n, f:n.midi-OPEN[n.s], deg:TRI[tri.q].degs[degOf(n.midi)], name:tn[degOf(n.midi)]}));
+    }
     out.push({notes, rootName, q:tri.q, rn:tri.rn, inv:h.inv});
     topMidi += (sc[(td+1)%7]-sc[td]+12)%12;
   }
@@ -698,18 +743,28 @@ function renderNeck(){
 /* ---------- Key study tab ---------- */
 function renderKey(){
   syncControls();
+  const open = ksOpenRow(st.ksSet);
   const e = entryNote(st.key, st.scaleKey, st.ksSet);
   const hs = harmonizations(st.key, st.scaleKey, st.ksSet);
   if(!hs[st.ksChoice].playable) st.ksChoice = hs.findIndex(h=>h.playable);
-  el('harm').innerHTML = hs.map((h,i)=>`<button data-h="${i}" aria-pressed="${st.ksChoice===i}" ${h.playable?'':'disabled'}>${h.as} of ${esc(h.sym)}<small>${h.playable?'fixes '+INV[h.inv]+' for the run':'first chord falls off the nut here'}</small></button>`).join('');
+  if(st.ksChoice < 0){
+    st.ksChoice = 0;
+    el('harm').innerHTML = hs.map((h,i)=>`<button data-h="${i}" disabled>${h.as} of ${esc(h.sym)}<small>no playable voicings down here</small></button>`).join('');
+    el('ksRow').innerHTML = ''; st.run = null;
+    el('ksTitle').innerHTML = st.key;
+    el('ksSub').textContent = 'No harmonization of this entry note fits '+(open?'open voicings':'this set')+' this low on the neck. Pick another set or row.';
+    el('ksHint').textContent = '';
+    return;
+  }
+  el('harm').innerHTML = hs.map((h,i)=>`<button data-h="${i}" aria-pressed="${st.ksChoice===i}" ${h.playable?'':'disabled'}>${h.as} of ${esc(h.sym)}<small>${h.playable?'fixes '+(open?'open ':'')+INV[h.inv]+' for the run':(open?'no playable open voicing down here':'first chord falls off the nut here')}</small></button>`).join('');
   const run = keyRun(st.key, st.scaleKey, st.ksSet, st.ksChoice);
   st.run = el('descend').checked ? run.slice().reverse() : run;
   const scaleName = st.scaleKey==='major'?'major':'harmonic minor';
   el('ksTitle').innerHTML = st.key+' <span class="q" style="font-size:.7em;vertical-align:0">'+scaleName+'</span>';
   const names = keySpell(st.key, st.scaleKey);
-  el('ksSub').textContent = 'Exploring Triads, Ex. 8 (p. 81). Entry note: the lowest in-key note on the '+
-    ['','1st','2nd','3rd'][CSETS[st.ksSet].strings[2]]+' string — '+names[e.deg]+' at fret '+e.fret+
-    ', harmonized as the '+hs[st.ksChoice].as+' of '+hs[st.ksChoice].sym+' ('+INV[hs[st.ksChoice].inv]+' throughout). '+
+  el('ksSub').textContent = 'Exploring Triads, Ex. 8 (p. 81)'+(open?' — with open voicings (an extension; the book prescribes closed sets)':'')+'. Entry note: the lowest in-key note on the '+
+    ['','1st','2nd','3rd'][ksTopString(st.ksSet)]+' string — '+names[e.deg]+' at fret '+e.fret+
+    ', harmonized as the '+hs[st.ksChoice].as+' of '+hs[st.ksChoice].sym+' ('+(open?'open ':'')+INV[hs[st.ksChoice].inv]+' throughout). '+
     (el('descend').checked?'Descending.':'Ascending through all seven diatonic chords plus the octave.');
   el('ksRow').innerHTML = st.run.map((c,i)=>`<div class="card" data-run="${i}" data-notes='${JSON.stringify(c.notes)}'>
       <div class="rn">${c.rn}</div><div class="nm">${fmt(c.rootName, TRI[c.q].sym)}</div>
@@ -838,7 +893,8 @@ function syncControls(){
     ? Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===st.set}">${s.name}<small>${s.tag}</small></button>`)
     : Object.entries(OROWS).map(([k,r])=>`<button data-id="${k}" aria-pressed="${k===st.row}">${r.name}<small>${r.tag}</small></button>`)).join('');
   el('setLbl').textContent = st.pos==='closed' ? 'String set' : 'Row (by top voice)';
-  el('ksSets').innerHTML = Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===st.ksSet}">${s.name}<small>${s.tag}</small></button>`).join('');
+  el('ksSets').innerHTML = Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===st.ksSet}">${s.name}<small>${s.tag}</small></button>`).join('')
+    + Object.entries(OROWS).map(([k,r])=>`<button data-id="open-${k}" aria-pressed="${'open-'+k===st.ksSet}">Open · ${r.name.toLowerCase().replace(' row','')}<small>${r.tag}</small></button>`).join('');
 }
 function setTab(t){
   st.tab=t; stop();
@@ -899,8 +955,9 @@ function renderCustom(){
     if(!st.run) return;
     const bars=[]; for(let i=0;i<st.run.length;i+=4) bars.push(st.run.slice(i,i+4).map(c=>({ch:{rootName:c.rootName, quality:c.q}, v:{notes:c.notes}})));
     const hs=harmonizations(st.key, st.scaleKey, st.ksSet)[st.ksChoice];
+    const setName = ksOpenRow(st.ksSet) ? 'Open voicings · '+OROWS[ksOpenRow(st.ksSet)].name.toLowerCase() : CSETS[st.ksSet].name;
     lyDownload(lyDocument(bars,{title:st.key+' '+(st.scaleKey==='major'?'major':'harmonic minor')+' — Exploring Triads',
-      part:'Guitar', source:'Flynn, Jazz Guitar Technique Handbook\nEx. 8 · '+CSETS[st.ksSet].name+' · '+hs.as+' of '+hs.sym, style:'Swing', bpm:+el('bpm').value||80}),'triad-key-study.ly');
+      part:'Guitar', source:'Flynn, Jazz Guitar Technique Handbook\nEx. 8 · '+setName+' · '+hs.as+' of '+hs.sym, style:'Swing', bpm:+el('bpm').value||80}),'triad-key-study.ly');
   });
   document.addEventListener('click',e=>{
     const chip=e.target.closest('.chips button');

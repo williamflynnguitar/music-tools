@@ -697,6 +697,19 @@ function activeNotes(sc, id) {                       // the chosen variant's not
 }
 const cyc = () => SCALES[state.scale].cycle;
 
+// Next fingering around the cycle. A descending bebop id (P6d) is not in the
+// ascending cycle list, so step by its position — and keep the descending
+// variant when the next position has one — instead of jumping to cycle[0].
+function nextInCycle() {
+  const sc = SCALES[state.scale], c = cyc();
+  const cur = sc.shapes[state.fingering];
+  let i = c.indexOf(state.fingering);
+  if (i < 0 && cur && cur.pos) i = c.findIndex(x => sc.shapes[x].pos === cur.pos);
+  const nxt = c[(Math.max(i, -1) + 1) % c.length];
+  const pos = sc.shapes[nxt].pos;
+  return (cur && cur.dir === "desc" && pos && sc.shapes[pos + "d"]) ? pos + "d" : nxt;
+}
+
 function seg(containerId, items, current, onPick) {
   const el = document.getElementById(containerId);
   el.innerHTML = "";
@@ -711,6 +724,9 @@ function seg(containerId, items, current, onPick) {
 }
 function render() {
   const sc = SCALES[state.scale];
+  // resolve a fingering id left over from another scale BEFORE building the
+  // picker, or it renders with no button pressed after a scale switch
+  if (!sc.shapes[state.fingering] && state.fingering !== "all" && state.fingering !== "neck") state.fingering = cyc()[0];
   seg("scales", Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; render(); });
   seg("keys", KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; render(); });
   seg("fingerings", [...Object.keys(sc.shapes).map(f => ({ id: f, label: f })),
@@ -719,8 +735,6 @@ function render() {
   seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
       .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
   seg("notation", [["on","Staff + TAB"],["off","Hidden"]].map(([id, label]) => ({ id, label })), state.notation, n => { state.notation = n; render(); });
-
-  if (!sc.shapes[state.fingering] && state.fingering !== "all" && state.fingering !== "neck") state.fingering = cyc()[0];
   const cur = sc.shapes[state.fingering];
   const fsV = document.getElementById("fsVariants");
   fsV.hidden = !(cur && cur.variants);
@@ -751,16 +765,14 @@ function render() {
   } else if (state.fingering === "all") {
     hint.innerHTML = `Pick one fingering to step around the cycle.`;
   } else {
-    const c = cyc();
-    const nf = c[(c.indexOf(state.fingering) + 1) % c.length];
+    const nf = nextInCycle();
     const nk = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
     hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, same position.`;
   }
 }
 document.getElementById("step").addEventListener("click", () => {
   if (state.fingering === "all" || state.fingering === "neck") return;
-  const c = cyc();
-  state.fingering = c[(c.indexOf(state.fingering) + 1) % c.length];
+  state.fingering = nextInCycle();
   state.key = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
   render();
 });

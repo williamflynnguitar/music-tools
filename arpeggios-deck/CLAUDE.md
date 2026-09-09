@@ -147,3 +147,5 @@ Not linked from the landing page.
   changes height. Options proposed to William: pin scrollY across the
   re-render; patch the ring/selection in place instead of rebuilding the
   neck; defer the card rebuild briefly.
+- Auto-move ruling (Sep 2026): Root-tab taps pin `scrollY` across the
+  pane re-render, per William's pick of the proposals above.

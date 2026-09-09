@@ -132,3 +132,7 @@ the cycle (descending bebop ids → jumps to cycle[0]).
 - Four-note-per-string symmetric half-whole fingering (half–whole–half on
   one string, restarting a tritone up on the next, shift between strings
   3 and 2). William will spec it separately (Sep 2026).
+
+Both UI quirks above were approved and fixed (Sep 2026): the stale-id
+guard now runs before the picker is built, and `nextInCycle()` steps
+descending bebop ids by position, keeping the descending variant.
