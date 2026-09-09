@@ -82,6 +82,15 @@ round; stopping early scores the bars completed.
 
 Standard Web Audio lookahead pattern (see root CLAUDE.md):
 
+**The scheduler paces itself from the global `bpm` variable in both modes.**
+`twStart` must set `bpm = RW.bpm` — until Sep 2026 it didn't, so Training
+Wheels played at whatever tempo the standard mode last used while the plan
+chart and tap scoring assumed `T.bpm` (heard as "rungs sounding eighth
+notes" when the stale tempo was double the slider, and as garbage tap
+scores). The intended per-rung hit map is documented in a comment block
+above `RUNGS`; every hit is on the quarter-note grid — the app has no
+subdivisions anywhere.
+
 - `setInterval(scheduler, LOOKAHEAD)` wakes every **25 ms**.
 - Each wakeup, `scheduler()` schedules every beat that falls within the
   next **`AHEAD` = 0.13 s** onto `ctx.currentTime`, advancing
@@ -106,6 +115,42 @@ updates lamps, bar counter and clock from the audio clock. The dropout
 chart is deliberately NOT driven by the clock — see below. Rests between
 rounds use `setTimeout` — acceptable because nothing is keeping musical
 time during a rest.
+
+## Audio unlock (iOS)
+
+`unlockAudio()` must run **synchronously inside the user gesture** that
+starts a round (twStart / startSession / repeatRound all call it, before
+any await or timeout). It does four things, all needed on iPhones:
+
+- `ctx.resume()` whenever `ctx.state !== "running"` — iOS reports the
+  non-standard state `"interrupted"` after a phone call / alarm / route
+  change, which a `=== "suspended"` check misses (that was the pre-Sep-2026
+  check; a likely cause of total silence).
+- Starts a 1-sample silent buffer source in the gesture — the unlock older
+  iOS versions require beyond `resume()`.
+- Plays a looping silent `<audio>` element (tiny WAV data URI) — flips the
+  page's audio session to "playback" so the **ringer/silent switch** stops
+  muting Web Audio on pre-iOS-17 Safari. Paused via `silentStop()` whenever
+  the app returns to idle.
+- `initAudio` also sets `navigator.audioSession.type = "playback"` (iOS 17+
+  API) for the same ringer-switch reason.
+
+`visibilitychange` re-resumes a non-running context mid-session (allowed
+without a gesture once previously unlocked). Backgrounded tabs still
+degrade: browsers throttle `setInterval` to ≥1 s in background (lookahead
+is 0.13 s, so scheduling stops), and iOS suspends the context outright when
+Safari is backgrounded or the screen locks — on return the scheduler
+burst-fires the missed backlog at past timestamps, then recovers on-grid.
+Known limitation, not addressed.
+
+## Control wiring: the control is the source of truth at first paint
+
+Browsers restore form values across reload while `S`/`T` reset to their
+literal defaults. `slider()` always synced state from the DOM at load;
+every control wired outside it (the checkboxes via `toggle()`, `vol`,
+`twBpm`, `twLat`) now does the same. Any new control must sync state from
+the rendered control once at wiring time, or a restored value reads as a
+wrong default until first touch.
 
 ## Phrase dropout math
 
