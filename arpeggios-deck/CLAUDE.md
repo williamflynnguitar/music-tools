@@ -125,3 +125,25 @@ is sorted ascending by pitch. It prints the pipeline re-render command
 `TRIAD_IV`/`genTriad`/`STR` between `===== triad generator =====` markers —
 keep in sync with index.html. Edits live in memory only (no storage APIs).
 Not linked from the landing page.
+
+## Practice pointer & Root-tab taps (Sep 2026)
+- Entering the Practice tab always opens on step 1 (switchTab resets
+  `state.i` when arriving from another tab). The step pointer used to
+  survive the tab's last visit, so a phone passed around a lesson opened
+  mid-sequence — observed as "VDA in C opened on E-7" (iii is step 3 of
+  the I6 walk). The VDA sequences themselves were verified headlessly:
+  every size × octaves × position in C starts on the tonic-function
+  arpeggio.
+- Root tab taps resolve to the NEAREST root-capable cell within ~one cell
+  of the tap (`rootCellAt`), instead of requiring a direct hit on the
+  dot's own 46×30 cell — at phone scale the old cells were ~48×31 px and
+  taps between strings or on a dim string died silently. A brass ring is
+  drawn synchronously on pointerdown so the tap registers before the pane
+  re-renders; a scroll-drag of the neckwrap removes the tentative ring.
+- Auto-move on tap (reported, not changed): there is no scrollIntoView /
+  scrollTo anywhere — the movement students see is the full Root-pane
+  re-render (neck innerHTML replaced + cards rebuilt for the new key),
+  which lets mobile scroll anchoring shift the page when the card list
+  changes height. Options proposed to William: pin scrollY across the
+  re-render; patch the ring/selection in place instead of rebuilding the
+  neck; defer the card rebuild briefly.

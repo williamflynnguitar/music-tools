@@ -1197,6 +1197,7 @@ function renderRoot() {
 
 /* ---------- tabs, hover, clicks (delegated once — the necks re-render freely) ---------- */
 function switchTab(t) {
+  const was = state.tab;
   state.tab = t;
   for (const [pane, key] of [["paneShapes", "shapes"], ["paneRoot", "root"], ["panePractice", "practice"]])
     document.getElementById(pane).hidden = key !== t;
@@ -1204,6 +1205,10 @@ function switchTab(t) {
     document.getElementById(btn).setAttribute("aria-pressed", String(key === t));
   if (t === "shapes" && shapesDirty) renderShapes();
   if (t === "root" && rootDirty) renderRoot();
+  // Entering Practice always opens on the first item (the tonic-function
+  // arpeggio). The pointer used to survive from the tab's last visit, so a
+  // phone passed around a lesson opened mid-sequence.
+  if (t === "practice" && was !== "practice" && state.i !== 0) { state.i = 0; show(); }
 }
 function hlNeck(neckEl, id) {
   neckEl.classList.add("hov");
@@ -1248,14 +1253,44 @@ function initBrowser() {
   sn.addEventListener("touchstart", e => { const g = e.target.closest("g.nd"); if (g) lpTimer = setTimeout(() => jumpToRoot(g), 550); }, { passive: true });
   sn.addEventListener("touchend", () => clearTimeout(lpTimer), { passive: true });
   sn.addEventListener("touchmove", () => clearTimeout(lpTimer), { passive: true });
-  // Root tab: click a position on a root-capable string
-  document.getElementById("rootNeck").addEventListener("click", e => {
-    const g = e.target.closest ? e.target.closest("g.nd") : null;
-    const rc = !g && e.target.closest ? e.target.closest("rect[data-cs]") : null;
-    const s = g ? +g.dataset.s : rc ? +rc.dataset.cs : 0, f = g ? +g.dataset.f : rc ? +rc.dataset.cf : 0;
-    if (!s || !rsOptions(state.oct).includes(s)) return;
-    state.rootSel = { string: s, fret: f };
-    const k = pcToKey((OPEN[s] + f) % 12);
+  // Root tab: tap a position on a root-capable string. Fingers are wider
+  // than a 46x30 cell, so any tap on the neck resolves to the NEAREST
+  // root-capable cell (within about one cell) instead of requiring a direct
+  // hit on the dot or its cell — taps between strings or on a dim string no
+  // longer die silently.
+  const rootNeckEl = document.getElementById("rootNeck");
+  const rootCellAt = e => {
+    const svg = rootNeckEl.querySelector("svg");
+    if (!svg) return null;
+    const box = svg.getBoundingClientRect();
+    const W = 14 + NECK_MAX * 46 + 14;                 // neckSVG's viewBox metrics
+    const k = W / box.width;                           // uniform (aspect preserved)
+    const sx = (e.clientX - box.left) * k, sy = (e.clientY - box.top) * k;
+    let best = null, bd = Infinity;
+    for (const s of rsOptions(state.oct)) for (let f = 1; f <= NECK_MAX; f++) {
+      const dx = sx - (14 + (f - 0.5) * 46), dy = sy - (16 + (s - 1) * 30);
+      const d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = { s, f }; }
+    }
+    return bd <= 38 * 38 ? best : null;                // about one cell's reach
+  };
+  // Immediate selected-state at touch time, before the pane re-renders.
+  rootNeckEl.addEventListener("pointerdown", e => {
+    const c = rootCellAt(e);
+    const svg = rootNeckEl.querySelector("svg");
+    if (!c || !svg) return;
+    svg.querySelectorAll(".tapring").forEach(t => t.remove());
+    svg.insertAdjacentHTML("beforeend",
+      `<circle class="tapring" cx="${14 + (c.f - 0.5) * 46}" cy="${16 + (c.s - 1) * 30}" r="14" fill="none" stroke="var(--brass)" stroke-width="2"/>`);
+  });
+  // A horizontal scroll-drag produces no click; drop the tentative ring.
+  document.querySelectorAll(".neckwrap").forEach(w =>
+    w.addEventListener("scroll", () => w.querySelectorAll(".tapring").forEach(t => t.remove()), { passive: true }));
+  rootNeckEl.addEventListener("click", e => {
+    const c = rootCellAt(e);
+    if (!c) return;
+    state.rootSel = { string: c.s, fret: c.f };
+    const k = pcToKey((OPEN[c.s] + c.f) % 12);
     if (k !== state.key) { state.key = k; onSharedChange(); }   // re-renders Root via onSharedChange
     else renderRoot();
   });
