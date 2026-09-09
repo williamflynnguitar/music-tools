@@ -10,7 +10,8 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `fretboard/` — renderer + major-scale fingering data (JGTH p. 7)
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
-- `line-ladder/` — drill lines over the practice progressions (pp. 76–78, 86–95)
+- `line-ladder/` — stand-alone improvisation line generator, instrument-neutral
+  (concept registry + smoothing ladder; handbook cited per concept only)
 - `triad-voicings/` — closed/open triads and the Ex. 8 key study (pp. 39–43, 81)
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
@@ -40,7 +41,9 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
 The `SCALES` registry (per-scale steps, degree labels, applications, fingering
 shapes; major, dorian, mixolydian, harmonic minor, phrygian dominant, melodic
 minor, the four bebop scales and half-whole diminished so far) is duplicated in fretboard,
-scales-deck, arpeggios-deck and line-ladder between `===== shared scale data =====` markers.
+scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
+(line-ladder no longer carries it — the rebuilt engine is pitch-only and keeps
+just the spelling recipes.)
 Keep the copies byte-identical — `SHAPES` and `MAJOR` are aliases into
 `SCALES.major` for older code. Factoring the renderer and data into a shared
 file is the next structural change; the "no build step" rule can be kept with

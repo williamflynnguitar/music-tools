@@ -1,335 +1,191 @@
 // Headless checks for Line Ladder (node check.js). Loads the app's own engine
-// from index.html (the check-deck.js extraction pattern), then:
-//  1. every progression x mode x fingering builds; every bar sums to 4 beats;
-//     every note carries {string, fret, finger} consistent with its midi;
-//     the 8-beat scale unit ends on the 3rd as a quarter on beat 4
-//  2. major ii-V-I in C: D Dorian / G Mixolydian / C major, notes in the
-//     parent scale, frets inside the placement window used
-//  3. minor ii-V-i in C: ii and V labeled G Phrygian dominant (V of C minor),
-//     i labeled C harmonic minor
-//  4. rhythm changes: 2-beat chords are four eighths; Edim7 is an arpeggio
-//     (chord tones E G Bb Db) even in Scale mode
-//  5. blues in F: the split bars hit the 2-beat branch; D7(b9) is labeled
-//     D Phrygian dominant
-//  6. the .ly for the major ii-V-I cycle compiles under lilypond (if present)
-const fs = require("fs"), path = require("path"), cp = require("child_process");
+// from index.html plus the concept packs from concepts/, then walks the
+// acceptance list from the rebuild brief:
+//  1. every preset x drill concept x rung combination builds; every bar's
+//     notes + rests sum to 8 eighths
+//  2. all rungs off: every segment starts on its own degree 1 (root pitch
+//     class), no octave folding applied
+//  3. the seed templates reproduce the old formulas' degree/rhythm shapes
+//     (R-3-5-7 eighths-hold, the scale run's endpoints, digital 1235 on
+//     2-beat chords, dim7 falling back to the arpeggio in scale drills)
+//  4. toggling one rung on a ii-V-I changes only bars its mark claims
+//  5. the Bb part reads a whole step up with the right key signature
+//  6. a concept pushed into the registry appears and generates
+//  7. approach and seam rungs connect a ii-V-I the way the brief says
+const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
-const js = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ===== ui ===== */")[0];
-const E = new Function(js + `; return { PROGRESSIONS, buildLine, chordScale, placeScale, placements,
-  lyExport, engrave, SCALES, ARP1, QUAL, KEYS, PC, OPEN, MIDI_OPEN, pcOf, CH, M, N };`)();
+const blocks = src.split("<script>").slice(1).map(b => b.split("</script>")[0]);
+const dataJs   = blocks.find(b => b.includes("const KEYS"));
+const engineJs = blocks.find(b => b.includes("const REGISTRY"));
+const drawJs   = blocks.find(b => b.includes("function engrave")).split("/* ===== ui ===== */")[0];
+const concepts = ["core.js", "digital.js"].map(f => fs.readFileSync(path.join(__dirname, "concepts", f), "utf8")).join("\n");
+const harness = `const window={LL_CONCEPTS:[]};\n` + concepts + `
+window.LL_CONCEPTS.push({ id:"test-pack-concept", name:"Test 1-3-2-1", short:"t1321",
+  group:"Digital patterns", source:"", tags:[],
+  applies:{ qualities:["maj7","m7","7"], minBeats:2, maxBeats:2 },
+  degrees:[1,3,2,1], against:"scale", rhythm:"eighths", endpoint:null });
+` + dataJs + engineJs + drawJs + `
+;return { PROGRESSIONS, REGISTRY, buildLine, toBars, transposeBars, writtenFifths,
+  parseProg, chordScale, lyExport, engrave, pcOf, CH, M, N, PARTS, refRoot, KEYS };`;
+const E = new Function(harness)();
 
 let fails = 0, checks = 0;
 const fail = m => { fails++; console.log("FAIL", m); };
 const ok = (cond, m) => { checks++; if (!cond) fail(m); };
 
-// 1. everything builds, every bar sums to 4 beats (approach and octave-cap
-//    combinations); with the cap on, nothing sits above the 12th fret
-for (const progId of Object.keys(E.PROGRESSIONS)) for (const mode of ["arp", "scale"]) for (let f = 1; f <= 6; f++)
-for (const [app, oct, disp, third] of [[false, false, false], [true, false, false], [false, true, false], [true, true, false], [true, true, true], [false, false, true],
-                                       [false, false, false, true], [true, false, false, true], [true, true, true, true]]) {
-  let line;
-  try { line = E.buildLine(progId, mode, f, {approach:app, octDown:oct, displace:disp, third:!!third}); }
-  catch (err) { fail(`${progId}/${mode}/${f}/${app}/${oct}/${disp}/${third}: ${err.message}`); continue; }
-  line.bars.forEach(bar => {
-    const s = bar.events.reduce((a, e) => a + e.dur, 0);
-    ok(s === 8, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: ${s} eighths`);
-    if (oct) ok(bar.events.every(e => e.fret <= 12), `${progId}/${mode}/${f}/${app} bar ${bar.n}: above fret 12 with the cap on`);
-    bar.events.forEach(e => {
-      ok(e.string >= 1 && e.string <= 6 && e.fret >= 1 && e.fret <= 19, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: bad position ${e.string}/${e.fret}`);
-      ok(e.midi === E.MIDI_OPEN[e.string] + e.fret, `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: midi/fret mismatch`);
-      ok(e.midi % 12 === E.pcOf(e.note), `${progId}/${mode}/${f}/${app}/${oct} bar ${bar.n}: spelling ${e.note} != pitch`);
-    });
+const RANGE = { lo: 57, hi: 83 };                 // the neutral default, A3-B5
+const GUITAR = { lo: 52, hi: 83 };                // E3-B5 written
+const build = (chords, o) => E.buildLine(Object.assign({
+  chords, range: RANGE, rungs: {}, mode: "drill", drillId: "arp-r357",
+  checked: new Set(E.REGISTRY.map(c => c.id)), seed: 1, locks: {} }, o));
+const iiVI = E.parseProg("Dm7@ii/C G7@V/C | Cmaj7@I/C | Cmaj7@I/C");
+
+// 1. everything builds; notes + rests fill every bar exactly
+const RUNGSETS = [{}, {fold:1}, {near:1}, {app:1}, {seam:1}, {fold:1,app:1}, {fold:1,near:1,app:1,seam:1}];
+for (const progId of Object.keys(E.PROGRESSIONS))
+for (const drillId of ["arp-r357", "scale-run", "digital-1235", "arp-3579", "arp-up-scale-down"])
+for (const rungs of RUNGSETS) {
+  let line, bars;
+  try { line = build(E.PROGRESSIONS[progId].chords, { drillId, rungs }); bars = E.toBars(line); }
+  catch (err) { fail(`${progId}/${drillId}/${JSON.stringify(rungs)}: ${err.message}`); continue; }
+  bars.forEach(bar => {
+    const s = bar.notes.reduce((a, n) => a + n.len, 0) + bar.rests.reduce((a, r) => a + r.len, 0);
+    ok(s === 8, `${progId}/${drillId}/${JSON.stringify(rungs)} bar ${bar.n}: ${s} eighths`);
   });
 }
 
-// 1h. melodic-minor parents and tune annotations (William's rulings):
-// Lydian dominant / altered are taught from the parent melodic minor — the
-// position is the parent fingering, the run starts on the chord root, and
-// the label names the parent ("Eb melodic minor from the 4th"). Minor ii-Vs
-// use harmonic minor and hand off to major at the resolution (D1); minor
-// blues tonics and iv chords are Dorian via the relative major (D2/D3).
+// 2. raw output: every segment starts on its own degree 1 in the reference
+//    octave; no folding
 {
-  const ld = E.chordScale(E.CH('Ab', '7', 4, { key: 'Eb', mode: 'melodic', degree: 4 }, ['#11']));
-  ok(ld.label === 'Eb melodic minor from the 4th', "lydian dominant label: " + ld.label);
-  ok(ld.parent && ld.parent.scaleId === 'melodic' && ld.parent.key === 'Eb', "lydian dominant parent should be Eb melodic minor");
-  ok(ld.steps.join() === '0,2,4,6,7,9,10', "Ab lydian dominant steps: " + ld.steps.join());
-  const alt = E.chordScale(E.CH('C', '7', 4, { key: 'Db', mode: 'melodic', degree: 7 }, ['#5']));
-  ok(alt.label === 'Db melodic minor from the 7th', "altered label: " + alt.label);
-  ok(alt.steps.slice().sort((a, b) => a - b).join() === '0,1,3,4,6,8,10', "C altered steps: " + alt.steps.join());
-
-  const pc = E.buildLine("tune_mrpc", "scale", 1);
-  ok(!pc.anyFlag, "Mr. P.C.: fully annotated, no flags");
-  ok(pc.bars[8].labels[0].text.startsWith("Eb melodic minor from the 4th"), "Mr. P.C. bar 9: " + pc.bars[8].labels[0].text);
-  ok(pc.bars[8].events.some(e => e.midi % 12 === 2), "Mr. P.C. bar 9 should carry the D natural (#11 of Ab7)");
-  ok(pc.bars[0].labels[0].text.startsWith("C Dorian"), "Mr. P.C. tonic: " + pc.bars[0].labels[0].text);
-  ok(pc.bars[9].labels[0].text.startsWith("G Phrygian dominant (V of C minor)"), "Mr. P.C. bar 10: " + pc.bars[9].labels[0].text);
-
-  const bb = E.buildLine("tune_bluebossa", "scale", 1);
-  ok(!bb.anyFlag, "Blue Bossa: fully annotated, no flags");
-  ok(bb.bars[2].labels[0].text.startsWith("F Dorian"), "Blue Bossa iv: " + bb.bars[2].labels[0].text);
-  ok(bb.bars[4].labels[0].text.startsWith("G Phrygian dominant (V of C minor)"), "Blue Bossa ii of Cm: " + bb.bars[4].labels[0].text);
-
-  const at = E.buildLine("tune_attya", "scale", 1);
-  ok(!at.anyFlag, "ATTYA: fully annotated (Gb7 backdoor ruled Lydian dominant), no flags");
-  ok(at.bars[29].labels[0].text.startsWith("Db melodic minor from the 4th"), "ATTYA Gb7 backdoor: " + at.bars[29].labels[0].text);
-  ok(at.bars[5].labels.every(l => l.text.includes("(V of C minor)")), "ATTYA bar 6 minor ii-V: " + at.bars[5].labels.map(l => l.text).join(" / "));
-  ok(at.bars[6].labels[0].text.startsWith("C major"), "ATTYA bar 7 resolves to major: " + at.bars[6].labels[0].text);
-  ok(at.bars[23].labels[0].text.startsWith("Db melodic minor from the 7th"), "ATTYA C7#5: " + at.bars[23].labels[0].text);
-  ok(at.bars[23].events.some(e => e.note === "Fb"), "C7#5 run should spell the flat side (Fb), got " + at.bars[23].events.map(e=>e.note).join(" "));
-}
-
-// 1i. third-based lines. Arp 3-5-7-9 = the R-3-5-7 shape of the chord on the
-// 3rd (D-7 plays FΔ7's shape, G7b9 plays B°7, C-6 plays EbΔ7#5; º7 keeps its
-// own arpeggio). Scale 8-beat figure is William's 345678939R76543 exactly;
-// the 4-beat figure is PROVISIONAL (3456789R as straight eighths — his
-// 3456789R9 is nine notes in eight slots, awaiting his ruling on the ending).
-{
-  const notes = b => b.events.map(e => e.note).join(" ");
-  const a = E.buildLine("ii51maj", "arp", 1, {third:true});
-  ok(notes(a.bars[0]) === "F A C E", "3579 of D-7 should be the FΔ7 shape: " + notes(a.bars[0]));
-  ok(a.bars[0].labels[0].text.startsWith("arp 3-5-7-9 · 3 on"), "third-based arp label: " + a.bars[0].labels[0].text);
-  ok(notes(a.bars[1]) === "B D F A", "3579 of G7 should be the Bø7 shape: " + notes(a.bars[1]));
-  ok(notes(a.bars[2]) === "E G B D" && notes(a.bars[3]) === "D B G E", "CΔ7 8-beat from the 3rd: " + notes(a.bars[2]) + " | " + notes(a.bars[3]));
-  ok(a.bars[3].events[3].dur === 5, "8-beat bar 2 should still hold its last note");
-  const m = E.buildLine("ii51min", "arp", 1, {third:true});
-  ok(notes(m.bars[1]) === "B D F Ab", "3579 of G7b9 should be the B°7 shape: " + notes(m.bars[1]));
-  ok(notes(m.bars[2]) === "Eb G B D", "3579 of C-6 should be the EbΔ7#5 shape: " + notes(m.bars[2]));
-  const r = E.buildLine("rhythm", "arp", 1, {third:true});
-  ok(notes(r.bars[5]).endsWith("E G Bb Db"), "º7 keeps its own R-based arpeggio: " + notes(r.bars[5]));
-  // approach composes: the held 9 walks down into the next chord's 3rd
-  const ap = E.buildLine("ii51maj", "arp", 1, {third:true, approach:true});
-  ok(ap.bars[0].events[3].dur === 3 && notes(ap.bars[0]) === "F A C E D C" && ap.bars[1].events[0].note === "B",
-     "third-based approach: E held, D C into G7's B — got " + notes(ap.bars[0]) + " -> " + ap.bars[1].events[0].note);
-  // scale figures
-  const s = E.buildLine("ii51maj", "scale", 1, {third:true});
-  ok(notes(s.bars[2]) === "E F G A B C D E", "scale 8-beat bar 1 from the 3rd (3..10): " + notes(s.bars[2]));
-  ok(notes(s.bars[3]) === "D C B A G F E", "scale 8-beat bar 2 (9 R 7 6 5 4, 3): " + notes(s.bars[3]));
-  ok(s.bars[3].events[6].at === 6 && s.bars[3].events[6].dur === 2, "the two-bar figure ends on the 3rd, a quarter on beat 4");
-  ok(notes(s.bars[0]) === "F G A B C D E D", "PROVISIONAL 4-beat figure (3456789R): " + notes(s.bars[0]));
-}
-
-// 1e. approach coverage: across every progression and fingering, every chord
-// whose held note sits exactly three scale steps above the next chord's first
-// note gets the approach whenever any fingering of its scale holds both
-// passing tones — cycle-of-fourths motion must never be silently skipped
-{
-  let applied = 0;
-  for (const progId of Object.keys(E.PROGRESSIONS)) for (let f = 1; f <= 6; f++) {
-    const prog = E.PROGRESSIONS[progId];
-    const line = E.buildLine(progId, "arp", f, {approach:true});
-    const flat = line.bars.flatMap((b, bi) => b.events.map(e => ({ ...e, abs: bi * 8 + e.at }))).sort((a, b) => a.abs - b.abs);
-    let at = 0; const spans = prog.chords.map(ch => { const s = { from: at, to: at + ch.beats * 2 }; at += ch.beats * 2; return s; });
-    prog.chords.forEach((ch, i) => {
-      if (i + 1 >= prog.chords.length) return;
-      const evs = flat.filter(e => e.abs >= spans[i].from && e.abs < spans[i].to);
-      if (evs.some(e => e.dur === 3)) { applied++; return; }
-      const last = evs[evs.length - 1];
-      if (last.dur !== 5) return;
-      const cs = E.chordScale(ch);
-      if (!cs.steps) return;
-      const steps = cs.steps;
-      let j = steps.indexOf(((last.midi - ch.pc) % 12 + 12) % 12);
-      let m = last.midi; const pass = [];
-      for (let k = 0; k < 3; k++) { const j2 = (j + 6) % 7; m -= (steps[j] - steps[j2] + 12) % 12; j = j2; pass.push(m); }
-      if (pass[2] !== flat.find(e => e.abs >= spans[i + 1].from).midi) return;   // not a 3-step descent
-      const src = cs.parent || cs.own;
-      const placeable = src && E.placements(src.scaleId, src.key).some(pl =>
-        pl.notes.some(n => n.midi === pass[0]) && pl.notes.some(n => n.midi === pass[1]));
-      ok(!placeable, `${progId}/arp/${f} chord ${i + 1} (${ch.root}${ch.q}): eligible approach was skipped`);
+  for (const progId of Object.keys(E.PROGRESSIONS)) {
+    const line = build(E.PROGRESSIONS[progId].chords, {});
+    line.segs.forEach((seg, i) => {
+      const evs = line.evs[i];
+      if (!evs.length) return;
+      ok(evs[0].midi % 12 === seg.ch.pc, `${progId} seg ${i}: raw start not the root`);
+      ok(evs[0].midi === E.refRoot(seg, RANGE), `${progId} seg ${i}: raw start not in the reference octave`);
+      ok(line.marks[i].size === 0, `${progId} seg ${i}: marks with all rungs off`);
     });
   }
-  ok(applied > 600, "approach coverage: expected 600+ applications across the sweep, got " + applied);
 }
 
-// 1f. cycle motion: with the approach-aware octave lookahead, the whole-step
-// ii-V-I cycles connect at 77%+ of their ii/V seams (the rest are structural
-// register wraps — the position holds no octave pair that can connect, and
-// 1e above proves every placeable approach is applied). Key-of-C ii-V-I and
-// the A-7 -> D7 case from All The Things You Are are exact.
+// 3. seed templates match the old formulas' shapes
 {
-  let seams = 0, connected = 0;
-  for (const progId of ["ii51maj", "ii51min"]) for (let f = 1; f <= 6; f++) {
-    const line = E.buildLine(progId, "arp", f, {approach:true});
-    line.bars.forEach(bar => {
-      if (bar.n % 4 === 1 || bar.n % 4 === 2) { seams++; if (bar.events.some(e => e.dur === 3)) connected++; }
+  const line = build(E.PROGRESSIONS.ii51maj.chords, { drillId: "arp-r357" });
+  const s0 = line.evs[0];                          // Dm7, 4 beats
+  ok(s0.map(e => e.slot).join() === "0,1,2,3" && s0.map(e => e.dur).join() === "1,1,1,5",
+    "arp 4-beat rhythm: " + s0.map(e => e.slot + ":" + e.dur).join(" "));
+  ok(s0.map(e => (e.midi - s0[0].midi)).join() === "0,3,7,10", "Dm7 arp intervals: " + s0.map(e => e.midi - s0[0].midi).join());
+  const s2 = line.evs[2];                          // Cmaj7, 8 beats
+  ok(s2.map(e => e.slot).join() === "0,1,2,3,8,9,10,11" && s2.map(e => e.dur).join() === "1,1,1,5,1,1,1,5",
+    "arp 8-beat mirror: " + s2.map(e => e.slot + ":" + e.dur).join(" "));
+  ok(s2.map(e => e.midi - s2[0].midi).join() === "0,4,7,11,11,7,4,0", "maj7 8-beat up-down");
+
+  const sc = build(E.PROGRESSIONS.ii51maj.chords, { drillId: "scale-run" });
+  const r0 = sc.evs[0];                            // 4-beat run: 1..7, 7 a quarter
+  ok(r0.length === 7 && r0[6].dur === 2 && r0.map(e => e.midi - r0[0].midi).join() === "0,2,3,5,7,9,10",
+    "Dorian 4-beat run: " + r0.map(e => e.midi - r0[0].midi).join());
+  const r2 = sc.evs[2];                            // 8-beat run: 1..9 up, back to 3
+  ok(r2.length === 15 && r2[14].dur === 2, "8-beat run length: " + r2.length);
+  ok(r2[8].midi - r2[0].midi === 14 && r2[14].midi - r2[0].midi === 4, "8-beat run peaks on 9, ends on 3");
+
+  const tp = build(E.PROGRESSIONS.tonal.chords, { drillId: "scale-run" });
+  const t0 = tp.evs[0];                            // 2-beat chord in a scale drill -> digital 1235
+  ok(tp.concepts[0].id === "digital-1235", "2-beat fallback concept: " + tp.concepts[0].id);
+  ok(t0.map(e => e.midi - t0[0].midi).join() === "0,2,3,7", "2-beat 1235 (Dorian): " + t0.map(e => e.midi - t0[0].midi).join());
+
+  const rc = build(E.PROGRESSIONS.rhythm.chords, { drillId: "scale-run" });
+  const eIdx = rc.segs.findIndex(s => s.ch.q === "dim7");
+  ok(rc.concepts[eIdx].id === "arp-r357", "dim7 in a scale drill keeps the arpeggio");
+  ok(rc.evs[eIdx].map(e => (e.midi - rc.evs[eIdx][0].midi)).join() === "0,3,6,9", "dim7 arp intervals");
+}
+
+// 4. rung isolation on the ii-V-I: a toggled rung changes only bars whose
+//    labels carry its mark
+{
+  const base = E.toBars(build(iiVI, {}));
+  const key = bars => bars.map(b => b.notes.map(n => n.slot + "/" + n.len + "/" + n.midi).join(" "));
+  for (const [rung, mark] of [["fold", "±8"], ["near", "inv"], ["app", "→"], ["seam", "7→3"]]) {
+    const bars = E.toBars(build(iiVI, { rungs: { [rung]: true } }));
+    const changed = key(bars).map((k, i) => k !== key(base)[i]);
+    bars.forEach((bar, i) => {
+      const marked = bar.labels.some(l => l.text.includes(mark));
+      ok(!changed[i] || marked, `rung ${rung}: bar ${i + 1} changed without its mark`);
     });
   }
-  ok(connected / seams > 0.75, `cycle seams connected: ${connected}/${seams}`);
-  const line = E.buildLine("tune_attya", "arp", 1, {approach:true});
-  const b17 = line.bars[16];
-  ok(b17.events.length === 6 && b17.events[4].note === "F#" && b17.events[5].note === "E",
-     "attya bar 17 (A-7): expected F# E into D7, got " + b17.events.map(e => e.note).join(" "));
-  ok(line.bars[17].events[0].note === "D", "attya bar 18 should start on D");
 }
 
-// 1g. octave displacement: at a register break only the chord's FIRST note
-// moves an octave toward the previous note, reshaping that arpeggio — the
-// screenshot case: ii-V-I in Gb (bars 13-14), Ab-7 holds Gb4, Db7 starts on
-// Db4 instead of Db3, which also unlocks the approach (F Eb into Db4).
-// With displacement + approach, every ii/V seam of both whole-step cycles
-// connects.
+// 5. transposition: the Bb part reads a whole step up, key signature follows
 {
-  const line = E.buildLine("ii51maj", "arp", 1, {approach:true, displace:true});
-  const b13 = line.bars[12], b14 = line.bars[13];
-  ok(b13.events[3].dur === 3 && b13.events[4].note === "F" && b13.events[5].note === "Eb",
-     "bar 13 (Ab-7) should approach with F Eb, got " + b13.events.map(e => e.note).join(" "));
-  ok(b14.events[0].midi === 61 && b14.labels[0].text.includes("R↑8"),
-     "bar 14 (Db7) first note should be the displaced Db4: " + b14.events[0].midi + " / " + b14.labels[0].text);
-  ok(b13.events[5].midi - 2 === b14.events[0].midi, "Eb should step into the displaced Db4");
-  // only the first note moves; rhythm and the rest of the bar are untouched
-  const d = E.buildLine("ii51maj", "arp", 1, {displace:true});
-  const p = E.buildLine("ii51maj", "arp", 1, {});
-  d.bars.forEach((bar, bi) => {
-    ok(bar.events.length === p.bars[bi].events.length && bar.events.every((e, k) => e.dur === p.bars[bi].events[k].dur),
-       "displacement alone must not change the rhythm (bar " + bar.n + ")");
-    bar.events.forEach((e, k) => { const q = p.bars[bi].events[k];
-      if (e.midi !== q.midi) ok(Math.abs(e.midi - q.midi) === 12 && e.at === q.at,
-        "a displaced note must differ by exactly an octave (bar " + bar.n + ")"); });
-  });
-  let seams = 0, conn = 0;
-  for (const progId of ["ii51maj", "ii51min"]) for (let f = 1; f <= 6; f++) {
-    const l2 = E.buildLine(progId, "arp", f, {approach:true, displace:true});
-    l2.bars.forEach(b => { if (b.n % 4 === 1 || b.n % 4 === 2) { seams++; if (b.events.some(e => e.dur === 3)) conn++; } });
-  }
-  ok(conn === seams, `with displacement, every cycle seam should connect: ${conn}/${seams}`);
+  const bars = E.toBars(build(iiVI, {}));
+  const bb = E.transposeBars(bars, "bb");
+  bars.forEach((bar, i) => bar.notes.forEach((n, j) =>
+    ok(bb[i].notes[j].midi === n.midi + 2, "Bb part note " + i + "/" + j)));
+  ok(E.writtenFifths("C", "bb") === 2, "C concert -> D for Bb instruments (2 sharps)");
+  ok(E.writtenFifths("C", "eb") === 3, "C concert -> A for Eb instruments (3 sharps)");
+  ok(E.writtenFifths("B", "bb") === -5, "B concert -> Db for Bb instruments (flats past 5 sharps)");
+  ok(E.writtenFifths("Eb", "c") === -3, "Eb concert stays 3 flats");
+  const svg = E.engrave(bb, 4, { fifths: 2, clef: "treble" });
+  ok(Array.isArray(svg) && svg.every(s => s.startsWith("<svg")), "engraver renders the Bb part");
+  const ly = E.lyExport(build(iiVI, {}), bars, { part: "bb", key: "C", bpm: 120, name: "test" });
+  ok(ly.includes("\\transpose c d"), "LilyPond Bb part transposes");
+  ok(!ly.includes("TabStaff") && !ly.includes("StringNumber"), "no TAB in the LilyPond source");
 }
 
-// 1d. octave cap semantics: ↓8 bars sound exactly an octave lower than the
-// uncapped line, ↓pos bars sound identical (only refingered), all others
-// are untouched. (Green Dolphin Eb still climbs — it's unannotated;
-// annotated ATTYA no longer does, its key regions keep the line low.)
+// 6. a concept object pushed into the registry generates with no other edits
 {
-  ok(!E.buildLine("tune_attya", "arp", 3, {}).bars.some(b => b.events.some(e => e.fret > 12)),
-     "annotated ATTYA should stay at or below fret 12 by itself now");
-  const plain = E.buildLine("tune_gdsEb", "arp", 5, {});
-  const capped = E.buildLine("tune_gdsEb", "arp", 5, {octDown:true});
-  ok(plain.bars.some(b => b.events.some(e => e.fret > 12)), "gdsEb/arp/5 should climb above fret 12 uncapped");
-  let d8 = 0, dpos = 0;
-  capped.bars.forEach((bar, bi) => {
-    const before = plain.bars[bi];
-    ok(bar.events.length === before.events.length, "cap must not change the rhythm");
-    const drop8 = bar.labels.some(l => l.text.includes("↓8")), dropP = bar.labels.some(l => l.text.includes("↓pos"));
-    if (drop8 && bar.labels.length === 1) {
-      d8++; bar.events.forEach((e, k) => ok(e.midi === before.events[k].midi - 12, "↓8 bar should sound an octave lower"));
-    } else if (dropP && bar.labels.length === 1) {
-      dpos++; bar.events.forEach((e, k) => ok(e.midi === before.events[k].midi, "↓pos bar should sound the same pitches"));
-    } else if (bar.labels.length && !drop8 && !dropP) {   // label-less bars continue the previous chord
-      bar.events.forEach((e, k) => ok(e.fret === before.events[k].fret && e.string === before.events[k].string, "unmarked bar should be untouched"));
-    }
-  });
-  ok(d8 > 0, "gdsEb/arp/5 capped: expected some ↓8 bars");
+  ok(E.REGISTRY.some(c => c.id === "test-pack-concept"), "pack concept registered");
+  const line = build(E.parseProg("Dm7 G7 | Cmaj7"), { drillId: "test-pack-concept" });
+  ok(line.concepts[0].id === "test-pack-concept", "pack concept drills");
+  const evs = line.evs[0];
+  ok(evs.map(e => e.midi - evs[0].midi).join() === "0,3,2,0", "pack concept degrees realize (Dorian 1-3-2-1)");
 }
 
-// 1c. stepwise approach: ii-V-I in C, Arp mode — D-7 holds C through beat 3
-// then walks B A into G7's G; G7 holds F then E D into C; the 8-beat I chord
-// still holds to the barline (next root is the same pitch, no approach)
+// 7. the approach and seam rungs do what the ladder says
 {
-  const line = E.buildLine("ii51maj", "arp", 1, {approach:true});
-  const b1 = line.bars[0].events, b2 = line.bars[1].events, b4 = line.bars[3].events;
-  const held1 = b1[3];
-  ok(held1.at === 3 && held1.dur === 3, "approach: D-7's 7th should be 8~4 (held to beat 3 only)");
-  ok(b1.length === 6 && b1[4].at === 6 && b1[5].at === 7, "approach: beat 4 should carry two eighths");
-  ok(b1[4].note === "B" && b1[5].note === "A", `approach: D-7 passing tones should be B A, got ${b1[4].note} ${b1[5].note}`);
-  ok(b2[0].midi === b1[5].midi - 2, "approach: A should step into G7's G a whole step below");
-  ok(b2[4].note === "E" && b2[5].note === "D", `approach: G7 passing tones should be E D, got ${b2[4].note} ${b2[5].note}`);
-  ok(line.bars[2].events[0].midi === b2[5].midi - 2, "approach: D should step into the I chord's C");
-  const last4 = b4[b4.length - 1];
-  ok(last4.dur === 5, "approach: the I chord's held R should stay 8~2 (next root is the same C)");
-  // without the toggle nothing changes
-  const plain = E.buildLine("ii51maj", "arp", 1, {});
-  ok(plain.bars[0].events.length === 4 && plain.bars[0].events[3].dur === 5, "approach off: bar 1 unchanged");
+  const line = build(E.parseProg("Dm7 | G7 | Cmaj7"), { rungs: { app: true } });
+  const d = line.evs[0];
+  ok(line.marks[0].has("app"), "Dm7 approaches G7");
+  ok(d[d.length - 3].dur === 3, "held note shortens to beat 3");
+  const g = line.evs[1][0].midi;
+  ok(d[d.length - 1].midi - g === 2 && d[d.length - 2].midi - g === 4,
+    "walk-down B A into the G: " + d.slice(-2).map(e => e.midi).join());
+
+  const sline = build(E.parseProg("G7 | Cmaj7"), { rungs: { seam: true } });
+  const gl = sline.evs[0], cl = sline.evs[1];
+  ok(gl[gl.length - 1].midi % 12 === 5, "G7 ends on F (b7)");
+  ok(cl[0].midi % 12 === 4, "Cmaj7 starts on E (3rd)");
+  ok(Math.abs(cl[0].midi - gl[gl.length - 1].midi) === 1, "7->3 resolves by half step");
+  ok(sline.marks[1].has("seam"), "seam mark on the resolution");
 }
 
-// 1b. the 8-beat scale unit ends on the 3rd, a quarter on beat 4
+// 8. nearest-start rung: starts land on chord tones near the previous note
 {
-  const line = E.buildLine("ii51maj", "scale", 1);
-  const bar4 = line.bars[3]; // C major held bars 3-4; bar 4 is the descent
-  const last = bar4.events[bar4.events.length - 1];
-  ok(last.at === 6 && last.dur === 2, "8-beat unit: last event not a quarter on beat 4");
-  ok(last.note === "E", "8-beat unit in C: descent should end on the 3rd (E), got " + last.note);
-  const bar3 = line.bars[2];
-  ok(bar3.events.length === 8 && bar3.events.every(e => e.dur === 1), "8-beat unit bar 1 should be eight eighths");
-}
-
-// 2. major ii-V-I in C
-{
-  const line = E.buildLine("ii51maj", "scale", 1);
-  const labels = [line.bars[0], line.bars[1], line.bars[2]].map(b => b.labels[0].text);
-  ok(labels[0].startsWith("D Dorian"), "bar 1 label: " + labels[0]);
-  ok(labels[1].startsWith("G Mixolydian"), "bar 2 label: " + labels[1]);
-  ok(labels[2].startsWith("C major"), "bar 3 label: " + labels[2]);
-  const cMajor = new Set([0, 2, 4, 5, 7, 9, 11]);
-  line.bars.slice(0, 4).forEach(b => b.events.forEach(e =>
-    ok(cMajor.has(e.midi % 12), "ii-V-I in C: non-diatonic note " + e.note)));
-  // frets inside the placement window the bar's label names (± the VDA shift)
-  line.bars.slice(0, 4).forEach((b, i) => {
-    const id = b.labels.length ? b.labels[0].text.match(/[→ ]([PMI][56])/)[1] : null;
-    if (!id) return;
-    const pl = E.placeScale("major", id, "C");
-    b.events.forEach(e => ok(e.fret >= pl.lo && e.fret <= pl.hi, `bar ${i + 1}: fret ${e.fret} outside ${id} window`));
-  });
-}
-
-// 3. minor ii-V-i in C
-{
-  const line = E.buildLine("ii51min", "scale", 1);
-  const l = i => line.bars[i].labels[0].text;
-  ok(l(0).startsWith("G Phrygian dominant (V of C minor)"), "minor ii label: " + l(0));
-  ok(l(1).startsWith("G Phrygian dominant (V of C minor)"), "minor V label: " + l(1));
-  ok(l(2).startsWith("C harmonic minor"), "minor i label: " + l(2));
-  const cHm = new Set([0, 2, 3, 5, 7, 8, 11]);
-  line.bars.slice(0, 4).forEach(b => b.events.forEach(e =>
-    ok(cHm.has(e.midi % 12), "minor ii-V-i in C: note outside C harmonic minor: " + e.note)));
-}
-
-// 4. rhythm changes
-{
-  const line = E.buildLine("rhythm", "scale", 1);
-  const bar1 = line.bars[0];
-  ok(bar1.events.length === 8 && bar1.events.every(e => e.dur === 1), "rhythm bar 1: two-beat chords should give 8 eighths");
-  ok(bar1.chords.length === 2 && bar1.chords[1].at === 4, "rhythm bar 1: second chord should sit on beat 3");
-  const bar6 = line.bars[5]; // Ebmaj7 Edim7
-  const dimEvents = bar6.events.filter(e => e.at >= 4);
-  ok(bar6.labels[1].text.startsWith("arp"), "Edim7 label should be arp: " + bar6.labels[1].text);
-  const pcs = dimEvents.map(e => e.midi % 12);
-  ok(JSON.stringify(pcs) === JSON.stringify([4, 7, 10, 1]), "Edim7 should run E G Bb Db, got " + dimEvents.map(e => e.note));
-}
-
-// 5. blues in F
-{
-  const line = E.buildLine("bluesF", "scale", 1);
-  const bar11 = line.bars[10]; // F7 D7b9
-  ok(bar11.chords.length === 2, "blues F bar 11 should split");
-  ok(bar11.events.length === 8 && bar11.events.every(e => e.dur === 1), "blues F bar 11: 2-beat branch should give 8 eighths");
-  ok(bar11.labels[1].text.startsWith("D Phrygian dominant"), "D7b9 label: " + bar11.labels[1].text);
-  const dRun = bar11.events.filter(e => e.at >= 4).map(e => e.note).join(" ");
-  ok(dRun === "D Eb F# A", "D7b9 digital pattern (1 2 3 5 of D Phrygian dominant) should be D Eb F# A, got " + dRun);
-}
-
-// 5b. D phrygian dominant really is 1 2 3 5 = D Eb F# A
-{
-  const cs = E.chordScale(E.CH("D", "7", 2, "sec", ["b9"]));
-  const run = [1, 2, 3, 5].map(d => cs.names[d - 1]).join(" ");
-  ok(run === "D Eb F# A", "D Phrygian dominant 1235 should be D Eb F# A, got " + run);
-}
-
-// 6. lilypond round-trip
-{
-  const scratch = process.env.LL_SCRATCH || require("os").tmpdir();
-  for (const [mode, opts, tag] of [["arp", {}, ""], ["scale", {}, ""], ["arp", {approach:true, displace:true}, "-approach"]]) {
-    const line = E.buildLine("ii51maj", mode, 1, opts);
-    const ly = E.lyExport(line, "ii51maj", { bpm: 120, source: "check.js" });
-    const f = path.join(scratch, "line-ladder-check-" + mode + tag + ".ly");
-    fs.writeFileSync(f, ly);
-    try {
-      cp.execFileSync("lilypond", ["-dno-point-and-click", "-o", f.replace(/\.ly$/, ""), f], { stdio: "pipe", cwd: scratch });
-      checks++; console.log("lilypond OK:", f);
-    } catch (err) {
-      if (err.code === "ENOENT") console.log("lilypond not installed — round-trip skipped");
-      else fail("lilypond rejected " + f + ":\n" + (err.stderr || "").toString().slice(-2000));
-    }
+  const line = build(E.parseProg("Dm7 | G7 | Cmaj7"), { rungs: { near: true } });
+  for (let i = 1; i < line.segs.length; i++) {
+    const prev = line.evs[i - 1].slice(-1)[0].midi, start = line.evs[i][0].midi;
+    ok(Math.abs(start - prev) <= 8, `near rung: seg ${i} starts ${Math.abs(start - prev)} semitones away`);
   }
 }
 
-console.log(fails ? `${fails} FAILED of ${checks} checks` : `all ${checks} checks passed`);
+// 9. guitar-range fold keeps everything inside E3-B5 written
+{
+  for (const progId of ["ii51maj", "ii51min", "bluesBb", "tune_attya"]) {
+    const line = build(E.PROGRESSIONS[progId].chords, { rungs: { fold: 1, near: 1, app: 1 }, range: GUITAR });
+    line.evs.flat().forEach(e =>
+      ok(e.midi >= GUITAR.lo && e.midi <= GUITAR.hi, `${progId}: ${e.midi} out of range`));
+  }
+}
+
+// 10. mixed mode: seeded draws are reproducible; locks stick through a reroll
+{
+  const opts = { mode: "mixed", seed: 7, drillId: null };
+  const a = build(E.PROGRESSIONS.ii51maj.chords, opts);
+  const b = build(E.PROGRESSIONS.ii51maj.chords, opts);
+  ok(a.concepts.every((c, i) => c === b.concepts[i]), "same seed, same draw");
+  const locked = build(E.PROGRESSIONS.ii51maj.chords, { mode: "mixed", seed: 8, locks: { 0: a.concepts[0].id } });
+  ok(locked.concepts[0].id === a.concepts[0].id, "locked segment keeps its concept");
+}
+
+console.log(checks + " checks, " + fails + " failures");
 process.exit(fails ? 1 : 0);

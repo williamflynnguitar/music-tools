@@ -1,200 +1,178 @@
 # Line Ladder
 
-Deterministic drill lines over the Handbook's practice progressions
-(pp. 86–95), written with the VDA position rule (pp. 76–78) inside the scale
-fingerings (pp. 6–23) and the 1-octave arpeggio shapes (pp. 25–31). The
-student picks a progression, Arp or Scale mode, and a starting fingering; the
-app writes the line out, engraves it (staff + TAB), shows the position on a
-fretboard, and runs a metronome with count-in.
+Stand-alone improvisation line generator, instrument-neutral. The student
+picks a progression (or types one), checks concepts, and climbs a smoothing
+ladder; the app writes the line in concert pitch, engraves it (single staff,
+key signature, no TAB, no fingerings), transposes parts at render time, and
+runs a metronome. The handbook is one source among several: it is cited in
+per-concept and per-preset `source` fields only, never in headings or chrome.
 
-Single self-contained `index.html`, no dependencies, no build step, no browser
-storage. Root `CLAUDE.md` conventions apply, including the lookahead scheduler.
-Headless tests: `node check.js` (extracts the engine from index.html, the
-check-deck.js pattern; also round-trips a .ly through `lilypond` when the
-binary is present).
+Files: `index.html` (engine + UI) plus plain `.js` concept packs in
+`concepts/` loaded by `<script>` tags (`core.js`, `digital.js`). No build
+step, no storage APIs, works from `file://`. Root `CLAUDE.md` conventions
+apply, including the lookahead scheduler. Headless tests: `node check.js`.
 
-## Formulas (per chord; every bar must sum to 4 beats — asserted)
+## Pipeline
 
-| Length | Arp | Scale |
-|---|---|---|
-| 2 beats | R 3 5 7, four eighths | 1 2 3 5, four eighths |
-| 4 beats | R 3 5 eighths on 1 & 2; 7 on the & of 2, held to the barline (written 8~2 so beat 3 shows) | 1–6 as eighths on 1–3&; 7 a quarter on beat 4 |
-| 8 beats | 4-beat bar, then 7 5 3 on 1 & 2, R on the & of 2 held (7 struck twice) | 1–8 as eighths; then 9 8 7 6 5 4 eighths, 3 a quarter on beat 4 |
-| 12 beats | 8-unit + 4-unit *(assumption — confirm with William)* | same *(assumption)* |
-| 16 beats | 8-unit twice *(assumption)* | same *(assumption)* |
+```
+progression (preset or typed)
+  → segment  one segment per chord: {ch, beats, at, cs: chordScale(ch)}
+  → assign   Drill (one concept everywhere it applies; elsewhere the first
+             applicable concept in REGISTRY order) or Mixed (seeded random
+             per segment from the checked applicable set; locks pin a
+             segment's concept across rerolls)
+  → realize  concept degree string → written concert pitches, every segment
+             starting from its degree 1 in the reference octave
+  → smooth   enabled rungs, fixed order 1→4 (see ladder below)
+  → range    rung 1's fold runs once more if enabled — rungs 2–4 may have
+             re-left the range
+  → engrave  in-app SVG (bars via toBars) + LilyPond source (lyExport)
+```
 
-º7 chords use the Arp formula in both modes. Degrees are chord-relative
-(Arp: the quality's chord tones; Scale: indexes into the chord's scale,
-8/9 = octave and the 2nd above).
+Generation is always concert; `transposeBars`/`writtenFifths` transpose at
+engrave time (B♭ +2/+2 fifths, E♭ +9/+3 fifths, bass = concert in bass
+clef; flats preferred past 5 sharps). The **reference octave** is the C-to-B
+octave containing the middle of the active range — C4–B4 for the guitar
+(E3–B5 written) and neutral (A3–B5) presets, C3–B3 for bass (E2–G4).
 
-**From the 3rd** (the Line control, `opts.third`): the same rhythm templates
-one third up. Arp = 3-5-7-9, implemented as the R-3-5-7 **shape of the chord
-on the 3rd** (`arpChordFor`: Δ7 → -7, 7 → ø7, 7♭9 → °7, -7 → Δ7,
-ø7 → -7, -6/-Δ7 → Δ7♯5, Δ7♯5 → 7), so every note still comes from the
-shape data; º7 has no 9th in the library and keeps its own arpeggio. Scale
-figures (`SCALE3_EV`): 2-beat 3-4-5-7 *(parallel of 1-2-3-5 — William
-didn't spec it)*; 8-beat is his 345678939R76543 exactly (up 3→10, down
-9 R 7 6 5 4, 3 as the beat-4 quarter); **4-beat is PROVISIONAL** — his
-"3456789R9" is nine notes against eight eighth-slots, shipped as
-3-4-5-6-7-8-9-R straight eighths until he rules on the ending (a 9-R-9
-beat-4 triplet would need triplet support in the engraver/durations).
-`fitInPlacement` anchors on the first *played* degree, so a third-based
-run fits wherever the 3rd..10th sit in the position even when the unplayed
-root doesn't. The approach/displacement/cap passes are basis-agnostic:
-a held 9 walks down into the next chord's 3rd on its own.
+## Concept registry
 
-**The line pipeline**: `buildLine(progId, mode, startFing, opts)` is one
-placement pass (the chord loop, VDA) followed by ordered line-editing
-passes over the flat event list — **octave cap → octave displacement →
-stepwise approach** — so each pass sees the previous pass's notes, and the
-approach targets capped/displaced pitches. The passes share `winsFor`
-(ordered fingering windows for a chord: region placement first, then the
-chord's own scale's placements nearest the frets under the hand) and
-`noteFor` (a fingering for one pitch; the octave cap is a hard limit —
-`noteFor` and the approach's pair search return nothing above fret 12 when
-the cap is on). New line features should be new passes in this chain, not
-additions to the chord loop.
+`window.LL_CONCEPTS` is an array of plain objects; the engine snapshots it
+into `REGISTRY` at load. **Adding a concept = adding a data entry, never a
+generator branch.** Registry order is the Drill fallback order — that is why
+`digital-1235` sits first in `core.js` (a 2-beat chord in a Scale-run drill
+must fall back to 1-2-3-5, reproducing the old Scale mode).
 
-**Octave displacement** (Arp mode toggle, off by default): when a chord's
-first note lands more than an octave from the previous chord's last note,
-that one note — and only that note — moves an octave toward it, reshaping
-the arpeggio (A♭-7 holds G♭4; D♭7 starts D♭4 F3 A♭3 C♭4 instead of D♭3 F3
-A♭3 C♭4). Marked R↑8 / R↓8. This closes the register wraps the lookahead
-can't avoid: with displacement + approach on, **every** ii/V seam of both
-whole-step cycles connects (288/288, asserted). Triggers in both
-directions on any gap over an octave; skipped when no fingering for the
-displaced pitch exists (or none under fret 12 with the cap on).
+```js
+{ id, name, short,                 // short is the bar label
+  group,                          // checklist grouping by concept family
+  source,                         // citation, shown only as a small info line
+  tags,                           // metadata, not shown in v1
+  applies: { qualities:[...], minBeats?, maxBeats? },
+  degrees: [1,3,5,7],             // 1/3/5/7 = chord tones (against "chord"),
+                                  // others index the collection; 9 = degree 2
+                                  // an octave up, etc.
+  against: "chord" | "scale",     // "scale" needs cs.steps, so it never
+                                  // applies to º7 (chordScale returns {arp})
+  rhythm: "eighths" | "eighths-hold" | "quarters",
+  endpoint: null | {4:7, 8:3} }   // per-unit run endpoints (see templates)
+```
 
-**Stepwise approach** (Arp mode toggle, off by default): a held note (the
-8~2 at a 4- or 8-beat unit's end) shortens to 8~4 — held through beat 3
-only — and beat 4 walks down the chord's scale in two eighths into the next
-chord's first note (D-7: C held, B A into G7's G; G7: F held, E D into C).
-Applied wherever the target sits exactly three scale steps below the held
-note. Passing tones come from the region placement when it holds them (the
-diatonic case); otherwise from the chord's own scale, in the fingering
-nearest the frets under the hand — so secondary dominants and a tune's
-†-chords approach too (A-7 walks F# E into D7 even when the region is F
-dorian). With the toggle on, the arp octave choice is approach-aware: among
-in-window shapes a chord prefers the one whose held note can reach an
-in-window root of the next chord, which moves the register wrap that a
-12-key cycle forces in a fixed position to the key seam (roots repeat
-there, no approach anyway) instead of mid-key. ~23% of ii/V seams in the
-whole-step cycles still wrap — the position simply holds no connectable
-octave pair — and those bars keep the tie; check.js proves every placeable
-approach is applied and that the cycles connect at 75%+ of seams.
-Descending only; no approach out of the last chord (loop playback is a
-playback option, the engraving is one line).
+Chord-tone pitches borrow qualities as the old shape library did
+(`ARPQ_TONES`): −6 takes the −Δ7's natural 7, plain 6 takes Δ7, 7sus4 the
+dominant's 3rd.
 
-## Chord scales
+## Rhythm templates (engine-owned; new rhythmic behavior is a new template)
 
-One rule: **parent scale rotated to start on the chord root.**
-- Major-key annotation `{key, mode:"major", degree}` → parent major of the
-  key; labels use mode names (1 → "C major", 2 → Dorian, 5 → Mixolydian …).
-  William teaches Lydian/Aeolian as "major scale from the 4th/6th" — the
-  position already IS the parent major fingering, so the mode label is
-  just a name on it.
-- Minor-key annotation → parent harmonic minor of i; degrees 2 (ø7) and
-  5 (7♭9) are labeled "G Phrygian dominant (V of C minor)" — same notes,
-  the book's name for them.
-- Melodic-minor annotation `{key, mode:"melodic", degree}` → parent melodic
-  minor, labeled **parent-first** ("Eb melodic minor from the 4th") because
-  that's how the sounds are taught: no separate Lydian-dominant/altered
-  fingerings, just the parent position entered from the chord root.
-  `mmSpell` spells by degree letters from the key root (Db melodic = Db Eb
-  Fb Gb Ab Bb C), borrowing the relative major only when double
-  accidentals would appear.
-- Tune texts carry annotations on the chord token: `Cm7@ii/Bb`,
-  `G7b9@v/Cm`, `Ab7#11@iv/Ebmel`, `F7@sec`, `Bbm7@own` (`own` = quality
-  default, confirmed, no †). Parsed by `parseFn`/`parseProg`; identical
-  adjacent whole bars only merge when the annotation matches too.
-- **William's rulings** (2026-09, see annotations-worksheet.md): minor
-  ii-Vs → harmonic minor, resolution chord transitions to major; minor
-  blues tonic -7 and iv → Dorian via the relative major; 7♯11 and alt →
-  melodic-minor parent (`@iv/Xmel` / `@vii/Xmel`); backdoor dominants
-  (root a whole step below the tonic) → Lydian dominant; ♭II/♭VII Δ7♯11 →
-  Lydian via the major parent; vi → Aeolian via the major parent.
-  ATTYA, Blue Bossa and Mr. P.C. are annotated; the other 11 tunes await
-  his worksheet pass.
-- `fn:"sec"` (secondary/non-diatonic dominants) → own Mixolydian; with a ♭9,
-  own Phrygian dominant *(assumption — confirm)*.
-- No annotation → quality-only fallback (Δ7 → major, -7 → Dorian,
-  7 → Mixolydian, 7♭9 → Phrygian dominant, ø7 → Phrygian dominant rooted a
-  P4 above, -6/-Δ7 → own harmonic minor *(assumption)*) and the bar is
-  flagged † so William can annotate later. The leadsheets (pp. 109–123) are
-  entirely fallback-annotated at present.
-- A degree annotation that contradicts the chord root also falls back and
-  flags.
+Long chords split into units first: `unitPlan` peels 8-beat units, remainder
+last (8→[8], 12→[8,4], 16→[8,8] — matching the old formulas).
 
-## Position logic (VDA; HDA is a v2 stub — `hdaStub`)
+- `eighths` — the degree string in straight 8ths over the whole segment;
+  remaining 8ths **descend the collection stepwise** to the segment end
+  (this fill is what makes `arp-up-scale-down` a data entry). No collection
+  (º7) → the last note holds instead.
+- `eighths` + `endpoint` — the scale run, per unit: ascend from
+  `degrees[0]`, turn, and land the unit's endpoint as a quarter on the last
+  beat. 4-beat: 1..7 (7 the beat-4 quarter); 8-beat: 1..9 up, back down to
+  3. Peak solves `p=(n−1+s+e)/2`; a non-integer or impossible peak falls
+  back to a straight ascent.
+- `eighths-hold` — per unit: pattern in 8ths, last note held to the unit
+  end (the old 8~2, engraved so beat 3 shows). An 8-beat unit with a
+  pattern a quarter of its slots mirrors: pattern up + held, pattern
+  reversed + held — the old R-3-5-7 / 7-5-3-R.
+- `quarters` — the degree string in quarters, last note held to the end.
 
-- Region = the current parent scale + key. The starting fingering (1–6 =
-  the scale's cycle order P6…I5) places the first region; a new diatonic
-  key/mode picks the new parent's fingering whose fret window overlaps the
-  old one most.
-- Diatonic chords: choose the root octave whose full run (R→5/7/9 by length)
-  exists in the region placement's notes; octave chosen nearest the previous
-  chord's root (first chord: lowest). If none fits, try the adjacent
-  fingering (±1 in the placements sorted by window) — never more than one
-  shift per chord, and the region itself doesn't move.
-- Secondary/fallback chords: the chord's own scale (`SCALES` has fingerings
-  for all of them), placed by best window overlap with the region.
-- Arp mode and º7: 1-octave `ARP` shape of the quality whose root sits in
-  the window; scored VDA-style (≤2 notes outside window±1, prefer inside,
-  tie-break notes shared with the region placement). -6 chords borrow the
-  -Δ7 shape (harmonic-minor tonic; the book has no -6 arpeggio page) and
-  plain 6 borrows Δ7 — both *(assumption)*.
-- Every output note carries `{string, fret, finger}` straight from the
-  fingering/shape data; nothing is computed.
-- **Octave cap** (toggle, off by default, both modes): after the line is
-  built, any chord with a note above the 12th fret is re-placed — first as a
-  true octave drop (marked ↓8: arp shapes rerooted at −12, scale runs refit
-  into whichever fingering of the same scale holds them under fret 12), and
-  where the pitch is already too low to drop (an Eb3 played at the 13th
-  fret), the same pitches are refingered low instead (marked ↓pos). With the
-  cap on, nothing in any progression exceeds fret 12 — asserted across every
-  progression × mode × fingering in check.js. Runs before the approach pass
-  so approaches target the dropped notes; panels and labels follow.
+A segment nothing applies to (or a hole a template can't fill) becomes
+rests, beat-aligned by the same `decompose` used to split held notes at
+barlines into tied pieces.
 
-## Data
+## Smoothing ladder
 
-- Shared `SCALES` block, byte-identical with fretboard/scales-deck/
-  arpeggios-deck (this is a 4th copy — root CLAUDE.md updated).
-- `ARP1` = the seven 7th-chord qualities of `ARP[1]` from arpeggios-deck,
-  copied verbatim (keep in sync if the deck's shapes change).
-- `PROGRESSIONS`: chords are `{root, q, beats, ext?, fn?}`. The pp. 87–90
-  cycles are generated with annotations built in; blues and rhythm changes
-  are written out annotated; the 14 leadsheets are the inversion-drill
-  `TUNES` texts run through the Box Buddy parser at load (adjacent
-  identical whole bars merge to 8/12/16-beat chords, matching the
-  two-bars-of-I in the printed cycles).
+Each rung is a pure pass `(segments, per-segment events) → events`; order of
+application is fixed 1→2→3→4 regardless of which are checked. After every
+pass, whatever actually changed stamps the bars it touched with the rung's
+mark — bar labels read `<short> <marks>`: `±8` fold, `inv` nearest start,
+`→` approach, `7→3` seam. All off = raw (acceptance: every chord starts on
+its own degree 1 in the reference octave, nothing folded).
 
-## Engraving
+1. **Fold to range** (`foldPass`) — any note outside the range moves an
+   octave inward, per note. Replaces the old octave-displacement /
+   12th-fret rules. Runs again after rungs 2–4 (the pipeline's range stage).
+2. **Nearest chord-tone start** (`nearPass`) — rotate the degree string
+   (inversion, wrapped degrees up an octave) and pick rotation + octave so
+   the segment starts on the chord tone nearest the previous note.
+   Candidates that keep the whole segment inside the range win outright, so
+   the later fold rarely has to break a shape. Run/endpoint concepts don't
+   rotate — they re-anchor their start octave only.
+3. **Stepwise approach** (`approachPass`) — a segment-ending note held from
+   beat 3 (dur ≥ 4 slots) shortens to beat 3, and beat 4 walks the
+   segment's collection in two 8ths into the next segment's first note —
+   whenever that target sits exactly three scale steps away, in either
+   direction (the old rule was descending only; the target is whatever
+   rung 2/4 chose). º7 has no collection and never approaches.
+4. **Dominant seam 7→3** (`seamPass`) — a dominant resolving down a fifth
+   ends on its ♭7 (re-rotating the pattern if its degrees hold a 7) and the
+   next segment starts on its 3rd (rotation, or start-degree override for
+   runs), octave chosen for voice-leading proximity with only a soft range
+   penalty. Overrides rung 2's start for that seam only; a stale rung-3
+   walk into the old start is stripped. Chained dominants: a segment
+   already re-seamed keeps its 3rd start (no re-rotation to ♭7).
 
-The brief pointed at an "Improv Blocks" engraver that does not exist in this
-repo; `engrave()` here is new, built on the `notate()` glyph system
-(LilyPond Feta outlines in `NOTE_DEFS`, same unit grid: 1 staff space = 1).
-Argue rules: 4-bar systems, eighths beamed in fours from beats 1 and 3, the
-held 7th written 8~2 so beat 3 shows, chord symbols left-aligned to their
-beat (Δ for major 7, superscript suffixes), a bar number under every bar,
-numeric 4/4, treble_8 staff + TAB, fingerings above the staff. Current-bar
-highlight is a background rect per bar — no moving element. The chart sits
-in a scrolling window two systems tall (`sizeChart`) — the playing system
-plus the next, so the eye reads ahead; playback jumps the window a system at
-a time (an instant jump, not a crawl, per the restrained-motion rule), and
-it scrolls freely by hand when stopped. "LilyPond
-source" copies a .ly (same rules, `\accidentalStyle modern`; falls back to
-downloading when the clipboard API is unavailable).
+## Progressions
+
+`PROGRESSIONS` keeps the old data structure (`{root, q, beats, ext?, fn?}`,
+annotations built into the cycles, tunes parsed at load). Presets are named
+by what they are; `source` fields carry the citations and are not rendered.
+Typed changes (`parseProg`, shared with the tune texts): chords separated by
+spaces, `|` for barlines, `/` repeats the chord for another beat; 1 chord =
+4 beats, 2 = 2+2, any `/` or >2 chords = one beat per token, bars must sum
+to 4; identical whole bars merge to 8/12/16-beat chords; `@` annotations as
+before (`Cm7@ii/Bb`, `G7b9@v/Cm`, `Ab7#11@iv/Ebmel`, `F7@sec`, `Bbm7@own`).
+The chord-symbol parser is the local copy of the Chartwright/Box Buddy
+parser — still to be consolidated when the shared-file refactor happens.
+
+Chord scales are unchanged: parent scale rotated to the chord root,
+harmonic-minor parents in minor keys, melodic-minor parents labeled
+parent-first, quality fallback flagged †. See `annotations-worksheet.md`
+for William's rulings.
+
+## Engraving and export
+
+`engrave` renders a single staff on the LilyPond glyph outlines: key
+signature every system (courtesy accidentals carry across barlines and
+systems — a letter altered in one bar re-marks its return), eighths beamed
+in fours from beats 1 and 3, beat 3 always visible, rests to the beat,
+chord symbols left-aligned and not restated unless changed, numeric 4/4,
+bar number under every bar. Bass clef and rests are hand-drawn paths. No
+TAB staff, no fingerings, no moving cursor during playback (bar rects exist
+only as Mixed-mode lock targets — brass stroke when locked). `lyExport`
+keeps the Argue head; parts wrap in `\transpose c d` / `\transpose c a`,
+bass gets `\clef bass`, `\key` from the key selector.
 
 ## Metronome
 
-Voice-leading scheduler verbatim (25 ms interval / 130 ms lookahead): clicks
-on 2 and 4, count-in of 0/1/2 bars as quarter clicks (bar starts accented),
-optional loop. Bar highlight + fretboard advance are `setTimeout`s derived
-from the scheduled audio time. The line itself is not sounded — metronome
-only, per the brief.
+Lookahead scheduler verbatim (25 ms interval / 130 ms lookahead): clicks on
+2 and 4, count-in of 0/1/2 bars as quarter clicks (bar starts accented),
+optional loop, space toggles. The line itself is not sounded.
 
-## Open questions for William
+## Open questions for William (carried over)
 
-The *(assumption)* marks above: 12/16-beat formula shapes, secondary-dominant
-scales, -6 → harmonic minor and the -6/6 arpeggio-shape borrowing; plus the
-leadsheet annotations (all flagged † in the UI until annotated).
+- 12/16-beat chords keep the old unit split ([8,4] / [8,8]) — never ruled on.
+- Non-diatonic dominants (`fn:"sec"`) keep own Mixolydian, own Phrygian
+  dominant with a ♭9 — assumption.
+- Minor-i variants: −6/−Δ7 → own harmonic minor, and the −6 arpeggio
+  borrowing the −Δ7 chord tones — assumption.
+
+## Deferred (do not build until asked)
+
+TAB post-pass · MUSC 120 grouping view (tags are already in the schema) ·
+handout-cell pack · etude assembly / weighted fill / lick journal ·
+strict-handout mode.
+
+## Old engine
+
+The position-based engine (VDA, fingerings, TAB) lives in git history —
+last version at tag-less commit d7b72bf. The rebuild reproduces its degree
+strings and rhythms exactly (checked against it: 100% match in scale mode,
+98%+ pitch-class match in arp mode); octave contours differ where they
+depended on fretboard positions, which are gone by design.
