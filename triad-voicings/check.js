@@ -80,11 +80,33 @@ ok(anyPlacement('maj', 1, "5:2 4:5 2:3"), "open maj middle 1st: book shape missi
 ok(anyPlacement('maj', 1, "5:2 3:0 2:3"), "open maj middle 1st: book 'or' missing");
 ok(anyPlacement('maj', 2, "5:5 3:4 2:8"), "open maj middle 2nd: book shape missing");
 ok(anyPlacement('maj', 2, "5:5 3:4 1:3"), "open maj middle 2nd: book 'or' (top on string 1) missing");
-// documented difference: G- middle 2nd inv — book prints the span-5 shape, engine defaults tighter
-ok(anyPlacement('min', 2, "5:5 3:3 2:8"), "open min middle 2nd: the book's span-5 shape must enumerate (OPEN_SPAN)");
+// G- middle 2nd inv — the book prints the span-5 5-3-8 shape (p. 42), but
+// William ruled its class unplayable (Sep 2026): a span-4/5 stretch that is
+// not a lone top-voice reach is eliminated. The printed cell must therefore
+// NOT enumerate any more; the compact default stays.
+ok(!anyPlacement('min', 2, "5:5 3:3 2:8"), "open min middle 2nd: the book's span-5 shape is ruled out (Sep 2026) and must not enumerate");
 { const r = E.openRow(G, 'min', 2, 2);
-  ok(r && (sig(r.def.notes) === "5:5 4:8 2:8"), "open min middle 2nd: engine default (documented difference): " + (r && sig(r.def.notes)));
-  ok(r && r.alts.some(a => sig(a.notes) === "5:5 3:3 2:8"), "open min middle 2nd: book shape should be an alt chip"); }
+  ok(r && (sig(r.def.notes) === "5:5 4:8 2:8"), "open min middle 2nd: engine default: " + (r && sig(r.def.notes))); }
+// William's Sep 2026 playability rulings, as classes (root C, sounding s:f):
+// five-string spreads with span > 2, and span-4 stretches that are not a
+// lone top-voice reach, must not enumerate.
+const goneAt = (pc, q, inv, want) => ok(!E.openPlacements(pc, q, inv).some(p => sig(p.notes) === want),
+  `ruled out (Sep 2026) but still enumerates: pc${pc} ${q} inv${inv} ${want}`);
+const gone = (q, inv, want) => goneAt(0, q, inv, want);
+goneAt(8, 'maj', 2, "4:1 3:5 1:4"); goneAt(8, 'maj', 0, "5:11 3:8 1:8"); goneAt(8, 'maj', 1, "5:15 3:13 1:11");
+gone('maj', 0, "6:8 3:0 2:5");  gone('maj', 0, "6:8 5:10 2:5"); gone('maj', 1, "6:12 4:10 2:8");
+gone('maj', 2, "5:10 4:14 2:13");
+gone('min', 0, "6:8 3:0 2:4");  gone('min', 0, "5:3 4:5 3:8");  gone('min', 1, "5:6 2:1 1:3");
+gone('min', 1, "6:11 5:15 3:12"); gone('min', 2, "5:10 4:13 1:8"); gone('min', 0, "5:15 3:12 1:11");
+gone('dim', 1, "4:1 3:5 1:2");  gone('dim', 1, "5:6 3:5 1:2");  gone('dim', 1, "5:6 2:1 1:2");
+gone('dim', 1, "5:6 4:10 3:11"); gone('dim', 1, "6:11 5:15 3:11");
+gone('dim', 2, "4:4 3:8 1:8");  gone('dim', 2, "5:9 4:13 1:8"); gone('dim', 2, "5:9 2:4 1:8");
+gone('dim', 2, "5:9 4:13 2:13"); gone('dim', 2, "5:9 3:8 2:13"); gone('dim', 2, "6:2 5:6 3:5");
+gone('dim', 0, "5:3 4:4 3:8");  gone('dim', 0, "5:15 3:11 1:11");
+gone('aug', 1, "5:7 3:5 1:4");
+// still-playable classes the book prints stay in:
+ok(anyPlacement('maj', 2, "5:5 3:4 1:3"), "book's compact five-string-spread 'or' (p. 42) must survive");
+ok(anyPlacement('maj', 2, "5:5 3:4 2:8"), "book's span-4 lone-top-reach cell (p. 42) must survive");
 // 4. augmented symmetry: alternates on every open row that exists
 for (const row of [1, 2, 3]) for (const inv of [0, 1, 2]) {
   const r = E.openRow(G, 'aug', inv, row);

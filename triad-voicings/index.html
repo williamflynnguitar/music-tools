@@ -285,7 +285,7 @@ const OROWS = { top:{name:'Top row', s:1, tag:'top voice on the 1st string'},
                 middle:{name:'Middle row', s:2, tag:'top voice on the 2nd string'},
                 bottom:{name:'Bottom row', s:3, tag:'top voice on the 3rd string'} };
 const MAXF = 15;       // top-voice ceiling (Ex. 8 reaches 14; the book's 11fr °7 cell reaches 15)
-const OPEN_SPAN = 5;   // fretted max−min; p. 42's G- middle-row 2nd inversion needs 5
+const OPEN_SPAN = 4;   // fretted max−min; span 4 only as a lone top-voice reach (see openPlacements)
 
 /* chord-tone spelling: letters R +2 +4 from the root letter, enharmonic
    simple name when a double accidental would appear (as fretboard does) */
@@ -346,6 +346,23 @@ function openPlacements(pc, q, openInv){
       const fretted = fr.filter(f=>f>0);
       const span = fretted.length ? Math.max(...fretted)-Math.min(...fretted) : 0;
       if(span > OPEN_SPAN) continue;
+      /* Playability (William, Sep 2026 — supersedes the raw span ≤ 5 rule):
+         - outer voices stay inside a four-string window; a five-string
+           spread is allowed only when the fretted span is ≤ 2 (the book's
+           p. 42 D-B-G "or" cell) — wider spreads with real stretches are
+           unplayable;
+         - fretted span of 4 is allowed only as a lone reach UP to the top
+           voice with the other fretted notes within 2 frets of each other
+           (the 2-1-5 °-family and the book's G middle-row cell); a span-4
+           stretch to the bass or middle voice is out. This removes p. 42's
+           G- middle-row 2nd-inversion 5-3-8 cell (span 5), per William's
+           ruling on its class. */
+      if(s1 - s3 > 3 && span > 2) continue;
+      if(span === 4){
+        const rest = [fr[0], fr[1]].filter(f=>f>0);
+        if(!(fr[2] > 0 && fr[2] === Math.max(...fretted) &&
+             (rest.length < 2 || Math.abs(rest[0]-rest[1]) <= 2))) continue;
+      }
       out.push({notes: m.map((mi,i)=>({s:ss[i], f:fr[i], deg:degs[tones[i]], midi:mi})),
         inv:openInv, pos:'open', row:s3, span, bass,
         low: fretted.length ? Math.min(...fretted) : 0, top:degs[tones[2]], bassDeg:degs[tones[0]]});
@@ -440,7 +457,7 @@ const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" ari
 /* chord box (box-buddy's diagramSVG, family palette): × muted, O open, Nfr
    label off the nut, box grows for wide spans; frets only, no fingers */
 function boxSVG(v, showLabels, W){
-  W = W||150; const sx=W/8.2, x0=sx*1.4, fy=sx*1.05, y0=fy*.95;
+  W = W||150; const sx=W/8.2, x0=sx*2.0, fy=sx*1.05, y0=fy*.95;   // left margin fits a 2-digit "Nfr"
   const fretted = v.notes.map(n=>n.f).filter(f=>f>0);
   const minF = fretted.length?Math.min(...fretted):1, maxF = fretted.length?Math.max(...fretted):1;
   const hasOpen = v.notes.some(n=>n.f===0);
@@ -451,7 +468,7 @@ function boxSVG(v, showLabels, W){
   let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
   for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; o+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+nF*fy}" stroke="#a89f8c" stroke-width="${s>=5?1.4:1}"/>`; }
   for(let i=0;i<=nF;i++){ const y=y0+i*fy; o+=`<line x1="${x0}" y1="${y}" x2="${x0+5*sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i===0&&base===1?4:1}"/>`; }
-  if(base>1) o+=`<text x="${x0-sx*.35}" y="${y0+fy/2+4}" font-size="${sx*.6}" text-anchor="end" fill="#6f8a92">${base}fr</text>`;
+  if(base>1) o+=`<text x="${x0-sx*.5}" y="${y0+fy/2+4}" font-size="${sx*.6}" text-anchor="end" fill="#6f8a92">${base}fr</text>`;
   for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx;
     if(!used.has(s)) o+=`<text x="${x}" y="${y0-fy*.3}" font-size="${sx*.65}" text-anchor="middle" fill="#6f8a92">×</text>`; }
   v.notes.forEach(n=>{ const x=x0+(6-n.s)*sx;
@@ -495,7 +512,9 @@ function chordStaffSVG(notes, opts={}){
     }
     o += `<ellipse cx="${(X+0.72).toFixed(2)}" cy="${h.y.toFixed(2)}" rx="0.82" ry="0.52" transform="rotate(-18 ${(X+0.72).toFixed(2)} ${h.y.toFixed(2)})" fill="none" stroke="currentColor" stroke-width="0.26"/>`;
   });
-  let bottom = 6.4;
+  // low voicings put heads (and their ledger lines) below the staff — the
+  // bottom must follow them or the bass note is cut off
+  let bottom = Math.max(6.4, ...heads.map(h=>h.y+1.6));
   if(opts.tab){
     for(let i=0;i<6;i++) o+=`<line x1="0" y1="${T0+i*TS}" x2="${W}" y2="${T0+i*TS}" stroke="currentColor" stroke-width="0.11"/>`;
     ['T','A','B'].forEach((L,i)=>o+=`<text x="0.9" y="${(T0+2.05+i*2.05).toFixed(2)}" font-family="sans-serif" font-weight="700" font-size="2.2" text-anchor="middle" fill="currentColor">${L}</text>`);

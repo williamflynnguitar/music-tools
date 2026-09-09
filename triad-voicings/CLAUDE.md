@@ -30,8 +30,8 @@ in the repo's commit message).
   octave** (closed root → open 1st, closed 1st → open 2nd, closed 2nd →
   open root — named by the new bass). Open voicings are pitch sets, not
   string-set shapes, so `openPlacements` **enumerates** every distinct-string
-  placement (frets 0–15, fretted span ≤ 5 — `OPEN_SPAN`; open strings don't
-  count toward the span) rather than storing a table: the book's "or"
+  placement (frets 0–15; open strings don't count toward the fretted span)
+  rather than storing a table: the book's "or"
   alternates are exactly these enumerations, and augmented gets them on
   nearly every cell because the shape is symmetric. Rows group by top-voice
   string (top = 1, middle = 2, bottom = 3); within a row the default is the
@@ -114,3 +114,29 @@ open default basses on string 6 — openRow's four-string window prefers
 bass on top-string+3; (2) with "All sets" checked, the set picker no
 longer constrains the cards (it only drives the neck view), so the filter
 can look broken. Both flagged to William in the Sep 2026 bug-sweep report.
+
+## Open-placement playability rule (William, Sep 2026)
+`openPlacements` filters the raw enumeration by hand mechanics, ruled in a
+live session (~27 flagged shapes, all verified eliminated in check.js):
+- outer voices stay inside a **four-string window**; a five-string spread
+  survives only when the fretted span is ≤ 2 (the book's p. 42 D–B–G "or"
+  cell is that class);
+- fretted span ≤ 3 always allowed; **span 4 only as a lone reach up to the
+  top voice** with the other fretted notes within 2 frets of each other
+  (the 2-1-5 °-family, the book's G middle-row cell); span ≥ 5 is out
+  (`OPEN_SPAN` is now 4 and the span-4 shape test lives beside it).
+This removed 638 of 1508 placements; no quality × inversion × row lost its
+last placement; the ° 2nd-inversion middle row's default moved to the
+compact five-string-spread shape (6:2 4:1 2:1 class). **Book conflict,
+ruled by William**: p. 42's G- middle-row 2nd-inversion 5-3-8 cell (span
+5) no longer enumerates — check.js now asserts its absence with a comment.
+
+## Rendering bounds (Sep 2026)
+`chordStaffSVG`'s bottom edge follows the lowest head + ledger lines (low
+bass notes used to be cut off at the fixed 6.4 bound); `boxSVG`'s left
+margin is 2.0·sx so a two-digit "Nfr" label fits, with the label at
+x0−0.5·sx clear of first-row dots. A scratchpad scan rendered every
+displayable card (3,582 boxes + staffs: all closed cells, open
+defs/alts/8va, key-study runs) and checks every SVG element against its
+viewBox — re-run it after touching either renderer (it found 3,148
+instances of the two old cut-off classes, 0 after).
