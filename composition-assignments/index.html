@@ -36,16 +36,20 @@ select,input[type=number],input[type=text]{background:var(--ink);border:1px soli
 main{max-width:880px;margin:0 auto;padding:8px 24px 70px}
 .sechead{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin:34px 0 12px;border-bottom:1px solid var(--petrol-2);padding-bottom:7px}
 .cards{display:grid;gap:12px}
-.card{background:var(--petrol);border-radius:6px;padding:15px 20px}
+/* every card is a disclosure (rev 1.1): tap anywhere to open; a brass left
+   rule marks the cards that carry a tool */
+.card{background:var(--petrol);border-radius:6px;padding:15px 20px;cursor:pointer}
+.card:not(.open):hover{background:var(--petrol-2)}
 .card .prompt{margin:0;font-size:17px;line-height:1.55}
-/* only cards that carry a tool are interactive: whole card is the tap target,
-   brass rule + chevron button mark it; prompt-only cards read as plain text */
-.card[data-tool]{cursor:pointer;border-left:3px solid var(--brass);padding-left:17px}
-.card[data-tool]:not(.open):hover{background:var(--petrol-2)}
-.card[data-tool]:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.card.open .prompt{font-size:19px}
+.card[data-tool]{border-left:3px solid var(--brass);padding-left:17px}
 .card .toolrow{display:flex;align-items:baseline;gap:14px;justify-content:space-between;flex-wrap:wrap}
 .expand{background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--brass);font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;padding:8px 12px;white-space:nowrap}
 .expand:hover{border-color:var(--brass)}
+.chev{display:inline-block;transition:transform .15s ease}
+.card.open .chev{transform:rotate(90deg)}
+.about{display:none;margin:12px 0 0;padding-top:12px;border-top:1px solid var(--petrol-2);font-size:15.5px;line-height:1.6;color:var(--bone-dim)}
+.card.open .about{display:block}
 .tool{border-top:1px solid var(--petrol-2);margin-top:13px;padding-top:14px;cursor:auto}
 .tool .trow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .tool .tlbl{font-size:13px;color:var(--bone-dim)}
@@ -198,67 +202,121 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 
 <h2 class="sechead">Melody</h2>
 <div class="cards">
-  <div class="card"><p class="prompt">Contrafact</p></div>
-  <div class="card" data-tool="row" data-view="staff">
+  <div class="card" data-id="contrafact">
+    <div class="toolrow"><p class="prompt">Contrafact</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="tone-row-melody" data-tool="row" data-view="staff">
     <div class="toolrow"><p class="prompt">Tone row melody</p>
-      <button class="expand" type="button">&#9656; Row Builder</button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Row Builder</button></div>
   </div>
-  <div class="card"><p class="prompt">Melody of only 2 notes per bar</p></div>
-  <div class="card"><p class="prompt">Pentatonic scale melody</p></div>
-  <div class="card" data-tool="penta">
+  <div class="card" data-id="two-notes-per-bar">
+    <div class="toolrow"><p class="prompt">Melody of only 2 notes per bar</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="pentatonic-melody">
+    <div class="toolrow"><p class="prompt">Pentatonic scale melody</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="invent-pentatonic" data-tool="penta">
     <div class="toolrow"><p class="prompt">Invent your own pentatonic scale and compose a tune with it</p>
-      <button class="expand" type="button">&#9656; Pentatonic Lab</button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Pentatonic Lab</button></div>
   </div>
-  <div class="card"><p class="prompt">Each four-bar phrase explores an increasingly colorful chord tone</p></div>
-  <div class="card"><p class="prompt">Cell melody</p></div>
-  <div class="card"><p class="prompt">Completely diatonic melody over chromatic chords</p></div>
-  <div class="card"><p class="prompt">Harmonic major melody</p></div>
-  <div class="card" data-tool="alpha">
+  <div class="card" data-id="colorful-chord-tone">
+    <div class="toolrow"><p class="prompt">Each four-bar phrase explores an increasingly colorful chord tone</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="cell-melody">
+    <div class="toolrow"><p class="prompt">Cell melody</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="diatonic-over-chromatic">
+    <div class="toolrow"><p class="prompt">Completely diatonic melody over chromatic chords</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="harmonic-major">
+    <div class="toolrow"><p class="prompt">Harmonic major melody</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="alphabet-pitches" data-tool="alpha">
     <div class="toolrow"><p class="prompt">Letters and numbers as pitches: Pat Martino alphabet exercise; map the alphabet to notes and write a melody from a name or phrase; map digits to notes and hear what your phone number, birthday, etc. &ldquo;sounds like&rdquo;</p>
-      <button class="expand" type="button">&#9656; Alphabet Mapper</button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Alphabet Mapper</button></div>
   </div>
 </div>
 
 <h2 class="sechead">Harmony</h2>
 <div class="cards">
-  <div class="card"><p class="prompt">Reharm ladder (work through in order): Happy Birthday (target 9ths, 11ths, 13ths) &rarr; folk tune &rarr; blues &rarr; standard</p></div>
-  <div class="card" data-tool="row" data-view="chart">
-    <div class="toolrow"><p class="prompt">Tone row as harmonic source: roots, or bass notes</p>
-      <button class="expand" type="button">&#9656; Row Builder</button></div>
+  <div class="card" data-id="reharm-ladder">
+    <div class="toolrow"><p class="prompt">Reharm ladder (work through in order): Happy Birthday (target 9ths, 11ths, 13ths) &rarr; folk tune &rarr; blues &rarr; standard</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
   </div>
-  <div class="card"><p class="prompt">Compose a tune using only 1 or 2 chord qualities</p></div>
-  <div class="card"><p class="prompt">Compose a tune in standard 32-bar form using: modulations to ii, iii, IV, vi; backdoor ii&ndash;V</p></div>
+  <div class="card" data-id="tone-row-harmony" data-tool="row" data-view="chart">
+    <div class="toolrow"><p class="prompt">Tone row as harmonic source: roots, or bass notes</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Row Builder</button></div>
+  </div>
+  <div class="card" data-id="chord-qualities">
+    <div class="toolrow"><p class="prompt">Compose a tune using only 1 or 2 chord qualities</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="form-32-modulations">
+    <div class="toolrow"><p class="prompt">Compose a tune in standard 32-bar form using: modulations to ii, iii, IV, vi; backdoor ii&ndash;V</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
 </div>
 
 <h2 class="sechead">Rhythm / Form</h2>
 <div class="cards">
-  <div class="card"><p class="prompt">Compose a 10-bar blues</p></div>
-  <div class="card"><p class="prompt">Compose a tune with head changes and blowing changes (write the blowing changes first, then a head that obscures them)</p></div>
-  <div class="card"><p class="prompt">Compose a tune whose harmonic rhythm contracts or expands</p></div>
-  <div class="card"><p class="prompt">Compose a tune in odd-length phrases (5- or 7-bar)</p></div>
-  <div class="card" data-tool="motif">
-    <div class="toolrow"><p class="prompt">Compose a tune built from one rhythmic motif displaced across the bar</p>
-      <button class="expand" type="button">&#9656; Motif Displacer</button></div>
+  <div class="card" data-id="ten-bar-blues">
+    <div class="toolrow"><p class="prompt">Compose a 10-bar blues</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
   </div>
-  <div class="card"><p class="prompt">Write the melody as pure rhythm first, add pitches last</p></div>
-  <div class="card"><p class="prompt">Compose a tune in 3 or 5 that hides its meter</p></div>
+  <div class="card" data-id="head-blowing-changes">
+    <div class="toolrow"><p class="prompt">Compose a tune with head changes and blowing changes (write the blowing changes first, then a head that obscures them)</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="harmonic-rhythm">
+    <div class="toolrow"><p class="prompt">Compose a tune whose harmonic rhythm contracts or expands</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="odd-phrases">
+    <div class="toolrow"><p class="prompt">Compose a tune in odd-length phrases (5- or 7-bar)</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="motif-displaced" data-tool="motif">
+    <div class="toolrow"><p class="prompt">Compose a tune built from one rhythmic motif displaced across the bar</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Motif Displacer</button></div>
+  </div>
+  <div class="card" data-id="rhythm-first">
+    <div class="toolrow"><p class="prompt">Write the melody as pure rhythm first, add pitches last</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
+  <div class="card" data-id="hidden-meter">
+    <div class="toolrow"><p class="prompt">Compose a tune in 3 or 5 that hides its meter</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
 </div>
 
 <h2 class="sechead">Harmony &amp; Melody</h2>
 <div class="cards">
-  <div class="card"><p class="prompt">Reharm a tune and write a new melody over it</p></div>
+  <div class="card" data-id="reharm-new-melody">
+    <div class="toolrow"><p class="prompt">Reharm a tune and write a new melody over it</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
 </div>
 
 <h2 class="sechead">Arranging</h2>
 <div class="cards">
-  <div class="card"><p class="prompt">Three-horn tune with harmonies and hits</p></div>
+  <div class="card" data-id="three-horn">
+    <div class="toolrow"><p class="prompt">Three-horn tune with harmonies and hits</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+  </div>
 </div>
 
 <h2 class="sechead">Groove</h2>
 <div class="cards">
-  <div class="card" data-tool="playlist">
+  <div class="card" data-id="groove" data-tool="playlist">
     <div class="toolrow"><p class="prompt">find a tune with a compelling groove and build your own tune out of it</p>
-      <button class="expand" type="button">&#9656; Playlist</button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Playlist</button></div>
   </div>
 </div>
 
@@ -367,7 +425,19 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 <div class="tool" id="tool-playlist" hidden>
   <div class="playlistwrap" id="playlistWrap"></div>
   <ol class="tracklist" id="trackList">
-    <li class="pending">Track list pending &mdash; the playlist isn&rsquo;t publicly readable yet, so the thirteen tunes couldn&rsquo;t be pulled. Paste them here (artist &ndash; title, one per line) so the list survives when the embed can&rsquo;t load.</li>
+    <li>Ben Williams &ndash; Dawn a New Day</li>
+    <li>Ben Williams &ndash; Mr. Dynamite</li>
+    <li>Ben Williams &ndash; November</li>
+    <li>Gilad Hekselman &ndash; March of the Sad Ones</li>
+    <li>Jorge Roeder &ndash; Bounce</li>
+    <li>Warren Wolf &ndash; Lake Nerraw Flow</li>
+    <li>Jeff &ldquo;Tain&rdquo; Watts &ndash; Sigmund Groid</li>
+    <li>Tia Fuller &ndash; Simpli-City</li>
+    <li>Dayna Stephens &ndash; I&rsquo;ll Take My Chances</li>
+    <li>Anat Cohen &ndash; The Purple Piece</li>
+    <li>Hiromi &ndash; Firefly</li>
+    <li>Jaleel Shaw &ndash; Muna&rsquo;s Sleeping</li>
+    <li>Third World Love &ndash; Nature&rsquo;s Dance</li>
   </ol>
   <p class="note">The embed needs a connection; the plain list above is what works in the practice room.</p>
 </div>
@@ -401,8 +471,12 @@ function majorScale(key){
   return out;
 }
 
-/* ---- alphabet mapper (open decisions 1 & 2: defaults, editable at runtime) ---- */
-const LETTER_DEFAULT=[...Array(26)].map((_,i)=>LPC['ABCDEFG'[i%7]]);
+/* ---- alphabet mapper (editable at runtime) ----
+   Letters walk the chromatic scale from A (A=A, B=A#/Bb, C=B, D=C … Z=A#) —
+   William's ruling 2026-09-09: chromatic, not diatonic; all 12 pcs reachable.
+   Digits stay scale degrees of the chosen key (open decision 2, reconfirmed
+   in rev 1.1). */
+const LETTER_DEFAULT=[...Array(26)].map((_,i)=>mod12(9+i));
 const DIGIT_DEFAULT=['rest','1','2','3','4','5','6','7','1+8','2+8'];   // index = digit
 function mapText(text, letterMap, digitMap, key, flats){
   const scale=majorScale(key), out=[];
@@ -802,33 +876,65 @@ function copyText(btn, text, label){
   else fb();
 }
 
-/* ---- card / tool plumbing: one tool open at a time ----
-   The whole card is the tap target; clicks inside the open tool panel are
-   the tool's own and never collapse it. */
+/* ---- About copy, rev 1.1 §3 (draft — William edits here, one place) ---- */
+const ABOUT={
+  'contrafact':"Write a new melody over the chord changes of an existing tune. The changes are the constraint; the melody, phrasing, and rhythm are yours. Pick changes you already know well so you can hear the harmony without the original melody in the way.",
+  'tone-row-melody':"Order all twelve pitch classes into a row, then build a melody that uses them in that order, cycling through the row and its transformations (inversion, retrograde, retrograde inversion, transpositions). Rhythm, register, and repetition of the current pitch are free. The exercise is about finding lyricism inside a strict pitch order.",
+  'two-notes-per-bar':"Two pitch attacks per bar, no more. Everything you’d normally do with notes has to be done with placement, duration, and space. Listen for how much the rhythm of two notes can say.",
+  'pentatonic-melody':"Write a tune using one pentatonic collection over changes of your choosing. With only five pitches, contour and rhythm carry the melody; notice which chords make the same five notes sound consonant, colorful, or wrong.",
+  'invent-pentatonic':"Choose any five pitch classes, treat them as a scale, and write a tune with them. Decide which note feels like home, then find or write chords that support the collection. Use the lab to hear the scale and its rotations before you commit.",
+  'colorful-chord-tone':"Four-bar phrases, each one reaching for a more colorful chord tone than the last: roots, thirds, and fifths in the first phrase; sevenths in the second; ninths in the third; elevenths and thirteenths in the fourth. Land the target on a long note or strong beat so the color is audible.",
+  'cell-melody':"Choose a short cell of three to five notes and build the whole melody from it: transposed, inverted, reversed, stretched, displaced. Every phrase should be traceable back to the cell.",
+  'diatonic-over-chromatic':"Keep the melody inside one key while the chords move chromatically underneath. The interest comes from the same plain notes turning into ♯11s, ♭13s, and ♭9s as the harmony shifts. Write the chords first.",
+  'harmonic-major':"Harmonic major is the major scale with a lowered sixth. Write a melody from it and let the ♭6 do the work; find the chords the scale implies and use them.",
+  'alphabet-pitches':"Map the alphabet to pitches and turn a name or phrase into a note sequence; map digits to scale degrees and hear a phone number or birthday. The sequence is raw material: add rhythm, register, and repetition to make it a melody.",
+  'reharm-ladder':"Work through the four steps in order. Start with Happy Birthday, placing chords so each melody note becomes a 9th, 11th, or 13th of the chord under it. Then a folk tune, then a blues, then a standard. Each step is the same skill on harder material.",
+  'tone-row-harmony':"Use a twelve-tone row as a sequence of chord roots, or as a bass line under chords of your choice. The row fixes the order of roots or bass notes; quality, inversion, and rhythm are free.",
+  'chord-qualities':"Write a tune where every chord is the same quality, or one of two. With quality held constant, root motion and voice leading become the entire harmonic story.",
+  'form-32-modulations':"Write in a standard 32-bar form (AABA or ABAC) and include modulations to ii, iii, IV, and vi somewhere in the form, plus a backdoor ii–V (iv–♭VII7 resolving to I). Plan the key map before writing the chords.",
+  'ten-bar-blues':"Take the functions of a 12-bar blues and fit them into ten bars. Decide which phrases compress and which stay intact.",
+  'head-blowing-changes':"Write the chords the band will solo on first. Then write a head whose harmony obscures those changes: substitutions, pedals, delayed resolutions. The melody has to work over both.",
+  'harmonic-rhythm':"Chords that last four bars, then two, then one, then two beats — or the reverse. The rate of change is the form.",
+  'odd-phrases':"Five- or seven-bar phrases throughout. The odd bar is the point: decide whether it extends the phrase or cuts it short, and keep that consistent.",
+  'motif-displaced':"Choose one bar of rhythm and build the tune by shifting it to different positions in the bar. Use the displacer to hear every position before choosing which ones to use.",
+  'rhythm-first':"Write the entire melody as rhythm on one line, phrase by phrase, and don’t touch pitch until the rhythm stands on its own. Then add pitches to the rhythm you already have.",
+  'hidden-meter':"Write in 3/4 or 5/4 and keep the listener from feeling the downbeat: long notes and chord changes off the downbeat, accents that suggest a different grouping. Then decide whether the reveal comes at the end or never.",
+  'reharm-new-melody':"Reharmonize the changes of a tune you know, then write a fresh melody over the new changes. The result should stand on its own without the original.",
+  'three-horn':"Write a tune for three horns: melody in the lead, harmonized in the other two, with rhythm-section hits notated. Score in concert pitch, then extract transposed parts.",
+  'groove':"Pick a tune from the playlist whose groove you can’t stop hearing. Transcribe the bass line and drum feel, then write your own tune on top of that groove, changing the harmony and melody but keeping the feel.",
+};
+
+/* ---- disclosure cards (rev 1.1): every card expands, one open at a time.
+   Open shows prompt as heading, About from the ABOUT table, then the tool
+   where one exists. The whole card is the tap target; clicks inside the open
+   tool panel are the tool's own and never collapse it. */
 const TOOL_PRIMARY={};                    // toolId → () => start primary playback
-function toggleTool(card){
-  const id=card.dataset.tool, btn=card.querySelector('.expand');
-  const panel=el('tool-'+id), open=panel.parentElement===card&&!panel.hidden;
+function toggleCard(card){
+  const wasOpen=card.classList.contains('open');
   Player.stop();
   document.querySelectorAll('.tool').forEach(t=>t.hidden=true);
-  document.querySelectorAll('.card[data-tool]').forEach(c=>c.classList.remove('open'));
-  document.querySelectorAll('.expand').forEach(b=>{
-    b.innerHTML='&#9656; '+b.textContent.replace(/^[▸▾]\s*/,'');
-  });
-  if(open){ st.openTool=null; masterBtn.disabled=true; return; }
-  card.appendChild(panel); panel.hidden=false; card.classList.add('open');
-  btn.innerHTML='&#9662; '+btn.textContent.replace(/^[▸▾]\s*/,'');
-  st.openTool=id;
-  masterBtn.disabled=!TOOL_PRIMARY[id];
-  if(id==='row'){ st.rowView=card.dataset.view; syncRowView(); }
-  if(id==='playlist') mountPlaylist();
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('open'));
+  document.querySelectorAll('.expand').forEach(b=>b.setAttribute('aria-expanded','false'));
+  st.openTool=null; masterBtn.disabled=true;
+  if(wasOpen) return;
+  card.classList.add('open');
+  card.querySelector('.expand').setAttribute('aria-expanded','true');
+  const id=card.dataset.tool;
+  if(id){
+    const panel=el('tool-'+id);
+    card.appendChild(panel); panel.hidden=false;   // after the About paragraph
+    st.openTool=id;
+    masterBtn.disabled=!TOOL_PRIMARY[id];
+    if(id==='row'){ st.rowView=card.dataset.view; syncRowView(); }
+    if(id==='playlist') mountPlaylist();
+  }
 }
-document.querySelectorAll('.card[data-tool]').forEach(card=>{
+document.querySelectorAll('.card').forEach(card=>{
   card.addEventListener('click',e=>{
     /* composedPath, not closest: a control that re-renders its own subtree
        detaches e.target before this bubbling listener runs */
     if(e.composedPath().some(n=>n instanceof Element&&n.classList.contains('tool'))) return;
-    toggleTool(card);
+    toggleCard(card);
   });
 });
 masterBtn.addEventListener('click',()=>{
@@ -1152,6 +1258,12 @@ function mountPlaylist(){                 // set src only when opened — offlin
 
 /* ===== init ===== */
 document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
+document.querySelectorAll('.card[data-id]').forEach(card=>{   // About under each prompt
+  const t=ABOUT[card.dataset.id];
+  if(!t) return;
+  const p=document.createElement('p'); p.className='about'; p.textContent=t;
+  card.appendChild(p);
+});
 el('alphaKey').innerHTML=KEYS.map(k=>`<option value="${k}">${disp(k)} major</option>`).join('');
 renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderMotif(); syncRowView();
 </script>

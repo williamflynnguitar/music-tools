@@ -20,8 +20,13 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   singletons moved under whichever card opened them, and opening one stops
   playback and collapses the rest.
 - Assignment prompts are William's copy, verbatim, in the section order of the
-  brief. The `(tool: …)` markers from the brief are rendered as the expand
-  control's label, not as prompt text.
+  brief. The `(tool: …)` markers from the brief are rendered on the expand
+  control, not as prompt text.
+- **Every card is a disclosure** (rev 1.1): tap anywhere on a card to open
+  prompt-as-heading + About + tool (where one exists); one card open at a
+  time; the chevron rotates. About copy lives in the `ABOUT` table keyed by
+  each card's `data-id` — William edits copy there, one place (the shipped
+  text is his rev 1.1 draft). Cards carrying a tool keep the brass left rule.
 - Engine is pure functions in the first `<script>` block (spelling, mappings,
   matrix, pentatonics, motif rhythm). It was developed against a headless
   test harness; if it changes, re-run the simulation (extract the block
@@ -29,8 +34,14 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
 - Engraving reuses the Line Ladder glyph outlines (`NOTE_DEFS`) and units
   (1 staff space = 1): `pitchStaff` (stemless noteheads, treble, per-note
   accidentals, optional labels under notes), `rootChart` (12-bar slash
-  chart), `rhythmLine` (one-bar single-line percussion staff: beams, flags,
-  dots, ties, 16th secondary beams with stubs, hanging wrap tie).
+  chart), `rhythmLine` (one-bar rhythm staff styled after the Charleston
+  app's LilyPond RhythmicStaff cells: one line, thick two-space barline
+  rects, beams, down-hanging flags — NOTE_DEFS stores flags in font coords,
+  so they draw with an unflipped y-scale — dots, shallow filled tie
+  crescents, 16th secondary beams with stubs, no per-row time signature; a
+  wrapping sustain ties across the barline into the dimmed first note of
+  the next repetition). Verify renderer changes by generating rotation
+  sheets to PNG (`qlmanage -t` over composed SVGs) and reading them.
 
 ## Decisions taken where the brief left room (flag to William)
 
@@ -75,34 +86,42 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   bottom), P0 = the row as entered, main diagonal is constant and tinted.
   Clicking any label selects and plays that form; the root-chart view and
   "Copy form" follow the selection.
-- **Tool cards are whole-card tap targets** (William's 2026-09-09 report:
-  the first cut's only control was the small chevron, and prompt cards wear
-  the family's clickable-card look — "none of this is clickable"). Tool
-  cards carry a brass left rule, hover, and pointer; prompt-only cards stay
-  plain and static per the brief. Clicks inside an open tool never collapse
-  it — the card listener checks `composedPath()`, not `closest()`, because
-  tool controls re-render their own subtree and detach the click target
-  before the bubbling listener runs.
+- **Whole-card tap targets** (William's 2026-09-09 report on the first cut:
+  "none of this is clickable" — the only control was the small chevron).
+  Rev 1.1 made every card a disclosure, which resolved it at the design
+  level. Clicks inside an open tool never collapse it — the card listener
+  checks `composedPath()`, not `closest()`, because tool controls re-render
+  their own subtree and detach the click target before the bubbling
+  listener runs.
+- **Alphabet letters walk the chromatic scale from A** (A=A, B=A♯/B♭, C=B,
+  D=C … Z=A♯) — William's 2026-09-09 ruling: "chromatic, not diatonic",
+  replacing the brief's wrap-the-naturals default. All 12 pcs are reachable
+  from text; spelling follows the header toggle. Digits stay scale degrees
+  of the chosen key (reconfirmed in the rev 1.1 About copy). Reset restores
+  the chromatic default.
 
 ## Open items
 
-- **Playlist track list is a placeholder.** Playlist
-  `4DdYDtOf8CMNhsM46R8nwg` is not publicly readable (embed and oEmbed both
-  404 anonymously), so the thirteen tunes could not be pulled. The card
-  ships the embed (src set only when the card opens, so offline loads stay
-  quiet) plus a visible pending note; paste the artist – title list into
-  `#trackList` and delete the note. If the playlist is private, making it
-  public is also what the students' embed needs.
-- Open decisions 1–3 in the brief (alphabet default, digit default, sharps
-  default) are implemented as written; William to confirm or correct. Pat
-  Martino's actual mapping, if he supplies it, is a `LETTER_DEFAULT` edit.
+- **The Spotify playlist is private.** William flips it public in Spotify
+  before students use it; until then the embed shows nothing. The thirteen
+  tunes are in the page as a plain list (rev 1.1 §2), which is also the
+  offline story; the iframe src is set only when the card opens.
+- The rev 1.1 About copy shipped as William's draft — he edits it in the
+  `ABOUT` table.
+- Digit default and sharps default are implemented per the original brief;
+  William to confirm. If Pat Martino's published mapping differs from the
+  chromatic walk, it's a `LETTER_DEFAULT` edit.
 
-## Deferred (from the brief — do not build until asked)
+## Deferred (do not build until asked)
 
 - Melody and chord entry in the app, with per-assignment lint (strict/flag)
   and per-note chord-tone readout
+- Rev 1.1 §4 lookup tools, pending William's picks (each a table, no entry):
+  increasingly-colorful chord-tone table; harmonic major scale + diatonic
+  sevenths; diatonic-over-chromatic readout (key × chord → what each scale
+  pitch becomes); 32-bar modulation targets with their ii–V and the
+  backdoor ii–V
 - Reharm ladder tool with the four melodies notated and a chord-tone lookup
 - Form builder (32-bar modulations, odd phrases, harmonic-rhythm ruler)
 - Submission export (seed material as PDF alongside the student's score)
 - Groove capture-and-mutate tool
-- Pat Martino's exact alphabet mapping if William supplies it
