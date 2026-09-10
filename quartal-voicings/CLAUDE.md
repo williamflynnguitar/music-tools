@@ -72,9 +72,9 @@ clock via `atTime()`; never the reverse.
 
 Shapes (cards ascending by lowest fret + optional full-neck view, top notes
 brass) · Modes (mode/tonic pickers, top-note degree labels, pentatonic/blues
-filter per D14 — dim to 35%, blue-note planing hint, half-step neighbours
+filter per D14 — dim to 35%, blue-note planing hint, half-step neighbors
 outlined) · Function (one shape, twelve chromatic basses as Ex. 5/10/11,
-'—' columns greyed with the both-7ths/both-9ths tooltip, derived guidepost
+'—' columns grayed with the both-7ths/both-9ths tooltip, derived guidepost
 panel) · Progressions (Ex. 6a–6c, 8a–8h presets in their written keys,
 nearest-position transposition, planing control, custom function-target
 search reusing the Voice-Leading Trainer cost) · Tunes (workbook data,

@@ -70,6 +70,10 @@
 
   .neckwrap { overflow-x: auto; background: var(--petrol); border-radius: 6px; padding: 10px 8px 2px; margin-top: 14px; }
   .neck svg { display: block; min-width: 940px; width: 100%; height: auto; }
+  .neck g.nd { cursor: pointer; }
+  .neck.hov g.nd { opacity: .22; }
+  .neck.hov g.nd.hl { opacity: 1; }
+  .cardgrid .card.hlc { box-shadow: inset 0 0 0 1.5px var(--brass); }
   .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
   .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
 
@@ -254,7 +258,7 @@
       <li>Harmonize the notes of the pentatonic and blues scale.</li>
       <li>Create melodies with the voicings; stay in one voicing family first.</li>
       <li>Combine voicing families as curiosity guides you.</li>
-      <li>For colour, plane chromatically between voicings — approach from a half step above or below.</li>
+      <li>For color, plane chromatically between voicings — approach from a half step above or below.</li>
     </ol>
   </div>
 </section>
@@ -266,7 +270,7 @@
   </div>
   <div class="progrow" id="fnShapeCard"></div>
   <div class="fnwrap"><div class="fncols" id="fnCols"></div></div>
-  <p class="hint">One shape, twelve bass notes, exactly as Ex. 5 / 10 / 11 — click a column to hear it. Greyed columns have no usable symbol.</p>
+  <p class="hint">One shape, twelve bass notes, exactly as Ex. 5 / 10 / 11 — click a column to hear it. Grayed columns have no usable symbol.</p>
   <div class="panel gpwrap" id="gpPanel"></div>
 </section>
 
@@ -951,22 +955,30 @@ function gridSVG(v, opts = {}){
   return o + '</svg>';
 }
 
-/* ---------- full neck 0–15, all placements, top notes emphasised ---------- */
+/* ---------- full neck 0–15, all placements, top notes emphasised ----------
+   Each voicing is one <g>: a connector spine through its dots (tinted for the
+   tritone voicings) plus its walk number above the neck, so the neck reads as
+   a numbered map of the cards (the Arpeggio Practice rule). Open strings get
+   their own slot left of the nut. */
 function qNeckSVG(cards){
-  const NF = 15, cw = 46, ch = 30, padL = 14, padT = 16, padB = 30;
-  const W = padL + NF * cw + padL, H = padT + 5 * ch + padB;
-  const x = f => padL + (f - 0.5) * cw, y = s => padT + (s - 1) * ch;
-  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="all placements on the neck, frets 0 to 15">`;
-  for (const f of [3, 5, 7, 9, 15]) o += `<circle cx="${x(f)}" cy="${padT + 2.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
-  o += `<circle cx="${x(12)}" cy="${padT + 1.5 * ch}" r="4" fill="var(--petrol-2)"/><circle cx="${x(12)}" cy="${padT + 3.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
+  const NF = 15, cw = 46, ch = 30, padL = 34, padT = 34, padB = 30;
+  const W = padL + NF * cw + 14, H = padT + 5 * ch + padB;
+  const x = f => f === 0 ? padL - 17 : padL + (f - 0.5) * cw, y = s => padT + (s - 1) * ch;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="all placements on the neck, frets 0 to 15, one connected group per voicing">`;
+  for (const f of [3, 5, 7, 9, 15]) o += `<circle cx="${x(f)}" cy="${padT + 2.5 * ch}" r="3.5" fill="var(--petrol-2)"/>`;
+  o += `<circle cx="${x(12)}" cy="${padT + 1.5 * ch}" r="3.5" fill="var(--petrol-2)"/><circle cx="${x(12)}" cy="${padT + 3.5 * ch}" r="3.5" fill="var(--petrol-2)"/>`;
   for (let f = 0; f <= NF; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f === 0 ? 4 : 1}" opacity="${f === 0 ? .9 : .45}"/>`; }
-  for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${W - padL}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.3}" opacity=".6"/>`;
+  for (let s = 1; s <= 6; s++) o += `<line x1="${padL - 26}" y1="${y(s)}" x2="${W - 14}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.3}" opacity=".6"/>`;
   for (let f = 1; f <= NF; f++) o += `<text x="${x(f)}" y="${H - 10}" font-family="var(--mono)" font-size="10.5" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
   cards.forEach((c, i) => {
+    const pts = c.strings.map((s, j) => [x(c.frets[j]), y(s)]);
+    const meanX = pts.reduce((a, p) => a + p[0], 0) / pts.length;
     o += `<g class="nd" data-i="${i}">`;
+    o += `<polyline points="${pts.map(p => p[0].toFixed(1) + ',' + p[1]).join(' ')}" fill="none" stroke="${c.tt ? 'var(--tt)' : 'var(--bone-dim)'}" stroke-width="3.5" opacity="${c.tt ? .55 : .4}" stroke-linecap="round" stroke-linejoin="round"/>`;
     c.strings.forEach((s, j) => { const top = j === c.strings.length - 1;
       o += top ? `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="9.5" fill="var(--brass)"/>`
-               : `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="6.5" fill="var(--bone)" opacity=".55"/>`; });
+               : `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="6.5" fill="var(--bone)" opacity=".8"/>`; });
+    o += `<text x="${meanX.toFixed(1)}" y="${padT - 13}" font-family="var(--mono)" font-size="11.5" fill="${c.tt ? 'var(--tt)' : 'var(--brass)'}" text-anchor="middle">${i + 1}</text>`;
     o += `</g>`;
   });
   return o + '</svg>';
@@ -1114,11 +1126,21 @@ function renderShapes(){
   el('shapesNeck').hidden = !neckOn;
   if (neckOn) {
     el('shapesNeck').innerHTML = `<div class="neckwrap"><div class="neck">${qNeckSVG(cards)}</div></div>`;
-    el('shapesNeck').querySelectorAll('g.nd').forEach(g => g.addEventListener('click', () => {
-      unlock(); const card = cards[+g.dataset.i]; strumChord(card.strings, card.frets);
-    }));
+    const neckEl = el('shapesNeck').querySelector('.neck');
+    const cardOf = i => el('shapesCards').querySelector(`.card[data-i="${i}"]`);
+    el('shapesNeck').querySelectorAll('g.nd').forEach(g => {
+      g.addEventListener('click', () => { unlock(); const card = cards[+g.dataset.i]; strumChord(card.strings, card.frets); });
+      g.addEventListener('mouseenter', () => { neckEl.classList.add('hov'); g.classList.add('hl'); const c = cardOf(g.dataset.i); if (c) c.classList.add('hlc'); });
+      g.addEventListener('mouseleave', () => { neckEl.classList.remove('hov'); g.classList.remove('hl'); const c = cardOf(g.dataset.i); if (c) c.classList.remove('hlc'); });
+    });
+    el('shapesCards').querySelectorAll('.qcard').forEach(c => {
+      c.addEventListener('mouseenter', () => { neckEl.classList.add('hov'); const g = el('shapesNeck').querySelector(`g.nd[data-i="${c.dataset.i}"]`); if (g) g.classList.add('hl'); });
+      c.addEventListener('mouseleave', () => { neckEl.classList.remove('hov'); el('shapesNeck').querySelectorAll('g.nd.hl').forEach(x => x.classList.remove('hl')); });
+    });
   }
-  el('shapesLegend').innerHTML = `<span><i style="background:var(--brass)"></i>top note</span><span><i style="background:var(--bone);opacity:.6"></i>lower voices</span><span><i style="background:var(--tt);border-radius:2px"></i>tritone voicing (TT)</span>`;
+  el('shapesLegend').innerHTML = neckOn
+    ? `<span><i style="background:var(--brass)"></i>top note</span><span><i style="background:var(--bone);opacity:.8"></i>lower voices</span><span><i style="width:16px;height:3.5px;border-radius:2px;background:var(--bone-dim)"></i>one voicing, numbered to the cards</span><span><i style="width:16px;height:3.5px;border-radius:2px;background:var(--tt)"></i>tritone voicing (TT)</span>`
+    : `<span><i style="background:var(--brass)"></i>top note</span><span><i style="background:var(--bone);opacity:.8"></i>lower voices</span><span><i style="background:var(--tt);border-radius:2px"></i>tritone voicing (TT)</span>`;
 }
 
 function modeTonicPc(){ return PC[S.tonic]; }
@@ -1138,7 +1160,7 @@ function renderModes(){
   }
   el('blueHint').hidden = !(S.pent === 'blues' && bluePc !== null && !blueDiatonic);
   if (!el('blueHint').hidden) el('blueHint').textContent =
-    `♭5 of the pentatonic (${disp(NOTES[bluePc])}) isn’t diatonic — approach it by planing a neighbouring voicing a half step. Outlined cards sit a half step either side of it.`;
+    `♭5 of the pentatonic (${disp(NOTES[bluePc])}) isn’t diatonic — approach it by planing a neighboring voicing a half step. Outlined cards sit a half step either side of it.`;
   el('modesCards').innerHTML = cards.map((c, i) => {
     const top = c.pcs[c.pcs.length - 1];
     const dim = keep && !keep.has(top);
@@ -1468,7 +1490,7 @@ function newPentQ(){            // Harmonize the pentatonic — the Modes filter
   el('drillArea').innerHTML = drillHeader(`${disp(S.tonic)} ${mname}, ${S.pent === 'blues' || isBlue ? 'blues scale' : 'minor pentatonic'} on ${disp(NOTES[pr])}: play the voicing with <b>${disp(NOTES[tone])}</b> on top.`) +
     `<div class="timerbar"><i id="dTimer" style="width:100%"></i></div>` +
     `<div class="choices" id="dChoices">${choices.map((c, i) => c.plane
-      ? `<div class="card" data-c="${i}" style="display:flex;align-items:center;text-align:center;padding:18px">no diatonic card — plane a neighbouring voicing a half step</div>`
+      ? `<div class="card" data-c="${i}" style="display:flex;align-items:center;text-align:center;padding:18px">no diatonic card — plane a neighboring voicing a half step</div>`
       : `<div class="card" data-c="${i}">${gridSVG(c)}<div class="names">${c.names.map(disp).join(' · ')}</div></div>`).join('')}</div>` + scoreLine();
   let left = 8000; const step = 250;
   D.timer = setInterval(() => { left -= step; const bar = el('dTimer'); if (bar) bar.style.width = Math.max(0, left / 80) + '%';
@@ -1634,7 +1656,7 @@ el('readBox').innerHTML = `
   <h2>Quartal harmony<small>the reading text — condensed from “Intro to Quartal Voicings”</small></h2>
   <p><b>What quartal harmony is.</b> Western harmony is predominantly tertian — stacked in thirds. Quartal harmony stacks fourths. Because the voicings contain no major or minor thirds, they carry weak functional implications: they sound “open” and “ambiguous,” and it’s hard to look at one and say what it “is.” That ambiguity is the feature: one shape serves many chords.</p>
   <p><b>Two ways jazz musicians use them.</b> <i>Non-functionally (modally)</i>: the voicings describe a key or mode linearly, the way diatonic triads or 7th chords do — stack fourths on each scale degree and you get the seven diatonic quartal voicings of the key. Tension and release happen on the micro level, not against a tonic. <i>Functionally</i>: attach chord symbols to the shapes so they can fulfil ii, V, I roles in a progression. Attaching symbols is how you get functional command of them.</p>
-  <p><b>The three shapes.</b> A three-note quartal voicing contains two fourths, each perfect (P4) or augmented (TT), so there are three usable constructions: <b>P4/P4</b> (five of the seven diatonic voicings), <b>TT/P4</b> (built on the 4th degree of the parent major scale: F–B–E in C) and <b>P4/TT</b> (built on the 1st degree: C–F–B). TT/TT would put an octave in the outer voices and isn’t studied. The tritone voicings have a different colour and yield melodic-minor harmonies (m6/9, ø, Δ7♯5) that the P4/P4 voicings don’t.</p>
+  <p><b>The three shapes.</b> A three-note quartal voicing contains two fourths, each perfect (P4) or augmented (TT), so there are three usable constructions: <b>P4/P4</b> (five of the seven diatonic voicings), <b>TT/P4</b> (built on the 4th degree of the parent major scale: F–B–E in C) and <b>P4/TT</b> (built on the 1st degree: C–F–B). TT/TT would put an octave in the outer voices and isn’t studied. The tritone voicings have a different color and yield melodic-minor harmonies (m6/9, ø, Δ7♯5) that the P4/P4 voicings don’t.</p>
   <p><b>Inversions.</b> Quartal voicings invert like triads. Because the root-position voicing serves several functions, so do its inversions — but the melody note changes, so each inversion gets its own guideposts. The tritone-voicing inversions contain a minor 2nd and are trickier to finger.</p>
   <p><b>Guideposts (root-position P4/P4).</b> For the voicing to behave as a <b>min11</b>, the ♭3 must be on top. As an <b>altered dominant</b>, the ♭5 or ♭9 must be on top. As a <b>maj6/9</b>, the 5th or 9th must be on top. First inversion → min11 with the natural 11th on top; second inversion → Δ7♯11 with the major 7th on top. (The Function tab derives the full guidepost set for every family.)</p>
   <p><b>With and without bass notes.</b> Play every functional example both ways: without the bass to stay out of a bassist’s register; with the bass for guitar/horn, guitar/voice and guitar-duo settings.</p>
