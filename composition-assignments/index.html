@@ -38,10 +38,15 @@ main{max-width:880px;margin:0 auto;padding:8px 24px 70px}
 .cards{display:grid;gap:12px}
 .card{background:var(--petrol);border-radius:6px;padding:15px 20px}
 .card .prompt{margin:0;font-size:17px;line-height:1.55}
+/* only cards that carry a tool are interactive: whole card is the tap target,
+   brass rule + chevron button mark it; prompt-only cards read as plain text */
+.card[data-tool]{cursor:pointer;border-left:3px solid var(--brass);padding-left:17px}
+.card[data-tool]:not(.open):hover{background:var(--petrol-2)}
+.card[data-tool]:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .card .toolrow{display:flex;align-items:baseline;gap:14px;justify-content:space-between;flex-wrap:wrap}
-.expand{background:transparent;border:1px solid transparent;border-radius:4px;color:var(--brass);font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;padding:6px 10px;white-space:nowrap}
+.expand{background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--brass);font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;padding:8px 12px;white-space:nowrap}
 .expand:hover{border-color:var(--brass)}
-.tool{border-top:1px solid var(--petrol-2);margin-top:13px;padding-top:14px}
+.tool{border-top:1px solid var(--petrol-2);margin-top:13px;padding-top:14px;cursor:auto}
 .tool .trow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .tool .tlbl{font-size:13px;color:var(--bone-dim)}
 .tool .thint{font-size:13px;color:var(--bone-dim);margin:6px 0}
@@ -99,7 +104,7 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 .pending{color:var(--bone-dim);font-style:italic}
 .note{font-size:13px;color:var(--bone-dim)}
 .err{color:var(--warn)}
-@media (max-width:560px){ .card{padding:13px 14px} main,.top,.bar{padding-left:14px;padding-right:14px} }
+@media (max-width:560px){ .card{padding:13px 14px} .card[data-tool]{padding-left:11px} main,.top,.bar{padding-left:14px;padding-right:14px} }
 </style>
 </head>
 <body>
@@ -774,24 +779,33 @@ function copyText(btn, text, label){
   else fb();
 }
 
-/* ---- card / tool plumbing: one tool open at a time ---- */
+/* ---- card / tool plumbing: one tool open at a time ----
+   The whole card is the tap target; clicks inside the open tool panel are
+   the tool's own and never collapse it. */
 const TOOL_PRIMARY={};                    // toolId → () => start primary playback
+function toggleTool(card){
+  const id=card.dataset.tool, btn=card.querySelector('.expand');
+  const panel=el('tool-'+id), open=panel.parentElement===card&&!panel.hidden;
+  Player.stop();
+  document.querySelectorAll('.tool').forEach(t=>t.hidden=true);
+  document.querySelectorAll('.card[data-tool]').forEach(c=>c.classList.remove('open'));
+  document.querySelectorAll('.expand').forEach(b=>{
+    b.innerHTML='&#9656; '+b.textContent.replace(/^[▸▾]\s*/,'');
+  });
+  if(open){ st.openTool=null; masterBtn.disabled=true; return; }
+  card.appendChild(panel); panel.hidden=false; card.classList.add('open');
+  btn.innerHTML='&#9662; '+btn.textContent.replace(/^[▸▾]\s*/,'');
+  st.openTool=id;
+  masterBtn.disabled=!TOOL_PRIMARY[id];
+  if(id==='row'){ st.rowView=card.dataset.view; syncRowView(); }
+  if(id==='playlist') mountPlaylist();
+}
 document.querySelectorAll('.card[data-tool]').forEach(card=>{
-  const btn=card.querySelector('.expand'), id=card.dataset.tool;
-  btn.addEventListener('click',()=>{
-    const panel=el('tool-'+id), open=panel.parentElement===card&&!panel.hidden;
-    Player.stop();
-    document.querySelectorAll('.tool').forEach(t=>t.hidden=true);
-    document.querySelectorAll('.expand').forEach(b=>{
-      b.innerHTML='&#9656; '+b.textContent.replace(/^[▸▾]\s*/,'');
-    });
-    if(open){ st.openTool=null; masterBtn.disabled=true; return; }
-    card.appendChild(panel); panel.hidden=false;
-    btn.innerHTML='&#9662; '+btn.textContent.replace(/^[▸▾]\s*/,'');
-    st.openTool=id;
-    masterBtn.disabled=!TOOL_PRIMARY[id];
-    if(id==='row'){ st.rowView=card.dataset.view; syncRowView(); }
-    if(id==='playlist') mountPlaylist();
+  card.addEventListener('click',e=>{
+    /* composedPath, not closest: a control that re-renders its own subtree
+       detaches e.target before this bubbling listener runs */
+    if(e.composedPath().some(n=>n instanceof Element&&n.classList.contains('tool'))) return;
+    toggleTool(card);
   });
 });
 masterBtn.addEventListener('click',()=>{

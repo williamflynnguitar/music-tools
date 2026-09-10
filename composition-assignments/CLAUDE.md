@@ -75,6 +75,14 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   bottom), P0 = the row as entered, main diagonal is constant and tinted.
   Clicking any label selects and plays that form; the root-chart view and
   "Copy form" follow the selection.
+- **Tool cards are whole-card tap targets** (William's 2026-09-09 report:
+  the first cut's only control was the small chevron, and prompt cards wear
+  the family's clickable-card look — "none of this is clickable"). Tool
+  cards carry a brass left rule, hover, and pointer; prompt-only cards stay
+  plain and static per the brief. Clicks inside an open tool never collapse
+  it — the card listener checks `composedPath()`, not `closest()`, because
+  tool controls re-render their own subtree and detach the click target
+  before the bubbling listener runs.
 
 ## Open items
 
