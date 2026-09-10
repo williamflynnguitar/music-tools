@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quartal voicings — Quartal Harmony</title>
+<style>
+  /* styles land in the UI pass */
+</style>
+</head>
+<body>
+<!-- SPINE-MENU-PLACEHOLDER -->
+<h1>Quartal voicings</h1>
+
+<script>
+/* ===== quartal engine ===== */
+/* Direct port of the reference engine.py / symbols.py (briefs/). Pitch-class
+   based, no hand-entered fingerings; headless — no DOM access in this block.
+   Extracted and run by check.js and notation/pipeline/gen-quartal.js. */
+
+const OPEN = [null,64,59,55,50,45,40];                 // MIDI of open string 1..6
+const NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];   // chromatic, workbook flats
+const PC = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const KEYS = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];    // cycle of 4ths
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const MAJ = [0,2,4,5,7,9,11];
+const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const ACCV = {'':0,'#':1,'##':2,'b':-1,'bb':-2};
+const notePc = name => ((LPC[name[0]] + ACCV[name.slice(1)]) % 12 + 12) % 12;
+
+/* families: diatonic step stacks (3 scale steps = a 4th, 2 = a 3rd) */
+const FAMILIES = {
+  q3:  { name:'3-note (4th–4th)',            steps:[3,3],     sets:[[5,4,3],[4,3,2],[3,2,1]], invs:[0,1,2] },
+  q4:  { name:'4-note (4th–4th–4th)',        steps:[3,3,3],   sets:[[5,4,3,2],[4,3,2,1]],     invs:[0] },
+  sw4: { name:'So What (4th–4th–3rd)',       steps:[3,3,2],   sets:[[4,3,2,1]],               invs:[0] },
+  sw5: { name:'So What 5 (4th–4th–4th–3rd)', steps:[3,3,3,2], sets:[[5,4,3,2,1]],             invs:[0] },
+};
+const INV_NAMES = ['root position','1st inversion (4th–2nd)','2nd inversion (2nd–4th)'];  // workbook convention (D1)
+
+function scale(tonicPc){ return MAJ.map(st => (tonicPc + st) % 12); }
+function stack(sc, i, steps){
+  const out = [sc[i]]; let j = i;
+  for (const st of steps) { j = (j + st) % 7; out.push(sc[j]); }
+  return out;
+}
+function invert(v, k){
+  v = v.slice();
+  for (let i = 0; i < k; i++) v.push(v.shift());
+  return v;
+}
+const ivl = (a, b) => ((b - a) % 12 + 12) % 12;
+const IVN = {5:'P4',6:'TT',2:'M2',1:'m2',4:'M3',3:'m3'};
+function intervalType(pcs){
+  const parts = [];
+  for (let i = 0; i + 1 < pcs.length; i++) { const v = ivl(pcs[i], pcs[i+1]); parts.push(IVN[v] || String(v)); }
+  return parts.join('/');
+}
+/* fret placements for pcs (low→high) on a string set (low→high): both octave
+   positions in 0..ceil, span <= 4, ascending by lowest fret (engine.py place) */
+function place(pcs, strings, ceil = 15){
+  const cands = pcs.map((pc, i) => {
+    const base = ((pc - OPEN[strings[i]]) % 12 + 12) % 12;
+    return [base, base + 12].filter(f => f <= ceil);
+  });
+  const out = [];
+  (function walk(i, acc){
+    if (i === pcs.length) { if (Math.max(...acc) - Math.min(...acc) <= 4) out.push(acc.slice()); return; }
+    for (const f of cands[i]) { acc.push(f); walk(i + 1, acc); acc.pop(); }
+  })(0, []);
+  out.sort((a, b) => Math.min(...a) - Math.min(...b));
+  return out;
+}
+function spellPc(pc, parentKey){
+  const i = scale(PC[parentKey]).indexOf(pc);
+  return i >= 0 ? SPELL[parentKey][i] : NOTES[pc];
+}
+/* the full catalogue walk for one parent key / family / string set / inversion:
+   every degree's placements, flattened, ascending by lowest fret (8va copies kept) */
+function walkCards(parentKey, family, strings, inv){
+  const sc = scale(PC[parentKey]), fam = FAMILIES[family];
+  const cards = [];
+  for (let d = 0; d < 7; d++) {
+    const root = stack(sc, d, fam.steps);
+    const pcs = invert(root, inv);
+    place(pcs, strings).forEach((frets, pi) => cards.push({
+      d, root, pcs, frets, strings, inv, family, oct: pi > 0,
+      names: pcs.map(p => spellPc(p, parentKey)),
+      itype: intervalType(pcs), tt: /TT|m2/.test(intervalType(pcs)),
+    }));
+  }
+  cards.sort((a, b) => Math.min(...a.frets) - Math.min(...b.frets)
+    || (OPEN[a.strings[0]] + a.frets[0]) - (OPEN[b.strings[0]] + b.frets[0]));
+  return cards;
+}
+
+/* ---------- chord symbols: port of symbols.py, rules in order ---------- */
+const SYM_ALT = {1:'♭9',3:'♯9',6:'♭5',8:'♭13'};
+function label(bass, pcs){
+  const d = new Set(pcs.map(p => ((p - bass) % 12 + 12) % 12)); d.delete(0);
+  const b9=d.has(1), n9=d.has(2), s9=d.has(3), M3=d.has(4), p11=d.has(5), b5=d.has(6),
+        p5=d.has(7), b13=d.has(8), s13=d.has(9), b7=d.has(10), M7=d.has(11);
+  const m3 = s9;
+  if (b7 && M7) return '—';
+  if (b9 && n9) return '—';
+  if (M3 && m3 && !b7) { if (s13) return 'Δ13(♯9)'; return '—'; }
+  const alts = [1,3,6,8].filter(x => d.has(x));
+  const nats = [2,5,7,9].filter(x => d.has(x));
+  if (M3 && b7) {                                          // dominant / altered
+    if (p11 && !alts.length && !n9 && !s13) return '7sus';
+    if (alts.length && !nats.length) return alts.length >= 2 ? '7alt.' : '7(' + SYM_ALT[alts[0]] + ')';
+    if (alts.length) {
+      const names = Object.assign({}, SYM_ALT);
+      if (p5) names[6] = '♯11';
+      const base = s13 ? '13' : (n9 ? '9' : '7');
+      return base + '(' + alts.map(x => names[x]).join('') + ')';
+    }
+    if (s13) return '13';
+    if (n9) return '9';
+    return '7';
+  }
+  if (alts.length && !nats.length && !M3 && !b7 && !M7 && alts.length >= 3) return '7alt.';
+  if (M3) {                                                // major without b7
+    if (M7) {
+      if (b9 && b5) return 'Δ7(♭9♭5)';
+      if (b9) return '—';
+      if (s13) return 'Δ13';
+      if (b5) return 'Δ7(♯11)';
+      if (p11) return 'Δ7(sus4)';
+      if (n9) return 'Δ9';
+      return 'Δ7';
+    }
+    if (s13 && n9) return '6/9';
+    if (b13 && s13) return 'Δ7(♯5)';
+    if (b13 && n9) return 'Δ7(♯5)';
+    if (b5 && M7) return 'Δ7(♯11)';                        // unreachable; kept for the port
+    if (b5) return 'Δ7(♯11)';
+    if (s13) return '6';
+    if (n9) return 'Δ9';
+    return '—';
+  }
+  if (m3 && !M3) {                                         // minor family
+    if (b9) return '—';
+    if (b5) {
+      if (b7) return p11 ? 'ø11' : 'ø7';
+      if (s13 && b13) return '°7(♭13)';
+      if (s13) return '°7';
+      if (p11) return 'ø11';
+      if (b13) return 'ø(♭13)';
+      return 'ø';
+    }
+    if (b7) {
+      if (s13) return 'm13';
+      if (b13) return 'm7(♭6)';
+      if (p11) return 'm11';
+      if (n9) return 'm9';
+      return 'm7';
+    }
+    if (M7) return p11 ? 'm(Δ11)' : (n9 ? 'm(Δ9)' : 'm(Δ7)');
+    if (s13 && b13) return '°7(♭13)';
+    if (s13 && n9) return 'm6/9';
+    if (s13) return 'm6';
+    if (b13 && n9) return 'm9(♭6)';
+    if (b13) return 'm(♭6)';
+    if (p11 && n9) return 'm(9,11)';
+    return '—';
+  }
+  // no third
+  if (M7 && b9 && b5) return 'Δ7(♭9♭5)';
+  if (b13 && n9 && s13) return 'Δ7(♯5)';
+  if (b13 && n9 && !b7) return 'm9(♭6)';
+  if (b13 && b7) return 'm7(♭6)';
+  if (b5 && p11 && !M7) return 'ø11';
+  if (b7 && (p11 || p5)) return n9 ? '9sus' : '7sus';
+  if (M7 && b5 && p11) return 'Δ7(♭5sus4)';
+  if (M7 && p11) return 'm(Δ11)';
+  if (M7 && b5) return 'Δ7(♯11)';
+  if (M7 && s13) return 'Δ13';
+  if (M7 && n9) return 'Δ9';
+  if (p11 && p5) return '7sus';
+  if (b9 && p5 && b5) return '7(♭9♯11)';
+  if (b9 && p5) return b13 ? '7(♭9♭13)' : '7(♭9)';
+  if (b9 && b5) return '7(♭9♭5)';
+  if (s13 && n9) return '6/9';
+  if (n9 && p5) return 'Δ9';
+  if (b5 && p5) return 'Δ7(♯11)';
+  if (b5) return 'Δ7(♯11)';
+  return '—';
+}
+/* Ex. 5/10/11 table: one shape, bass descending chromatically from E */
+const BASS_ORDER = Array.from({length: 12}, (_, k) => ((4 - k) % 12 + 12) % 12);   // E Eb D Db C B Bb A Ab G Gb F
+function symTable(pcs){ return BASS_ORDER.map(b => ({ bass: b, name: NOTES[b], sym: label(b, pcs) })); }
+
+/* degree names: dual (Appendix B style) and contextual (§6.3 / reading lines) */
+const DUAL = {0:'1',1:'♭9',2:'9',3:'♭3/♯9',4:'3',5:'11',6:'♭5/♯11',7:'5',8:'♭13',9:'13/6',10:'♭7',11:'Δ7'};
+function nameDeg(off, sym){
+  sym = sym || '';
+  const minor = /^(m(?!aj)|ø|°)/.test(sym);
+  const six = /^6/.test(sym) || /^m6/.test(sym);
+  const altish = /alt|ø|°|♭5/.test(sym);
+  return {0:'1',1:'♭9',2:'9',3:minor?'♭3':'♯9',4:'3',5:'11',
+          6:altish?'♭5':'♯11',7:'5',8:/♯5/.test(sym)?'♯5':'♭13',
+          9:six?'6':'13',10:'♭7',11:'Δ7'}[off];
+}
+/* spell a chord tone from its degree against the symbol root (workbook style:
+   ♯9 takes the practical ♭3 letter — D7alt. is spelled B♭ E♭ F, not E♯) */
+const DEG_LETTER = {'1':0,'♭9':1,'9':1,'♯9':2,'♭3':2,'3':2,'11':3,'♯11':3,'♭5':4,'5':4,'♯5':4,'♭13':5,'13':5,'6':5,'♭7':6,'Δ7':6};
+function spellDeg(pc, rootName, sym){
+  const off = ((pc - notePc(rootName)) % 12 + 12) % 12;
+  const li = 'CDEFGAB'.indexOf(rootName[0]) , lo = DEG_LETTER[nameDeg(off, sym)];
+  const letter = 'CDEFGAB'[(li + lo) % 7];
+  let acc = ((pc - LPC[letter]) % 12 + 12) % 12; if (acc > 6) acc -= 12;
+  return letter + (acc > 0 ? '#'.repeat(acc) : 'b'.repeat(-acc));
+}
+
+/* ---------- guideposts: "to sound like X, the top note must be Y" ---------- */
+const CONSTR = {'P4/P4':[0,5,10], 'P4/TT':[0,5,11], 'TT/P4':[0,6,11]};
+/* derive rows for one construction (pcs = its root-position stack anywhere):
+   group the 12 basses by symbol; per inversion, the top note's contextual degree */
+function guideposts(pcs, only){
+  const rows = [], seen = new Map();
+  for (const { bass, sym } of symTable(pcs)) {
+    if (sym === '—') continue;
+    if (!seen.has(sym)) { seen.set(sym, { sym, tops: [[],[],[]] }); rows.push(seen.get(sym)); }
+    const r = seen.get(sym);
+    for (const k of [0,1,2]) {
+      const top = invert(pcs, k)[pcs.length - 1];
+      const deg = nameDeg(((top - bass) % 12 + 12) % 12, sym);
+      if (!r.tops[k].includes(deg)) r.tops[k].push(deg);
+    }
+  }
+  if (only) return only.map(s => rows.find(r => r.sym === s)).filter(Boolean);
+  return rows;
+}
+const GP_CANON = ['m11','7alt.','6/9','Δ13','Δ7(♯11)','7sus'];    // §6.3's six, for P4/P4
+
+/* ---------- bass placement (Function tab, transposed presets) ----------
+   6th string at the octave nearest the shape's lowest fret; 5th string when
+   that fret leaves 0..15 (the workbook uses both) */
+function bassPlace(pc, anchor){
+  for (const s of [6, 5]) {
+    const base = ((pc - OPEN[s]) % 12 + 12) % 12;
+    const f = base + 12 * Math.round((anchor - base) / 12);
+    if (f >= 0 && f <= 15) return { s, f };
+  }
+  return { s: 6, f: ((pc - OPEN[6]) % 12 + 12) % 12 };
+}
+
+/* ---------- progressions ---------- */
+/* find a q3 voicing sounding as `target` over `bassPc`, at `inv`, on `strings`,
+   nearest the previous placement (Voice-Leading Trainer's cost: top-note
+   motion first, then hand travel) */
+function funcSearch(target, bassPc, inv, strings, prev){
+  const opts = [];
+  for (const cn of Object.keys(CONSTR)) for (let o = 0; o < 12; o++) {
+    const root = CONSTR[cn].map(x => (bassPc + o + x) % 12);
+    if (label(bassPc, root) !== target) continue;
+    const pcs = invert(root, inv);
+    for (const frets of place(pcs, strings)) opts.push({ pcs, root, frets, strings, inv });
+  }
+  const top = p => OPEN[p.strings[p.strings.length - 1]] + p.frets[p.frets.length - 1];
+  const anchor = p => Math.min(...p.frets);
+  const cost = p => prev ? Math.abs(top(p) - top(prev)) + Math.abs(anchor(p) - anchor(prev)) * 0.25
+                         : Math.abs(anchor(p) - 5) * 0.2 + anchor(p) * 0.05;
+  opts.sort((a, b) => cost(a) - cost(b));
+  return opts[0] || null;
+}
+/* the eleven workbook ii–V–I sets (§7.1), transcribed. strings low→high;
+   basses in home keys are the workbook's where printed, else bassPlace() —
+   8a/8b reuse 6b/6c's printed basses for the shared voicings; 8c/8h had none. */
+const PRESETS = [
+ {id:'6a', key:'C', note:'all root position, ♭3 / ♭5 / 9 on top', chords:[
+   {sym:'Dm11',      root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],    bass:{name:'D', s:5,f:5}},
+   {sym:'G7alt.',    root:'G',  notes:['Eb','Ab','Db'], strings:[4,3,2], frets:[1,1,2],    bass:{name:'G', s:6,f:3}},
+   {sym:'C6/9',      root:'C',  notes:['E','A','D'],    strings:[4,3,2], frets:[2,2,3],    bass:{name:'C', s:5,f:3}}]},
+ {id:'6b', key:'C', note:'♭9 on top of the V, 5 on top of the I', chords:[
+   {sym:'Dm11',      root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],    bass:{name:'D', s:5,f:5}},
+   {sym:'G7alt.',    root:'G',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],    bass:{name:'G', s:5,f:10}},
+   {sym:'C6/9',      root:'C',  notes:['A','D','G'],    strings:[4,3,2], frets:[7,7,8],    bass:{name:'C', s:6,f:8}}]},
+ {id:'6c', key:'C', note:'13 on top of the I', chords:[
+   {sym:'Dm11',      root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],    bass:{name:'D', s:5,f:5}},
+   {sym:'G7alt.',    root:'G',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],    bass:{name:'G', s:5,f:10}},
+   {sym:'CΔ13',      root:'C',  notes:['B','E','A'],    strings:[4,3,2], frets:[9,9,10],   bass:{name:'C', s:6,f:8}}]},
+ {id:'8a', key:'C', chords:[
+   {sym:'Dm11',      root:'D',  notes:['C','F','G'],    strings:[4,3,2], frets:[10,10,8],  bass:{name:'D', s:6,f:10}},
+   {sym:'G7alt.',    root:'G',  notes:['Db','Eb','Ab'], strings:[4,3,2], frets:[11,8,9],   bass:{name:'G', s:5,f:10}},
+   {sym:'C6/9',      root:'C',  notes:['A','D','G'],    strings:[4,3,2], frets:[7,7,8],    bass:{name:'C', s:6,f:8}}]},
+ {id:'8b', key:'C', plane:'up', note:'planing example 1', chords:[
+   {sym:'Dm11',      root:'D',  notes:['C','F','G'],    strings:[4,3,2], frets:[10,10,8],  bass:{name:'D', s:6,f:10}},
+   {sym:'G7alt.',    root:'G',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],    bass:{name:'G', s:5,f:10}},
+   {sym:'CΔ13',      root:'C',  notes:['B','E','A'],    strings:[4,3,2], frets:[9,9,10],   bass:{name:'C', s:6,f:8}}]},
+ {id:'8c', key:'C', chords:[
+   {sym:'Dm11',      root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],    bass:{name:'D', s:5,f:5}},
+   {sym:'G7alt.',    root:'G',  notes:['Ab','Bb','Eb'], strings:[4,3,2], frets:[6,3,4],    bass:{name:'G', s:6,f:3}},
+   {sym:'C6/9',      root:'C',  notes:['A','D','E'],    strings:[4,3,2], frets:[7,7,5],    bass:{name:'C', s:6,f:8}}]},
+ {id:'8d', key:'G', chords:[
+   {sym:'Am11',      root:'A',  notes:['C','D','G'],    strings:[4,3,2], frets:[10,7,8],   bass:{name:'A', s:5,f:0}},
+   {sym:'D7alt.',    root:'D',  notes:['Bb','Eb','F'],  strings:[4,3,2], frets:[8,8,6],    bass:{name:'D', s:6,f:10}},
+   {sym:'GΔ7(♯11)',  root:'G',  notes:['B','C#','F#'],  strings:[4,3,2], frets:[9,6,7],    bass:{name:'G', s:5,f:10}}]},
+ {id:'8e', key:'C', chords:[
+   {sym:'Dm11',      root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],    bass:{name:'D', s:5,f:5}},
+   {sym:'G7alt.',    root:'G',  notes:['Eb','Ab','Db'], strings:[4,3,2], frets:[1,1,2],    bass:{name:'G', s:6,f:3}},
+   {sym:'CΔ13',      root:'C',  notes:['E','A','B'],    strings:[4,3,2], frets:[2,2,0],    bass:{name:'C', s:5,f:3}}]},
+ {id:'8f', key:'D', chords:[
+   {sym:'Em11',      root:'E',  notes:['G','A','D'],    strings:[4,3,2], frets:[5,2,3],    bass:{name:'E', s:6,f:0}},
+   {sym:'A7alt.',    root:'A',  notes:['Bb','Eb','F'],  strings:[4,3,2], frets:[8,8,6],    bass:{name:'A', s:5,f:0}},
+   {sym:'DΔ13',      root:'D',  notes:['B','C#','F#'],  strings:[4,3,2], frets:[9,6,7],    bass:{name:'D', s:5,f:5}}]},
+ {id:'8g', key:'C', note:'3-2-1 set used for the ii', chords:[
+   {sym:'Dm11',      root:'D',  notes:['F','G','C'],    strings:[3,2,1], frets:[10,8,8],   bass:{name:'D', s:6,f:10}},
+   {sym:'G7alt.',    root:'G',  notes:['Eb','Ab','Bb'], strings:[4,3,2], frets:[13,13,11], bass:{name:'G', s:5,f:10}},
+   {sym:'CΔ13',      root:'C',  notes:['B','E','A'],    strings:[4,3,2], frets:[9,9,10],   bass:{name:'C', s:6,f:8}}]},
+ {id:'8h', key:'D', plane:'up', note:'planing example 2', chords:[
+   {sym:'Em11',      root:'E',  notes:['G','A','D'],    strings:[4,3,2], frets:[5,2,3],    bass:{name:'E', s:6,f:0}},
+   {sym:'A7alt.',    root:'A',  notes:['F','Bb','C'],   strings:[4,3,2], frets:[3,3,1],    bass:{name:'A', s:6,f:5}},
+   {sym:'DΔ13',      root:'D',  notes:['F#','B','C#'],  strings:[4,3,2], frets:[4,4,2],    bass:{name:'D', s:5,f:5}}]},
+];
+/* transpose a preset to a key: same strings, frets shifted by the nearest
+   direction; a chord that leaves 0..15 tries the other octave, and if none
+   fits it drops an octave and flags (console) — acceptance §8.4 */
+function transposePreset(preset, key){
+  const d0 = ((PC[key] - PC[preset.key]) % 12 + 12) % 12;
+  const delta = d0 > 6 ? d0 - 12 : d0;
+  const flags = [];
+  const chords = preset.chords.map(ch => {
+    if (!delta) return Object.assign({}, ch, { flag: null });
+    const fit = fs => fs.every(f => f >= 0 && f <= 15);
+    let frets = ch.frets.map(f => f + delta), flag = null;
+    if (!fit(frets)) {
+      const alt = [12, -12].map(sh => ch.frets.map(f => f + delta + sh)).find(fit);
+      if (alt) frets = alt;
+      else { const over = Math.max(...frets) > 15; frets = frets.map(f => f + (over ? -12 : 12)); flag = 'no in-range octave; shifted an octave and clipped'; }
+    }
+    const rootPc = (notePc(ch.root) + d0) % 12;
+    const rootName = spellPc(rootPc, key);
+    const sym = rootName + ch.sym.slice(ch.root.length);
+    const pcs = ch.strings.map((s, i) => (OPEN[s] + frets[i]) % 12);
+    const notes = pcs.map(p => spellDeg(p, rootName, ch.sym.slice(ch.root.length)));
+    const bassPc = (notePc(ch.bass.name) + d0) % 12;
+    const bass = Object.assign({ name: spellDeg(bassPc, rootName, ch.sym.slice(ch.root.length)) }, bassPlace(bassPc, Math.min(...frets)));
+    if (flag) flags.push(sym + ': ' + flag);
+    return { sym, root: rootName, notes, strings: ch.strings, frets, bass, flag };
+  });
+  return { id: preset.id, key, plane: preset.plane, note: preset.note, chords, flags };
+}
+/* half-step planing: the V shape slides into the I on the same strings */
+function planeChord(vChord, dir, iRootName){
+  const frets = vChord.frets.map(f => f + (dir === 'down' ? -1 : 1));
+  const pcs = vChord.strings.map((s, i) => (OPEN[s] + frets[i]) % 12);
+  const suffix = label(notePc(iRootName), pcs);
+  return { sym: iRootName + suffix, root: iRootName, strings: vChord.strings, frets, pcs,
+           notes: pcs.map(p => spellDeg(p, iRootName, suffix)), planed: true };
+}
+
+/* ---------- tunes (workbook Ex. 9 and Ex. 14, transcribed — D12/D17) ----------
+   Frets are the workbook's; never re-placed. span: bars held (ties). */
+const TUNES = {
+ solar: { name: 'Solar', key: 'C', bars: 12, rows: [
+  {bar:1,  chords:[{sym:'Cm11',     root:'C',  notes:['F','Bb','Eb'],  strings:[4,3,2], frets:[3,3,4],   bass:{name:'C', s:5,f:3}}]},
+  {bar:2,  chords:[{sym:'Cm11',     root:'C',  notes:['Bb','Eb','F'],  strings:[4,3,2], frets:[8,8,6],   bass:{name:'C', s:6,f:8}}]},
+  {bar:3,  chords:[{sym:'Gm11',     root:'G',  notes:['F','Bb','C'],   strings:[4,3,2], frets:[3,3,1],   bass:{name:'G', s:6,f:3}}]},
+  {bar:4,  chords:[{sym:'C7alt.',   root:'C',  notes:['Eb','Ab','Db'], strings:[4,3,2], frets:[1,1,2],   bass:{name:'G', s:6,f:3, fifth:true}}]},
+  {bar:5,  chords:[{sym:'FΔ13',     root:'F',  notes:['E','A','D'],    strings:[4,3,2], frets:[2,2,3],   bass:{name:'F', s:6,f:1}}]},
+  {bar:6,  chords:[{sym:'FΔ13',     root:'F',  notes:['D','E','A'],    strings:[4,3,2], frets:[12,9,10], bass:{name:'C', s:6,f:8, fifth:true}}]},
+  {bar:7,  chords:[{sym:'Fm11',     root:'F',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],   bass:{name:'F', s:5,f:8}}]},
+  {bar:8,  chords:[{sym:'Bb7alt.',  root:'Bb', notes:['Cb','Db','Gb'], strings:[4,3,2], frets:[9,6,7],   bass:{name:'Bb', s:6,f:6}}]},
+  {bar:9,  chords:[{sym:'Eb6/9',    root:'Eb', notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],   bass:{name:'Eb', s:5,f:6}}]},
+  {bar:10, chords:[{sym:'Ebm11',    root:'Eb', notes:['Ab','Db','Gb'], strings:[4,3,2], frets:[6,6,7],   bass:{name:'Eb', s:5,f:6}},
+                   {sym:'Ab7alt.',  root:'Ab', notes:['E','A','D'],    strings:[4,3,2], frets:[2,2,3],   bass:{name:'Ab', s:6,f:4}}]},
+  {bar:11, chords:[{sym:'DbΔ7(♯11)',root:'Db', notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],   bass:{name:'Db', s:5,f:4}}]},
+  {bar:12, chords:[{sym:'G7alt.',   root:'G',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],   bass:{name:'G', s:5,f:10}}]},
+ ]},
+ stella: { name: 'Stella by Starlight', key: 'Bb', bars: 32, rows: [
+  {bar:1,  chords:[{sym:'Eø11',     root:'E',  notes:['A','Bb','E'],   strings:[4,3,2], frets:[7,3,5],   bass:{name:'E', s:6,f:0}}]},
+  {bar:2,  chords:[{sym:'A7alt.',   root:'A',  notes:['F','Bb','Eb'],  strings:[4,3,2], frets:[3,3,4],   bass:{name:'A', s:6,f:5}}]},
+  {bar:3,  chords:[{sym:'Cm11',     root:'C',  notes:['Bb','Eb','F'],  strings:[4,3,2], frets:[8,8,6],   bass:{name:'C', s:6,f:8}}]},
+  {bar:4,  chords:[{sym:'F13',      root:'F',  notes:['D','Eb','A'],   strings:[4,3,2], frets:[12,8,10], bass:{name:'F', s:5,f:8}}]},
+  {bar:5,  chords:[{sym:'Fm11',     root:'F',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],   bass:{name:'F', s:5,f:8}}]},
+  {bar:6,  chords:[{sym:'Bb7alt.',  root:'Bb', notes:['B','E','Gb'],   strings:[4,3,2], frets:[9,9,7],   bass:{name:'Bb', s:6,f:6}}]},
+  {bar:7,  chords:[{sym:'EbΔ7(♯11)',root:'Eb', notes:['A','D','G'],    strings:[4,3,2], frets:[7,7,8],   bass:{name:'Eb', s:5,f:6}},
+                   {sym:'Eb6/9',    root:'Eb', notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],   bass:{name:'Eb', s:5,f:6}}]},
+  {bar:8,  chords:[{sym:'Ab13',     root:'Ab', notes:['Gb','C','F'],   strings:[4,3,2], frets:[4,5,6],   bass:{name:'Ab', s:6,f:4}},
+                   {sym:'Ab13',     root:'Ab', notes:['C','F','Gb'],   strings:[4,3,2], frets:[10,10,7], bass:{name:'Eb', s:6,f:11, fifth:true}}]},
+  {bar:9,  chords:[{sym:'Bb6/9',    root:'Bb', notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],   bass:{name:'Bb', s:6,f:6}}]},
+  {bar:10, chords:[{sym:'Eø11',     root:'E',  notes:['A','Bb','E'],   strings:[4,3,2], frets:[7,3,5],   bass:{name:'E', s:5,f:7}},
+                   {sym:'A7alt.',   root:'A',  notes:['F','Bb','Eb'],  strings:[4,3,2], frets:[3,3,4],   bass:{name:'A', s:6,f:5}}]},
+  {bar:11, chords:[{sym:'Dm11',     root:'D',  notes:['G','C','F'],    strings:[4,3,2], frets:[5,5,6],   bass:{name:'D', s:5,f:5}},
+                   {sym:'Dm11',     root:'D',  notes:['F','G','C'],    strings:[4,3,2], frets:[3,0,1],   bass:{name:'D', s:5,f:5}}]},
+  {bar:12, chords:[{sym:'Bbm11',    root:'Bb', notes:['Eb','Ab','Db'], strings:[4,3,2], frets:[1,1,2],   bass:{name:'Bb', s:5,f:1}},
+                   {sym:'Eb13',     root:'Eb', notes:['Db','G','C'],   strings:[3,2,1], frets:[6,8,8],   bass:{name:'Eb', s:5,f:6}}]},
+  {bar:13, chords:[{sym:'FΔ13',     root:'F',  notes:['D','E','A'],    strings:[4,3,2], frets:[12,9,10], bass:{name:'F', s:5,f:8}}]},
+  {bar:14, chords:[{sym:'Eø11',     root:'E',  notes:['Bb','E','A'],   strings:[4,3,2], frets:[8,9,10],  bass:{name:'E', s:5,f:7}},
+                   {sym:'A7alt.',   root:'A',  notes:['C','F','Bb'],   strings:[4,3,2], frets:[10,10,11],bass:{name:'E', s:6,f:12, fifth:true}}]},
+  {bar:15, chords:[{sym:'Aø11',     root:'A',  notes:['D','Eb','A'],   strings:[4,3,2], frets:[12,8,10], bass:{name:'A', s:5,f:12}}]},
+  {bar:16, chords:[{sym:'D7alt.',   root:'D',  notes:['Bb','Eb','F'],  strings:[4,3,2], frets:[8,8,6],   bass:{name:'D', s:6,f:10}}]},
+  {bar:17, chords:[{sym:'G7alt.',   root:'G',  notes:['Bb','Eb','Ab'], strings:[4,3,2], frets:[8,8,9],   bass:{name:'G', s:5,f:10}}]},
+  {bar:18, chords:[{sym:'G7alt.',   root:'G',  notes:['Eb','Ab','Bb'], strings:[4,3,2], frets:[13,13,11],bass:{name:'G', s:5,f:10}}]},
+  {bar:19, span:2, chords:[{sym:'Cm11', root:'C', notes:['Eb','F','Bb'], strings:[3,2,1], frets:[8,6,6], bass:{name:'C', s:6,f:8}}]},
+  {bar:21, chords:[{sym:'Ab13',     root:'Ab', notes:['C','F','Gb'],   strings:[4,3,2], frets:[10,10,7], bass:{name:'Eb', s:6,f:11, fifth:true}}]},
+  {bar:22, chords:[{sym:'Ab13',     root:'Ab', notes:['Gb','C','F'],   strings:[4,3,2], frets:[4,5,6],   bass:{name:'Ab', s:6,f:4}}]},
+  {bar:23, span:2, chords:[{sym:'Bb6/9', root:'Bb', notes:['G','C','D'], strings:[4,3,2], frets:[5,5,3], bass:{name:'Bb', s:6,f:6}}]},
+  {bar:25, chords:[{sym:'Eø11',     root:'E',  notes:['Bb','E','A'],   strings:[4,3,2], frets:[8,9,10],  bass:{name:'E', s:5,f:7}}]},
+  {bar:26, chords:[{sym:'A7alt.',   root:'A',  notes:['Eb','F','Bb'],  strings:[4,3,2], frets:[13,10,11],bass:{name:'A', s:5,f:12}}]},
+  {bar:27, chords:[{sym:'Dø11',     root:'D',  notes:['Ab','D','G'],   strings:[4,3,2], frets:[6,7,8],   bass:{name:'D', s:5,f:5}}]},
+  {bar:28, chords:[{sym:'G7alt.',   root:'G',  notes:['Db','Eb','Ab'], strings:[4,3,2], frets:[11,8,9],  bass:{name:'G', s:5,f:10}}]},
+  {bar:29, chords:[{sym:'Cø11',     root:'C',  notes:['C','F','Gb'],   strings:[4,3,2], frets:[10,10,7], bass:{name:'C', s:6,f:8}}]},
+  {bar:30, chords:[{sym:'F7alt.',   root:'F',  notes:['Ab','Db','Gb'], strings:[4,3,2], frets:[6,6,7],   bass:{name:'F', s:5,f:8}}]},
+  {bar:31, span:2, chords:[{sym:'Bb6/9', root:'Bb', notes:['G','C','F'], strings:[4,3,2], frets:[5,5,6], bass:{name:'Bb', s:6,f:6}}]},
+ ]},
+};
+/* recognize a played q3 voicing: which construction, which inversion, what root form */
+function classify(pcs){
+  for (const cn of Object.keys(CONSTR)) for (let k = 0; k < pcs.length; k++) {
+    const root = invert(pcs, (pcs.length - k) % pcs.length);
+    const rel = root.map(p => ((p - root[0]) % 12 + 12) % 12);
+    if (rel.join(',') === CONSTR[cn].join(',')) return { cn, inv: k, root };
+  }
+  return null;
+}
+/* the generated one-line reading (§3.5): root form + inversion, then each
+   played note's degree over the symbol root, top first */
+function readingLine(ch){
+  const pcs = ch.strings.map((s, i) => (OPEN[s] + ch.frets[i]) % 12);
+  const cls = classify(pcs);
+  const suffix = ch.sym.slice(ch.root.length);
+  const rootNames = cls ? invert(ch.notes, ((pcs.length - cls.inv) % pcs.length)) : ch.notes;
+  const posName = cls ? INV_NAMES[cls.inv] : '';
+  const rootPc = notePc(ch.root);
+  const byPitch = ch.strings.map((s, i) => ({ name: ch.notes[i], midi: OPEN[s] + ch.frets[i], pc: pcs[i] }))
+    .sort((a, b) => b.midi - a.midi);
+  const degs = byPitch.map((n, i) => (i === 0 ? 'the top ' : '') + disp(n.name) + (i === 0 ? ' is the ' : ' the ') + nameDeg(((n.pc - rootPc) % 12 + 12) % 12, suffix));
+  return rootNames.map(disp).join('–') + ' ' + posName + ': over ' + disp(ch.root) + ', ' + degs.join(', ') + '.';
+}
+function disp(name){ return name[0] + name.slice(1).replace(/b/g, '♭').replace(/#/g, '♯'); }
+
+/* ---------- modes (§5) ---------- */
+const MODES = [
+  { id:'ionian',     name:'Ionian',     deg:0 }, { id:'dorian',   name:'Dorian',   deg:1 },
+  { id:'phrygian',   name:'Phrygian',   deg:2 }, { id:'lydian',   name:'Lydian',   deg:3 },
+  { id:'mixolydian', name:'Mixolydian', deg:4 }, { id:'aeolian',  name:'Aeolian',  deg:5 },
+  { id:'locrian',    name:'Locrian',    deg:6 },
+];
+const MODE_PRESETS = [
+  { label:'D Dorian',      mode:'dorian',     tonic:'D'  }, { label:'E♭ Dorian',    mode:'dorian',     tonic:'Eb' },
+  { label:'G Mixolydian',  mode:'mixolydian', tonic:'G'  }, { label:'F Mixolydian', mode:'mixolydian', tonic:'F'  },
+  { label:'F Lydian',      mode:'lydian',     tonic:'F'  }, { label:'E Phrygian',   mode:'phrygian',   tonic:'E'  },
+];
+function modeParent(modeId, tonicPc){
+  const m = MODES.find(x => x.id === modeId);
+  return ((tonicPc - MAJ[m.deg]) % 12 + 12) % 12;
+}
+const MODE_DEG = {0:'1',1:'♭2',2:'2',3:'♭3',4:'3',5:'4',6:'♭5',7:'5',8:'♭6',9:'6',10:'♭7',11:'7'};
+/* pentatonic root (D14): tonic for Dorian/Aeolian/Phrygian/Locrian, 5th of
+   the tonic for Mixolydian, 6th for Ionian/Lydian */
+function pentRoot(modeId, tonicPc){
+  if (modeId === 'mixolydian') return (tonicPc + 7) % 12;
+  if (modeId === 'ionian' || modeId === 'lydian') return (tonicPc + 9) % 12;
+  return tonicPc;
+}
+const minPent = r => [0,3,5,7,10].map(x => (r + x) % 12);
+
+/* ===== fixtures (spec Appendix A + §6.3 + §7–8) — run by check.js and ?test=1 ===== */
+const FIX_APPA = [
+ ['C','q3',[4,3,2],0,'D G C 0–0–1 · E A D 2–2–3 · F B E 3–4–5 · G C F 5–5–6 · A D G 7–7–8 · B E A 9–9–10 · C F B 10–10–12 · D G C 12–12–13 · E A D 14–14–15'],
+ ['C','q3',[4,3,2],1,'E A B 2–2–0 · F B C 3–4–1 · G C D 5–5–3 · A D E 7–7–5 · B E F 9–9–6 · C F G 10–10–8 · D G A 12–12–10 · E A B 14–14–12'],
+ ['C','q3',[4,3,2],2,'F G C 3–0–1 · G A D 5–2–3 · A B E 7–4–5 · B C F 9–5–6 · C D G 10–7–8 · D E A 12–9–10 · E F B 14–10–12 · F G C 15–12–13'],
+ ['C','q3',[5,4,3],0,'A D G 0–0–0 · B E A 2–2–2 · C F B 3–3–4 · D G C 5–5–5 · E A D 7–7–7 · F B E 8–9–9 · G C F 10–10–10 · A D G 12–12–12 · B E A 14–14–14'],
+ ['C','q3',[3,2,1],0,'G C F 0–1–1 · A D G 2–3–3 · B E A 4–5–5 · C F B 5–6–7 · D G C 7–8–8 · E A D 9–10–10 · F B E 10–12–12 · G C F 12–13–13 · A D G 14–15–15'],
+ ['C','q4',[5,4,3,2],0,'A D G C 0–0–0–1 · B E A D 2–2–2–3 · C F B E 3–3–4–5 · D G C F 5–5–5–6 · E A D G 7–7–7–8 · F B E A 8–9–9–10 · G C F B 10–10–10–12 · A D G C 12–12–12–13 · B E A D 14–14–14–15'],
+ ['C','q4',[4,3,2,1],0,'D G C F 0–0–1–1 · E A D G 2–2–3–3 · F B E A 3–4–5–5 · G C F B 5–5–6–7 · A D G C 7–7–8–8 · B E A D 9–9–10–10 · C F B E 10–10–12–12 · D G C F 12–12–13–13 · E A D G 14–14–15–15'],
+ ['C','sw4',[4,3,2,1],0,'D G C E 0–0–1–0 · E A D F 2–2–3–1 · F B E G 3–4–5–3 · G C F A 5–5–6–5 · A D G B 7–7–8–7 · B E A C 9–9–10–8 · C F B D 10–10–12–10 · D G C E 12–12–13–12 · E A D F 14–14–15–13'],
+ ['Bb','q3',[4,3,2],0,'D G C 0–0–1 · Eb A D 1–2–3 · F Bb Eb 3–3–4 · G C F 5–5–6 · A D G 7–7–8 · Bb Eb A 8–8–10 · C F Bb 10–10–11 · D G C 12–12–13 · Eb A D 13–14–15'],
+ ['Bb','q3',[4,3,2],1,'F Bb C 3–3–1 · G C D 5–5–3 · A D Eb 7–7–4 · Bb Eb F 8–8–6 · C F G 10–10–8 · D G A 12–12–10 · Eb A Bb 13–14–11 · F Bb C 15–15–13'],
+ ['Bb','q3',[4,3,2],2,'F G C 3–0–1 · G A D 5–2–3 · A Bb Eb 7–3–4 · Bb C F 8–5–6 · C D G 10–7–8 · D Eb A 12–8–10 · Eb F Bb 13–10–11 · F G C 15–12–13'],
+ ['Bb','q3',[5,4,3],0,'A D G 0–0–0 · Bb Eb A 1–1–2 · C F Bb 3–3–3 · D G C 5–5–5 · Eb A D 6–7–7 · F Bb Eb 8–8–8 · G C F 10–10–10 · A D G 12–12–12 · Bb Eb A 13–13–14 · C F Bb 15–15–15'],
+ ['Bb','q3',[3,2,1],0,'G C F 0–1–1 · A D G 2–3–3 · Bb Eb A 3–4–5 · C F Bb 5–6–6 · D G C 7–8–8 · Eb A D 8–10–10 · F Bb Eb 10–11–11 · G C F 12–13–13 · A D G 14–15–15'],
+ ['Bb','q4',[5,4,3,2],0,'A D G C 0–0–0–1 · Bb Eb A D 1–1–2–3 · C F Bb Eb 3–3–3–4 · D G C F 5–5–5–6 · Eb A D G 6–7–7–8 · F Bb Eb A 8–8–8–10 · G C F Bb 10–10–10–11 · A D G C 12–12–12–13 · Bb Eb A D 13–13–14–15'],
+ ['Bb','q4',[4,3,2,1],0,'D G C F 0–0–1–1 · Eb A D G 1–2–3–3 · F Bb Eb A 3–3–4–5 · G C F Bb 5–5–6–6 · A D G C 7–7–8–8 · Bb Eb A D 8–8–10–10 · C F Bb Eb 10–10–11–11 · D G C F 12–12–13–13 · Eb A D G 13–14–15–15'],
+ ['Bb','sw4',[4,3,2,1],0,'Eb A D F 1–2–3–1 · F Bb Eb G 3–3–4–3 · G C F A 5–5–6–5 · A D G Bb 7–7–8–6 · Bb Eb A C 8–8–10–8 · C F Bb D 10–10–11–10 · D G C Eb 12–12–13–11 · Eb A D F 13–14–15–13'],
+];
+const FIX_SYMS = [
+ [[9,2,7],  ['Em11','EbΔ7(♯11)','D7sus','Db7alt.','C6/9','Bm7(♭6)','BbΔ13','A7sus','AbΔ7(♭9♭5)','GΔ9','Gb7alt.','F6/9']],
+ [[0,5,11], ['E7(♭9♭13)','EbΔ7(♯5)','Dm13','Db—','Cm(Δ11)','B7(♭9♭5)','Bb—','Am9(♭6)','AbΔ13(♯9)','G7sus','GbΔ7(♭5sus4)','FΔ7(♯11)']],
+ [[5,11,4], ['E7(♭9)','Eb—','Dm6/9','Db7(♯9)','CΔ7(sus4)','Bø11','Bb7(♭9♯11)','Am9(♭6)','Ab°7(♭13)','G13','Gb—','FΔ7(♯11)']],
+];
+const FIX_GP63 = [    // §6.3, cells compared as sets (the spec orders two cells differently)
+ ['m11',      ['♭3'],        ['11'],        ['♭7']],
+ ['7alt.',    ['♭9','♭5'],   ['♭13','♯9'],  ['♭9','♭13']],
+ ['6/9',      ['5','9'],     ['3','6'],     ['9','6']],
+ ['Δ13',      ['13'],        ['Δ7'],        ['3']],
+ ['Δ7(♯11)',  ['3'],         ['♯11'],       ['Δ7']],
+ ['7sus',     ['11','♭7'],   ['5','1'],     ['1','11']],
+];
+function runFixtures(){
+  let pass = 0, fail = 0; const msgs = [];
+  const ok = (cond, msg) => { if (cond) pass++; else { fail++; msgs.push('FAIL ' + msg); } };
+  // Appendix A: walks fret-for-fret, note-for-note, in order
+  for (const [key, fam, strings, inv, text] of FIX_APPA) {
+    const want = text.split('·').map(s => s.trim()).filter(Boolean).map(entry => {
+      const t = entry.split(/\s+/);
+      return { names: t.slice(0, strings.length), frets: t[strings.length].split('–').map(Number) };
+    });
+    const got = walkCards(key, fam, strings, inv);
+    ok(got.length === want.length, `AppA ${key} ${fam} ${strings.join('')} inv${inv}: ${got.length} cards, expected ${want.length}`);
+    want.forEach((w, i) => {
+      const g = got[i]; if (!g) return ok(false, `AppA ${key} ${fam} inv${inv} #${i}: missing`);
+      ok(g.names.join(' ') === w.names.join(' ') && g.frets.join(',') === w.frets.join(','),
+        `AppA ${key} ${fam} ${strings.join('')} inv${inv} #${i}: got ${g.names.join(' ')} ${g.frets.join('–')}, want ${w.names.join(' ')} ${w.frets.join('–')}`);
+    });
+  }
+  // Ex. 5 / 10 / 11 symbols, string-for-string
+  for (const [pcs, want] of FIX_SYMS) {
+    symTable(pcs).forEach((row, i) => ok(row.name + row.sym === want[i],
+      `Ex5/10/11 [${pcs}] bass ${row.name}: got ${row.name + row.sym}, want ${want[i]}`));
+  }
+  // §6.3 guideposts for the P4/P4 shape
+  const gp = guideposts([9,2,7], GP_CANON);
+  FIX_GP63.forEach(([sym, ...cells], ri) => {
+    const row = gp[ri];
+    ok(row && row.sym === sym, `guidepost row ${ri}: got ${row && row.sym}, want ${sym}`);
+    if (row) cells.forEach((cell, k) => ok(
+      cell.length === row.tops[k].length && cell.every(x => row.tops[k].includes(x)),
+      `guidepost ${sym} inv${k}: got [${row.tops[k]}], want [${cell}]`));
+  });
+  // §7.1 presets: fret↔pitch consistency, symbols from label(), inversions derivable
+  for (const p of PRESETS) for (const ch of p.chords) {
+    const pcs = ch.strings.map((s, i) => (OPEN[s] + ch.frets[i]) % 12);
+    ok(pcs.every((pc, i) => pc === notePc(ch.notes[i])), `${p.id} ${ch.sym}: frets don't sound the written notes`);
+    const suffix = ch.sym.slice(ch.root.length);
+    ok(label(notePc(ch.root), pcs) === suffix, `${p.id} ${ch.sym}: label() says ${label(notePc(ch.root), pcs)}`);
+    ok(!!classify(pcs), `${p.id} ${ch.sym}: not a recognizable quartal stack`);
+    ok((OPEN[ch.bass.s] + ch.bass.f) % 12 === notePc(ch.bass.name), `${p.id} ${ch.sym}: bass fret isn't ${ch.bass.name}`);
+  }
+  // planing examples land where the workbook says
+  for (const id of ['8b','8h']) {
+    const p = PRESETS.find(x => x.id === id);
+    const planed = planeChord(p.chords[1], p.plane, p.chords[2].root);
+    ok(planed.frets.join(',') === p.chords[2].frets.join(','), `${id}: planing lands on ${planed.frets}, workbook has ${p.chords[2].frets}`);
+    ok(planed.sym === p.chords[2].sym, `${id}: planed symbol ${planed.sym}, workbook ${p.chords[2].sym}`);
+  }
+  // presets transpose to all keys without leaving frets 0..15 (§8.4)
+  for (const p of PRESETS) for (const key of KEYS) {
+    const t = transposePreset(p, key);
+    for (const ch of t.chords) ok(ch.frets.every(f => f >= 0 && f <= 15), `${p.id} in ${key}: ${ch.sym} at ${ch.frets}`);
+    for (const ch of t.chords) {
+      const pcs = ch.strings.map((s, i) => (OPEN[s] + ch.frets[i]) % 12);
+      ok(label((notePc(ch.root)) % 12, pcs) === ch.sym.slice(ch.root.length), `${p.id} in ${key}: ${ch.sym} mislabeled`);
+    }
+  }
+  // §8 tunes: every voicing sounds its notes, labels reproduce (bar 8 of Stella = A♭13, D17), basses land
+  for (const tid of Object.keys(TUNES)) for (const row of TUNES[tid].rows) for (const ch of row.chords) {
+    const pcs = ch.strings.map((s, i) => (OPEN[s] + ch.frets[i]) % 12);
+    ok(pcs.every((pc, i) => pc === notePc(ch.notes[i])), `${tid} bar ${row.bar} ${ch.sym}: frets don't sound the written notes`);
+    ok(label(notePc(ch.root), pcs) === ch.sym.slice(ch.root.length),
+      `${tid} bar ${row.bar} ${ch.sym}: label() says ${label(notePc(ch.root), pcs)}`);
+    ok((OPEN[ch.bass.s] + ch.bass.f) % 12 === notePc(ch.bass.name), `${tid} bar ${row.bar} ${ch.sym}: bass fret isn't ${ch.bass.name}`);
+    ok(Math.max(...ch.frets.filter(f => f > 0)) - Math.min(...ch.frets.filter(f => f > 0)) <= 4 || ch.frets.includes(0),
+      `${tid} bar ${row.bar} ${ch.sym}: span over 4`);
+  }
+  ok(TUNES.stella.rows.find(r => r.bar === 8).chords.every(c => c.sym === 'Ab13'), 'Stella bar 8 must read Ab13 (D17)');
+  ok(TUNES.stella.rows.find(r => r.bar === 12).chords[1].strings.join('') === '321', 'Stella bar 12b on 3-2-1');
+  ok(TUNES.stella.rows.find(r => r.bar === 19).chords[0].strings.join('') === '321', 'Stella bars 19–20 on 3-2-1');
+  return { pass, fail, msgs };
+}
+/* ===== end quartal engine ===== */
+</script>
+
+<script>
+/* ===== ui ===== */
+if (location.search.includes('test=1')) {
+  const r = runFixtures();
+  console.log(`quartal fixtures: ${r.pass} passed, ${r.fail} failed`);
+  r.msgs.forEach(m => console.log(m));
+}
+</script>
+</body>
+</html>
