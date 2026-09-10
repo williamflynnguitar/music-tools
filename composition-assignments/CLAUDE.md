@@ -88,11 +88,14 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   the next cycle (William's 2026-09-09 ruling), while Play all ends each
   rotation's last note at its barline (separate examples, no self-repeat).
 - **Two Onsets** (2026-09-09 request) enumerates every placement of two
-  onsets in one bar, grouped by cyclic spacing — a shape and its
-  displacements, with wrapped placements in the same family (the loop and
-  the engraved tie teach why "a dotted quarter apart" can cross the
-  barline). Eighth grid only in v1; the row engine is `twobarFamilies`
-  (tested), engraving and tie-observing playback are the Motif Displacer's.
+  onsets in one bar, grouped by their spacing WITHIN the written bar in
+  beat terms ("½ beat apart" up to "3½ beats apart" in 4/4, "4½" in
+  5/4) — William's follow-up ruled out the first cut's cyclic fold, which
+  filed "2½ beats apart" under "a dotted quarter apart" through the
+  loop. Family d has len−d placements; the loop identity still shows per
+  row via the wrap ties. Eighth grid only in v1; the row engine is
+  `twobarFamilies` (tested), engraving and tie-observing playback are
+  the Motif Displacer's.
 - **Pentatonic Shuffle** (same request batch): root x major/minor pentatonic
   autopopulates (the other rotations live in the Pentatonic Lab), Shuffle
   permutes the order as a melodic seed; root/type changes reset to scale

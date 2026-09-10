@@ -637,19 +637,18 @@ function motifBar(cells,spec){           // one rotation → {events, wrapTie}
   return {events:ev, wrapTie:!cells[0], wrapLen:!cells[0]?at[0]:0};
 }
 /* ---- two-onset bars: every distinct placement of two onsets in one bar,
-   grouped by cyclic spacing d (a shape and its displacements; a pair d
-   apart and one len−d apart are the same shape through the loop, which is
-   why wrapped placements sit in the same family — the engraved tie shows
-   it). d runs 1..len/2; the diameter family has len/2 placements, the rest
-   len each. */
+   grouped by their spacing WITHIN the written bar, d = 1..len−1 (William's
+   2026-09-09 follow-up — he counts in-bar: "2.5 beats apart, 3, 3.5" — so
+   no cyclic folding; family d has len−d placements, first onset walking
+   right). The loop identity — d apart is len−d apart the other way — still
+   shows per row: any bar whose first slot is empty gets the wrap tie. */
 function twobarFamilies(spec){
   const n=spec.len, out=[];
-  for(let d=1; d<=n/2; d++){
-    const rots=(2*d===n)?n/2:n, rows=[];
-    for(let r=0; r<rots; r++){
-      const b=(r+d)%n;
-      const cells=Array(n).fill(false); cells[r]=cells[b]=true;
-      rows.push({a:Math.min(r,b), b:Math.max(r,b), cells});
+  for(let d=1; d<n; d++){
+    const rows=[];
+    for(let a=0; a+d<n; a++){
+      const cells=Array(n).fill(false); cells[a]=cells[a+d]=true;
+      rows.push({a, b:a+d, cells});
     }
     out.push({d, rows});
   }
@@ -1331,14 +1330,18 @@ el('motifPlayAll').addEventListener('click',()=>{
 });
 
 /* =============== Two Onsets =============== */
-const SPACING={1:'an eighth apart',2:'a quarter apart',3:'a dotted quarter apart',4:'a half note apart',5:'five eighths apart'};
+const beatLabel=d=>{                      // in-bar spacing in beats: ½, 1, 1½ …
+  if(d===1) return '½ beat apart';
+  if(d===2) return '1 beat apart';
+  return (d%2? (d-1)/2+'½' : d/2)+' beats apart';
+};
 const countName=s=>Math.floor(s/2)+1+(s%2?'&':'');
 function twobarSpec(){ return meterSpec(st.twobarMeter, 8); }
 function renderTwobar(){
   const spec=twobarSpec(), fams=twobarFamilies(spec);
   el('twobarCount').textContent=fams.reduce((a,f)=>a+f.rows.length,0)+' placements';
   el('twobarGroups').innerHTML=fams.map(f=>
-    `<div class="ogroup">${SPACING[f.d]}</div>`+
+    `<div class="ogroup">${beatLabel(f.d)}</div>`+
     f.rows.map(row=>{
       const {events,wrapTie,wrapLen}=motifBar(row.cells,spec);
       const key=row.a+'-'+row.b;
