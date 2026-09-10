@@ -510,7 +510,7 @@ function motifBar(cells,spec){           // one rotation → {events, wrapTie}
     pieces.forEach((p,pi)=>{ p.tieFrom=pi>0; p.tieTo=pi<pieces.length-1; });
     ev.push(...pieces);
   });
-  return {events:ev, wrapTie:!cells[0]};
+  return {events:ev, wrapTie:!cells[0], wrapLen:!cells[0]?at[0]:0};
 }
 function beamGroups(events,spec){        // beamable runs inside beat/half groups
   const bounds=[];
@@ -555,7 +555,12 @@ function accGlyph(showAcc,x,y){
 }
 const QREST=x=>`<path d="M${(x+0.35).toFixed(2)} 0.85 L${(x+1.0).toFixed(2)} 1.7 L${(x+0.45).toFixed(2)} 2.35 L${(x+1.05).toFixed(2)} 3.05" fill="none" stroke="currentColor" stroke-width="0.34"/><path d="M${(x+1.05).toFixed(2)} 3.05 q-0.75 -0.35 -0.55 0.45 q0.1 0.4 0.55 0.35" fill="none" stroke="currentColor" stroke-width="0.22"/>`;
 const ERAST=x=>`<path d="M${(x+1.15).toFixed(2)} 1.55 a0.34 0.34 0 1 1 0.28 0.55 q0.35 0.05 0.62 -0.2 l-0.62 1.85 l-0.3 0 l0.55 -1.65 q-0.3 0.15 -0.53 0.1z" fill="currentColor" stroke="currentColor" stroke-width="0.06"/>`;
-const SRAST=x=>`<path d="M${(x+1.05).toFixed(2)} 1.55 a0.34 0.34 0 1 1 0.28 0.55 q0.35 0.05 0.62 -0.2 l-0.35 1.05 a0.34 0.34 0 1 1 0.26 0.53 q0.33 0.05 0.58 -0.18 l-0.62 1.85 l-0.3 0 l0.53 -1.6 q-0.28 0.13 -0.5 0.08 l0.35 -1.05 q-0.3 0.15 -0.55 0.1z" fill="currentColor" stroke="currentColor" stroke-width="0.06"/>`;
+/* sixteenth rest: two curls off one slanted leg (8th-rest shape, doubled) */
+const SRAST=x=>`<circle cx="${(x+1.28).toFixed(2)}" cy="1.78" r="0.3" fill="currentColor"/>`
+  +`<path d="M${(x+1.5).toFixed(2)} 1.98 q0.32 0.22 0.62 0.08" fill="none" stroke="currentColor" stroke-width="0.2"/>`
+  +`<circle cx="${(x+1.06).toFixed(2)}" cy="2.68" r="0.3" fill="currentColor"/>`
+  +`<path d="M${(x+1.28).toFixed(2)} 2.88 q0.32 0.22 0.62 0.08" fill="none" stroke="currentColor" stroke-width="0.2"/>`
+  +`<path d="M${(x+2.12).toFixed(2)} 2.06 L${(x+1.42).toFixed(2)} 4.15" fill="none" stroke="currentColor" stroke-width="0.28" stroke-linecap="round"/>`;
 const HREST=x=>`<rect x="${(x+0.2).toFixed(2)}" y="1.45" width="1.5" height="0.55" fill="currentColor"/>`;
 
 /* stemless noteheads on a treble staff; items: {name,midi,label?} | {rest:true,label?} */
@@ -616,20 +621,41 @@ function rootChart(pcs, flats){
   return out.join('');
 }
 
-/* one bar of rhythm on a single-line percussion staff (line at y=2, stems up).
-   Note pieces come from motifBar; glyph by (len, grid). */
-function rhythmLine(events, spec, wrapTie){
-  const CELL=spec.unit===8?2.7:1.7, X0=1.3;
-  const endX=X0+spec.len*CELL+0.6, W=endX+1.9;
-  let o=`<line x1="0" y1="2" x2="${(endX+ (wrapTie?1.6:0.6)).toFixed(2)}" y2="2" stroke="currentColor" stroke-width="0.11"/>`;
-  o+=`<line x1="0.35" y1="0.5" x2="0.35" y2="3.5" stroke="currentColor" stroke-width="0.13"/>`;
-  o+=`<line x1="${endX.toFixed(2)}" y1="0.5" x2="${endX.toFixed(2)}" y2="3.5" stroke="currentColor" stroke-width="0.13"/>`;
+/* one bar of rhythm on a one-line staff, styled after the Charleston app's
+   LilyPond RhythmicStaff cells: line at y=2, thick 2-space barline rects,
+   stems up, filled tie crescents just under the line, no time signature
+   (the meter selector is the context). When the loop wraps, the sustain is
+   engraved as the brief says: a tie across the barline into the first
+   (dimmed) note of the next repetition. All rotations of one spec share a
+   viewBox width so their grid columns align. */
+function rhythmLine(events, spec, wrapTie, wrapLen){
+  const CELL=spec.unit===8?2.7:1.7, X0=1.6, GHOST=3.1;
+  const endX=X0+spec.len*CELL+0.5, W=endX+GHOST+0.7;
   const gx=e=>X0+e.slot*CELL;
   const x8=spec.unit===8;
-  const hollow=e=>x8 ? e.len>=4 : e.len>=8;
-  const stemmed=e=>!(x8 ? e.len===8 : e.len===16);
-  const dotted=e=>x8 ? (e.len===3||e.len===6) : (e.len===3||e.len===6||e.len===12);
-  const flags=e=>{ if(x8) return e.len===1?1:0; return e.len===1?2:(e.len<=3?1:0); };
+  const hollow=len=>x8 ? len>=4 : len>=8;
+  const stemless=len=>x8 ? len===8 : len===16;
+  const dotted=len=>x8 ? (len===3||len===6) : (len===3||len===6||len===12);
+  const flags=len=>{ if(x8) return len===1?1:0; return len===1?2:(len<=3?1:0); };
+  const STEMTOP=-1.35, STEMH=(1.85-STEMTOP).toFixed(2);
+  const ghost=(wrapTie&&wrapLen)?{x:endX+0.85, len:pieceLens(0,wrapLen,spec)[0]}:null;
+  let o=`<line x1="0" y1="2" x2="${(ghost?endX+GHOST:endX).toFixed(2)}" y2="2" stroke="currentColor" stroke-width="0.13"/>`;
+  const barRect=x=>`<rect x="${(x-0.095).toFixed(2)}" y="1" width="0.19" height="2" fill="currentColor"/>`;
+  o+=barRect(0.3)+barRect(endX);
+  const stem=x=>`<rect x="${(x+1.15).toFixed(2)}" y="${STEMTOP}" width="0.156" height="${STEMH}" ry="0.04" fill="currentColor"/>`;
+  /* flags hang DOWN from the stem tip (unflipped y-scale — NOTE_DEFS stores the
+     glyph in font coords, and the engraver's use() flip would point it upward) */
+  const flagRun=(x,len)=>{ let f='';
+    for(let k=0;k<flags(len);k++)
+      f+=`<use href="#flagUp" transform="translate(${(x+1.306).toFixed(2)},${(STEMTOP+k*0.85).toFixed(2)}) scale(0.004,0.004)"/>`;
+    return f; };
+  const tieArc=(x1,x2,dim)=>{ const c1=x1+(x2-x1)*0.28, c2=x2-(x2-x1)*0.28;
+    return `<path d="M ${x1.toFixed(2)} 2.78 C ${c1.toFixed(2)} 3.42 ${c2.toFixed(2)} 3.42 ${x2.toFixed(2)} 2.78 C ${c2.toFixed(2)} 3.24 ${c1.toFixed(2)} 3.24 ${x1.toFixed(2)} 2.78 z" fill="currentColor"${dim?' opacity=".45"':''}/>`; };
+  const drawNote=(x,len)=>{ let n='';
+    if(hollow(len)) n+=`<ellipse cx="${(x+0.62).toFixed(2)}" cy="2" rx="0.66" ry="0.44" transform="rotate(-21 ${(x+0.62).toFixed(2)} 2)" fill="none" stroke="currentColor" stroke-width="0.24"/>`;
+    else n+=use('nh',x,2);
+    if(dotted(len)) n+=`<circle cx="${(x+1.85).toFixed(2)}" cy="1.45" r="0.22" fill="currentColor"/>`;
+    return n; };
   const groups=beamGroups(events,spec), inRun=new Set();
   groups.filter(g=>g.length>1).forEach(g=>g.forEach(e=>inRun.add(e)));
   const notes=events.filter(e=>e.type==='note');
@@ -639,29 +665,23 @@ function rhythmLine(events, spec, wrapTie){
       const map= x8?{1:ERAST,2:QREST,4:HREST}:{1:SRAST,2:ERAST,4:QREST,8:HREST};
       o+=map[e.len](x); return;
     }
-    if(hollow(e)) o+=`<ellipse cx="${(x+0.62).toFixed(2)}" cy="2" rx="0.66" ry="0.44" transform="rotate(-21 ${(x+0.62).toFixed(2)} 2)" fill="none" stroke="currentColor" stroke-width="0.24"/>`;
-    else o+=use('nh',x,2);
-    if(dotted(e)) o+=`<circle cx="${(x+1.85).toFixed(2)}" cy="1.5" r="0.24" fill="currentColor"/>`;
-    if(stemmed(e)&&!inRun.has(e)){
-      const sx=x+1.23, tip=-1.5;
-      o+=`<line x1="${sx.toFixed(2)}" y1="2" x2="${sx.toFixed(2)}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>`;
-      for(let f=0;f<flags(e);f++) o+=use('flagUp',sx,tip+f*0.85);
-    }
+    o+=drawNote(x,e.len);
+    if(!stemless(e.len)&&!inRun.has(e)) o+=stem(x)+flagRun(x,e.len);
   });
   groups.filter(g=>g.length>1).forEach(g=>{
-    const beamY=-1.5, f=g[0], l=g[g.length-1];
-    g.forEach(e=>o+=`<line x1="${(gx(e)+1.23).toFixed(2)}" y1="2" x2="${(gx(e)+1.23).toFixed(2)}" y2="${beamY}" stroke="currentColor" stroke-width="0.13"/>`);
-    o+=`<line x1="${(gx(f)+1.23).toFixed(2)}" y1="${beamY}" x2="${(gx(l)+1.23).toFixed(2)}" y2="${beamY}" stroke="currentColor" stroke-width="0.5"/>`;
+    const f=g[0], l=g[g.length-1];
+    g.forEach(e=>o+=stem(gx(e)));
+    o+=`<line x1="${(gx(f)+1.15).toFixed(2)}" y1="${STEMTOP}" x2="${(gx(l)+1.31).toFixed(2)}" y2="${STEMTOP}" stroke="currentColor" stroke-width="0.5"/>`;
     if(!x8){                                    // secondary beam over 16th runs
       let run=[];
       const emit=()=>{ if(!run.length) return;
         const a=run[0], b=run[run.length-1];
-        let x1=gx(a)+1.23, x2=gx(b)+1.23;
+        let x1=gx(a)+1.15, x2=gx(b)+1.31;
         if(run.length===1){                     // stub toward the beat-mate
-          const gi=g.indexOf(a);
-          if(gi>0) x1=x2-0.9; else x2=x1+0.9;
+          if(g.indexOf(a)>0){ x2=gx(a)+1.31; x1=x2-0.95; }
+          else { x1=gx(a)+1.15; x2=x1+0.95; }
         }
-        o+=`<line x1="${x1.toFixed(2)}" y1="${(beamY+0.8).toFixed(2)}" x2="${x2.toFixed(2)}" y2="${(beamY+0.8).toFixed(2)}" stroke="currentColor" stroke-width="0.5"/>`;
+        o+=`<line x1="${x1.toFixed(2)}" y1="${(STEMTOP+0.78).toFixed(2)}" x2="${x2.toFixed(2)}" y2="${(STEMTOP+0.78).toFixed(2)}" stroke="currentColor" stroke-width="0.5"/>`;
         run=[]; };
       g.forEach(e=>{ if(e.len===1) run.push(e); else emit(); });
       emit();
@@ -669,14 +689,17 @@ function rhythmLine(events, spec, wrapTie){
   });
   notes.forEach((e,i)=>{
     if(!e.tieTo) return;
-    const t=notes[i+1], x1=gx(e)+1.35, x2=t?gx(t)-0.1:x1+CELL;
-    o+=`<path d="M ${x1.toFixed(2)} 2.95 Q ${((x1+x2)/2).toFixed(2)} 3.75 ${x2.toFixed(2)} 2.95" fill="none" stroke="currentColor" stroke-width="0.16"/>`;
+    const t=notes[i+1];
+    if(t) o+=tieArc(gx(e)+0.95, gx(t)+0.3, false);
   });
-  if(wrapTie&&notes.length){
-    const last=notes[notes.length-1], x1=gx(last)+1.35, x2=endX+1.15;
-    o+=`<path d="M ${x1.toFixed(2)} 2.95 Q ${((x1+x2)/2).toFixed(2)} 3.75 ${x2.toFixed(2)} 2.95" fill="none" stroke="currentColor" stroke-width="0.16"/>`;
+  if(ghost&&notes.length){
+    const last=notes[notes.length-1];
+    o+=`<g opacity="0.45">`+drawNote(ghost.x,ghost.len)
+      +(!stemless(ghost.len)?stem(ghost.x)+flagRun(ghost.x,ghost.len):'')
+      +`</g>`;
+    o+=tieArc(gx(last)+0.95, ghost.x+0.3, true);
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.3 -2.6 ${(W+0.3).toFixed(2)} 7.6" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.round(W*8)}px;width:100%">${o}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.3 -2.4 ${(W+0.3).toFixed(2)} 6.8" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.round(W*8)}px;width:100%">${o}</svg>`;
 }
 </script>
 <script>
@@ -1062,9 +1085,9 @@ function renderMotifRots(){
   let h='';
   for(let k=0;k<spec.len;k++){
     const rot=rotateCells(st.motifCells,k);
-    const {events,wrapTie}=motifBar(rot,spec);
+    const {events,wrapTie,wrapLen}=motifBar(rot,spec);
     h+=`<div class="rot ${k===st.motifSel?'sel':''}" data-k="${k}">
-      <span class="rlbl">${dispLabel(k)}</span>${rhythmLine(events,spec,wrapTie)}</div>`;
+      <span class="rlbl">${dispLabel(k)}</span>${rhythmLine(events,spec,wrapTie,wrapLen)}</div>`;
   }
   el('motifRots').innerHTML=h;
 }
