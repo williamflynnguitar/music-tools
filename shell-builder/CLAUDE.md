@@ -71,9 +71,10 @@ sits). The 6R dominant's default (13) sits two frets *above* the root's
 fret, so its stored offsets run −4..+2 (`v.bDef==='13'` in `move`,
 `mobTable`, `pickOffsets`) — with plain ±2-from-default, #11 was
 unreachable on 6R dominants entirely. Walk-down: 13→#5→5→#11→11.
-Still unreachable by design of the book's windows (flagged to William,
-no ruling yet): natural 11 on 5R minor-family qualities (m7/m6/mMaj7),
-#11 on 5R Δ7#5, and #11 on 5R dominants in structures without the E string.
+Still unreachable, RULED book-faithful (pp. 49–50 verified): natural 11
+on 5R minor-family qualities (m7/m6/mMaj7), and #11 on 5R dominants in
+structures without the E string — outside the book's printed windows,
+leave them be.
 
 ## Mobile through-changes (Sep 2026)
 `body.prog-on .app` outranks `.app`'s own media query, so it needs its own
@@ -82,11 +83,6 @@ chart goes one bar per line so two-chord bars keep two full-size shells
 side by side and still read as one bar (beat row underneath). The same
 treatment lives in Inversion Drill (`.sys`) and Box Buddy (`.chart`,
 screen-only so printed handouts keep 4-bar systems).
-
-## Deferred
-- Offer doubled 7th as an extension option alongside doubled 3rd; confirm
-  which root positions/string sets it applies to. (William demonstrated it
-  by hand, Sep 2026 — the builder currently never offers doubling the 7th.)
 
 ## Next
 - Extension Quiz variant where the student must *build* a named chord.
