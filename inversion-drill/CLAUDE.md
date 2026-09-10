@@ -77,3 +77,10 @@ Below 560px the through-changes chart (`.sys`) goes one bar per line so a
 two-chord bar keeps two full-size diagrams side by side and still reads as
 one bar (its own beat row underneath); slot SVGs are capped at 100% width.
 Same treatment as Shell Voicing Builder's chart — keep them in step.
+
+## Study row (Sep 2026)
+Exactly four cards, one per inversion, lowest position first — the octave
+repeat of the first inversion ("so the cycle is visible") read as a fifth
+inversion at a glance and was removed per William. The key-study ladder
+below keeps its octave-tonic wrap (roman numerals make it read correctly
+there); flag it if that should go too.

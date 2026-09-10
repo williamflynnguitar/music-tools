@@ -398,7 +398,14 @@ function judge(v, st){
     if(n.deg==='R') { if(!v.ghost && v.rs) msgs.push({k:'ok', t:label+' is the root.'}); return; }
     if(n.deg===q.fifth || (n.deg==='5' && q.fifth==='5')) return;
     if(n.deg==='b3' && st.rs===5 && n.s===2 && (st.q==='m7b5'||st.q==='dim7')) { msgs.push({k:'ok', t:'The Handbook\'s 5R shape for this quality: b3 on the B string. Not strictly a shell, but it\'s the one that lies well.'}); return; }
-    if(core.includes(off) || n.deg===q.third || n.deg===q.seventh) { msgs.push({k:'warn', t:label+' is doubling the '+n.deg+' already on the middle strings.'}); return; }
+    /* Doubling the 7th is a legitimate voicing (William, Sep 2026 D-review:
+       blessed on every reachable cell except m7 from 5R, which stays a
+       caution; the °7/Δ7#5 5R reaches were removed from the walk instead). */
+    if(DEG[q.seventh]%12 === off%12){
+      if(st.q==='m7' && st.rs===5 && n.s===1){ msgs.push({k:'warn', t:label+' is doubling the '+n.deg+' already on the middle strings.'}); return; }
+      msgs.push({k:'ok', t:label+' doubles the '+n.deg+' — a legitimate thickening of the shell.'}); return;
+    }
+    if(core.includes(off) || n.deg===q.third) { msgs.push({k:'warn', t:label+' is doubling the '+n.deg+' already on the middle strings.'}); return; }
     if(q.altered && q.altered.includes(n.deg)) { msgs.push({k:'ok', t:'The '+n.deg+' makes this an altered dominant.'}); return; }
     if(EXT.includes(n.deg) && !q.allowed.includes(n.deg)) { msgs.push({k:'bad', t:'The '+n.deg+' isn\'t used on a '+q.name.toLowerCase()+' chord.'}); return; }
     if(n.deg==='b3' && q.third!=='b3') { msgs.push({k:'bad', t:label+' is a minor 3rd against a major 3rd. On a dominant that reads as #9.'}); return; }
@@ -540,7 +547,8 @@ function pickOffsets(ch, rs, rf){
   const q = QUAL[ch.quality];
   let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
   const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
-  for(const ob of obs) for(const oe of (hasE?[-1,0,1,2,3]:[0])){
+  const oes = hasE ? ((ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? [-1,0,1,2] : [-1,0,1,2,3]) : [0];
+  for(const ob of obs) for(const oe of oes){
     const v = buildAt(ch.pc, ch.quality, st.struct, rs, rf, {2:ob,1:oe});
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
     let got = 0; want.forEach(w=>{ if(degs.includes(w)) got++; });
@@ -640,8 +648,11 @@ function move(s, d){
   if((s===2&&!v.hasB)||(s===1&&!v.hasE)) return;
   /* B window is ±2 frets around the root's fret (where the 5th sits). The 6R
      dominant's default (13) is two frets above it, so its offsets run to -4 —
-     otherwise #11, a standard dominant extension, is unreachable. */
-  const lim = s===2 ? (v.bDef==='13' ? [-4,2] : [-2,2]) : [-1,3];
+     otherwise #11, a standard dominant extension, is unreachable. E runs
+     -1..+3 (p. 50 prints #9 at +3), except °7/Δ7#5 from 5R where +3 lands on
+     an unplayable doubled 7th (William, Sep 2026 D-review). */
+  const eTop = (st.q==='dim7'||st.q==='maj7s5') && st.rs===5 ? 2 : 3;
+  const lim = s===2 ? (v.bDef==='13' ? [-4,2] : [-2,2]) : [-1,eTop];
   st.off[s] = Math.max(lim[0], Math.min(lim[1], st.off[s]+d));
   update();
 }
@@ -670,7 +681,7 @@ function update(){
   const q = QUAL[st.q];
   el('allowed').innerHTML = q.allowed.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') + (q.altered ? `<span style="border:0;color:var(--bone-dim);padding-left:2px">altered:</span>` + q.altered.map(a=>`<span class="${degs.includes(a)?'on':''}">${a}</span>`).join('') : '');
   el('tblB').innerHTML = mobTable(v, 2, v.bDef==='13' ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2], nB);
-  el('tblE').innerHTML = mobTable(v, 1, [-1,0,1,2], nE);
+  el('tblE').innerHTML = mobTable(v, 1, (st.q==='dim7'||st.q==='maj7s5') && st.rs===5 ? [-1,0,1,2] : [-1,0,1,2,3], nE);
 }
 
 function mobTable(v, s, range, cur){

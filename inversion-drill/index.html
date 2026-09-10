@@ -627,10 +627,10 @@ function render(){
     const q = QUAL[st.q];
     el('title').innerHTML = fmt(ROOTS[st.pc], q.sym);
     el('sub').textContent = set.name+'. The four inversions, lowest position first. The brass dot is the top note.';
-    // one position per inversion: lowest playable
-    let vs = [0,1,2,3].map(i=>realize(st.pc, st.q, set, i)[0]).filter(Boolean).sort((a,b)=>a.low-b.low);
-    // also show the next octave of the first one if it fits, so the cycle is visible
-    const first = vs[0]; if(first){ const up = realize(st.pc, st.q, set, first.inv).find(v=>v.low>=first.low+10); if(up) vs = vs.concat([up]); }
+    // one position per inversion: lowest playable. Exactly four cards — the
+    // octave repeat of the first inversion read as a fifth inversion at a
+    // glance (William, Sep 2026), so the cycle wrap is no longer shown.
+    const vs = [0,1,2,3].map(i=>realize(st.pc, st.q, set, i)[0]).filter(Boolean).sort((a,b)=>a.low-b.low);
     el('row').innerHTML = vs.map(v=>card(v, fmt(ROOTS[st.pc], q.sym), INV[v.inv]+'<br>'+v.bass+' in the bass · '+v.top+' on top', '', {rootName:ROOTS[st.pc], quality:st.q, ext:[]})).join('');
     el('hint').textContent = 'Play them ascending and descending until you can land on any one without thinking. Then take them through the ii-V-I cycles in the Handbook, resolving to the nearest inversion rather than jumping back to root position.';
   } else {
