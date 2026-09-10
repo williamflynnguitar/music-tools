@@ -236,7 +236,7 @@
 </div>
 
 <section id="paneShapes">
-  <div class="ctrlrow"><fieldset><legend>View</legend><div class="seggrp" id="cView"></div></fieldset></div>
+  <div class="ctrlrow"><fieldset><legend>View</legend><div class="seggrp" id="cView"></div></fieldset><fieldset id="fsNeckLab" hidden><legend>Neck dots</legend><div class="seggrp" id="cNeckLab"></div></fieldset></div>
   <div id="shapesNeck" hidden></div>
   <div class="legend" id="shapesLegend"></div>
   <div class="cardgrid" id="shapesCards"></div>
@@ -960,7 +960,7 @@ function gridSVG(v, opts = {}){
    tritone voicings) plus its walk number above the neck, so the neck reads as
    a numbered map of the cards (the Arpeggio Practice rule). Open strings get
    their own slot left of the nut. */
-function qNeckSVG(cards){
+function qNeckSVG(cards, labels){
   const NF = 15, cw = 46, ch = 30, padL = 34, padT = 34, padB = 30;
   const W = padL + NF * cw + 14, H = padT + 5 * ch + padB;
   const x = f => f === 0 ? padL - 17 : padL + (f - 0.5) * cw, y = s => padT + (s - 1) * ch;
@@ -976,8 +976,11 @@ function qNeckSVG(cards){
     o += `<g class="nd" data-i="${i}">`;
     o += `<polyline points="${pts.map(p => p[0].toFixed(1) + ',' + p[1]).join(' ')}" fill="none" stroke="${c.tt ? 'var(--tt)' : 'var(--bone-dim)'}" stroke-width="3.5" opacity="${c.tt ? .55 : .4}" stroke-linecap="round" stroke-linejoin="round"/>`;
     c.strings.forEach((s, j) => { const top = j === c.strings.length - 1;
-      o += top ? `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="9.5" fill="var(--brass)"/>`
-               : `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="6.5" fill="var(--bone)" opacity=".8"/>`; });
+      const cx = x(c.frets[j]), cy = y(s);
+      o += top ? `<circle cx="${cx}" cy="${cy}" r="${labels ? 10.5 : 9.5}" fill="var(--brass)"/>`
+               : `<circle cx="${cx}" cy="${cy}" r="${labels ? 10.5 : 6.5}" fill="var(--bone)" opacity="${labels ? .95 : .8}"/>`;
+      if (labels) { const nm = disp(c.names[j]);
+        o += `<text x="${cx}" y="${cy + 3.8}" font-family="var(--mono)" font-size="${nm.length > 1 ? 9.5 : 11}" font-weight="600" fill="var(--ink)" text-anchor="middle">${nm}</text>`; } });
     o += `<text x="${meanX.toFixed(1)}" y="${padT - 13}" font-family="var(--mono)" font-size="11.5" fill="${c.tt ? 'var(--tt)' : 'var(--brass)'}" text-anchor="middle">${i + 1}</text>`;
     o += `</g>`;
   });
@@ -1022,7 +1025,7 @@ function cellDiv(src, chords, note){
 }
 
 /* ---------- state + controls ---------- */
-const S = { tab: 'shapes', key: 'C', family: 'q3', set: '432', inv: 0, bass: true, notation: 'on', view: 'cards',
+const S = { tab: 'shapes', key: 'C', family: 'q3', set: '432', inv: 0, bass: true, notation: 'on', view: 'cards', neckLabels: false,
   mode: 'dorian', tonic: 'D', pent: 'off', fnD: 5, fnPos: 0,
   prog: { sel: '6a', cycle: false, plane: 'off', customI: '6/9', invII: 0, invV: 0, invI: 0 },
   tune: { id: 'solar', mode: 'full', revealed: 99 },
@@ -1125,7 +1128,7 @@ function renderShapes(){
   const neckOn = S.view === 'neck';
   el('shapesNeck').hidden = !neckOn;
   if (neckOn) {
-    el('shapesNeck').innerHTML = `<div class="neckwrap"><div class="neck">${qNeckSVG(cards)}</div></div>`;
+    el('shapesNeck').innerHTML = `<div class="neckwrap"><div class="neck">${qNeckSVG(cards, S.neckLabels)}</div></div>`;
     const neckEl = el('shapesNeck').querySelector('.neck');
     const cardOf = i => el('shapesCards').querySelector(`.card[data-i="${i}"]`);
     el('shapesNeck').querySelectorAll('g.nd').forEach(g => {
@@ -1641,6 +1644,8 @@ function switchTab(t){
 function rerender(){
   renderControls();
   seg(el('cView'), [{ id: 'cards', label: 'cards' }, { id: 'neck', label: 'cards + neck' }], S.view, v => { S.view = v; rerender(); });
+  el('fsNeckLab').hidden = !(S.tab === 'shapes' && S.view === 'neck');
+  seg(el('cNeckLab'), [{ id: false, label: 'plain' }, { id: true, label: 'note names' }], S.neckLabels, v => { S.neckLabels = v; rerender(); });
   seg(el('cMode'), MODES.map(m => ({ id: m.id, label: m.name })), S.mode, m => { S.mode = m; rerender(); });
   seg(el('cTonic'), NOTES.map(n => ({ id: n, label: disp(n) })), S.tonic, n => { S.tonic = n; rerender(); });
   seg(el('cModePreset'), MODE_PRESETS.map((p, i) => ({ id: i, label: p.label })),
