@@ -195,5 +195,17 @@ for (const progId of Object.keys(E.PROGRESSIONS)) {
   ok(locked.concepts[0].id === a.concepts[0].id, "locked segment keeps its concept");
 }
 
+// 11. the -6 arpeggio is R-b3-5-6; its 6, outside harmonic minor, still
+//     starts the scale fill and the approach walk
+{
+  const arp = build(E.parseProg("Gm6"), { drillId: "arp-r357" }).evs[0].map(e => e.name).join(" ");
+  ok(arp === "G Bb D E", "Gm6 arpeggio: " + arp);
+  const fill = build(E.parseProg("Gm6 | Gm6"), { drillId: "arp-up-scale-down" }).evs[0].map(e => e.name).join(" ");
+  ok(fill === "G Bb D E Eb D C Bb A G F# Eb D C Bb A", "Gm6 arp up, scale down: " + fill);
+  const app = build(E.parseProg("Cm6 | Fmaj7"), { drillId: "arp-r357", rungs: { app: 1 } });
+  ok(app.marks[0].has("app") && app.evs[0].slice(-2).map(e => e.name).join(" ") === "Ab G",
+    "Cm6 walks Ab G from its 6 into F: " + app.evs[0].map(e => e.name).join(" "));
+}
+
 console.log(checks + " checks, " + fails + " failures");
 process.exit(fails ? 1 : 0);

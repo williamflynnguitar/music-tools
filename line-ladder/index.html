@@ -498,14 +498,15 @@ function chordSym(ch){
   const ex=(ch.ext||[]).filter(e=>q.allowed.includes(e));
   return ch.root + q.sym + (ex.length?'('+ex.join('')+')':'');
 }
-/* arpeggio chord tones borrow as the old shape library did: -6 takes the
-   -Δ7's natural 7 (harmonic-minor tonic — an open assumption), plain 6
-   takes Δ7, 7sus4 takes the dominant's 3rd */
-const ARPQ_TONES = {maj7:'maj7','6':'maj7','7':'7',sus7:'7',m7:'m7',m6:'mMaj7',m7b5:'m7b5',dim7:'dim7',mMaj7:'mMaj7',maj7s5:'maj7s5'};
+/* arpeggio chord tones: -6 is its own R-b3-5-6 (William, 2026-09); plain 6
+   still borrows Δ7 as the old shape library did, 7sus4 takes the
+   dominant's 3rd. A 6 in the 7th slot is spelled on the 6th's letter. */
+const ARPQ_TONES = {maj7:'maj7','6':'maj7','7':'7',sus7:'7',m7:'m7',m6:'m6',m7b5:'m7b5',dim7:'dim7',mMaj7:'mMaj7',maj7s5:'maj7s5'};
 function chordToneNames(ch){
   const q=QUAL[ARPQ_TONES[ch.q]];
   return ['R',q.third,q.fifth,q.seventh].map((dg,i)=>{
-    const letter='CDEFGAB'[('CDEFGAB'.indexOf(ch.root[0])+[0,2,4,6][i])%7];
+    const step=dg==='6'?5:[0,2,4,6][i];
+    const letter='CDEFGAB'[('CDEFGAB'.indexOf(ch.root[0])+step)%7];
     const pc=(ch.pc+DEG[dg])%12;
     let diff=((pc-LPC[letter])%12+12)%12; if(diff>6) diff-=12;
     const n=letter+(diff>0?'#'.repeat(diff):'b'.repeat(-diff));
@@ -623,11 +624,10 @@ function realizeSeg(seg, concept, range, rot, octShift, startDeg){
     for(let i=0;i<n;i++) put(i,1,degInfo(seg,concept,degs[i]));
     if(S>degs.length && ev.length){
       const steps=seg.cs.steps, last=ev[ev.length-1];
-      let m=last.midi, j=steps?steps.indexOf(((m-root)%12+12)%12):-1;
-      if(j<0) last.dur = S-degs.length+1;
-      else for(let i=degs.length;i<S;i++){
-        const j2=(j+6)%7; m-=(steps[j]-steps[j2]+12)%12; j=j2;
-        ev.push({slot:i,dur:1,midi:m,name:seg.cs.names[j]});
+      if(!steps) last.dur = S-degs.length+1;
+      else for(let i=degs.length,m=last.midi;i<S;i++){
+        const s=collStep(steps, root, m, -1); m=s.midi;
+        ev.push({slot:i,dur:1,midi:m,name:seg.cs.names[s.j]});
       }
     }
     return ev;
@@ -702,15 +702,19 @@ function nearPass(segs, evs, range, concepts, marks){
   });
   return out;
 }
+/* one step through a collection: the nearest collection tone in direction
+   dir. A note already in it moves to its neighbour; a chord tone outside it
+   (−6's natural 6 over harmonic minor) moves to the first tone that way. */
+function collStep(steps, rootPc, midi, dir){
+  const rel=((midi-rootPc)%12+12)%12;
+  let d=13, j=-1;
+  steps.forEach((st,k)=>{ const dd=((dir<0?rel-st:st-rel)%12+12)%12; if(dd>0&&dd<d){d=dd;j=k;} });
+  return {midi:midi+dir*d, j};
+}
 function approachWalk(steps, names, pc, from, target){
-  let j=steps.indexOf(((from-pc)%12+12)%12); if(j<0) return null;
   for(const dir of [-1,1]){
-    let m=from, jj=j; const w=[];
-    for(let k=0;k<3;k++){
-      const j2=(jj+(dir<0?6:1))%7;
-      m += dir<0 ? -((steps[jj]-steps[j2]+12)%12) : ((steps[j2]-steps[jj]+12)%12);
-      jj=j2; w.push({midi:m, name:names[jj]});
-    }
+    let m=from; const w=[];
+    for(let k=0;k<3;k++){ const s=collStep(steps, pc, m, dir); m=s.midi; w.push({midi:m, name:names[s.j]}); }
     if(w[2].midi===target) return w;
   }
   return null;

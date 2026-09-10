@@ -58,8 +58,9 @@ must fall back to 1-2-3-5, reproducing the old Scale mode).
   endpoint: null | {4:7, 8:3} }   // per-unit run endpoints (see templates)
 ```
 
-Chord-tone pitches borrow qualities as the old shape library did
-(`ARPQ_TONES`): −6 takes the −Δ7's natural 7, plain 6 takes Δ7, 7sus4 the
+Chord-tone pitches map through `ARPQ_TONES`: −6 is its own R–♭3–5–6
+(William, 2026-09 — the 6 fills the "7" slot, so R–3–5–7 on Gm6 reads
+G–B♭–D–E); plain 6 still borrows Δ7 as the old shape library did, 7sus4 the
 dominant's 3rd.
 
 ## Rhythm templates (engine-owned; new rhythmic behavior is a new template)
@@ -70,7 +71,9 @@ last (8→[8], 12→[8,4], 16→[8,8] — matching the old formulas).
 - `eighths` — the degree string in straight 8ths over the whole segment;
   remaining 8ths **descend the collection stepwise** to the segment end
   (this fill is what makes `arp-up-scale-down` a data entry). No collection
-  (º7) → the last note holds instead.
+  (º7) → the last note holds instead. A chord tone outside the collection
+  (−6's natural 6 over harmonic minor) steps to the nearest collection tone
+  in the walk's direction — `collStep`, shared with the approach rung.
 - `eighths` + `endpoint` — the scale run, per unit: ascend from
   `degrees[0]`, turn, and land the unit's endpoint as a quarter on the last
   beat. 4-beat: 1..7 (7 the beat-4 quarter); 8-beat: 1..9 up, back down to
@@ -109,7 +112,9 @@ its own degree 1 in the reference octave, nothing folded).
    segment's collection in two 8ths into the next segment's first note —
    whenever that target sits exactly three scale steps away, in either
    direction (the old rule was descending only; the target is whatever
-   rung 2/4 chose). º7 has no collection and never approaches.
+   rung 2/4 chose). º7 has no collection and never approaches. A held note
+   outside the collection (−6's 6) walks too: its first step is `collStep`'s
+   nearest collection tone.
 4. **Dominant seam 7→3** (`seamPass`) — a dominant resolving down a fifth
    ends on its ♭7 (re-rotating the pattern if its degrees hold a 7) and the
    next segment starts on its 3rd (rotation, or start-degree override for
@@ -165,8 +170,9 @@ optional loop, space toggles. The line itself is not sounded.
 - 12/16-beat chords keep the old unit split ([8,4] / [8,8]) — never ruled on.
 - Non-diatonic dominants (`fn:"sec"`) keep own Mixolydian, own Phrygian
   dominant with a ♭9 — assumption.
-- Minor-i variants: −6/−Δ7 → own harmonic minor, and the −6 arpeggio
-  borrowing the −Δ7 chord tones — assumption.
+- Minor-i variants: −6/−Δ7 → own harmonic minor — assumption. Since the −6
+  arpeggio now carries a natural 6, harmonic minor's ♭6 sits against it in
+  scale fills and approach walks.
 
 ## Deferred (do not build until asked)
 
