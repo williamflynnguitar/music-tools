@@ -29,65 +29,66 @@ html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--ser
 button,select,textarea,input{font:inherit;color:inherit}
 button:focus-visible,select:focus-visible,textarea:focus,input:focus{outline:2px solid var(--brass);outline-offset:2px}
 
-.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
-.wordmark{font-size:28px;font-weight:400;margin:0}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px 24px;padding:12px 20px 0;flex-wrap:wrap}
+.wordmark{font-size:26px;font-weight:400;margin:0;white-space:nowrap}
 .wordmark em{font-style:italic;color:var(--brass)}
 .modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.modes button{background:transparent;border:0;padding:6px 14px;cursor:pointer;color:var(--bone-dim)}
+.modes button{background:transparent;border:0;padding:7px 14px;cursor:pointer;color:var(--bone-dim);white-space:nowrap}
 .modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+@media (max-width:640px){.modes{width:100%}.modes button{flex:1;padding:9px 2px;font-size:14px}}
 
-.app{display:grid;grid-template-columns:300px 1fr;padding:18px 28px 60px}
-@media (max-width:900px){.app{grid-template-columns:1fr;gap:24px}}
-.controls{padding-right:26px}
-.group{margin-bottom:18px}
-.group .lbl{display:block;font-size:14px;color:var(--bone-dim);margin-bottom:6px}
-select,textarea,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
-textarea{font-family:var(--mono);font-size:13px;min-height:80px;resize:vertical}
-.hint{font-size:13px;color:var(--bone-dim);margin-top:6px}
-.check{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--bone-dim);cursor:pointer;margin-top:6px}
-.check input{accent-color:var(--brass)}
-.tempo{display:flex;gap:8px;align-items:center}
-.tempo input{width:80px;font-family:var(--mono)}
-.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer}
+/* control panel: one row that wraps, chart gets the full width below it */
+.panel{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;padding:12px 20px 0}
+.fld{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0}
+.fld.grow{flex:2 1 300px}
+.lbl{font-size:13px;color:var(--bone-dim)}
+select,textarea,input[type=number]{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:8px 10px;color:var(--bone)}
+textarea{font-family:var(--mono);font-size:13px;min-height:64px;resize:vertical}
+.hint{font-size:13px;color:var(--bone-dim)}
+.check{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--bone-dim);cursor:pointer;white-space:nowrap}
+.check input{accent-color:var(--brass);margin:0}
+.run{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 320px;min-width:0}
+.run input{width:64px;font-family:var(--mono);text-align:center}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:8px 16px;cursor:pointer;white-space:nowrap}
 .btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
 .btn:disabled{opacity:.4;cursor:default}
+.opts{display:flex;gap:6px 18px;flex-wrap:wrap;align-items:center;padding:8px 20px 0}
+/* on a phone the progression select is the title; give the height to the chart */
+@media (max-width:640px){.study .title,.study .sub,.opts .hint{display:none}.stage{padding-top:12px}}
 
-.stage{padding:0 8px}
-.title{font-family:var(--mono);font-size:20px;margin:0 0 4px}
-.sub{color:var(--bone-dim);font-size:14px;margin:0 0 14px;max-width:64ch}
-.chart{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-@media (max-width:1200px){.chart{grid-template-columns:repeat(2,1fr)}}
-.bar{border:1px solid var(--line);border-radius:4px;padding:6px;display:flex;gap:6px;justify-content:center;min-height:150px;position:relative}
-.bar .n{position:absolute;top:4px;left:6px;font-family:var(--mono);font-size:10px;color:var(--bone-dim)}
-.card{text-align:center;width:118px;padding-top:12px;border-radius:4px;border:1px solid transparent}
-.card.now{border-color:var(--brass);background:var(--petrol-2)}
-.card .nm{font-family:var(--mono);font-size:14px;line-height:1.1}
-.card .nm .q{color:var(--brass);font-size:.7em;vertical-align:.4em}
-.card .tag{font-size:11px;color:var(--bone-dim);line-height:1.3;min-height:28px}
-.card .tag b{color:var(--brass);font-weight:400;font-family:var(--mono)}
-.card svg{display:block;margin:2px auto 0}
-.card.hidden svg{visibility:hidden}
-.card.hidden .tag{visibility:hidden}
-.card.hidden .veil{display:block}
-.veil{display:none;font-size:12px;color:var(--bone-dim);margin-top:-118px;height:118px;line-height:118px}
-.stage .tools{display:flex;gap:10px;margin:16px 0}
-.line{margin-top:18px;font-family:var(--mono);font-size:13px;color:var(--bone-dim);line-height:1.8;max-width:100%;overflow-x:auto;white-space:nowrap}
+.stage{padding:8px 20px 60px}
+.title{font-family:var(--mono);font-size:18px;margin:8px 0 2px}
+.sub{color:var(--bone-dim);font-size:14px;margin:0 0 10px;max-width:72ch}
+/* one svg per system, full width; height follows the viewBox */
+.chart{display:flex;flex-direction:column;gap:4px}
+.chart svg,.sofar svg,.cand svg{display:block;max-width:100%;height:auto;color:var(--bone)}
+.chart svg{width:100%}
+.hit{fill:transparent}
+.hit.now{fill:var(--petrol-2)}
+.slot{cursor:pointer}
+.slot.hidden{cursor:default}
+.slot.now .sym{fill:var(--brass)}
+.stage .tools{display:flex;gap:10px;margin:14px 0;align-items:center;flex-wrap:wrap}
+.line{margin-top:14px;font-family:var(--mono);font-size:13px;color:var(--bone-dim);line-height:1.8;overflow-x:auto;white-space:nowrap}
 .line b{color:var(--bone);font-weight:400}
 
 /* choose mode */
 .choose{display:none}
 body.choose-on .choose{display:block}
 body.choose-on .study{display:none}
-.sofar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end}
-.sofar .card{width:104px}
-.cands{display:flex;gap:10px;flex-wrap:wrap}
-.cands .card{border:1px solid var(--line);cursor:pointer;width:132px;padding-bottom:6px}
-.cands .card:hover{border-color:var(--brass)}
-.cands .card.right{border-color:var(--good)}
-.cands .card.wrong{border-color:var(--bad)}
-.cands .card .why{font-size:11px;color:var(--bone-dim);visibility:hidden;min-height:16px}
-.cands.done .card .why{visibility:visible}
+.sofar{margin-bottom:12px;overflow-x:auto}
+.cands{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:760px){.cands{grid-template-columns:repeat(2,1fr)}}
+.cand{border:1px solid var(--line);border-radius:4px;padding:6px 6px 8px;cursor:pointer;text-align:center;font-family:var(--mono)}
+.cand svg{margin:0 auto}
+.cand:hover{border-color:var(--brass)}
+.cand.right{border-color:var(--good)}
+.cand.wrong{border-color:var(--bad)}
+.cand .tag{font-size:12px;color:var(--bone-dim);margin-top:2px}
+.cand .why{font-size:12px;color:var(--brass);visibility:hidden;min-height:18px}
+.cands.done .cand .why{visibility:visible}
 .score{font-family:var(--mono);font-size:14px;color:var(--bone-dim);margin-top:12px}
+
 </style>
 </head>
 <body>
@@ -170,18 +171,12 @@ body.choose-on .study{display:none}
   </div>
 </div>
 
-<div class="app">
-<aside class="controls">
-  <div class="group">
+<div class="panel">
+  <div class="fld grow">
     <label class="lbl" for="prog">Progression</label>
     <select id="prog"></select>
   </div>
-  <div class="group" id="customBox" style="display:none">
-    <label class="lbl" for="custom">Chords, with bar lines</label>
-    <textarea id="custom" spellcheck="false">Dm7 G7 | Cmaj7 | Cm7 F7 | Bbmaj7 |</textarea>
-    <p class="hint">| separates bars · one or two chords per bar</p>
-  </div>
-  <div class="group">
+  <div class="fld">
     <label class="lbl" for="family">Voicings</label>
     <select id="family">
       <option value="shellR">Shells, 4 notes with root</option>
@@ -193,21 +188,25 @@ body.choose-on .study{display:none}
       <option value="d3up">Drop-3, upper set</option>
     </select>
   </div>
-  <div class="group">
-    <span class="lbl">Metronome</span>
-    <div class="tempo"><input type="number" id="bpm" value="120" min="40" max="300"> <span class="hint" style="margin:0">bpm, clicks on 2 and 4</span></div>
-    <div class="tools" style="display:flex;gap:8px;margin-top:10px">
-      <button class="btn" id="play">Play</button>
-      <button class="btn quiet" id="strumAll" title="hear the whole progression">Strum through</button>
-      <button class="btn quiet" id="lily" title="notation + TAB of the path, as a LilyPond file">Download .ly</button>
-    </div>
-    <p class="hint">One bar count-in. Space starts and stops.</p>
+  <div class="run">
+    <button class="btn" id="play">Play</button>
+    <input type="number" id="bpm" value="120" min="40" max="300" aria-label="tempo in bpm"><span class="hint">bpm</span>
+    <button class="btn quiet" id="strumAll" title="hear the whole progression">Strum through</button>
+    <button class="btn quiet" id="lily" title="notation + TAB of the path, as a LilyPond file">Download .ly</button>
   </div>
-  <div class="group">
-    <label class="check"><input type="checkbox" id="labels" checked> chord tones in the dots</label>
-    <label class="check"><input type="checkbox" id="sound" checked> chord sound with the click</label>
+</div>
+<div class="panel" id="customBox" style="display:none">
+  <div class="fld grow">
+    <label class="lbl" for="custom">Chords, with bar lines</label>
+    <textarea id="custom" spellcheck="false">Dm7 G7 | Cmaj7 | Cm7 F7 | Bbmaj7 |</textarea>
+    <span class="hint">| separates bars · one or two chords per bar</span>
   </div>
-</aside>
+</div>
+<div class="opts">
+  <label class="check"><input type="checkbox" id="labels"> chord tones beside notes</label>
+  <label class="check"><input type="checkbox" id="sound" checked> sound with the click</label>
+  <span class="hint">Clicks on 2 and 4, one bar count-in. Space starts and stops.</span>
+</div>
 
 <main class="stage">
   <div class="study">
@@ -217,7 +216,7 @@ body.choose-on .study{display:none}
     <div class="tools" id="revealTools" style="display:none">
       <button class="btn" id="revealNext">Reveal next</button>
       <button class="btn quiet" id="revealReset">Hide all</button>
-      <span class="hint" style="margin:0;align-self:center">Enter reveals the next one.</span>
+      <span class="hint">Enter reveals the next one.</span>
     </div>
     <div class="line" id="line"></div>
   </div>
@@ -231,7 +230,6 @@ body.choose-on .study{display:none}
     <div class="tools"><button class="btn" id="cNext">Next chord</button><button class="btn quiet" id="cRestart">Start over</button></div>
   </div>
 </main>
-</div>
 
 <script>
 /* ---------- shared engine ---------- */
@@ -387,31 +385,132 @@ const PROGS = {
   custom:{name:'Type my own…', text:null},
 };
 
-/* ---------- diagram ---------- */
-function diagram(v, showLabels, W){
-  W=W||108; const sx=W/8.2, x0=sx*1.4, fy=sx*1.15, y0=fy*.9, nF=5, H=y0+nF*fy+fy*.5;
-  const fs=v.notes.map(n=>n.f).filter(f=>f>0); const minF=Math.min(...fs), maxF=Math.max(...fs);
-  let base= minF<=1?1:minF; if(maxF-base+1>nF) base=maxF-nF+1;
-  const used=new Set(v.notes.map(n=>n.s)); const topS=Math.min(...v.notes.map(n=>n.s));
-  let o=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
-  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; o+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+nF*fy}" stroke="#a89f8c" stroke-width="${s>=5?1.3:.9}"/>`; }
-  for(let i=0;i<=nF;i++){ const y=y0+i*fy; o+=`<line x1="${x0}" y1="${y}" x2="${x0+5*sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i===0&&base===1?3.5:.9}"/>`; }
-  if(base>1) o+=`<text x="${x0-sx*.3}" y="${y0+fy/2+3.5}" font-size="${sx*.62}" text-anchor="end" fill="#6f8a92">${base}</text>`;
-  for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; if(!used.has(s)) o+=`<text x="${x}" y="${y0-fy*.28}" font-size="${sx*.62}" text-anchor="middle" fill="#6f8a92">×</text>`; }
-  v.notes.forEach(n=>{ const x=x0+(6-n.s)*sx, y=y0+(n.f-base)*fy+fy/2;
-    if(n.f===0){ o+=`<circle cx="${x}" cy="${y0-fy*.35}" r="${sx*.28}" fill="none" stroke="${n.s===topS?'#c9a24a':'#e8e1d1'}" stroke-width="1.5"/>`; return; }
-    o+=`<circle cx="${x}" cy="${y}" r="${sx*.42}" fill="${n.s===topS?'#c9a24a':'#e8e1d1'}"/>`;
-    if(showLabels) o+=`<text x="${x}" y="${y+sx*.16}" font-size="${sx*.42}" text-anchor="middle" fill="#0b1a1f">${n.deg}</text>`; });
-  return o+'</svg>';
+/* ---------- notation ----------
+   The path is drawn as a chart: one staff system per line, treble_8 clef,
+   barlines, chord symbol above each chord, the voicing as stacked hollow
+   noteheads. The top note is stroked brass and a brass line threads the
+   top notes across the system, so the melody the voicings make is visible
+   rather than read off dots. All geometry is in staff spaces (1 unit = one
+   space, staff lines at y = 0..4); each system is one svg whose height
+   follows its viewBox, so the same code fits a phone or a wide desktop.
+   Glyphs (clef, accidentals) are the shared NOTE_DEFS from triad-voicings. */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"f2\" d=\"M94 66c-60 0 -39 -66 -72 -66c-11 0 -22 7 -22 21c0 154 232 162 232 334c0 50 -17 102 -61 102c-33 0 -66 -14 -66 -44c0 -24 31 -37 31 -61c0 -34 -27 -61 -61 -61s-61 27 -61 61c0 84 72 148 157 148c98 0 190 -55 190 -145c0 -140 -131 -154 -225 -205 c85 -2 113 -61 165 -61c45 0 28 41 57 41c11 0 22 -8 22 -21c0 -29 -48 -109 -144 -109c-92 0 -96 66 -142 66z\" fill=\"currentColor\"/><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"f4\" d=\"M148 501c10 0 41 -15 72 -15c32 0 63 15 76 15c15 0 26 -11 26 -21c0 -4 -1 -7 -4 -10l-264 -291h134v4c0 60 50 41 75 85c7 11 8 24 14 36c3 7 10 10 17 10c11 0 24 -8 24 -25v-110h70c18 0 27 -14 27 -27s-9 -27 -27 -27h-70c2 -45 36 -82 80 -82c14 0 22 -10 22 -21 s-8 -22 -22 -22c-49 0 -96 14 -145 14s-97 -14 -146 -14c-14 0 -21 11 -21 22s7 21 21 21c44 0 79 37 81 82h-134c-43 0 -57 25 -57 42c0 5 1 10 3 12c73 81 123 182 123 291c0 17 11 31 25 31z\" fill=\"currentColor\"/><path id=\"f1\" d=\"M194 486c16 0 29 15 41 15c13 0 24 -13 24 -31v-341c0 -47 35 -86 81 -86c14 0 21 -10 21 -21s-7 -22 -21 -22c-49 0 -97 14 -146 14s-96 -14 -145 -14c-14 0 -22 11 -22 22s8 21 22 21c46 0 80 39 80 86v137c0 23 -16 35 -30 35c-7 0 -13 -4 -17 -11l-34 -65 c-5 -10 -14 -15 -23 -15c-14 0 -28 12 -28 27c0 4 1 8 3 13l129 250c2 4 7 6 11 6c18 0 37 -20 54 -20z\" fill=\"currentColor\"/><path id=\"f3\" d=\"M261 266c0 -54 85 -40 85 -125c0 -94 -83 -141 -186 -141c-84 0 -160 54 -160 133c0 32 26 58 58 58s58 -26 58 -58c0 -22 -36 -26 -36 -48c0 -33 42 -42 80 -42c41 0 56 50 56 98v21c0 44 -2 77 -43 77h-65c-18 0 -27 14 -27 27s9 27 27 27h65c42 0 43 36 43 83v11 c0 43 -20 70 -61 70c-34 0 -71 -8 -71 -38c0 -19 32 -23 32 -42c0 -28 -23 -51 -51 -51s-51 23 -51 51c0 72 66 123 141 123c93 0 174 -31 174 -113c0 -94 -68 -67 -68 -121z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+const ACCV = {'':0,'#':1,'##':2,'b':-1,'bb':-2};
+/* letter steps above the root for each chord degree; spelling comes from the
+   chord, not from the pitch, so G7b9 gets Ab and C#m7 gets G# */
+const STEPS = {R:0,b9:1,'9':1,'#9':1,b3:2,'3':2,'4':3,'11':3,'#11':3,b5:4,'5':4,'#5':4,b13:5,'6':5,'13':5,bb7:6,b7:6,'7':6};
+function spell(ch, deg){
+  const L='CDEFGAB', letter=L[(L.indexOf(ch.rootName[0])+STEPS[deg])%7];
+  const pc=(ch.pc+DEG[deg])%12; let d=pc-NOTE_PC[letter]; d=((d+6)%12+12)%12-6;
+  if(Math.abs(d)>1) return NAMES[pc];          // Bbb, Ebb, G##: no chart prints those — respell
+  return letter + (d>0 ? '#'.repeat(d) : 'b'.repeat(-d));
 }
-const fmt = tok => { const l=label(tok); return tok.rootName+'<span class="q">'+l.slice(tok.rootName.length)+'</span>'; };
-function motionText(item){
-  if(!item.v) return '';
-  const t=topOf(item.v);
-  if(!item.from) return 'top: <b>'+noteName(t.midi)+'</b> ('+t.deg+')';
-  const d=t.midi-topOf(item.from).midi;
-  const arrow = d===0?'stays':(d>0?'↑'+d:'↓'+(-d));
-  return 'top: <b>'+noteName(t.midi)+'</b> ('+t.deg+') '+arrow+'<br>'+item.v.tag;
+function staffNotes(v, ch){ return v.notes.map(n=>({s:n.s, f:n.f, deg:n.deg, midi:OPEN[n.s]+n.f, name:spell(ch,n.deg)})); }
+const topNote = (v,ch) => staffNotes(v,ch).sort((a,b)=>b.midi-a.midi)[0];
+function headY(n){
+  const letter=n.name[0], acc=n.name.slice(1);
+  const written=n.midi+12, natural=written-(ACCV[acc]||0), oct=Math.floor(natural/12)-1;   // treble_8: written an octave up
+  return 4-((oct*7+'CDEFGAB'.indexOf(letter))-30)*0.5;
+}
+const SLOT = 6, CLEF = 4.5;      // one chord's width, and the clef margin, in staff spaces
+const MONO = "Menlo,Consolas,monospace";
+const use = (id,x,y)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(0.004,-0.004)"/>`;
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const shortTag = v => v.tag.replace('root pos','root').replace(' inv','');
+const fretOf = v => Math.min(...v.notes.map(n=>n.f).filter(f=>f>0));
+function motionOf(v, prevV, ch){
+  const t=topNote(v,ch); if(!prevV) return 'top '+t.name;
+  const d=t.midi-[...prevV.notes].map(n=>OPEN[n.s]+n.f).sort((a,b)=>b-a)[0];
+  return d===0?'stays':(d>0?'↑'+d:'↓'+(-d));
+}
+
+/* one voicing, heads centred on hx; returns the svg and where its top note sits */
+function drawChord(notes, hx, labels){
+  const heads = notes.map(n=>({...n, y:headY(n), acc:n.name.slice(1)})).sort((a,b)=>a.y-b.y);
+  for(let i=1;i<heads.length;i++) if(heads[i].y-heads[i-1].y<0.75 && !heads[i-1].dx) heads[i-1].dx=1.45;   // a second: upper head goes right
+  const placed=[];
+  heads.forEach(h=>{ if(!h.acc) return; let col=0; while(placed.some(p=>p.col===col&&Math.abs(p.y-h.y)<2.4)) col++; placed.push({y:h.y,col}); h.col=col; });
+  const X=hx-0.72; let o='';
+  heads.forEach((h,i)=>{
+    const cx=hx+(h.dx||0), top=i===0;
+    const ledger = ly=>`<line x1="${(cx-1.25).toFixed(2)}" y1="${ly}" x2="${(cx+1.25).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    for(let ly=5; ly<=h.y; ly++) o+=ledger(ly);
+    for(let ly=-1; ly>=h.y; ly--) o+=ledger(ly);
+    if(h.acc){
+      const ax=X-1.35-h.col*1.5;
+      if(h.acc==='#') o+=use('sharp',ax,h.y);
+      else if(h.acc==='b') o+=use('flat',ax+0.1,h.y);
+      else if(h.acc==='bb') o+=use('flat',ax-0.85,h.y)+use('flat',ax+0.1,h.y);
+      else if(h.acc==='##') o+=`<text x="${(ax+0.45).toFixed(2)}" y="${(h.y+0.5).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">𝄪</text>`;
+    }
+    o+=`<ellipse cx="${cx.toFixed(2)}" cy="${h.y.toFixed(2)}" rx="0.82" ry="0.52" transform="rotate(-18 ${cx.toFixed(2)} ${h.y.toFixed(2)})" fill="none" stroke="${top?'var(--brass)':'currentColor'}" stroke-width="${top?0.34:0.26}"/>`;
+    if(labels) o+=`<text x="${(cx+1.05).toFixed(2)}" y="${(h.y+0.32).toFixed(2)}" font-family="${MONO}" font-size="0.8" fill="${top?'var(--brass)':'#a89f8c'}">${h.deg}</text>`;
+  });
+  return {svg:o, topX:hx+(heads[0].dx||0), topY:heads[0].y};
+}
+function symbolText(ch, x, y){
+  const l=label(ch), root=ch.rootName, suf=l.slice(root.length);
+  return `<text class="sym" x="${x.toFixed(2)}" y="${y.toFixed(2)}" font-family="${MONO}" font-size="1.45" fill="currentColor">${esc(root)}<tspan font-size="1.0" dy="-0.55">${esc(suf)}</tspan></text>`;
+}
+
+/* bars: [[{ch, v, idx, hidden, veil, dim, prevV}], ...]
+   opts: perSystem, labels, bare (no barlines/numbers/label rows), unit (px per space → fixed width; otherwise 100%)
+   Returns one svg string per system. */
+function chartSystems(bars, opts){
+  const per=opts.perSystem||bars.length, maxPer=Math.max(1,...bars.map(b=>b.length)), B=SLOT*maxPer+1;
+  let minY=1e9, maxY=-1e9;
+  bars.forEach(bar=>bar.forEach(it=>{ if(!it.v||it.hidden) return; staffNotes(it.v,it.ch).forEach(n=>{ const y=headY(n); if(y<minY)minY=y; if(y>maxY)maxY=y; }); }));
+  if(minY>maxY){ minY=0; maxY=4; }
+  const yTop=Math.min(-2.2,minY-1.2), yBot=Math.max(5.6,maxY+1.2);
+  const symY=yTop-0.9, r1=yBot+1.25, r2=yBot+2.3;
+  const vTop=symY-1.7, vBot=(opts.bare?yBot:r2)+0.5, W=CLEF+B*per;
+  const out=[];
+  for(let s0=0; s0<bars.length; s0+=per){
+    const chunk=bars.slice(s0,s0+per), endX=CLEF+B*chunk.length, last=s0+per>=bars.length;
+    let hits='', body='', tops=[];
+    for(let i=0;i<5;i++) body+=`<line x1="0" y1="${i}" x2="${endX.toFixed(2)}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+    body+=use('clef',0.5,3)+`<text x="0.85" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+    chunk.forEach((bar,k)=>{
+      const bx=CLEF+B*k;
+      if(!opts.bare){
+        body+=`<line x1="${bx.toFixed(2)}" y1="0" x2="${bx.toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/>`;
+        if(k===0) body+=`<text x="${(bx+0.15).toFixed(2)}" y="${r1.toFixed(2)}" font-family="${MONO}" font-size="0.8" fill="#6f8a92">${s0+1}</text>`;
+      }
+      bar.forEach((it,j)=>{
+        const sx=bx+0.5+j*SLOT, hx=sx+3.6;
+        hits+=`<rect class="hit" data-i="${it.idx}" x="${sx.toFixed(2)}" y="${vTop.toFixed(2)}" width="${SLOT}" height="${(vBot-vTop).toFixed(2)}"/>`;
+        let g=`<g class="slot${it.hidden?' hidden':''}" data-i="${it.idx}"${it.dim?' opacity=".42"':''}>`+symbolText(it.ch, sx+0.3, symY);
+        if(it.hidden){ g+=`<text x="${hx.toFixed(2)}" y="2.95" text-anchor="middle" font-family="${MONO}" font-size="1.8" fill="#a89f8c">${it.veil||'…'}</text>`; tops.push(null); }
+        else if(!it.v){ g+=`<text x="${hx.toFixed(2)}" y="${r1.toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.8" fill="#a89f8c">no voicing</text>`; tops.push(null); }
+        else {
+          const d=drawChord(staffNotes(it.v,it.ch), hx, opts.labels); g+=d.svg; tops.push([d.topX,d.topY]);
+          if(!opts.bare && !it.dim){
+            g+=`<text x="${hx.toFixed(2)}" y="${r1.toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.8" fill="#a89f8c">${esc(shortTag(it.v))} fr${fretOf(it.v)}</text>`;
+            g+=`<text x="${hx.toFixed(2)}" y="${r2.toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.8" fill="var(--brass)">${esc(motionOf(it.v,it.prevV,it.ch))}</text>`;
+          }
+        }
+        body+=g+'</g>';
+      });
+    });
+    if(!opts.bare){
+      if(last) body+=`<line x1="${(endX-0.5).toFixed(2)}" y1="0" x2="${(endX-0.5).toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/><line x1="${endX.toFixed(2)}" y1="0" x2="${endX.toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.4"/>`;
+      else body+=`<line x1="${endX.toFixed(2)}" y1="0" x2="${endX.toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/>`;
+    }
+    // the top line: brass thread through the top notes, broken at hidden or missing chords
+    let line='', seg=[]; const flush=()=>{ if(seg.length>1) line+=`<polyline points="${seg.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ')}" fill="none" stroke="var(--brass)" stroke-width="0.14" opacity=".75"/>`; seg=[]; };
+    tops.forEach(p=>{ if(p) seg.push(p); else flush(); }); flush();
+    const width = opts.unit ? ` width="${((W+0.6)*opts.unit).toFixed(0)}"` : '';
+    out.push(`<svg xmlns="http://www.w3.org/2000/svg"${width} viewBox="-0.3 ${vTop.toFixed(2)} ${(W+0.6).toFixed(2)} ${(vBot-vTop).toFixed(2)}">${hits}${line}${body}</svg>`);
+  }
+  return out;
+}
+/* how many bars per line: fill the width at no less than ~8.5px per staff
+   space, then snap to a phrase-friendly count that divides the chart */
+function perSystem(nBars, maxPer, widthPx){
+  const fit=Math.floor((widthPx/8.5-CLEF)/(SLOT*maxPer+1)), cands=[16,12,8,4,2,1];
+  let c=cands.find(x=>x<=fit)||1;
+  if(nBars%c){ const alt=cands.find(x=>x<=c && x>=c/2 && nBars%x===0); if(alt) c=alt; }
+  return Math.min(c, Math.max(nBars,1));
 }
 
 /* ---------- state ---------- */
@@ -428,19 +527,14 @@ function rebuild(){
 function renderChart(){
   const p=PROGS[st.prog];
   el('title').textContent = p.name==='Type my own…' ? 'Your progression' : p.name;
-  el('sub').textContent = el('family').selectedOptions[0].textContent+'. Each chord takes the position closest to the one before it. Brass dot is the top note; follow it.';
-  const labels=el('labels').checked;
-  let h='', k=0;
-  st.voiced.forEach((bar,bi)=>{
-    h+=`<div class="bar"><span class="n">${bi+1}</span>`;
-    bar.forEach(it=>{ const idx=k++; const hidden = idx>=st.revealed;
-      h+=`<div class="card ${hidden?'hidden':''}" data-i="${idx}"><div class="nm">${fmt(it.ch)}</div>${it.v?diagram(it.v,labels):'<div class="tag">no voicing</div>'}<div class="veil">…</div><div class="tag">${motionText(it)}</div></div>`; });
-    h+='</div>';
-  });
-  el('chart').innerHTML=h;
+  el('sub').textContent = el('family').selectedOptions[0].textContent+'. Each chord takes the position closest to the one before it. Brass is the top note; follow the line.';
+  const bars=st.voiced.map((bar,bi)=>bar.map((it,ci)=>{ const idx=st.flat.findIndex(x=>x.bi===bi&&x.ci===ci); return {...it, idx, hidden: idx>=st.revealed, prevV: idx>0?st.flat[idx-1].v:null}; }));
+  const maxPer=Math.max(1,...bars.map(b=>b.length));
+  const per=perSystem(bars.length, maxPer, Math.max(el('chart').clientWidth, document.documentElement.clientWidth-40, 360));
+  el('chart').innerHTML = chartSystems(bars,{perSystem:per, labels:el('labels').checked}).join('');
   el('revealTools').style.display = st.mode==='reveal'?'flex':'none';
-  // top line
-  const tops=st.flat.filter(x=>x.v).map(x=>noteName(topOf(x.v).midi)+'('+topOf(x.v).deg+')');
+  // top line, named
+  const tops=st.flat.filter(x=>x.v).map(x=>{ const t=topNote(x.v,x.ch); return t.name+'('+t.deg+')'; });
   el('line').innerHTML = st.mode==='reveal' ? '' : 'top line: '+tops.map(t=>'<b>'+t+'</b>').join(' → ');
 }
 function reveal(n){ st.revealed=Math.max(0,Math.min(st.flat.length,n)); renderChart(); if(st.mode==='reveal'&&st.revealed>0){ const it=st.flat[st.revealed-1]; if(it.v) strum(it.v.notes); } }
@@ -452,7 +546,12 @@ function askChoose(){
   const p=PROGS[st.prog]; el('cTitle').textContent=(p.text===null?'Your progression':p.name);
   if(ch.i>=st.flat.length){ el('sofar').innerHTML=''; el('cands').innerHTML='<p class="sub">End of the progression. '+ch.score+' of '+ch.asked+' nearest.</p>'; el('score').textContent=''; return; }
   const item=st.flat[ch.i]; const prev = ch.i? st.flat[ch.i-1].v : null;
-  el('sofar').innerHTML = st.flat.slice(Math.max(0,ch.i-3),ch.i).map(it=>`<div class="card"><div class="nm">${fmt(it.ch)}</div>${it.v?diagram(it.v,el('labels').checked,96):''}</div>`).join('') + `<div class="card"><div class="nm">${fmt(item.ch)}</div><div class="tag" style="visibility:visible">next: which one?</div></div>`;
+  // so far: the last few chords of the path on one staff, then the chord in question
+  const recent=st.flat.slice(Math.max(0,ch.i-4),ch.i), bars=[];
+  recent.forEach((it,k)=>{ const prevV=st.flat[st.flat.indexOf(it)-1]?.v||null; const b={ ...it, idx:-1, prevV };
+    if(bars.length && bars[bars.length-1][0].bi===it.bi) bars[bars.length-1].push(b); else bars.push([b]); });
+  bars.push([{ch:item.ch, v:null, idx:-1, hidden:true, veil:'?'}]);
+  el('sofar').innerHTML = chartSystems(bars,{labels:el('labels').checked, unit:11}).join('');
   const cs=candidates(item.ch, st.family); if(!cs.length){ ch.i++; return askChoose(); }
   const scored=cs.map(c=>({c,k:cost(prev,c)})).sort((a,b)=>a.k-b.k);
   const best=scored[0].k;
@@ -462,9 +561,12 @@ function askChoose(){
   pick.sort(()=>Math.random()-.5);
   ch.done=false; ch.cur={item, prev, pick, best};
   el('cands').className='cands';
-  el('cands').innerHTML = pick.map((s,i)=>{ const t=topOf(s.c); const d=prev? t.midi-topOf(prev).midi : 0;
-    return `<div class="card" data-i="${i}"><div class="nm">${fmt(item.ch)}</div>${diagram(s.c,el('labels').checked,120)}<div class="tag" style="visibility:visible">${s.c.tag}</div><div class="why">top ${noteName(t.midi)} ${prev?(d===0?'stays':(d>0?'↑'+d:'↓'+(-d))):''}</div></div>`; }).join('');
-  el('cands').querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>{ strum(pick[+c.dataset.i].c.notes); answerChoose(+c.dataset.i); }));
+  // each candidate next to the chord before it, dimmed, so the motion is right there
+  const prevCh = prev ? st.flat[ch.i-1].ch : null;
+  el('cands').innerHTML = pick.map((s,i)=>{
+    const cell=[]; if(prev) cell.push({ch:prevCh, v:prev, idx:-1, dim:true}); cell.push({ch:item.ch, v:s.c, idx:-1});
+    return `<div class="cand" data-i="${i}">${chartSystems([cell],{bare:true, unit:11, labels:el('labels').checked}).join('')}<div class="tag">${esc(s.c.tag)} · fr${fretOf(s.c)}</div><div class="why">${esc(motionOf(s.c,prev,item.ch))}</div></div>`; }).join('');
+  el('cands').querySelectorAll('.cand').forEach(c=>c.addEventListener('click',()=>{ strum(pick[+c.dataset.i].c.notes); answerChoose(+c.dataset.i); }));
   el('score').textContent = ch.asked? ch.score+' of '+ch.asked+' nearest so far' : (prev?'':'First chord: anything reasonable is fine. Pick one to set the starting position.');
 }
 function answerChoose(i){
@@ -473,7 +575,7 @@ function answerChoose(i){
   const chosen=pick[i]; const ok = !prev || chosen.k<=best+0.01;
   ch.asked += prev?1:0; if(ok&&prev) ch.score++;
   el('cands').classList.add('done');
-  el('cands').querySelectorAll('.card').forEach((c,j)=>{ if(pick[j].k<=best+0.01) c.classList.add('right'); else if(j===i) c.classList.add('wrong'); });
+  el('cands').querySelectorAll('.cand').forEach((c,j)=>{ if(pick[j].k<=best+0.01) c.classList.add('right'); else if(j===i) c.classList.add('wrong'); });
   // the student's choice becomes the path
   st.flat[ch.i].v = chosen.c;
   el('score').textContent = (prev? (ok?'Nearest. ':'A nearer one was available. ') : '') + (ch.asked? ch.score+' of '+ch.asked+' nearest so far':'');
@@ -500,7 +602,7 @@ function play(){
   const c=ctx(); sched.on=true; sched.beat=-4; sched.next=c.currentTime+0.1;
   el('play').textContent='Stop'; sched.timer=setInterval(tick, INTERVAL);
 }
-function stop(){ sched.on=false; clearInterval(sched.timer); el('play').textContent='Play'; document.querySelectorAll('.card.now').forEach(x=>x.classList.remove('now')); }
+function stop(){ sched.on=false; clearInterval(sched.timer); el('play').textContent='Play'; sched.sys=null; document.querySelectorAll('.now').forEach(x=>x.classList.remove('now')); }
 function tick(){
   const c=ctx(); const spb=60/(+el('bpm').value||120);
   while(sched.next < c.currentTime+LOOKAHEAD){ scheduleBeat(sched.beat, sched.next, spb); sched.next+=spb; sched.beat++; }
@@ -514,8 +616,13 @@ function scheduleBeat(beat, time, spb){
   if(b===0 || (barItems.length===2 && b===2)){
     const it=barItems[idx]; const flatIdx=st.flat.findIndex(x=>x.bi===bar&&x.ci===idx);
     if(it.v) strum(it.v.notes, time, spb*(barItems.length===2?2:4)*0.95);
-    setTimeout(()=>{ if(!sched.on) return; document.querySelectorAll('.card.now').forEach(x=>x.classList.remove('now'));
-      const card=document.querySelector(`.card[data-i="${flatIdx}"]`); if(card){ card.classList.add('now'); if(st.mode==='reveal'&&flatIdx>=st.revealed) reveal(flatIdx+1); } }, Math.max(0,(time-ctx().currentTime)*1000));
+    setTimeout(()=>{ if(!sched.on) return;
+      if(st.mode==='reveal'&&flatIdx>=st.revealed) reveal(flatIdx+1);
+      document.querySelectorAll('.now').forEach(x=>x.classList.remove('now'));
+      document.querySelectorAll(`#chart [data-i="${flatIdx}"]`).forEach(x=>x.classList.add('now'));
+      // bring the system into view when the path moves to a new line — one jump per line, not a moving cursor
+      const sv=document.querySelector(`#chart g[data-i="${flatIdx}"]`)?.closest('svg');
+      if(sv && sv!==sched.sys){ sched.sys=sv; sv.scrollIntoView({block:'nearest', behavior:'smooth'}); } }, Math.max(0,(time-ctx().currentTime)*1000));
   }
 }
 function strumThrough(){ if(sched.on) stop(); const c=ctx(); let t=c.currentTime+0.05; st.flat.forEach(it=>{ if(it.v){ strum(it.v.notes,t,1.1); t+=0.9; } }); }
@@ -615,19 +722,23 @@ function setMode(m){
   rebuild();
 }
 (function init(){
+  document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
   el('prog').innerHTML=Object.entries(PROGS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('');
   el('prog').addEventListener('change',e=>{ st.prog=e.target.value; el('customBox').style.display= st.prog==='custom'?'':'none'; rebuild(); });
   el('custom').addEventListener('input', rebuild);
   el('family').addEventListener('change',e=>{ st.family=e.target.value; rebuild(); });
   el('labels').addEventListener('change',()=>{ if(st.mode==='choose') askChoose(); else renderChart(); });
-  el('mShow').addEventListener('click',()=>setMode('show')); el('mReveal').addEventListener('click',()=>setMode('reveal')); el('mChoose').addEventListener('click',()=>setMode('choose'));
+  // blur after a mode click so Enter / Space go to the page (reveal / play), not back to the button
+  [['mShow','show'],['mReveal','reveal'],['mChoose','choose']].forEach(([id,m])=>el(id).addEventListener('click',e=>{ setMode(m); e.currentTarget.blur(); }));
   el('revealNext').addEventListener('click',()=>reveal(st.revealed+1)); el('revealReset').addEventListener('click',()=>reveal(0));
   el('play').addEventListener('click',play); el('strumAll').addEventListener('click',strumThrough);
   el('lily').addEventListener('click',()=>{ const p=PROGS[st.prog]; const name=p.text===null?'Your progression':p.name;
     const bars=st.voiced.map(bar=>bar.map(it=>({ch:it.ch, v:it.v})));
     lyDownload(lyDocument(bars,{title:name, part:'Guitar', source:'Flynn, Jazz Guitar Technique Handbook\n'+el('family').selectedOptions[0].textContent, style:'Swing', bpm:+el('bpm').value||120}), 'voice-leading.ly'); });
   el('cNext').addEventListener('click',()=>{ ch.i++; askChoose(); }); el('cRestart').addEventListener('click',startChoose);
-  el('chart').addEventListener('click',e=>{ const c=e.target.closest('.card'); if(!c||c.classList.contains('hidden')) return; const it=st.flat[+c.dataset.i]; if(it&&it.v) strum(it.v.notes); });
+  el('chart').addEventListener('click',e=>{ const c=e.target.closest('[data-i]'); if(!c) return; const it=st.flat[+c.dataset.i]; if(it&&it.v&&+c.dataset.i<st.revealed) strum(it.v.notes); });
+  // re-flow the systems when the chart's width changes (rotation, window resize, first layout)
+  let rz=null, lastW=0; new ResizeObserver(en=>{ const w=en[0].contentRect.width; if(!w||w===lastW) return; lastW=w; clearTimeout(rz); rz=setTimeout(()=>{ if(st.mode!=='choose') renderChart(); },120); }).observe(el('chart'));
   document.addEventListener('keydown',e=>{ if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
     if(e.code==='Space'){ e.preventDefault(); play(); } if(e.key==='Enter'&&st.mode==='reveal'){ e.preventDefault(); reveal(st.revealed+1); } });
   rebuild();
