@@ -17,11 +17,16 @@ across the three apps until the renderer is factored out.
 
 ## Rules encoded
 - **Concepts 1, 2**: key gear moves in 4ths, fingering gear moves through the scale's cycle. Easy = from the lowest root to the top of the position (only the notes below that root are dimmed); Intermediate adds the notes below the root.
-- **Directions** (bebop scales with asc/desc fingerings): concept 1 uses ascending,
-  concept 2 descending (both tiers), concept 3 alternates by card (the descending card
-  re-places the descending variant at the same root fret), everything else ascending.
-  `variant(id, dir)` / `posId(pos, dir)` map between siblings; non-directional scales
-  pass through unchanged. Validated headlessly per concept.
+- **Directions**: the bebop scales no longer carry asc/desc shapes — fingerings were
+  dropped 2026-09-10 and the pairs merged (see fretboard/CLAUDE.md) — so
+  `variant(id, dir)` / `posId(pos, dir)` now pass everything through unchanged; the
+  machinery stays for any future directional set. Concepts still ascend and descend
+  as before, off the one shape.
+- **Alternates**: a note with a 4th element `1` is the same pitch in the other place it
+  falls at the edge of the position. `placeAt` keeps those out of `dots` (they would
+  double a pitch in a run) and returns them as `alts`; `svgShape` draws them dashed and
+  the legend reads "either string, your call". Bebop dots have no fingers to print, so
+  they fall back to degree labels.
 - **Extended shapes** (Intermediate and up): all in-key notes within the position window, hollow dots. Fingers assigned by offset: 5-fret spans 1-2-3-4-4, 6-fret spans 1-1-2-3-4-4; book fingers win where a book dot exists. These are computed, not transcribed.
 - **Concept 2 Easy**: hold the starting key's root on the 1st string for six keys; the
   held note's function is computed per key from the scale (R 5 2 6 3 7 in major). Keys

@@ -22,9 +22,11 @@ Self-contained `index.html`, no dependencies, no storage.
   "B on 4th string" (default) vs "B on 3rd string". Both apps show a toggle when the
   shape at hand has variants and remember the choice per shape for the session, in
   memory only; validation and the deck's extended-shape computation cover every
-  variant. Directional (bebop) shapes
-  carry `pos` ("P6") and `dir` ("asc"/"desc"); ids are pos + a/d ("P6a"), and the
-  scale's `cycle` lists the ascending set. `passing` on a scale = index into `steps`
+  variant. A 4th element `1` on a note marks an **alternate location** — the same
+  pitch in the other place it falls at the edge of the position; it draws dashed and
+  stays out of note sequences, notation and the .ly export. (The bebop `pos`/`dir`
+  keys are gone with the fingerings; `variant`/`posId` in the deck pass through.)
+  `passing` on a scale = index into `steps`
   of the added bebop passing tone; those dots render as diamonds, as the book prints
   them. `open` (placement floor 0 instead of 1) remains reserved.
 - Roots are derived from pitch, not stored. `SHAPES`/`MAJOR` remain as aliases to
@@ -41,11 +43,19 @@ Self-contained `index.html`, no dependencies, no storage.
   beside it open; roots derive from pitch here, so it renders correctly anyway.
 - The four bebop scales (intro/application pages 14/16/18/20, shapes 15/17/19/21):
   major, mixolydian, phrygian dominant, melodic minor bebop — 8-note steps/degrees.
-  Major, mixolydian and melodic minor bebop have separate ascending and descending
-  fingerings per position (several pairs are printed identical; both are stored).
-  Phrygian dominant bebop breaks the pattern: p. 19 is one dots-only set (no fingers,
-  no directions), printed in G like its parent, and the book draws its passing tones
-  round while the fingered pages use diamonds. The #5/b6 label is stored as "#5";
+  **They carry no fingerings** (William's 2026-09-10 ruling: "I don't want to
+  micromanage your fingerings—bebop scale fingering decisions should naturally flow
+  from the muscle memory you've acquired in internalizing your 7-note scale
+  fingerings", printed on the page whenever the chosen scale has no fingers).
+  Every finger is 0, and the ascending/descending pair the book prints per position
+  is merged into one direction-neutral shape (`P6`…`I5`, the plain cycle) — the split
+  only ever encoded fingering. Where the two directions fretted a pitch in different
+  places (major bebop M6/M5, mixolydian P6, melodic minor P5/M6/M5 — the passing tone,
+  or melodic minor's 7th, at the edge of the position), the ascending location is the
+  shape's note and the descending one is stored as an alternate: dashed, either
+  string, the player's call. Phrygian dominant bebop was always like this: p. 19 is
+  one dots-only set (no fingers, no directions), printed in G like its parent, and
+  the book draws its passing tones round while the fingered pages use diamonds. The #5/b6 label is stored as "#5";
   the intro pages of phrygian dominant bebop and melodic minor bebop misprint one
   step name each — degrees rows and diagrams (both verified) settle the step sets.
   Spelling falls back to a plain enharmonic name where letter-derived spelling would
@@ -70,9 +80,9 @@ window (overlaps shade darker; identical windows stack, both labelled); all scal
 draw as dots on top, roots brass, ring weight = how many positions contain the note
 (unclaimed notes, e.g. open strings, render faint). Clicking a position label or band
 isolates that placement; a "show all" button in the caption (or clicking it again)
-clears. The selected fingering variant is respected. Directional (bebop) scales show
-the ascending set. A position that genuinely cannot fit frets 1–17 is omitted —
-A major bebop I5a (spans 12–18) is the one case, and the validator distinguishes
+clears. The selected fingering variant is respected. A position that genuinely cannot
+fit frets 1–17 is omitted —
+A major bebop I5 (spans 12–18) is the one case, and the validator distinguishes
 "doesn't fit" from "missing". (A color-coded variant of this view was tried and
 reverted by William's preference — see commits 95bbe51/its revert — the shading reads
 better to him; isolation and reset were kept.)

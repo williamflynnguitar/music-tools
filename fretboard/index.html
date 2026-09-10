@@ -66,6 +66,7 @@
   figcaption b { font-weight: 400; font-size: 17px; }
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
   .passnote { font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; color: var(--bone); margin: 0 0 14px; }
+  .fingernote { font-size: 14px; color: var(--bone-dim); max-width: 64ch; margin: 0 0 14px; border-left: 2px solid var(--brass); padding-left: 12px; }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
   .ly { color: var(--bone); margin: 12px 0 4px; }
@@ -211,7 +212,9 @@ const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],
    a shape may carry named fingering variants: notes (labelled variantName) is the
    default, variants = { name: full notes list }; the apps remember the chosen
    variant per shape for the session, in memory only;
-   shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
+   a 4th element 1 on a note marks an alternate location: the same pitch at the
+   other edge of the position (bebop passing tones), drawn dashed and left out of
+   note sequences and notation;
    open (placement floor 0, not 1), clip (a shape that outruns the board in
    high keys: placement drops the notes past the 19th fret and shows the rest). */
 const SCALES = {
@@ -284,37 +287,25 @@ const SCALES = {
     }},
   majorBebop: { name:"Major bebop", steps:[0,2,4,5,7,8,9,11], degrees:["R","2","3","4","5","#5","6","7"], passing:5,
     apply:{ chords:"C\u25b37 \u00b7 C6 \u00b7 C6/9", uses:[] }, pages:"pp. 14\u201315",
-    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    cycle:["P6","P5","M6","M5","I6","I5"],
     shapes:{
-      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
-      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,2],[1,0,3],[2,-3,1],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
-      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
-      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
-      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
-      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
-      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
-      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,2],[3,2,3],[4,-1,1],[4,0,1],[4,2,3],[4,3,4],[5,0,2],[5,2,4]]},
-      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
-      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,4,3],[2,5,4],[3,1,1],[3,2,1],[3,4,3],[3,5,4],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,3,3],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
-      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,2],[2,5,4],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
-      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,4,2],[1,5,3],[2,2,1],[2,3,1],[2,5,3],[2,6,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,3,3],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,0],[1,-1,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[2,1,0],[3,-3,0],[3,-1,0],[4,-3,0],[4,-2,0],[4,-1,0],[4,1,0],[5,-3,0],[5,-1,0],[5,0,0],[6,0,0]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,0],[1,-2,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[3,-3,0],[3,-2,0],[3,-1,0],[4,-3,0],[4,-1,0],[4,0,0],[5,0,0]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,2,0],[3,-1,0],[3,1,0],[3,2,0],[4,-2,0],[4,-1,0],[4,1,0],[4,2,0],[5,-1,0],[5,0,0],[5,2,0],[5,3,0,1],[6,0,0],[6,2,0]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,0],[1,1,0],[1,2,0],[2,0,0],[2,2,0],[2,3,0],[3,-2,0],[3,-1,0],[3,1,0],[3,2,0],[4,-1,0],[4,0,0],[4,2,0],[4,3,0,1],[5,0,0],[5,2,0]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,0],[1,4,0],[2,2,0],[2,4,0],[2,5,0],[3,1,0],[3,2,0],[3,4,0],[3,5,0],[4,1,0],[4,2,0],[4,4,0],[5,0,0],[5,2,0],[5,3,0],[5,4,0],[6,0,0],[6,2,0],[6,4,0]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,0],[1,4,0],[1,5,0],[2,2,0],[2,3,0],[2,5,0],[2,6,0],[3,1,0],[3,2,0],[3,4,0],[4,0,0],[4,2,0],[4,3,0],[4,4,0],[5,0,0],[5,2,0],[5,4,0]]},
     }},
   mixoBebop: { name:"Mixolydian bebop", steps:[0,2,4,5,7,9,10,11], degrees:["R","2","3","4","5","6","b7","7"], passing:7,
     apply:{ chords:"G-7 \u00b7 C7", uses:[] }, pages:"pp. 16\u201317",
-    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    cycle:["P6","P5","M6","M5","I6","I5"],
     shapes:{
-      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-4,1],[3,-3,1],[3,-1,3],[4,-3,1],[4,-1,3],[4,0,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
-      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-2,2],[1,-1,3],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,2],[3,-1,3],[4,-3,1],[4,-1,2],[4,0,3],[4,1,4],[5,-3,1],[5,-1,3],[5,0,4],[6,0,4]]},
-      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
-      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-3,1],[1,-2,2],[1,0,4],[2,-3,1],[2,-2,2],[2,0,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-1,3],[4,0,4],[5,0,4]]},
-      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
-      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,2,3],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,1,3],[4,2,4],[5,-1,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
-      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
-      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,2,3],[1,3,4],[2,0,1],[2,2,3],[2,3,4],[3,-1,1],[3,0,2],[3,1,3],[3,2,4],[4,-1,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
-      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
-      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,2,1],[1,4,3],[2,2,1],[2,3,2],[2,4,3],[2,5,4],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,1,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4],[6,0,1],[6,2,2],[6,4,4]]},
-      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
-      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,2,1],[1,3,2],[1,4,3],[1,5,4],[2,2,1],[2,3,2],[2,5,4],[3,0,1],[3,1,1],[3,2,2],[3,4,4],[4,0,1],[4,2,2],[4,4,4],[5,0,1],[5,2,2],[5,4,4]]},
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,0],[1,-2,0],[1,-1,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[3,-4,0],[3,-3,0],[3,-1,0],[4,-3,0],[4,-1,0],[4,0,0],[4,1,0,1],[5,-3,0],[5,-1,0],[5,0,0],[6,0,0]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-3,0],[1,-2,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[3,-3,0],[3,-1,0],[3,0,0],[4,-3,0],[4,-1,0],[4,0,0],[5,0,0]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,2,0],[2,3,0],[3,-1,0],[3,1,0],[3,2,0],[4,-1,0],[4,0,0],[4,1,0],[4,2,0],[5,-1,0],[5,0,0],[5,2,0],[6,0,0],[6,2,0]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,0],[1,2,0],[1,3,0],[2,0,0],[2,2,0],[2,3,0],[3,-1,0],[3,0,0],[3,1,0],[3,2,0],[4,-1,0],[4,0,0],[4,2,0],[5,0,0],[5,2,0]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,2,0],[1,4,0],[2,2,0],[2,3,0],[2,4,0],[2,5,0],[3,1,0],[3,2,0],[3,4,0],[4,0,0],[4,1,0],[4,2,0],[4,4,0],[5,0,0],[5,2,0],[5,4,0],[6,0,0],[6,2,0],[6,4,0]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,2,0],[1,3,0],[1,4,0],[1,5,0],[2,2,0],[2,3,0],[2,5,0],[3,0,0],[3,1,0],[3,2,0],[3,4,0],[4,0,0],[4,2,0],[4,4,0],[5,0,0],[5,2,0],[5,4,0]]},
     }},
   phrygdomBebop: { name:"Phrygian dominant bebop", steps:[0,1,4,5,7,8,10,11], degrees:["R","b2","3","4","5","b6","b7","7"], passing:7,
     apply:{ chords:"G\u00f87 \u00b7 C7(b9) \u00b7 C7(b13/b9)", uses:[] }, pages:"pp. 18\u201319",
@@ -329,20 +320,14 @@ const SCALES = {
     }},
   melodicBebop: { name:"Melodic minor bebop", steps:[0,2,3,5,7,8,9,11], degrees:["R","2","b3","4","5","#5","6","7"], passing:5,
     apply:{ chords:"C-(\u25b37) \u00b7 C-6 \u00b7 C-6/9", uses:["tonic minor chords"] }, pages:"pp. 20\u201321",
-    cycle:["P6a","P5a","M6a","M5a","I6a","I5a"],
+    cycle:["P6","P5","M6","M5","I6","I5"],
     shapes:{
-      P6a:{rootString:6,pos:"P6",dir:"asc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
-      P6d:{rootString:6,pos:"P6",dir:"desc",name:"Pinky 6",notes:[[1,-3,1],[1,-1,3],[1,0,4],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-1,3],[3,0,4],[4,-3,1],[4,-2,2],[4,-1,3],[4,1,4],[5,-3,1],[5,-2,2],[5,0,4],[6,0,4]]},
-      P5a:{rootString:5,pos:"P5",dir:"asc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-3,1],[2,-2,2],[2,0,4],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
-      P5d:{rootString:5,pos:"P5",dir:"desc",name:"Pinky 5",notes:[[1,-2,1],[1,0,3],[2,-2,1],[2,0,3],[2,1,4],[3,-3,1],[3,-2,2],[3,-1,3],[3,1,4],[4,-3,1],[4,-2,2],[4,0,4],[5,0,4]]},
-      M6a:{rootString:6,pos:"M6",dir:"asc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[6,0,2],[6,2,4]]},
-      M6d:{rootString:6,pos:"M6",dir:"desc",name:"Middle 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,-2,1],[5,0,2],[5,2,4],[5,3,4],[6,0,2],[6,2,4]]},
-      M5a:{rootString:5,pos:"M5",dir:"asc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-2,1],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[5,0,2],[5,2,4]]},
-      M5d:{rootString:5,pos:"M5",dir:"desc",name:"Middle 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,-2,1],[4,0,2],[4,2,4],[4,3,4],[5,0,2],[5,2,4]]},
-      I6a:{rootString:6,pos:"I6",dir:"asc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
-      I6d:{rootString:6,pos:"I6",dir:"desc",name:"Index 6",notes:[[1,-1,1],[1,0,2],[2,0,2],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,2,3],[5,3,4],[6,0,1],[6,2,3],[6,3,4]]},
-      I5a:{rootString:5,pos:"I5",dir:"asc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
-      I5d:{rootString:5,pos:"I5",dir:"desc",name:"Index 5",notes:[[1,0,1],[1,1,2],[1,2,3],[2,0,1],[2,1,2],[2,3,4],[3,-1,1],[3,1,3],[3,2,4],[4,0,1],[4,2,3],[4,3,4],[5,0,1],[5,2,3],[5,3,4]]},
+      P6:{rootString:6,name:"Pinky 6",notes:[[1,-3,0],[1,-1,0],[1,0,0],[2,-2,0],[2,0,0],[2,1,0],[3,-3,0],[3,-1,0],[3,0,0],[4,-3,0],[4,-2,0],[4,-1,0],[4,1,0],[5,-3,0],[5,-2,0],[5,0,0],[6,0,0]]},
+      P5:{rootString:5,name:"Pinky 5",notes:[[1,-2,0],[1,0,0],[2,-3,0],[2,-2,0],[2,0,0],[2,1,0],[3,-3,0],[3,-2,0],[3,-1,0],[3,1,0,1],[4,-3,0],[4,-2,0],[4,0,0],[5,0,0]]},
+      M6:{rootString:6,name:"Middle 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,2,0],[3,-1,0],[3,0,0],[3,2,0],[4,-2,0],[4,-1,0],[4,1,0],[4,2,0],[5,-2,0],[5,0,0],[5,2,0],[5,3,0,1],[6,0,0],[6,2,0]]},
+      M5:{rootString:5,name:"Middle 5",notes:[[1,0,0],[1,1,0],[1,2,0],[2,0,0],[2,1,0],[2,3,0],[3,-2,0],[3,-1,0],[3,1,0],[3,2,0],[4,-2,0],[4,0,0],[4,2,0],[4,3,0,1],[5,0,0],[5,2,0]]},
+      I6:{rootString:6,name:"Index 6",notes:[[1,-1,0],[1,0,0],[2,0,0],[2,1,0],[2,2,0],[3,-1,0],[3,0,0],[3,2,0],[4,-1,0],[4,1,0],[4,2,0],[5,0,0],[5,2,0],[5,3,0],[6,0,0],[6,2,0],[6,3,0]]},
+      I5:{rootString:5,name:"Index 5",notes:[[1,0,0],[1,1,0],[1,2,0],[2,0,0],[2,1,0],[2,3,0],[3,-1,0],[3,1,0],[3,2,0],[4,0,0],[4,2,0],[4,3,0],[5,0,0],[5,2,0],[5,3,0]]},
     }},
   hwdim: { name:"Half-whole diminished", steps:[0,1,3,4,6,7,9,10], degrees:["R","b9","#9","3","#11","5","13","b7"],
     apply:{ chords:"C7(b9) · Eb7(b9) · F#7(b9) · A7(b9) · C#°7 · E°7 · G°7 · Bb°7", uses:[] }, pages:"pp. 22–23",
@@ -412,11 +397,11 @@ function place(scaleId, shapeId, key) {
     const cut = Math.min(...off.map(n => M[n[0]] + rf + n[1]));
     return notes.filter(n => M[n[0]] + rf + n[1] < cut);
   })();
-  const dots = kept.map(([str, off, fin], i) => {
+  const dots = kept.map(([str, off, fin, alt], i) => {
     const fret = rf + off;
     const pc = (OPEN[str] + fret) % 12;
     const deg = sc.steps.indexOf((pc - PC[key] + 12) % 12);
-    return { i, string: str, fret, finger: fin, pc, degree: deg, root: deg === 0,
+    return { i, string: str, fret, finger: fin, pc, degree: deg, root: deg === 0, alt: !!alt,
              note: deg >= 0 ? names[deg] : "?" };
   });
   return { id: shapeId, scale: scaleId, key, rootFret: rf, dots, clipped: notes.length - kept.length,
@@ -448,13 +433,14 @@ function draw(p, mode) {
   for (const d of p.dots) {
     const cx = x(d.fret), cy = y(d.string), r = 11.5;
     const fill = d.root ? "var(--brass)" : "var(--bone)";
+    const dash = d.alt ? ` fill="var(--petrol)" stroke="${fill}" stroke-width="1.5" stroke-dasharray="3 2"` : ` fill="${fill}"`;
     if (sc.passing != null && d.degree === sc.passing)
-      out += `<polygon points="${cx},${cy - 13} ${cx + 13},${cy} ${cx},${cy + 13} ${cx - 13},${cy}" fill="${fill}"/>`;
-    else out += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}"/>`;
+      out += `<polygon points="${cx},${cy - 13} ${cx + 13},${cy} ${cx},${cy + 13} ${cx - 13},${cy}"${dash}/>`;
+    else out += `<circle cx="${cx}" cy="${cy}" r="${r}"${dash}/>`;
     const label = mode === "fingers" ? (d.finger || "") : mode === "degrees" ? sc.degrees[d.degree] : mode === "notes" ? d.note : "";
     if (label !== "") {
       const fs = String(label).length > 1 ? 10.5 : 12.5;
-      out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="var(--ink)" text-anchor="middle" pointer-events="none">${label}</text>`;
+      out += `<text x="${cx}" y="${cy + 4.3}" font-family="var(--mono)" font-size="${fs}" font-weight="600" fill="${d.alt ? fill : 'var(--ink)'}" text-anchor="middle" pointer-events="none">${label}</text>`;
     }
   }
   return out + `</svg>`;
@@ -643,7 +629,7 @@ mus = { \\time ${seq.length === 4 ? 4 : last + 2}/8 \\omit Staff.TimeSignature \
 function notationPanel(p) {
   if (state.notation !== "on") return "";
   const sh = SCALES[p.scale].shapes[p.id], v = state.variants[vKey(p.id)];
-  const notes = p.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
+  const notes = p.dots.filter(d => !d.alt).map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
   const id = (p.scale + "-" + p.id + (v ? "-" + v : "")).replace(/[^A-Za-z0-9-]/g, "_");
   const src = `../notation/svg/fretboard/${id}-${p.key.replace("#", "s")}.svg`;
   const opts = { beam: 4, desc: sh.dir === "desc" };
@@ -651,7 +637,7 @@ function notationPanel(p) {
 }
 function downloadLy(p) {
   const sc = SCALES[p.scale], sh = sc.shapes[p.id];
-  const notes = p.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
+  const notes = p.dots.filter(d => !d.alt).map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
   const text = lyShape(notes, { beam: 4, desc: sh.dir === "desc", title: `${p.key} ${sc.name.toLowerCase()} · ${p.id} · ${sh.name}`, part: "Guitar", source: "Flynn, Jazz Guitar Technique Handbook\\n" + (sc.pages || "") });
   const blob = new Blob([text], { type: "text/plain" }), a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `${p.key}-${p.scale}-${p.id}.ly`.replace("#", "s"); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
@@ -764,8 +750,14 @@ function render() {
   seg("fingerings", [...Object.keys(sc.shapes).map(f => ({ id: f, label: f })),
       { id: "all", label: "All", wide: true }, { id: "neck", label: "Whole neck", wide: true }],
       state.fingering, f => { state.fingering = f; render(); });
+  // The bebop scales ship without fingerings (William's ruling): no finger digits
+  // in the data, so the Fingers label mode has nothing to print — drop it and
+  // fall back to degrees, leaving state.mode alone for the scales that have them.
+  const noFingers = Object.values(sc.shapes).every(sh => sh.notes.every(n => !n[2]));
+  const mode = noFingers && state.mode === "fingers" ? "degrees" : state.mode;
   seg("modes", [["fingers","Fingers"],["degrees","Degrees"],["notes","Notes"],["blank","Blank"]]
-      .map(([id, label]) => ({ id, label })), state.mode, m => { state.mode = m; render(); });
+      .filter(([id]) => !(noFingers && id === "fingers"))
+      .map(([id, label]) => ({ id, label })), mode, m => { state.mode = m; render(); });
   seg("notation", [["on","Staff + TAB"],["off","Hidden"]].map(([id, label]) => ({ id, label })), state.notation, n => { state.notation = n; render(); });
   const cur = sc.shapes[state.fingering];
   const fsV = document.getElementById("fsVariants");
@@ -788,7 +780,11 @@ function render() {
   main.classList.toggle("grid", ids.length > 1);
   const placed = ids.map(id => place(state.scale, id, state.key));
   const passnote = sc.passing != null && !neck ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><polygon points="13,0 26,13 13,26 0,13" fill="var(--bone)"/></svg> diamond = the scale’s added passing tone</p>` : "";
-  main.innerHTML = neck ? drawNeck() : passnote + placed.map(p => figure(p, state.mode)).join("");
+  const altnote = placed.some(q => q.dots.some(d => d.alt))
+    ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><circle cx="13" cy="13" r="11" fill="none" stroke="var(--bone)" stroke-width="2.5" stroke-dasharray="4 3"/></svg> dashed = the same note in the other place it falls at the edge of this position — either string, your call</p>`
+    : "";
+  const fingernote = noFingers ? `<p class="fingernote">I don’t want to micromanage your fingerings—bebop scale fingering decisions should naturally flow from the muscle memory you’ve acquired in internalizing your 7-note scale fingerings</p>` : "";
+  main.innerHTML = fingernote + (neck ? drawNeck() : passnote + altnote + placed.map(p => figure(p, mode)).join(""));
   if (!neck) hydrateNotation(main);
 
   const hint = document.getElementById("cycleHint");
