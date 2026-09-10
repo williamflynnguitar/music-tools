@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Composition Assignments</title>
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a; --warn:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus{outline:2px solid var(--brass);outline-offset:2px}
+
+.top{padding:22px 24px 0;max-width:880px;margin:0 auto}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.tagline{margin:2px 0 0;color:var(--bone-dim);font-size:14px}
+
+.bar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;max-width:880px;margin:0 auto;padding:16px 24px 8px}
+.bar .lbl{font-size:13px;color:var(--bone-dim);margin-right:6px}
+select,input[type=number],input[type=text]{background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}
+.num{width:76px;font-family:var(--mono)}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:9px 18px;cursor:pointer}
+.btn:disabled{background:var(--petrol-2);color:var(--bone-dim);cursor:default}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.btn.quiet:disabled{color:var(--bone-dim);border-color:var(--petrol-2)}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:8px 14px;cursor:pointer;color:var(--bone-dim);font-family:var(--mono)}
+.seg button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+main{max-width:880px;margin:0 auto;padding:8px 24px 70px}
+.sechead{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin:34px 0 12px;border-bottom:1px solid var(--petrol-2);padding-bottom:7px}
+.cards{display:grid;gap:12px}
+.card{background:var(--petrol);border-radius:6px;padding:15px 20px}
+.card .prompt{margin:0;font-size:17px;line-height:1.55}
+.card .toolrow{display:flex;align-items:baseline;gap:14px;justify-content:space-between;flex-wrap:wrap}
+.expand{background:transparent;border:1px solid transparent;border-radius:4px;color:var(--brass);font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;padding:6px 10px;white-space:nowrap}
+.expand:hover{border-color:var(--brass)}
+.tool{border-top:1px solid var(--petrol-2);margin-top:13px;padding-top:14px}
+.tool .trow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.tool .tlbl{font-size:13px;color:var(--bone-dim)}
+.tool .thint{font-size:13px;color:var(--bone-dim);margin:6px 0}
+.mono{font-family:var(--mono)}
+.pitches{font-family:var(--mono);font-size:15px;letter-spacing:.06em;margin:8px 0;min-height:1.4em}
+.check{display:inline-flex;gap:8px;align-items:baseline;font-size:14px;cursor:pointer}
+.check input{accent-color:var(--brass);width:auto}
+
+.pcrow{display:flex;flex-wrap:wrap;gap:6px}
+.pcrow button{min-width:42px;min-height:42px;background:var(--ink);border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:14px;cursor:pointer;padding:6px 4px}
+.pcrow button[aria-pressed=true]{background:var(--petrol-2);border-color:var(--brass);color:var(--brass)}
+.pcrow button:disabled{opacity:.32;cursor:default}
+.slotrow{display:flex;flex-wrap:wrap;gap:6px}
+.slotrow button{min-width:46px;min-height:44px;background:var(--ink);border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:14px;cursor:pointer}
+.slotrow button.active{border-color:var(--brass);color:var(--brass)}
+.slotrow button .ordinal{display:block;font-size:9px;color:var(--bone-dim)}
+
+.staffbox{margin:10px 0}
+.staffbox svg{display:block;height:auto;color:var(--bone)}
+.viewseg{margin-left:auto}
+
+.scroll{overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:6px}
+table.matrix{border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+table.matrix td,table.matrix th{padding:4px 6px;text-align:center;font-weight:400;min-width:30px}
+table.matrix th{color:var(--bone-dim);cursor:pointer;user-select:none}
+table.matrix th:hover{color:var(--bone)}
+table.matrix th.sel{color:var(--brass)}
+table.matrix td.hl{background:var(--petrol-2)}
+table.matrix td.diag{color:var(--brass)}
+
+.rot{display:flex;align-items:center;gap:12px;padding:4px 8px;border-radius:5px;cursor:pointer;border:1px solid transparent}
+.rot:hover{background:var(--petrol-2)}
+.rot.sel{border-color:var(--brass)}
+.rot.playing .rlbl{color:var(--brass)}
+.rot .rlbl{font-family:var(--mono);font-size:13px;color:var(--bone-dim);min-width:58px;flex:none}
+.rot svg{color:var(--bone);height:auto}
+.rot .rname{font-family:var(--mono);font-size:12.5px;color:var(--brass);white-space:nowrap}
+.rot .rpat{font-family:var(--mono);font-size:12.5px;color:var(--bone-dim);white-space:nowrap}
+
+.cellrow{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end}
+.cellrow button{width:38px;height:44px;background:var(--ink);border:1px solid var(--line);border-radius:4px;cursor:pointer;position:relative}
+.cellrow button.beat{margin-left:10px}
+.cellrow button[aria-pressed=true]{background:var(--petrol-2);border-color:var(--brass)}
+.cellrow button[aria-pressed=true]::after{content:"";position:absolute;inset:9px 11px;background:var(--brass);border-radius:2px;transform:skewX(-14deg)}
+.cellrow .bnum{position:absolute;left:4px;bottom:2px;font-family:var(--mono);font-size:9px;color:var(--bone-dim)}
+.cellrow.sixteens button{width:26px}
+
+.maptable{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;margin:8px 0}
+.maptable label{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:11px;color:var(--bone-dim)}
+.maptable select{padding:5px 4px;font-family:var(--mono);font-size:13px}
+details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;color:var(--brass);margin:8px 0}
+
+.playlistwrap iframe{width:100%;max-width:660px;border:0;border-radius:12px;display:block}
+.tracklist{font-family:var(--mono);font-size:13.5px;line-height:1.9;color:var(--bone);margin:12px 0 0;padding-left:1.4em}
+.pending{color:var(--bone-dim);font-style:italic}
+.note{font-size:13px;color:var(--bone-dim)}
+.err{color:var(--warn)}
+@media (max-width:560px){ .card{padding:13px 14px} main,.top,.bar{padding-left:14px;padding-right:14px} }
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+
+<header class="top">
+  <h1 class="wordmark">Composition <em>Assignments</em></h1>
+  <p class="tagline">Prompts for composition students. A few cards carry a small tool that generates seed material — the writing happens on paper.</p>
+</header>
+
+<div class="bar">
+  <span><span class="lbl">Spelling</span>
+    <span class="seg" id="spellSeg">
+      <button type="button" data-v="s" aria-pressed="true">&#9839;</button>
+      <button type="button" data-v="f" aria-pressed="false">&#9837;</button>
+    </span></span>
+  <span><span class="lbl">Tempo</span><input class="num" id="bpm" type="number" min="40" max="240" step="2" value="120"> <span class="lbl">BPM</span></span>
+  <button class="btn" id="master" disabled>Play</button>
+</div>
+
+<main>
+
+<h2 class="sechead">Melody</h2>
+<div class="cards">
+  <div class="card"><p class="prompt">Contrafact</p></div>
+  <div class="card" data-tool="row" data-view="staff">
+    <div class="toolrow"><p class="prompt">Tone row melody</p>
+      <button class="expand" type="button">&#9656; Row Builder</button></div>
+  </div>
+  <div class="card"><p class="prompt">Melody of only 2 notes per bar</p></div>
+  <div class="card"><p class="prompt">Pentatonic scale melody</p></div>
+  <div class="card" data-tool="penta">
+    <div class="toolrow"><p class="prompt">Invent your own pentatonic scale and compose a tune with it</p>
+      <button class="expand" type="button">&#9656; Pentatonic Lab</button></div>
+  </div>
+  <div class="card"><p class="prompt">Each four-bar phrase explores an increasingly colorful chord tone</p></div>
+  <div class="card"><p class="prompt">Cell melody</p></div>
+  <div class="card"><p class="prompt">Completely diatonic melody over chromatic chords</p></div>
+  <div class="card"><p class="prompt">Harmonic major melody</p></div>
+  <div class="card" data-tool="alpha">
+    <div class="toolrow"><p class="prompt">Letters and numbers as pitches: Pat Martino alphabet exercise; map the alphabet to notes and write a melody from a name or phrase; map digits to notes and hear what your phone number, birthday, etc. &ldquo;sounds like&rdquo;</p>
+      <button class="expand" type="button">&#9656; Alphabet Mapper</button></div>
+  </div>
+</div>
+
+<h2 class="sechead">Harmony</h2>
+<div class="cards">
+  <div class="card"><p class="prompt">Reharm ladder (work through in order): Happy Birthday (target 9ths, 11ths, 13ths) &rarr; folk tune &rarr; blues &rarr; standard</p></div>
+  <div class="card" data-tool="row" data-view="chart">
+    <div class="toolrow"><p class="prompt">Tone row as harmonic source: roots, or bass notes</p>
+      <button class="expand" type="button">&#9656; Row Builder</button></div>
+  </div>
+  <div class="card"><p class="prompt">Compose a tune using only 1 or 2 chord qualities</p></div>
+  <div class="card"><p class="prompt">Compose a tune in standard 32-bar form using: modulations to ii, iii, IV, vi; backdoor ii&ndash;V</p></div>
+</div>
+
+<h2 class="sechead">Rhythm / Form</h2>
+<div class="cards">
+  <div class="card"><p class="prompt">Compose a 10-bar blues</p></div>
+  <div class="card"><p class="prompt">Compose a tune with head changes and blowing changes (write the blowing changes first, then a head that obscures them)</p></div>
+  <div class="card"><p class="prompt">Compose a tune whose harmonic rhythm contracts or expands</p></div>
+  <div class="card"><p class="prompt">Compose a tune in odd-length phrases (5- or 7-bar)</p></div>
+  <div class="card" data-tool="motif">
+    <div class="toolrow"><p class="prompt">Compose a tune built from one rhythmic motif displaced across the bar</p>
+      <button class="expand" type="button">&#9656; Motif Displacer</button></div>
+  </div>
+  <div class="card"><p class="prompt">Write the melody as pure rhythm first, add pitches last</p></div>
+  <div class="card"><p class="prompt">Compose a tune in 3 or 5 that hides its meter</p></div>
+</div>
+
+<h2 class="sechead">Harmony &amp; Melody</h2>
+<div class="cards">
+  <div class="card"><p class="prompt">Reharm a tune and write a new melody over it</p></div>
+</div>
+
+<h2 class="sechead">Arranging</h2>
+<div class="cards">
+  <div class="card"><p class="prompt">Three-horn tune with harmonies and hits</p></div>
+</div>
+
+<h2 class="sechead">Groove</h2>
+<div class="cards">
+  <div class="card" data-tool="playlist">
+    <div class="toolrow"><p class="prompt">find a tune with a compelling groove and build your own tune out of it</p>
+      <button class="expand" type="button">&#9656; Playlist</button></div>
+  </div>
+</div>
+
+</main>
+
+<!-- ===== tool panels (moved under whichever card opens them; one open at a time) ===== -->
+
+<div class="tool" id="tool-row" hidden>
+  <div class="trow">
+    <span class="tlbl">Slots</span>
+    <button class="btn quiet" id="rowRandom" type="button">Randomize</button>
+    <button class="btn quiet" id="rowClearSlot" type="button">Clear slot</button>
+    <button class="btn quiet" id="rowClear" type="button">Clear</button>
+    <span class="seg viewseg" id="rowViewSeg">
+      <button type="button" data-v="staff" aria-pressed="true">Staff</button>
+      <button type="button" data-v="chart" aria-pressed="false">Root chart</button>
+    </span>
+  </div>
+  <div class="slotrow" id="rowSlots"></div>
+  <div class="trow"><span class="tlbl">Pitch for the selected slot</span></div>
+  <div class="pcrow" id="rowChooser"></div>
+  <p class="thint" id="rowHint"></p>
+  <div id="rowStaffView">
+    <div class="pitches" id="rowNames"></div>
+    <div class="staffbox" id="rowStaff"></div>
+  </div>
+  <div id="rowChartView" hidden>
+    <p class="thint" id="rowChartLbl"></p>
+    <div class="staffbox" id="rowChart"></div>
+  </div>
+  <div id="rowMatrixWrap">
+    <div class="trow">
+      <span class="tlbl">Matrix &mdash; click a label to play that form</span>
+      <button class="btn quiet" id="rowPlay" type="button">Play P0</button>
+      <label class="check"><input type="checkbox" id="rowLoop">loop</label>
+    </div>
+    <div class="scroll" id="rowMatrix"></div>
+  </div>
+  <div class="trow">
+    <button class="btn quiet" id="rowCopyRow" type="button">Copy row</button>
+    <button class="btn quiet" id="rowCopyForm" type="button">Copy P0</button>
+  </div>
+</div>
+
+<div class="tool" id="tool-penta" hidden>
+  <div class="trow">
+    <span class="tlbl">Pick exactly five</span>
+    <button class="btn quiet" id="pentaRandom" type="button">Random</button>
+    <button class="btn quiet" id="pentaClear" type="button">Clear</button>
+  </div>
+  <div class="pcrow" id="pentaPcs"></div>
+  <p class="thint" id="pentaHint"></p>
+  <div id="pentaOut" hidden>
+    <div class="pitches" id="pentaNames"></div>
+    <div class="staffbox" id="pentaStaff"></div>
+    <div class="trow">
+      <span class="tlbl">Rotations &mdash; click the one you hear as home</span>
+      <button class="btn quiet" id="pentaPlay" type="button">Play</button>
+      <label class="check"><input type="checkbox" id="pentaLoop">loop</label>
+      <label class="check"><input type="checkbox" id="pentaDrone">drone</label>
+    </div>
+    <div id="pentaRots"></div>
+  </div>
+</div>
+
+<div class="tool" id="tool-alpha" hidden>
+  <div class="trow">
+    <input type="text" id="alphaText" placeholder="a name, a phrase, a phone number&hellip;" style="flex:1;min-width:200px" autocomplete="off">
+    <span><span class="tlbl">Key for digits</span> <select id="alphaKey"></select></span>
+  </div>
+  <div class="pitches" id="alphaNames"></div>
+  <div class="staffbox" id="alphaStaff"></div>
+  <div class="trow">
+    <button class="btn quiet" id="alphaPlay" type="button">Play</button>
+    <label class="check"><input type="checkbox" id="alphaLoop">loop</label>
+    <button class="btn quiet" id="alphaCopy" type="button">Copy pitches</button>
+  </div>
+  <details class="mapper" id="alphaMapper">
+    <summary>Edit mapping</summary>
+    <p class="thint">Letters map to pitches; digits map to scale degrees of the key above. Everything else is ignored.</p>
+    <div class="maptable" id="alphaLetterMap"></div>
+    <div class="maptable" id="alphaDigitMap"></div>
+    <button class="btn quiet" id="alphaReset" type="button">Reset mapping</button>
+  </details>
+</div>
+
+<div class="tool" id="tool-motif" hidden>
+  <div class="trow">
+    <span><span class="tlbl">Meter</span> <select id="motifMeter">
+      <option value="4/4" selected>4/4</option><option value="3/4">3/4</option><option value="5/4">5/4</option></select></span>
+    <span><span class="tlbl">Grid</span> <select id="motifGrid">
+      <option value="8" selected>eighths</option><option value="16">sixteenths</option></select></span>
+    <button class="btn quiet" id="motifRandom" type="button">Random</button>
+    <button class="btn quiet" id="motifClear" type="button">Clear</button>
+    <button class="btn quiet" id="motifCopy" type="button">Copy pattern</button>
+  </div>
+  <div class="cellrow" id="motifCells"></div>
+  <p class="thint" id="motifHint">Tap cells to place attacks. Each rotation below displaces the pattern by one grid cell.</p>
+  <div class="trow">
+    <span class="tlbl">Rotations &mdash; click one to loop it</span>
+    <button class="btn quiet" id="motifPlayAll" type="button">Play all</button>
+  </div>
+  <div id="motifRots"></div>
+</div>
+
+<div class="tool" id="tool-playlist" hidden>
+  <div class="playlistwrap" id="playlistWrap"></div>
+  <ol class="tracklist" id="trackList">
+    <li class="pending">Track list pending &mdash; the playlist isn&rsquo;t publicly readable yet, so the thirteen tunes couldn&rsquo;t be pulled. Paste them here (artist &ndash; title, one per line) so the list survives when the embed can&rsquo;t load.</li>
+  </ol>
+  <p class="note">The embed needs a connection; the plain list above is what works in the practice room.</p>
+</div>
+
+<script>
+/* ===== engraving glyphs (LilyPond outlines, shared with Line Ladder) ===== */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+
+/* ===== engine: spelling, mappings, row matrix, pentatonics, motif rhythm =====
+   Pure functions, no DOM. Simulated headless before shipping (root CLAUDE.md). */
+const NAMES_S=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const NAMES_F=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const LPC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const ACC={'':0,'#':1,'##':2,'b':-1,'bb':-2,'n':0};
+const mod12=x=>((x%12)+12)%12;
+const pcName=(pc,flats)=>(flats?NAMES_F:NAMES_S)[mod12(pc)];
+const disp=name=>name[0]+name.slice(1).replace(/#/g,'♯').replace(/b/g,'♭');
+const KEYS=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+/* major scale spelled from the key's own letters (degree 3 of E is G#, never Ab) */
+function majorScale(key){
+  const L='CDEFGAB', li=L.indexOf(key[0]);
+  let pc=LPC[key[0]]+(ACC[key.slice(1)]||0);
+  const out=[];
+  [2,2,1,2,2,2,1].forEach((step,d)=>{
+    const letter=L[(li+d)%7];
+    let alt=mod12(pc-LPC[letter]); if(alt>6)alt-=12;
+    out.push({pc:mod12(pc), name:letter+(alt>0?'#'.repeat(alt):'b'.repeat(-alt))});
+    pc+=step;
+  });
+  return out;
+}
+
+/* ---- alphabet mapper (open decisions 1 & 2: defaults, editable at runtime) ---- */
+const LETTER_DEFAULT=[...Array(26)].map((_,i)=>LPC['ABCDEFG'[i%7]]);
+const DIGIT_DEFAULT=['rest','1','2','3','4','5','6','7','1+8','2+8'];   // index = digit
+function mapText(text, letterMap, digitMap, key, flats){
+  const scale=majorScale(key), out=[];
+  for(const ch of (text||'').toUpperCase()){
+    if(ch>='A'&&ch<='Z'){
+      const pc=letterMap[ch.charCodeAt(0)-65];
+      out.push({pc, midi:60+pc, name:pcName(pc,flats), label:ch});
+    } else if(ch>='0'&&ch<='9'){
+      const d=digitMap[+ch];
+      if(d==='rest'){ out.push({rest:true, label:ch}); continue; }
+      const deg=+d[0], up=d.includes('+8'), n=scale[deg-1];
+      out.push({pc:n.pc, midi:(up?72:60)+n.pc, name:n.name, label:ch});
+    }                                   // everything else is ignored
+  }
+  return out;
+}
+
+/* ---- tone row matrix: P forms as rows, I as columns, P0 = the row as entered ---- */
+function rowMatrix(row){
+  const p0=row[0], inv=row.map(pc=>mod12(2*p0-pc));
+  const rows=inv.map(s=>({label:'P'+mod12(s-p0), t:mod12(s-p0), notes:row.map(pc=>mod12(pc+s-p0))}));
+  const cols=row.map(s=>({label:'I'+mod12(s-p0), t:mod12(s-p0), notes:inv.map(pc=>mod12(pc+s-p0))}));
+  return {rows, cols};
+}
+
+/* ---- pentatonic lab ---- */
+const PENTA_LIB=[                        // data table — William edits names here
+  ['2 2 3 2 3','major pentatonic'],['3 2 2 3 2','minor pentatonic'],
+  ['2 3 2 3 2','suspended'],['3 2 3 2 2','blues minor'],['2 3 2 2 3','blues major'],
+  ['2 1 4 1 4','hirajoshi'],['1 4 2 1 4','in'],['1 4 1 4 2','iwato'],
+  ['2 1 4 2 3','kumoi'],['2 3 2 2 3','ritusen']];
+function pentaName(pattern){
+  const k=pattern.join(' ');
+  const m=PENTA_LIB.filter(e=>e[0]===k).map(e=>e[1]);
+  return m.length?m.join(' / '):null;
+}
+function pentaRotations(sel){            // sel: ascending pcs, length 5
+  return sel.map((_,i)=>{
+    const order=[...sel.slice(i),...sel.slice(0,i)];
+    const pattern=order.map((pc,k)=>mod12(order[(k+1)%order.length]-pc));
+    return {start:order[0], order, pattern, name:pentaName(pattern)};
+  });
+}
+
+/* ---- motif displacer: attacks → notated bar, Argue rules ----
+   Slots are grid units (8ths or 16ths). Regions are the spans a figure may not
+   cross: 4/4 splits at beat 3 (the imaginary barline), 5/4 at the 3|2 seam,
+   3/4 is one region. qOff marks regions where a quarter may start off the
+   beat (4/4 halves and the 2-group of 5/4 — never in 3). */
+function meterSpec(meter, grid){
+  const s={meter, unit:grid, beat:grid===16?4:2};
+  const x=grid===16?2:1;
+  if(meter==='4/4'){ s.len=8*x;  s.regions=[[0,4*x,true],[4*x,8*x,true]]; }
+  if(meter==='3/4'){ s.len=6*x;  s.regions=[[0,6*x,false]]; }
+  if(meter==='5/4'){ s.len=10*x; s.regions=[[0,6*x,false],[6*x,10*x,true]]; }
+  return s;
+}
+function regionOf(s,spec){ return spec.regions.find(r=>s>=r[0]&&s<r[1]); }
+function pieceLens(s,d,spec){            // legal note-piece lengths at s, largest first
+  const out=[], [r0,r1,qOff]=regionOf(s,spec), rel=s-r0, rl=r1-r0;
+  const F=l=>l<=d&&s+l<=r1;
+  if(spec.unit===8){
+    if(spec.meter==='4/4'&&s===0&&d>=spec.len) out.push(spec.len);          // whole bar
+    if(rl===6&&rel===0&&F(6)) out.push(6);                                  // dotted half
+    if(((rl===6&&(rel===0||rel===2))||(rl===4&&rel===0))&&F(4)) out.push(4);// half
+    if(((rl===6&&(rel===0||rel===3))||(rl===4&&rel<=1))&&F(3)) out.push(3); // dotted quarter
+    if((s%2===0||qOff)&&F(2)) out.push(2);                                  // quarter
+    if(F(1)) out.push(1);                                                   // eighth
+  } else {
+    if(spec.meter==='4/4'&&s===0&&d>=spec.len) out.push(spec.len);          // whole bar
+    if(rl===12&&rel===0&&F(12)) out.push(12);                               // dotted half
+    if(((rl===12&&(rel===0||rel===4))||(rl===8&&rel===0))&&F(8)) out.push(8);        // half
+    if(((rl===12&&(rel===0||rel===6))||(rl===8&&(rel===0||rel===2)))&&F(6)) out.push(6); // dotted quarter
+    if((s%4===0||(qOff&&s%4===2))&&F(4)) out.push(4);                       // quarter
+    if(s%4<=1&&F(3)) out.push(3);                                           // dotted eighth
+    if(s%4<=2&&F(2)) out.push(2);                                           // eighth
+    if(F(1)) out.push(1);                                                   // sixteenth
+  }
+  return out;
+}
+function restLen(s,d,spec){              // rests to the beat, no dotted rests
+  const [r0,r1]=regionOf(s,spec), rel=s-r0, rl=r1-r0;
+  const F=l=>l<=d&&s+l<=r1;
+  if(spec.unit===8){
+    if(rl===4&&rel===0&&F(4)) return 4;  // half rest only in a 4-unit half, never in 3
+    if(s%2===0&&F(2)) return 2;
+    return 1;
+  }
+  if(rl===8&&rel===0&&F(8)) return 8;
+  if(s%4===0&&F(4)) return 4;
+  if(s%2===0&&F(2)) return 2;
+  return 1;
+}
+function rotateCells(cells,k){ const n=cells.length; return cells.map((_,j)=>cells[(j-k+n)%n]); }
+function motifBar(cells,spec){           // one rotation → {events, wrapTie}
+  const n=spec.len, at=[];
+  cells.forEach((c,i)=>{ if(c) at.push(i); });
+  if(!at.length) return {events:[], wrapTie:false};
+  const ev=[]; let s=0;
+  while(s<at[0]){ const l=restLen(s,at[0]-s,spec); ev.push({slot:s,len:l,type:'rest'}); s+=l; }
+  at.forEach((a,k)=>{
+    const end=k+1<at.length?at[k+1]:n;
+    let s2=a, d=end-a; const pieces=[];
+    while(d>0){ const l=pieceLens(s2,d,spec)[0]; pieces.push({slot:s2,len:l,type:'note'}); s2+=l; d-=l; }
+    pieces.forEach((p,pi)=>{ p.tieFrom=pi>0; p.tieTo=pi<pieces.length-1; });
+    ev.push(...pieces);
+  });
+  return {events:ev, wrapTie:!cells[0]};
+}
+function beamGroups(events,spec){        // beamable runs inside beat/half groups
+  const bounds=[];
+  if(spec.unit===8){
+    if(spec.meter==='4/4') bounds.push(0,4,8);
+    if(spec.meter==='3/4') bounds.push(0,2,4,6);
+    if(spec.meter==='5/4') bounds.push(0,2,4,6,10);   // the 2-group beams as a four
+  } else for(let b=0;b<=spec.len;b+=4) bounds.push(b);
+  const beamable=e=>e.type==='note'&&(spec.unit===8?e.len===1:e.len<=3);
+  const groups=[]; let run=[];
+  const flush=()=>{ if(run.length) groups.push(run); run=[]; };
+  events.filter(e=>e.type==='note').forEach(e=>{
+    const gi=bounds.findIndex((b,i)=>e.slot>=b&&e.slot<bounds[i+1]);
+    if(run.length){
+      const prev=run[run.length-1];
+      const prevGi=bounds.findIndex((b,i)=>prev.slot>=b&&prev.slot<bounds[i+1]);
+      const adjacent=prev.slot+prev.len===e.slot;
+      if(prevGi!==gi||!adjacent||!beamable(e)||!beamable(prev)) flush();
+    }
+    if(beamable(e)) run.push(e); else { flush(); groups.push([e]); }
+  });
+  flush();
+  return groups;                          // singleton groups get flags, runs get beams
+}
+</script>
+<script>
+/* ===== renderers: pitch staff (stemless), root chart, single-line rhythm =====
+   Same units as the Line Ladder engraver: 1 staff space = 1, glyphs from
+   NOTE_DEFS, treble staff bottom line = E4 (baseIdx 30). */
+const use=(id,x,y,sz)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${sz||0.004},${-(sz||0.004)})"/>`;
+function staffPos(name, midi){
+  const acc=name.slice(1);
+  const natural=midi-(ACC[acc]||0), oct=Math.floor(natural/12)-1;
+  const idx=oct*7+'CDEFGAB'.indexOf(name[0]);
+  return 4-(idx-30)*0.5;
+}
+function accGlyph(showAcc,x,y){
+  if(showAcc==='#') return use('sharp',x-1.45,y);
+  if(showAcc==='b') return use('flat',x-1.35,y);
+  if(showAcc==='n') return use('natural',x-1.35,y);
+  return '';
+}
+const QREST=x=>`<path d="M${(x+0.35).toFixed(2)} 0.85 L${(x+1.0).toFixed(2)} 1.7 L${(x+0.45).toFixed(2)} 2.35 L${(x+1.05).toFixed(2)} 3.05" fill="none" stroke="currentColor" stroke-width="0.34"/><path d="M${(x+1.05).toFixed(2)} 3.05 q-0.75 -0.35 -0.55 0.45 q0.1 0.4 0.55 0.35" fill="none" stroke="currentColor" stroke-width="0.22"/>`;
+const ERAST=x=>`<path d="M${(x+1.15).toFixed(2)} 1.55 a0.34 0.34 0 1 1 0.28 0.55 q0.35 0.05 0.62 -0.2 l-0.62 1.85 l-0.3 0 l0.55 -1.65 q-0.3 0.15 -0.53 0.1z" fill="currentColor" stroke="currentColor" stroke-width="0.06"/>`;
+const SRAST=x=>`<path d="M${(x+1.05).toFixed(2)} 1.55 a0.34 0.34 0 1 1 0.28 0.55 q0.35 0.05 0.62 -0.2 l-0.35 1.05 a0.34 0.34 0 1 1 0.26 0.53 q0.33 0.05 0.58 -0.18 l-0.62 1.85 l-0.3 0 l0.53 -1.6 q-0.28 0.13 -0.5 0.08 l0.35 -1.05 q-0.3 0.15 -0.55 0.1z" fill="currentColor" stroke="currentColor" stroke-width="0.06"/>`;
+const HREST=x=>`<rect x="${(x+0.2).toFixed(2)}" y="1.45" width="1.5" height="0.55" fill="currentColor"/>`;
+
+/* stemless noteheads on a treble staff; items: {name,midi,label?} | {rest:true,label?} */
+function pitchStaff(items, opts){
+  opts=opts||{};
+  const SLOT=opts.slot||3.2, perRow=opts.perRow||12, systems=[];
+  for(let i=0;i<items.length;i+=perRow) systems.push(items.slice(i,i+perRow));
+  const hasLabels=items.some(n=>n.label!=null);
+  return systems.map(sys=>{
+    const X0=4.6, W=X0+sys.length*SLOT+0.8;
+    let o='';
+    for(let i=0;i<5;i++) o+=`<line x1="0" y1="${i}" x2="${W-0.4}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+    o+=use('clef',0.8,3);
+    let top=-2, bottom=hasLabels?7.9:6;
+    const seen={};                       // letter+oct → last accidental shown
+    sys.forEach((n,i)=>{
+      const x=X0+i*SLOT;
+      if(n.rest){ o+=QREST(x);
+        if(n.label!=null) o+=`<text x="${(x+0.62).toFixed(2)}" y="7.3" font-family="SF Mono,Menlo,monospace" font-size="1.1" text-anchor="middle" fill="var(--bone-dim)">${n.label}</text>`;
+        return; }
+      const y=staffPos(n.name,n.midi), acc=n.name.slice(1);
+      const k=n.name[0]+Math.floor((n.midi-(ACC[acc]||0))/12);
+      const show=acc?acc:((k in seen)&&seen[k]?'n':'');
+      seen[k]=acc;
+      for(let ly=5; ly<=y; ly++) o+=`<line x1="${(x-0.33).toFixed(2)}" y1="${ly}" x2="${(x+1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+      for(let ly=-1; ly>=y; ly--) o+=`<line x1="${(x-0.33).toFixed(2)}" y1="${ly}" x2="${(x+1.63).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.21"/>`;
+      o+=accGlyph(show,x,y)+use('nh',x,y);
+      top=Math.min(top,y-1.6); bottom=Math.max(bottom,y+1.6);
+      if(n.label!=null) o+=`<text x="${(x+0.62).toFixed(2)}" y="7.3" font-family="SF Mono,Menlo,monospace" font-size="1.1" text-anchor="middle" fill="var(--bone-dim)">${n.label}</text>`;
+    });
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.4 ${top.toFixed(2)} ${(W+0.4).toFixed(2)} ${(bottom-top).toFixed(2)}" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.round(W*9)}px;width:100%">${o}</svg>`;
+  }).join('');
+}
+
+/* 12-bar slash chart, roots above, four slashes per bar, 4 bars per system */
+function rootChart(pcs, flats){
+  const BW=10.4, PERSYS=4, out=[];
+  for(let s0=0;s0<pcs.length;s0+=PERSYS){
+    const bars=pcs.slice(s0,s0+PERSYS), X0=0.6, W=X0+bars.length*BW+0.8;
+    let o='';
+    for(let i=0;i<5;i++) o+=`<line x1="0" y1="${i}" x2="${(X0+bars.length*BW).toFixed(2)}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+    bars.forEach((pc,bi)=>{
+      const bx=X0+bi*BW;
+      o+=`<line x1="${bx.toFixed(2)}" y1="0" x2="${bx.toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/>`;
+      const nm=disp(pcName(pc,flats));
+      o+=`<text x="${(bx+0.9).toFixed(2)}" y="-1.5" font-family="sans-serif" font-size="2.1" fill="currentColor">${nm}</text>`;
+      for(let k=0;k<4;k++){
+        const sx=bx+1.4+k*2.2;
+        o+=`<line x1="${sx.toFixed(2)}" y1="3" x2="${(sx+1.15).toFixed(2)}" y2="1" stroke="currentColor" stroke-width="0.42" stroke-linecap="round"/>`;
+      }
+      o+=`<text x="${(bx+0.35).toFixed(2)}" y="5.85" font-family="sans-serif" font-size="1.05" fill="var(--bone-dim)">${s0+bi+1}</text>`;
+    });
+    const endX=X0+bars.length*BW, last=s0+PERSYS>=pcs.length;
+    o+=`<line x1="${endX.toFixed(2)}" y1="0" x2="${endX.toFixed(2)}" y2="4" stroke="currentColor" stroke-width="${last?0.45:0.13}"/>`;
+    if(last) o+=`<line x1="${(endX-0.8).toFixed(2)}" y1="0" x2="${(endX-0.8).toFixed(2)}" y2="4" stroke="currentColor" stroke-width="0.13"/>`;
+    out.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.4 -3.6 ${(W+0.4).toFixed(2)} 10.3" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.round(W*9)}px;width:100%">${o}</svg>`);
+  }
+  return out.join('');
+}
+
+/* one bar of rhythm on a single-line percussion staff (line at y=2, stems up).
+   Note pieces come from motifBar; glyph by (len, grid). */
+function rhythmLine(events, spec, wrapTie){
+  const CELL=spec.unit===8?2.7:1.7, X0=1.3;
+  const endX=X0+spec.len*CELL+0.6, W=endX+1.9;
+  let o=`<line x1="0" y1="2" x2="${(endX+ (wrapTie?1.6:0.6)).toFixed(2)}" y2="2" stroke="currentColor" stroke-width="0.11"/>`;
+  o+=`<line x1="0.35" y1="0.5" x2="0.35" y2="3.5" stroke="currentColor" stroke-width="0.13"/>`;
+  o+=`<line x1="${endX.toFixed(2)}" y1="0.5" x2="${endX.toFixed(2)}" y2="3.5" stroke="currentColor" stroke-width="0.13"/>`;
+  const gx=e=>X0+e.slot*CELL;
+  const x8=spec.unit===8;
+  const hollow=e=>x8 ? e.len>=4 : e.len>=8;
+  const stemmed=e=>!(x8 ? e.len===8 : e.len===16);
+  const dotted=e=>x8 ? (e.len===3||e.len===6) : (e.len===3||e.len===6||e.len===12);
+  const flags=e=>{ if(x8) return e.len===1?1:0; return e.len===1?2:(e.len<=3?1:0); };
+  const groups=beamGroups(events,spec), inRun=new Set();
+  groups.filter(g=>g.length>1).forEach(g=>g.forEach(e=>inRun.add(e)));
+  const notes=events.filter(e=>e.type==='note');
+  events.forEach(e=>{
+    const x=gx(e);
+    if(e.type==='rest'){
+      const map= x8?{1:ERAST,2:QREST,4:HREST}:{1:SRAST,2:ERAST,4:QREST,8:HREST};
+      o+=map[e.len](x); return;
+    }
+    if(hollow(e)) o+=`<ellipse cx="${(x+0.62).toFixed(2)}" cy="2" rx="0.66" ry="0.44" transform="rotate(-21 ${(x+0.62).toFixed(2)} 2)" fill="none" stroke="currentColor" stroke-width="0.24"/>`;
+    else o+=use('nh',x,2);
+    if(dotted(e)) o+=`<circle cx="${(x+1.85).toFixed(2)}" cy="1.5" r="0.24" fill="currentColor"/>`;
+    if(stemmed(e)&&!inRun.has(e)){
+      const sx=x+1.23, tip=-1.5;
+      o+=`<line x1="${sx.toFixed(2)}" y1="2" x2="${sx.toFixed(2)}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>`;
+      for(let f=0;f<flags(e);f++) o+=use('flagUp',sx,tip+f*0.85);
+    }
+  });
+  groups.filter(g=>g.length>1).forEach(g=>{
+    const beamY=-1.5, f=g[0], l=g[g.length-1];
+    g.forEach(e=>o+=`<line x1="${(gx(e)+1.23).toFixed(2)}" y1="2" x2="${(gx(e)+1.23).toFixed(2)}" y2="${beamY}" stroke="currentColor" stroke-width="0.13"/>`);
+    o+=`<line x1="${(gx(f)+1.23).toFixed(2)}" y1="${beamY}" x2="${(gx(l)+1.23).toFixed(2)}" y2="${beamY}" stroke="currentColor" stroke-width="0.5"/>`;
+    if(!x8){                                    // secondary beam over 16th runs
+      let run=[];
+      const emit=()=>{ if(!run.length) return;
+        const a=run[0], b=run[run.length-1];
+        let x1=gx(a)+1.23, x2=gx(b)+1.23;
+        if(run.length===1){                     // stub toward the beat-mate
+          const gi=g.indexOf(a);
+          if(gi>0) x1=x2-0.9; else x2=x1+0.9;
+        }
+        o+=`<line x1="${x1.toFixed(2)}" y1="${(beamY+0.8).toFixed(2)}" x2="${x2.toFixed(2)}" y2="${(beamY+0.8).toFixed(2)}" stroke="currentColor" stroke-width="0.5"/>`;
+        run=[]; };
+      g.forEach(e=>{ if(e.len===1) run.push(e); else emit(); });
+      emit();
+    }
+  });
+  notes.forEach((e,i)=>{
+    if(!e.tieTo) return;
+    const t=notes[i+1], x1=gx(e)+1.35, x2=t?gx(t)-0.1:x1+CELL;
+    o+=`<path d="M ${x1.toFixed(2)} 2.95 Q ${((x1+x2)/2).toFixed(2)} 3.75 ${x2.toFixed(2)} 2.95" fill="none" stroke="currentColor" stroke-width="0.16"/>`;
+  });
+  if(wrapTie&&notes.length){
+    const last=notes[notes.length-1], x1=gx(last)+1.35, x2=endX+1.15;
+    o+=`<path d="M ${x1.toFixed(2)} 2.95 Q ${((x1+x2)/2).toFixed(2)} 3.75 ${x2.toFixed(2)} 2.95" fill="none" stroke="currentColor" stroke-width="0.16"/>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.3 -2.6 ${(W+0.3).toFixed(2)} 7.6" preserveAspectRatio="xMidYMid meet" style="max-width:${Math.round(W*8)}px;width:100%">${o}</svg>`;
+}
+</script>
+<script>
+/* ===== audio: lookahead scheduler (25 ms / 130 ms), synthesized voices only ===== */
+let ac=null; const actx=()=>ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+let unlocked=false;
+function unlock(){ if(unlocked) return; unlocked=true; const c=actx();
+  const s=c.createBufferSource(); s.buffer=c.createBuffer(1,1,22050); s.connect(c.destination); s.start(0); }
+function tone(midi, at, dur, vel){        // soft triangle + sine octave
+  const c=actx(), f=440*Math.pow(2,(midi-69)/12);
+  const o=c.createOscillator(), g=c.createGain(), o2=c.createOscillator(), g2=c.createGain();
+  o.type='triangle'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*2; g2.gain.value=.2;
+  g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(vel||.17,at+.01);
+  g.gain.exponentialRampToValueAtTime(.0008,at+dur);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
+  o.start(at); o2.start(at); o.stop(at+dur+.05); o2.stop(at+dur+.05);
+}
+function clickBurst(at){                  // short noise burst for the rhythm click
+  const c=actx(), len=Math.floor(c.sampleRate*0.04);
+  const buf=c.createBuffer(1,len,c.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+  const n=c.createBufferSource(); n.buffer=buf;
+  const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2100; f.Q.value=1.1;
+  const g=c.createGain(); g.gain.setValueAtTime(.8,at);
+  n.connect(f); f.connect(g); g.connect(c.destination); n.start(at); n.stop(at+0.05);
+}
+let droneNodes=null;
+function droneOn(midi, at){
+  droneOff(); const c=actx(), f=440*Math.pow(2,(midi-69)/12);
+  const o=c.createOscillator(), g=c.createGain();
+  o.type='triangle'; o.frequency.value=f;
+  g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(.07,at+.15);
+  o.connect(g); g.connect(c.destination); o.start(at); droneNodes={o,g};
+}
+function droneOff(){
+  if(!droneNodes) return; const c=actx(), {o,g}=droneNodes; droneNodes=null;
+  g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value,c.currentTime);
+  g.gain.linearRampToValueAtTime(0,c.currentTime+.2); o.stop(c.currentTime+.25);
+}
+const bpm=()=>Math.min(240,Math.max(40,+document.getElementById('bpm').value||120));
+/* one shared player: a program is {steps:[{t,fn}], total, loop, drone?, mark?} —
+   t in beats within the cycle; mark is an element flagged .playing (static, no cursor) */
+const Player={ timer:null, i:0, cs:0, prog:null,
+  start(prog){
+    this.stop(); const c=actx(); c.resume(); unlock();
+    this.prog=prog; this.i=0; this.cs=c.currentTime+0.08;
+    if(prog.drone!=null) droneOn(prog.drone, this.cs);
+    if(prog.mark) prog.mark.classList.add('playing');
+    masterBtn.textContent='Stop';
+    this.timer=setInterval(()=>this.tick(),25);
+  },
+  stop(){
+    if(this.timer){ clearInterval(this.timer); this.timer=null; }
+    droneOff();
+    if(this.prog&&this.prog.mark) this.prog.mark.classList.remove('playing');
+    if(this.prog&&this.prog.onstop) this.prog.onstop();
+    this.prog=null; masterBtn.textContent='Play';
+  },
+  tick(){
+    const c=actx(), p=this.prog, spb=60/bpm();
+    if(!p) return;
+    while(true){
+      if(this.i>=p.steps.length){
+        if(p.loop){ this.cs+=p.total*spb; this.i=0; continue; }
+        if(c.currentTime>this.cs+p.total*spb) this.stop();
+        return;
+      }
+      const st=p.steps[this.i], at=this.cs+st.t*spb;
+      if(at>=c.currentTime+0.13) return;
+      st.fn(Math.max(at,c.currentTime+0.005), spb);
+      this.i++;
+    }
+  }
+};
+</script>
+<script>
+/* ===== state + tools ===== */
+const el=id=>document.getElementById(id);
+const masterBtn=el('master');
+const st={
+  flats:false,
+  row:Array(12).fill(null), rowActive:0, rowForm:null, rowView:'staff',
+  penta:[], pentaHome:null,
+  letterMap:[...LETTER_DEFAULT], digitMap:[...DIGIT_DEFAULT], alphaKey:'C',
+  motifCells:Array(8).fill(false), motifMeter:'4/4', motifGrid:8, motifSel:0,
+  openTool:null,
+};
+const octWindow=(pcs)=>{                  // within one octave from the first pitch
+  if(!pcs.length) return [];
+  const base=60+pcs[0];
+  return pcs.map(pc=>base+mod12(pc-pcs[0]));
+};
+function copyText(btn, text, label){
+  const done=()=>{ btn.textContent='Copied'; setTimeout(()=>btn.textContent=label,1200); };
+  const fb=()=>{ const t=document.createElement('textarea'); t.value=text;
+    t.style.position='fixed'; t.style.opacity='0'; document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); };
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(done).catch(fb);
+  else fb();
+}
+
+/* ---- card / tool plumbing: one tool open at a time ---- */
+const TOOL_PRIMARY={};                    // toolId → () => start primary playback
+document.querySelectorAll('.card[data-tool]').forEach(card=>{
+  const btn=card.querySelector('.expand'), id=card.dataset.tool;
+  btn.addEventListener('click',()=>{
+    const panel=el('tool-'+id), open=panel.parentElement===card&&!panel.hidden;
+    Player.stop();
+    document.querySelectorAll('.tool').forEach(t=>t.hidden=true);
+    document.querySelectorAll('.expand').forEach(b=>{
+      b.innerHTML='&#9656; '+b.textContent.replace(/^[▸▾]\s*/,'');
+    });
+    if(open){ st.openTool=null; masterBtn.disabled=true; return; }
+    card.appendChild(panel); panel.hidden=false;
+    btn.innerHTML='&#9662; '+btn.textContent.replace(/^[▸▾]\s*/,'');
+    st.openTool=id;
+    masterBtn.disabled=!TOOL_PRIMARY[id];
+    if(id==='row'){ st.rowView=card.dataset.view; syncRowView(); }
+    if(id==='playlist') mountPlaylist();
+  });
+});
+masterBtn.addEventListener('click',()=>{
+  if(Player.prog){ Player.stop(); return; }
+  if(st.openTool&&TOOL_PRIMARY[st.openTool]) TOOL_PRIMARY[st.openTool]();
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA') return;
+  if(e.code==='Space'&&!masterBtn.disabled){ e.preventDefault(); masterBtn.click(); }
+});
+
+/* ---- header: spelling toggle ---- */
+el('spellSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.flats=b.dataset.v==='f';
+  el('spellSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps();
+});
+
+/* =============== Row Builder =============== */
+function rowComplete(){ return st.row.every(pc=>pc!=null); }
+function renderRowSlots(){
+  el('rowSlots').innerHTML=st.row.map((pc,i)=>
+    `<button type="button" class="${i===st.rowActive?'active':''}" data-i="${i}">
+       <span class="ordinal">${i+1}</span>${pc==null?'&middot;':disp(pcName(pc,st.flats))}</button>`).join('');
+}
+function renderRowChooser(){
+  const used=new Set(st.row.filter(pc=>pc!=null));
+  el('rowChooser').innerHTML=[...Array(12).keys()].map(pc=>
+    `<button type="button" data-pc="${pc}" ${used.has(pc)&&st.row[st.rowActive]!==pc?'disabled':''}>${disp(pcName(pc,st.flats))}</button>`).join('');
+}
+function rowFormNotes(){                  // selected form, or P0
+  if(st.rowForm) return st.rowForm.notes;
+  return st.row.filter(pc=>pc!=null);
+}
+function rowFormLabel(){ return st.rowForm?st.rowForm.label:'P0'; }
+function renderRow(){
+  renderRowSlots(); renderRowChooser();
+  const got=st.row.filter(pc=>pc!=null).length;
+  el('rowHint').textContent=rowComplete()?'':`${12-got} to go — a row uses each of the twelve pitches once.`;
+  const pcs=rowFormNotes(), midis=octWindow(pcs);
+  el('rowNames').textContent=pcs.map(pc=>disp(pcName(pc,st.flats))).join('  ');
+  el('rowStaff').innerHTML=pcs.length?pitchStaff(pcs.map((pc,i)=>({pc,midi:midis[i],name:pcName(pc,st.flats)})),{slot:3.0}):'';
+  el('rowChartLbl').textContent=rowComplete()?`${rowFormLabel()} as a 12-bar chart — one bar per pitch, quality left blank.`:'';
+  el('rowChart').innerHTML=rowComplete()?rootChart(pcs,st.flats):'<p class="thint">Finish the row to see the chart.</p>';
+  renderMatrix();
+  el('rowPlay').textContent='Play '+rowFormLabel();
+  el('rowCopyForm').textContent='Copy '+rowFormLabel();
+  el('rowPlay').disabled=el('rowCopyForm').disabled=!rowComplete()&&!st.rowForm;
+}
+function renderMatrix(){
+  if(!rowComplete()){
+    el('rowMatrix').innerHTML='<p class="thint">Matrix appears when all twelve slots are filled.</p>';
+    return;
+  }
+  const M=rowMatrix(st.row), sel=st.rowForm;
+  const selKind=sel?sel.kind:null, selIdx=sel?sel.idx:-1;
+  let h='<table class="matrix"><tr><td></td>'+
+    M.cols.map((c,j)=>`<th data-k="I" data-i="${j}" class="${selKind==='I'&&selIdx===j?'sel':''}">${c.label}</th>`).join('')+'<td></td></tr>';
+  M.rows.forEach((r,i)=>{
+    h+=`<tr><th data-k="P" data-i="${i}" class="${selKind==='P'&&selIdx===i?'sel':''}">${r.label}</th>`;
+    h+=r.notes.map((pc,j)=>{
+      const hl=(selKind==='P'&&selIdx===i)||(selKind==='R'&&selIdx===i)||(selKind==='I'&&selIdx===j)||(selKind==='RI'&&selIdx===j);
+      return `<td class="${hl?'hl':''}${i===j?' diag':''}">${disp(pcName(pc,st.flats))}</td>`;
+    }).join('');
+    h+=`<th data-k="R" data-i="${i}" class="${selKind==='R'&&selIdx===i?'sel':''}">R${r.t}</th></tr>`;
+  });
+  h+='<tr><td></td>'+M.cols.map((c,j)=>`<th data-k="RI" data-i="${j}" class="${selKind==='RI'&&selIdx===j?'sel':''}">RI${c.t}</th>`).join('')+'<td></td></tr></table>';
+  el('rowMatrix').innerHTML=h;
+}
+el('rowMatrix').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-k]'); if(!th||!rowComplete()) return;
+  const k=th.dataset.k, i=+th.dataset.i, M=rowMatrix(st.row);
+  const base=(k==='P'||k==='R')?M.rows[i]:M.cols[i];
+  const notes=(k==='R'||k==='RI')?[...base.notes].reverse():base.notes;
+  st.rowForm={kind:k, idx:i, label:k+base.t, notes};
+  renderRow(); playRowForm();
+});
+function playRowForm(){
+  const pcs=rowFormNotes(); if(!pcs.length) return;
+  const midis=octWindow(pcs);
+  Player.start({
+    steps:midis.map((m,i)=>({t:i*0.5, fn:(at,spb)=>tone(m,at,spb*0.5)})),
+    total:midis.length*0.5, loop:el('rowLoop').checked, mark:el('rowPlay'),
+  });
+}
+TOOL_PRIMARY.row=playRowForm;
+el('rowPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('rowPlay')?Player.stop():playRowForm(); });
+el('rowSlots').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.rowActive=+b.dataset.i; renderRowSlots(); renderRowChooser();
+});
+el('rowChooser').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||b.disabled) return;
+  st.row[st.rowActive]=+b.dataset.pc; st.rowForm=null;
+  for(let k=1;k<=12;k++){ const n=(st.rowActive+k)%12; if(st.row[n]==null){ st.rowActive=n; break; } }
+  renderRow();
+});
+el('rowClearSlot').addEventListener('click',()=>{ st.row[st.rowActive]=null; st.rowForm=null; renderRow(); });
+el('rowClear').addEventListener('click',()=>{ st.row=Array(12).fill(null); st.rowActive=0; st.rowForm=null; Player.stop(); renderRow(); });
+el('rowRandom').addEventListener('click',()=>{
+  const p=[...Array(12).keys()];
+  for(let i=11;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; }
+  st.row=p; st.rowForm=null; renderRow();
+});
+el('rowLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('rowPlay')) Player.prog.loop=el('rowLoop').checked; });
+el('rowViewSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.rowView=b.dataset.v; syncRowView();
+});
+function syncRowView(){
+  el('rowViewSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===st.rowView)));
+  el('rowStaffView').hidden=st.rowView!=='staff';
+  el('rowChartView').hidden=st.rowView!=='chart';
+}
+el('rowCopyRow').addEventListener('click',()=>{
+  const pcs=st.row.filter(pc=>pc!=null);
+  copyText(el('rowCopyRow'), pcs.map(pc=>disp(pcName(pc,st.flats))).join(' '), 'Copy row');
+});
+el('rowCopyForm').addEventListener('click',()=>{
+  copyText(el('rowCopyForm'), rowFormNotes().map(pc=>disp(pcName(pc,st.flats))).join(' '), 'Copy '+rowFormLabel());
+});
+
+/* =============== Pentatonic Lab =============== */
+function renderPentaPcs(){
+  el('pentaPcs').innerHTML=[...Array(12).keys()].map(pc=>
+    `<button type="button" data-pc="${pc}" aria-pressed="${st.penta.includes(pc)}">${disp(pcName(pc,st.flats))}</button>`).join('');
+}
+function pentaScaleItems(order){          // 6 noteheads: home … home+octave
+  const base=60+order[0];
+  const midis=order.map(pc=>base+mod12(pc-order[0]));
+  return order.concat(order[0]).map((pc,i)=>({midi:i<5?midis[i]:base+12, name:pcName(pc,st.flats)}));
+}
+function renderPenta(){
+  renderPentaPcs();
+  const n=st.penta.length, out=el('pentaOut');
+  el('pentaHint').textContent=n<5?`Pick ${5-n} more.`:'';
+  out.hidden=n!==5;
+  if(n!==5) return;
+  const sel=[...st.penta].sort((a,b)=>a-b);
+  if(st.pentaHome==null||!sel.includes(st.pentaHome)) st.pentaHome=sel[0];
+  const rots=pentaRotations(sel);
+  const home=rots.find(r=>r.start===st.pentaHome)||rots[0];
+  el('pentaNames').textContent=home.order.map(pc=>disp(pcName(pc,st.flats))).join('  ')
+    +'    '+home.pattern.join(' ');
+  el('pentaStaff').innerHTML=pitchStaff(pentaScaleItems(home.order),{slot:3.2});
+  el('pentaRots').innerHTML=rots.map(r=>
+    `<div class="rot ${r.start===st.pentaHome?'sel':''}" data-start="${r.start}">
+       <span class="rlbl">from ${disp(pcName(r.start,st.flats))}</span>
+       ${pitchStaff(pentaScaleItems(r.order),{slot:2.6})}
+       <span class="rpat">${r.pattern.join(' ')}</span>
+       <span class="rname">${r.name?r.name:'<span style="color:var(--bone-dim)">no named match</span>'}</span>
+     </div>`).join('');
+}
+el('pentaPcs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const pc=+b.dataset.pc, i=st.penta.indexOf(pc);
+  if(i>=0) st.penta.splice(i,1);
+  else if(st.penta.length<5) st.penta.push(pc);   // a sixth selection is ignored
+  st.pentaHome=null; Player.stop(); renderPenta();
+});
+el('pentaRandom').addEventListener('click',()=>{
+  const p=[...Array(12).keys()];
+  for(let i=11;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; }
+  st.penta=p.slice(0,5); st.pentaHome=null; Player.stop(); renderPenta();
+});
+el('pentaClear').addEventListener('click',()=>{ st.penta=[]; st.pentaHome=null; Player.stop(); renderPenta(); });
+el('pentaRots').addEventListener('click',e=>{
+  const r=e.target.closest('.rot'); if(!r) return;
+  st.pentaHome=+r.dataset.start; renderPenta(); playPenta();
+});
+function playPenta(){                     // ascending then descending, from home
+  if(st.penta.length!==5) return;
+  const sel=[...st.penta].sort((a,b)=>a-b);
+  const rot=pentaRotations(sel).find(r=>r.start===st.pentaHome)||pentaRotations(sel)[0];
+  const base=60+rot.order[0];
+  const up=rot.order.map(pc=>base+mod12(pc-rot.order[0])).concat(base+12);
+  const seq=up.concat([...up].reverse().slice(1));
+  Player.start({
+    steps:seq.map((m,i)=>({t:i*0.5, fn:(at,spb)=>tone(m,at,spb*0.5)})),
+    total:seq.length*0.5, loop:el('pentaLoop').checked,
+    drone:el('pentaDrone').checked?base-12:null, mark:el('pentaPlay'),
+  });
+}
+TOOL_PRIMARY.penta=playPenta;
+el('pentaPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('pentaPlay')?Player.stop():playPenta(); });
+el('pentaLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('pentaPlay')) Player.prog.loop=el('pentaLoop').checked; });
+
+/* =============== Alphabet Mapper =============== */
+function alphaSeq(){ return mapText(el('alphaText').value, st.letterMap, st.digitMap, st.alphaKey, st.flats); }
+function renderAlpha(){
+  const seq=alphaSeq();
+  el('alphaNames').textContent=seq.map(n=>n.rest?'·':disp(n.name)).join('  ');
+  el('alphaStaff').innerHTML=seq.length?pitchStaff(seq,{slot:3.2,perRow:12}):'';
+  el('alphaPlay').disabled=el('alphaCopy').disabled=!seq.some(n=>!n.rest);
+}
+function renderAlphaMaps(){
+  el('alphaLetterMap').innerHTML=[...Array(26).keys()].map(i=>{
+    const ch=String.fromCharCode(65+i);
+    return `<label>${ch}<select data-i="${i}">${[...Array(12).keys()].map(pc=>
+      `<option value="${pc}" ${st.letterMap[i]===pc?'selected':''}>${disp(pcName(pc,st.flats))}</option>`).join('')}</select></label>`;
+  }).join('');
+  const DIGOPTS=['1','2','3','4','5','6','7','1+8','2+8','3+8','4+8','5+8','6+8','7+8','rest'];
+  el('alphaDigitMap').innerHTML=[...Array(10).keys()].map(d=>
+    `<label>${d}<select data-d="${d}">${DIGOPTS.map(o=>
+      `<option value="${o}" ${st.digitMap[d]===o?'selected':''}>${o==='rest'?'rest':'deg '+o.replace('+8',' ↑')}</option>`).join('')}</select></label>`).join('');
+}
+el('alphaLetterMap').addEventListener('change',e=>{
+  const s=e.target.closest('select'); if(!s) return;
+  st.letterMap[+s.dataset.i]=+s.value; renderAlpha();
+});
+el('alphaDigitMap').addEventListener('change',e=>{
+  const s=e.target.closest('select'); if(!s) return;
+  st.digitMap[+s.dataset.d]=s.value; renderAlpha();
+});
+el('alphaReset').addEventListener('click',()=>{
+  st.letterMap=[...LETTER_DEFAULT]; st.digitMap=[...DIGIT_DEFAULT];
+  renderAlphaMaps(); renderAlpha();
+});
+el('alphaText').addEventListener('input',renderAlpha);
+el('alphaKey').addEventListener('change',e=>{ st.alphaKey=e.target.value; renderAlpha(); });
+function playAlpha(){                     // even quarters at the header tempo
+  const seq=alphaSeq(); if(!seq.some(n=>!n.rest)) return;
+  Player.start({
+    steps:seq.map((n,i)=>({t:i, fn:(at,spb)=>{ if(!n.rest) tone(n.midi,at,spb*0.9); }})),
+    total:seq.length, loop:el('alphaLoop').checked, mark:el('alphaPlay'),
+  });
+}
+TOOL_PRIMARY.alpha=playAlpha;
+el('alphaPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('alphaPlay')?Player.stop():playAlpha(); });
+el('alphaLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('alphaPlay')) Player.prog.loop=el('alphaLoop').checked; });
+el('alphaCopy').addEventListener('click',()=>{
+  copyText(el('alphaCopy'), alphaSeq().map(n=>n.rest?'·':disp(n.name)).join(' '), 'Copy pitches');
+});
+
+/* =============== Motif Displacer =============== */
+function motifSpec(){ return meterSpec(st.motifMeter, st.motifGrid); }
+function renderMotifCells(){
+  const spec=motifSpec();
+  el('motifCells').className='cellrow'+(st.motifGrid===16?' sixteens':'');
+  el('motifCells').innerHTML=st.motifCells.map((on,i)=>{
+    const beatStart=i%spec.beat===0;
+    return `<button type="button" data-i="${i}" aria-pressed="${on}" class="${beatStart&&i?'beat':''}">
+      ${beatStart?`<span class="bnum">${i/spec.beat+1}</span>`:''}</button>`;
+  }).join('');
+}
+function dispLabel(k){
+  if(k===0) return '+0';
+  return st.motifGrid===8?`+${k}♪`:`+${k}/16`;
+}
+function renderMotifRots(){
+  const spec=motifSpec(), any=st.motifCells.some(c=>c);
+  if(!any){ el('motifRots').innerHTML='<p class="thint">Place attacks to see the rotations.</p>'; return; }
+  let h='';
+  for(let k=0;k<spec.len;k++){
+    const rot=rotateCells(st.motifCells,k);
+    const {events,wrapTie}=motifBar(rot,spec);
+    h+=`<div class="rot ${k===st.motifSel?'sel':''}" data-k="${k}">
+      <span class="rlbl">${dispLabel(k)}</span>${rhythmLine(events,spec,wrapTie)}</div>`;
+  }
+  el('motifRots').innerHTML=h;
+}
+function renderMotif(){ renderMotifCells(); renderMotifRots(); }
+function motifResize(){
+  const spec=motifSpec();
+  st.motifCells=Array(spec.len).fill(false); st.motifSel=0; Player.stop(); renderMotif();
+}
+el('motifMeter').addEventListener('change',e=>{ st.motifMeter=e.target.value; motifResize(); });
+el('motifGrid').addEventListener('change',e=>{ st.motifGrid=+e.target.value; motifResize(); });
+el('motifCells').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const i=+b.dataset.i; st.motifCells[i]=!st.motifCells[i]; st.motifSel=0; renderMotif();
+});
+el('motifRandom').addEventListener('click',()=>{
+  const spec=motifSpec(), n=3+Math.floor(Math.random()*3);
+  st.motifCells=Array(spec.len).fill(false);
+  const idx=[...Array(spec.len).keys()];
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  idx.slice(0,n).forEach(i=>st.motifCells[i]=true);
+  st.motifSel=0; renderMotif();
+});
+el('motifClear').addEventListener('click',()=>{ st.motifCells=st.motifCells.map(()=>false); st.motifSel=0; Player.stop(); renderMotif(); });
+el('motifCopy').addEventListener('click',()=>{
+  copyText(el('motifCopy'), st.motifCells.map(c=>c?'x':'.').join(' '), 'Copy pattern');
+});
+function motifSteps(rot,spec){            // clicks at attack cells; t in beats
+  const steps=[];
+  rot.forEach((on,i)=>{ if(on) steps.push({t:i/spec.beat, fn:at=>clickBurst(at)}); });
+  return steps;
+}
+function playRotation(k){
+  const spec=motifSpec(), rot=rotateCells(st.motifCells,k);
+  if(!rot.some(c=>c)) return;
+  st.motifSel=k; renderMotifRots();
+  const mark=el('motifRots').querySelector(`.rot[data-k="${k}"]`);
+  Player.start({ steps:motifSteps(rot,spec), total:spec.len/spec.beat, loop:true, mark });
+}
+TOOL_PRIMARY.motif=()=>playRotation(st.motifSel);
+el('motifRots').addEventListener('click',e=>{
+  const r=e.target.closest('.rot'); if(!r) return;
+  const k=+r.dataset.k;
+  if(Player.prog&&st.motifSel===k&&Player.prog.mark===r){ Player.stop(); return; }
+  playRotation(k);
+});
+el('motifPlayAll').addEventListener('click',()=>{
+  const spec=motifSpec();
+  if(!st.motifCells.some(c=>c)) return;
+  if(Player.prog&&Player.prog.mark===el('motifPlayAll')){ Player.stop(); return; }
+  const barBeats=spec.len/spec.beat, steps=[];
+  for(let k=0;k<spec.len;k++)
+    motifSteps(rotateCells(st.motifCells,k),spec).forEach(s2=>steps.push({t:k*barBeats+s2.t, fn:s2.fn}));
+  Player.start({ steps, total:spec.len*barBeats, loop:false, mark:el('motifPlayAll') });
+});
+
+/* =============== Playlist =============== */
+let playlistMounted=false;
+function mountPlaylist(){                 // set src only when opened — offline stays quiet
+  if(playlistMounted) return; playlistMounted=true;
+  el('playlistWrap').innerHTML='<iframe src="https://open.spotify.com/embed/playlist/4DdYDtOf8CMNhsM46R8nwg?theme=0" height="380" loading="lazy" title="Groove playlist" allow="encrypted-media; fullscreen"></iframe>';
+}
+
+/* ===== init ===== */
+document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
+el('alphaKey').innerHTML=KEYS.map(k=>`<option value="${k}">${disp(k)} major</option>`).join('');
+renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderMotif(); syncRowView();
+</script>
+</body>
+</html>
