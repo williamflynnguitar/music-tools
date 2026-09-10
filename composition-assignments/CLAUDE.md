@@ -1,9 +1,10 @@
 # Composition Assignments
 
 Stand-alone app (not handbook-tied): a page of composition assignments for
-William's composition students. Six sections of prompt cards; most cards are
-prompt-only, four carry an inline seed-material tool (Row Builder, Pentatonic
-Lab, Alphabet Mapper, Motif Displacer) and the Groove card embeds a Spotify
+William's composition students. Six sections of prompt cards; every card is
+a disclosure with About copy, and several carry an inline seed-material tool
+(Row Builder, Two Onsets, Pentatonic Shuffle, Pentatonic Lab, Cell Lab,
+Alphabet Mapper, Motif Displacer) with the Groove card embedding a Spotify
 playlist. No melody/chord/score entry in this version — the writing happens
 on paper. Build brief: `BRIEF.md` in this folder.
 
@@ -86,6 +87,22 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   the ties — a looped rotation's last note sustains across the barline into
   the next cycle (William's 2026-09-09 ruling), while Play all ends each
   rotation's last note at its barline (separate examples, no self-repeat).
+- **Two Onsets** (2026-09-09 request) enumerates every placement of two
+  onsets in one bar, grouped by cyclic spacing — a shape and its
+  displacements, with wrapped placements in the same family (the loop and
+  the engraved tie teach why "a dotted quarter apart" can cross the
+  barline). Eighth grid only in v1; the row engine is `twobarFamilies`
+  (tested), engraving and tie-observing playback are the Motif Displacer's.
+- **Pentatonic Shuffle** (same request batch): root x major/minor pentatonic
+  autopopulates (the other rotations live in the Pentatonic Lab), Shuffle
+  permutes the order as a melodic seed; root/type changes reset to scale
+  order. Spelling follows the header toggle.
+- **Cell Lab** (same request batch): 3-5 note cell, hand-built (repeats
+  allowed; Random draws distinct pitches) with in-place transforms —
+  Invert mirrors around the current first note, Retrograde reverses,
+  +1/-1 transpose chromatically and merge in the breadcrumb ("inv - retro
+  - +2"); Reset restores the last hand-entered cell. Chained ops give RI
+  for free.
 - Matrix labels: standard four-sided layout (P left, R right, I top, RI
   bottom), P0 = the row as entered, main diagonal is constant and tinted.
   Clicking any label selects and plays that form; the root-chart view and

@@ -89,6 +89,7 @@ table.matrix td.diag{color:var(--brass)}
 .rot svg{color:var(--bone);height:auto}
 .rot .rname{font-family:var(--mono);font-size:12.5px;color:var(--brass);white-space:nowrap}
 .rot .rpat{font-family:var(--mono);font-size:12.5px;color:var(--bone-dim);white-space:nowrap}
+.ogroup{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin:14px 0 4px}
 
 .cellrow{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end}
 .cellrow button{width:38px;height:44px;background:var(--ink);border:1px solid var(--line);border-radius:4px;cursor:pointer;position:relative}
@@ -210,13 +211,13 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
     <div class="toolrow"><p class="prompt">Tone row melody</p>
       <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Row Builder</button></div>
   </div>
-  <div class="card" data-id="two-notes-per-bar">
+  <div class="card" data-id="two-notes-per-bar" data-tool="twobar">
     <div class="toolrow"><p class="prompt">Melody of only 2 notes per bar</p>
-      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Two Onsets</button></div>
   </div>
-  <div class="card" data-id="pentatonic-melody">
+  <div class="card" data-id="pentatonic-melody" data-tool="pshuffle">
     <div class="toolrow"><p class="prompt">Pentatonic scale melody</p>
-      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Pentatonic Shuffle</button></div>
   </div>
   <div class="card" data-id="invent-pentatonic" data-tool="penta">
     <div class="toolrow"><p class="prompt">Invent your own pentatonic scale and compose a tune with it</p>
@@ -226,9 +227,9 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
     <div class="toolrow"><p class="prompt">Each four-bar phrase explores an increasingly colorful chord tone</p>
       <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
   </div>
-  <div class="card" data-id="cell-melody">
+  <div class="card" data-id="cell-melody" data-tool="cell">
     <div class="toolrow"><p class="prompt">Cell melody</p>
-      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Cell Lab</button></div>
   </div>
   <div class="card" data-id="diatonic-over-chromatic">
     <div class="toolrow"><p class="prompt">Completely diatonic melody over chromatic chords</p>
@@ -422,6 +423,55 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
   <div id="motifRots"></div>
 </div>
 
+<div class="tool" id="tool-twobar" hidden>
+  <div class="trow">
+    <span><span class="tlbl">Meter</span> <select id="twobarMeter">
+      <option value="4/4" selected>4/4</option><option value="3/4">3/4</option><option value="5/4">5/4</option></select></span>
+    <span class="tlbl" id="twobarCount"></span>
+  </div>
+  <p class="thint">Every placement of two onsets in one bar, grouped by their spacing counted through the loop &mdash; some placements wrap the barline, and the tie shows it. Click a bar to loop it.</p>
+  <div id="twobarGroups"></div>
+</div>
+
+<div class="tool" id="tool-pshuffle" hidden>
+  <div class="trow">
+    <span><span class="tlbl">Root</span> <select id="psRoot"></select></span>
+    <span class="seg" id="psType">
+      <button type="button" data-v="maj" aria-pressed="true">major</button>
+      <button type="button" data-v="min" aria-pressed="false">minor</button>
+    </span>
+    <button class="btn quiet" id="psShuffle" type="button">Shuffle</button>
+    <button class="btn quiet" id="psPlay" type="button">Play</button>
+    <label class="check"><input type="checkbox" id="psLoop">loop</label>
+  </div>
+  <p class="thint" id="psScaleLine"></p>
+  <div class="pitches" id="psNames"></div>
+  <div class="staffbox" id="psStaff"></div>
+</div>
+
+<div class="tool" id="tool-cell" hidden>
+  <div class="trow">
+    <span><span class="tlbl">Length</span> <span class="seg" id="cellLen">
+      <button type="button" data-v="3" aria-pressed="false">3</button><button type="button" data-v="4" aria-pressed="true">4</button><button type="button" data-v="5" aria-pressed="false">5</button></span></span>
+    <button class="btn quiet" id="cellRandom" type="button">Random</button>
+    <button class="btn quiet" id="cellReset" type="button">Reset</button>
+  </div>
+  <div class="slotrow" id="cellSlots"></div>
+  <div class="trow"><span class="tlbl">Pitch for the selected slot</span></div>
+  <div class="pcrow" id="cellChooser"></div>
+  <div class="trow">
+    <button class="btn quiet" id="cellInv" type="button">Invert</button>
+    <button class="btn quiet" id="cellRetro" type="button">Retrograde</button>
+    <button class="btn quiet" id="cellUp" type="button">+1</button>
+    <button class="btn quiet" id="cellDown" type="button">&minus;1</button>
+    <button class="btn quiet" id="cellPlay" type="button">Play</button>
+    <label class="check"><input type="checkbox" id="cellLoop">loop</label>
+  </div>
+  <p class="thint" id="cellChain"></p>
+  <div class="pitches" id="cellNames"></div>
+  <div class="staffbox" id="cellStaff"></div>
+</div>
+
 <div class="tool" id="tool-playlist" hidden>
   <div class="playlistwrap" id="playlistWrap"></div>
   <ol class="tracklist" id="trackList">
@@ -585,6 +635,25 @@ function motifBar(cells,spec){           // one rotation → {events, wrapTie}
     ev.push(...pieces);
   });
   return {events:ev, wrapTie:!cells[0], wrapLen:!cells[0]?at[0]:0};
+}
+/* ---- two-onset bars: every distinct placement of two onsets in one bar,
+   grouped by cyclic spacing d (a shape and its displacements; a pair d
+   apart and one len−d apart are the same shape through the loop, which is
+   why wrapped placements sit in the same family — the engraved tie shows
+   it). d runs 1..len/2; the diameter family has len/2 placements, the rest
+   len each. */
+function twobarFamilies(spec){
+  const n=spec.len, out=[];
+  for(let d=1; d<=n/2; d++){
+    const rots=(2*d===n)?n/2:n, rows=[];
+    for(let r=0; r<rots; r++){
+      const b=(r+d)%n;
+      const cells=Array(n).fill(false); cells[r]=cells[b]=true;
+      rows.push({a:Math.min(r,b), b:Math.max(r,b), cells});
+    }
+    out.push({d, rows});
+  }
+  return out;
 }
 function beamGroups(events,spec){        // beamable runs inside beat/half groups
   const bounds=[];
@@ -859,6 +928,9 @@ const st={
   penta:[], pentaHome:null,
   letterMap:[...LETTER_DEFAULT], digitMap:[...DIGIT_DEFAULT], alphaKey:'C',
   motifCells:Array(8).fill(false), motifMeter:'4/4', motifGrid:8, motifSel:0,
+  twobarMeter:'4/4', twobarSel:null,
+  psRoot:0, psType:'maj', psOrder:[],
+  cell:Array(4).fill(null), cellBase:null, cellChain:[], cellActive:0,
   openTool:null,
 };
 const octWindow=(pcs)=>{                  // within one octave from the first pitch
@@ -952,6 +1024,7 @@ el('spellSeg').addEventListener('click',e=>{
   st.flats=b.dataset.v==='f';
   el('spellSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
   renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps();
+  renderPSRoot(); renderPS(); renderCell();
 });
 
 /* =============== Row Builder =============== */
@@ -1257,6 +1330,155 @@ el('motifPlayAll').addEventListener('click',()=>{
   Player.start({ steps, total:spec.len*barBeats, loop:false, mark:el('motifPlayAll') });
 });
 
+/* =============== Two Onsets =============== */
+const SPACING={1:'an eighth apart',2:'a quarter apart',3:'a dotted quarter apart',4:'a half note apart',5:'five eighths apart'};
+const countName=s=>Math.floor(s/2)+1+(s%2?'&':'');
+function twobarSpec(){ return meterSpec(st.twobarMeter, 8); }
+function renderTwobar(){
+  const spec=twobarSpec(), fams=twobarFamilies(spec);
+  el('twobarCount').textContent=fams.reduce((a,f)=>a+f.rows.length,0)+' placements';
+  el('twobarGroups').innerHTML=fams.map(f=>
+    `<div class="ogroup">${SPACING[f.d]}</div>`+
+    f.rows.map(row=>{
+      const {events,wrapTie,wrapLen}=motifBar(row.cells,spec);
+      const key=row.a+'-'+row.b;
+      return `<div class="rot ${key===st.twobarSel?'sel':''}" data-key="${key}">
+        <span class="rlbl">${countName(row.a)} &middot; ${countName(row.b)}</span>${rhythmLine(events,spec,wrapTie,wrapLen)}</div>`;
+    }).join('')).join('');
+}
+function playTwobar(key){
+  const spec=twobarSpec(), [a,b]=key.split('-').map(Number);
+  const cells=Array(spec.len).fill(false); cells[a]=cells[b]=true;
+  st.twobarSel=key; renderTwobar();
+  const mark=el('twobarGroups').querySelector(`.rot[data-key="${key}"]`);
+  Player.start({ steps:motifSteps(cells,spec,true), total:spec.len/spec.beat, loop:true, mark });
+}
+TOOL_PRIMARY.twobar=()=>playTwobar(st.twobarSel||'0-1');
+el('twobarMeter').addEventListener('change',e=>{ st.twobarMeter=e.target.value; st.twobarSel=null; Player.stop(); renderTwobar(); });
+el('twobarGroups').addEventListener('click',e=>{
+  const r=e.target.closest('.rot'); if(!r) return;
+  if(Player.prog&&Player.prog.mark===r){ Player.stop(); return; }
+  playTwobar(r.dataset.key);
+});
+
+/* =============== Pentatonic Shuffle =============== */
+const PENT_OFFS={maj:[0,2,4,7,9], min:[0,3,5,7,10]};
+function psPcs(){ return PENT_OFFS[st.psType].map(o=>mod12(st.psRoot+o)); }
+function renderPSRoot(){
+  el('psRoot').innerHTML=[...Array(12).keys()].map(pc=>
+    `<option value="${pc}">${disp(pcName(pc,st.flats))}</option>`).join('');
+  el('psRoot').value=String(st.psRoot);
+}
+function renderPS(){
+  const scale=psPcs();
+  el('psScaleLine').textContent=disp(pcName(st.psRoot,st.flats))+' '
+    +(st.psType==='maj'?'major':'minor')+' pentatonic: '
+    +scale.map(pc=>disp(pcName(pc,st.flats))).join(' ')
+    +' — shuffle for a new order to write from.';
+  el('psNames').textContent=st.psOrder.map(pc=>disp(pcName(pc,st.flats))).join('  ');
+  const midis=octWindow(st.psOrder);
+  el('psStaff').innerHTML=pitchStaff(st.psOrder.map((pc,i)=>({midi:midis[i], name:pcName(pc,st.flats)})),{slot:3.2});
+}
+function psReset(){ st.psOrder=psPcs(); renderPS(); }
+function playPS(){
+  const midis=octWindow(st.psOrder);
+  Player.start({ steps:midis.map((m,i)=>({t:i*0.5, fn:(at,spb)=>tone(m,at,spb*0.5)})),
+    total:midis.length*0.5, loop:el('psLoop').checked, mark:el('psPlay') });
+}
+TOOL_PRIMARY.pshuffle=playPS;
+el('psRoot').addEventListener('change',e=>{ st.psRoot=+e.target.value; psReset(); });
+el('psType').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.psType=b.dataset.v;
+  el('psType').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  psReset();
+});
+el('psShuffle').addEventListener('click',()=>{
+  const o=[...st.psOrder];
+  do{ for(let i=o.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [o[i],o[j]]=[o[j],o[i]]; } }
+  while(o.join()===st.psOrder.join());
+  st.psOrder=o; renderPS();
+  if(Player.prog&&Player.prog.mark===el('psPlay')) playPS();
+});
+el('psPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('psPlay')?Player.stop():playPS(); });
+el('psLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('psPlay')) Player.prog.loop=el('psLoop').checked; });
+
+/* =============== Cell Lab =============== */
+function cellComplete(){ return st.cell.every(pc=>pc!=null); }
+function cellChainText(){
+  if(!st.cellChain.length) return 'original cell';
+  return 'from original: '+st.cellChain.join(' · ');
+}
+function pushChain(tok){                  // merge running semitone transposition
+  const last=st.cellChain[st.cellChain.length-1];
+  if(/^[+−]\d+$/.test(tok)&&last&&/^[+−]\d+$/.test(last)){
+    const val=(last[0]==='+'?+last.slice(1):-last.slice(1))+(tok[0]==='+'?+tok.slice(1):-tok.slice(1));
+    if(val===0) st.cellChain.pop();
+    else st.cellChain[st.cellChain.length-1]=(val>0?'+':'−')+Math.abs(val);
+  } else st.cellChain.push(tok);
+}
+function renderCell(){
+  el('cellSlots').innerHTML=st.cell.map((pc,i)=>
+    `<button type="button" class="${i===st.cellActive?'active':''}" data-i="${i}">
+       <span class="ordinal">${i+1}</span>${pc==null?'&middot;':disp(pcName(pc,st.flats))}</button>`).join('');
+  const cur=st.cell[st.cellActive];
+  el('cellChooser').innerHTML=[...Array(12).keys()].map(pc=>
+    `<button type="button" data-pc="${pc}" aria-pressed="${cur===pc}">${disp(pcName(pc,st.flats))}</button>`).join('');
+  const ok=cellComplete();
+  ['cellInv','cellRetro','cellUp','cellDown','cellPlay'].forEach(id=>el(id).disabled=!ok);
+  el('cellChain').textContent=ok?cellChainText():'Fill the slots, or hit Random. Repeated pitches are allowed.';
+  el('cellNames').textContent=ok?st.cell.map(pc=>disp(pcName(pc,st.flats))).join('  '):'';
+  if(ok){
+    const midis=octWindow(st.cell);
+    el('cellStaff').innerHTML=pitchStaff(st.cell.map((pc,i)=>({midi:midis[i], name:pcName(pc,st.flats)})),{slot:3.2});
+  } else el('cellStaff').innerHTML='';
+}
+function cellRebase(){ st.cellBase=[...st.cell]; st.cellChain=[]; }
+function cellTransform(fn, tok){
+  if(!cellComplete()) return;
+  st.cell=fn(st.cell); pushChain(tok); renderCell();
+  if(Player.prog&&Player.prog.mark===el('cellPlay')) playCell();
+}
+function playCell(){
+  if(!cellComplete()) return;
+  const midis=octWindow(st.cell);
+  Player.start({ steps:midis.map((m,i)=>({t:i*0.5, fn:(at,spb)=>tone(m,at,spb*0.5)})),
+    total:midis.length*0.5, loop:el('cellLoop').checked, mark:el('cellPlay') });
+}
+TOOL_PRIMARY.cell=playCell;
+el('cellLen').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  const n=+b.dataset.v;
+  el('cellLen').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  st.cell=[...Array(n)].map((_,i)=>st.cell[i]!=null?st.cell[i]:null);
+  st.cellActive=Math.min(st.cellActive,n-1); cellRebase(); Player.stop(); renderCell();
+});
+el('cellSlots').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.cellActive=+b.dataset.i; renderCell();
+});
+el('cellChooser').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  st.cell[st.cellActive]=+b.dataset.pc;
+  st.cellActive=(st.cellActive+1)%st.cell.length;
+  cellRebase(); renderCell();
+});
+el('cellRandom').addEventListener('click',()=>{
+  const p=[...Array(12).keys()];
+  for(let i=11;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; }
+  st.cell=p.slice(0,st.cell.length); st.cellActive=0; cellRebase(); renderCell();
+});
+el('cellReset').addEventListener('click',()=>{
+  if(st.cellBase) st.cell=[...st.cellBase];
+  st.cellChain=[]; renderCell();
+});
+el('cellInv').addEventListener('click',()=>cellTransform(c=>c.map(pc=>mod12(2*c[0]-pc)),'inv'));
+el('cellRetro').addEventListener('click',()=>cellTransform(c=>[...c].reverse(),'retro'));
+el('cellUp').addEventListener('click',()=>cellTransform(c=>c.map(pc=>mod12(pc+1)),'+1'));
+el('cellDown').addEventListener('click',()=>cellTransform(c=>c.map(pc=>mod12(pc-1)),'−1'));
+el('cellPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('cellPlay')?Player.stop():playCell(); });
+el('cellLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('cellPlay')) Player.prog.loop=el('cellLoop').checked; });
+
 /* =============== Playlist =============== */
 let playlistMounted=false;
 function mountPlaylist(){                 // set src only when opened — offline stays quiet
@@ -1274,6 +1496,7 @@ document.querySelectorAll('.card[data-id]').forEach(card=>{   // About under eac
 });
 el('alphaKey').innerHTML=KEYS.map(k=>`<option value="${k}">${disp(k)} major</option>`).join('');
 renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderMotif(); syncRowView();
+renderTwobar(); renderPSRoot(); psReset(); renderCell();
 </script>
 </body>
 </html>
