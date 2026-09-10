@@ -128,10 +128,22 @@ that doesn't (major P6 → hwdim) draws the diagram at cycle[0] with no
 picker button pressed; "Next in cycle" indexOf's ids that may not be in
 the cycle (descending bebop ids → jumps to cycle[0]).
 
-## Deferred
-- Four-note-per-string symmetric half-whole fingering (half–whole–half on
-  one string, restarting a tritone up on the next, shift between strings
-  3 and 2). William will spec it separately (Sep 2026).
+## Full range (four-note-per-string half-whole), Sep 2026
+The deferred 4nps fingering shipped to William's spec: `FR6`/`FR5` in
+`SCALES.hwdim.shapes`, name "Full range". Half–whole–half per string,
+each next string restarting a tritone up (forced by the math: 4 of the 8
+tones per string), +1 fret shift per string pair except +2 between
+strings 3 and 2; fingers **1-1-3-4** per string (index covers the
+half-step pair — William rejected 1-2-3-4). Both carry `clip:true`, and
+they are NOT in the cycle (nextInCycle steps from them to cycle[0]); the
+whole-neck view ignores non-cycle shapes. `place()` handles `clip`: when
+a shape outruns fret 19 in a high key and cannot drop an octave, it cuts
+**by pitch at the first off-board note** (fret-clipping alone leaves a
+hole mid-line where a lower string's top note falls away under a higher
+string's survivors) and the card caption says how many notes were
+omitted. Clipping keys: FR6 D/Eb/E, FR5 Ab/A. The notation pipeline
+extracts place() from this file, so its cells clip identically — the 24
+FR cells are rendered.
 
 Both UI quirks above were approved and fixed (Sep 2026): the stale-id
 guard now runs before the picker is built, and `nextInCycle()` steps

@@ -163,7 +163,8 @@ const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],
    default, variants = { name: full notes list }; the apps remember the chosen
    variant per shape for the session, in memory only;
    shape flags: pos + dir "asc"/"desc" (separate bebop fingerings per direction),
-   open (placement floor 0, not 1). */
+   open (placement floor 0, not 1), clip (a shape that outruns the board in
+   high keys: placement drops the notes past the 19th fret and shows the rest). */
 const SCALES = {
   major: { name:"Major", steps:[0,2,4,5,7,9,11], degrees:["R","2","3","4","5","6","7"], spellFrom:0,
     apply:{ chords:"C△7 · C△9 · C6 · C6/9", uses:[] }, pages:"pp. 6–7",
@@ -304,6 +305,8 @@ const SCALES = {
       M5:{rootString:5,name:"Middle 5",notes:[[1,-1,1],[1,0,2],[1,2,4],[2,-1,1],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-2,1],[4,-1,2],[4,1,3],[4,2,4],[5,0,2],[5,1,3]]},
       I6:{rootString:6,name:"Index 6",notes:[[1,0,1],[2,0,1],[2,2,1],[2,3,4],[3,0,1],[3,1,2],[3,3,4],[4,0,1],[4,2,3],[4,3,4],[5,1,1],[5,2,2],[5,4,4],[6,0,1],[6,1,1],[6,3,3],[6,4,4]]},
       I5:{rootString:5,name:"Index 5",notes:[[1,-1,1],[1,0,2],[1,2,4],[2,-1,1],[2,1,3],[2,2,4],[3,-1,1],[3,0,2],[3,2,4],[4,-1,1],[4,1,3],[4,2,4],[5,0,1],[5,1,2],[5,3,4]]},
+      FR6:{rootString:6,name:"Full range",clip:true,notes:[[1,6,1],[1,7,1],[1,9,3],[1,10,4],[2,5,1],[2,6,1],[2,8,3],[2,9,4],[3,3,1],[3,4,1],[3,6,3],[3,7,4],[4,2,1],[4,3,1],[4,5,3],[4,6,4],[5,1,1],[5,2,1],[5,4,3],[5,5,4],[6,0,1],[6,1,1],[6,3,3],[6,4,4]]},
+      FR5:{rootString:5,name:"Full range",clip:true,notes:[[1,5,1],[1,6,1],[1,8,3],[1,9,4],[2,4,1],[2,5,1],[2,7,3],[2,8,4],[3,2,1],[3,3,1],[3,5,3],[3,6,4],[4,1,1],[4,2,1],[4,4,3],[4,5,4],[5,0,1],[5,1,1],[5,3,3],[5,4,4]]},
     }},
 };
 const SHAPES = SCALES.major.shapes;   // back-compat alias
