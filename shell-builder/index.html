@@ -309,6 +309,7 @@ const QUAL = {
   maj7 :{name:'Major 7',        sym:'Δ7',   third:'3', seventh:'7',  fifth:'5',  allowed:['9','#11','13']},
   '6'  :{name:'Major 6',        sym:'6',    third:'3', seventh:'6',  fifth:'5',  allowed:['9','#11']},
   '7'  :{name:'Dominant 7',     sym:'7',    third:'3', seventh:'b7', fifth:'5',  dom:true, allowed:['9','#11','13'], altered:['b9','#9','b5','#5','#11','b13']},
+  '7sus':{name:'Dominant 7sus', sym:'7sus', third:'4', seventh:'b7', fifth:'5',  sus:true, allowed:['9','13']},
   m7   :{name:'Minor 7',        sym:'-7',   third:'b3',seventh:'b7', fifth:'5',  allowed:['9','11','13']},
   m6   :{name:'Minor 6',        sym:'-6',   third:'b3',seventh:'6',  fifth:'5',  allowed:['9','11']},
   m7b5 :{name:'Half-diminished',sym:'ø7',   third:'b3',seventh:'b7', fifth:'b5', allowed:['9','11','b13']},
@@ -336,7 +337,7 @@ function nearestFret(s, pc, around){
 function degName(off, qKey){
   const q = QUAL[qKey];
   const minor = q.third==='b3';
-  const table = {0:'R',1:'b9',2:'9',3:minor?'b3':'#9',4:'3',5:'11',6:(q.fifth==='b5')?'b5':'#11',7:'5',8:(q.fifth==='#5')?'#5':(q.dom?'#5':'b13'),9:(q.seventh==='6')?'6':'13',10:'b7',11:'7'};
+  const table = {0:'R',1:'b9',2:'9',3:minor?'b3':'#9',4:'3',5:(q.third==='4')?'4':'11',6:(q.fifth==='b5')?'b5':'#11',7:'5',8:(q.fifth==='#5')?'#5':(q.dom?'#5':'b13'),9:(q.seventh==='6')?'6':'13',10:'b7',11:'7'};
   return table[off];
 }
 const EXT = ['b9','9','#9','11','#11','b5','b13','#5','13'];
@@ -345,9 +346,9 @@ function nameChord(root, qKey, degs){
   const q = QUAL[qKey];
   const set = new Set(degs.filter(d=>EXT.includes(d) && d!==q.fifth));
   let core = q.sym, absorbed = null;
-  const climb = ['Δ7','7','-7','-Δ7','ø7','Δ7#5'];
+  const climb = ['Δ7','7','-7','-Δ7','ø7','Δ7#5','7sus'];
   if(climb.includes(q.sym)){
-    if(set.has('13') && (set.has('9') || q.dom)) absorbed='13';
+    if(set.has('13') && (set.has('9') || q.dom || q.sus)) absorbed='13';
     else if(set.has('11') && (set.has('9') || q.third==='b3')) absorbed='11';
     else if(set.has('9')) absorbed='9';
     if(absorbed) core = q.sym.replace('7', absorbed);
@@ -366,7 +367,7 @@ function buildAt(pc, qKey, structId, rs, rf, off){
   const rootPc = rootMidi % 12;
   const strings = STRUCT[structId].strings(rs);
   const dimish = qKey==='m7b5'||qKey==='dim7';
-  const bDef = rs===6 ? (q.dom ? '13' : q.fifth) : (dimish ? 'b3' : '9');
+  const bDef = rs===6 ? ((q.dom || q.sus) ? '13' : q.fifth) : (dimish ? 'b3' : '9');
   const eDef = rs===6 ? 'R' : q.fifth;
   const notes = [];
   strings.forEach(s=>{
@@ -398,6 +399,7 @@ function judge(v, st){
     if(n.deg==='R') { if(!v.ghost && v.rs) msgs.push({k:'ok', t:label+' is the root.'}); return; }
     if(n.deg===q.fifth || (n.deg==='5' && q.fifth==='5')) return;
     if(n.deg==='b3' && st.rs===5 && n.s===2 && (st.q==='m7b5'||st.q==='dim7')) { msgs.push({k:'ok', t:'The Handbook\'s 5R shape for this quality: b3 on the B string. Not strictly a shell, but it\'s the one that lies well.'}); return; }
+    if(st.q==='7sus' && n.deg==='3') { msgs.push({k:'warn', t:label+' adds the natural 3 against the suspended 4 — that resolves the sus; usually pick one.'}); return; }
     /* Doubling the 7th is a legitimate voicing (William, Sep 2026 D-review:
        blessed on every reachable cell except m7 from 5R, which stays a
        caution; the °7/Δ7#5 5R reaches were removed from the walk instead). */
@@ -469,7 +471,7 @@ function parseChordToken(tok){
   const num=s.match(/(9|11|13)$/); if(num&&!ext.includes(num[1])) ext.push(num[1]);
   if(q==='maj7'&&(s.includes('+')||ext.includes('#5'))){q='maj7s5';ext=ext.filter(e=>e!=='#5');}
   if(q==='m7'&&ext.includes('b5')){q='m7b5';ext=ext.filter(e=>e!=='b5');}
-  if(q==='7'&&ext.some(e=>/^sus/.test(e))) q='7';
+  if(typeof QUAL!=='undefined'&&QUAL['7sus']&&ext.some(e=>/^sus4?$/.test(e))&&(q==='7'||s==='')) q='7sus';
   if(ext.includes('alt')) ext.push('b9','b13');
   if(ext.includes('add9')) ext.push('9');
   return {kind:'chord', raw, rootName, pc, quality:q, ext:ext.filter(e=>!/^(alt|add9|sus)/.test(e))};
@@ -713,7 +715,7 @@ function setAppMode(m){
 function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
 function newQuestion(){
   const hard = el('qHard').checked;
-  const quals = hard ? ['maj7','7','m7','m7b5','6','m6','mMaj7'] : ['maj7','7','m7','m7b5'];
+  const quals = hard ? ['maj7','7','7sus','m7','m7b5','6','m6','mMaj7'] : ['maj7','7','m7','m7b5'];
   const q = rnd(quals);
   const s = {pc:Math.floor(Math.random()*12), rs:rnd([6,5]), q, struct:rnd([3,4]), off:{2:0,1:0}};
   s.root = ROOTS[s.pc];

@@ -99,3 +99,18 @@ existing caution. The °7 bb7-labeled-"13" mislabel is moot — the only
 position that produced it is the removed °7 5R E+3. The E reference
 table now shows the +3 row where it is walkable (it was always walkable
 but never displayed).
+
+## Dominant 7sus (Sep 2026, off-book addition)
+`QUAL['7sus']`: third slot holds the **4** (the D/G-string tone that
+replaces the 3rd), b7 seventh, `sus:true`. The sus flag gives it the
+dominant's 6R B-string default (13, so the −4..+2 walk applies:
+13→b13→5→#11→4) and lets `nameChord` climb to 9sus/13sus; 5R defaults are
+the usual 9 (B) and 5 (E). `degName` labels 5 semitones "4" (not "11")
+when the third slot is a 4. Extras: judge warns when a mobile string adds
+the natural 3 ("resolves the sus"); b7 doubles get the blessed message
+like dominants; allowed extensions are 9 and 13 only (no altered list —
+flag if susb9 should exist). The shared parser (byte-identical with
+Inversion Drill) maps sus/sus4 suffixes to '7sus' **only where
+`QUAL['7sus']` exists**, so the drill still folds sus into plain 7.
+In the quiz it appears in Hard mode. p. 49 has no 7sus row — William
+requested the quality; the extension list is mine, awaiting his check.

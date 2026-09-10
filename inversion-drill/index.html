@@ -462,7 +462,7 @@ function parseChordToken(tok){
   const num=s.match(/(9|11|13)$/); if(num&&!ext.includes(num[1])) ext.push(num[1]);
   if(q==='maj7'&&(s.includes('+')||ext.includes('#5'))){q='maj7s5';ext=ext.filter(e=>e!=='#5');}
   if(q==='m7'&&ext.includes('b5')){q='m7b5';ext=ext.filter(e=>e!=='b5');}
-  if(q==='7'&&ext.some(e=>/^sus/.test(e))) q='7';
+  if(typeof QUAL!=='undefined'&&QUAL['7sus']&&ext.some(e=>/^sus4?$/.test(e))&&(q==='7'||s==='')) q='7sus';
   if(ext.includes('alt')) ext.push('b9','b13');
   if(ext.includes('add9')) ext.push('9');
   return {kind:'chord', raw, rootName, pc, quality:q, ext:ext.filter(e=>!/^(alt|add9|sus)/.test(e))};
