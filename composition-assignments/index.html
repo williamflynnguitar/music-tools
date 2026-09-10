@@ -53,10 +53,10 @@ main{max-width:760px;margin:0 auto;padding:8px 24px 70px}
    rule marks the cards that carry a tool */
 .card{background:var(--petrol);border-radius:6px;padding:15px 20px;cursor:pointer}
 .card:not(.open):hover{background:var(--petrol-2)}
-.card .prompt{margin:0;font-size:17px;line-height:1.55}
+.card .prompt{margin:0;font-size:17px;line-height:1.55;flex:1 1 auto;min-width:0}
 .card.open .prompt{font-size:19px}
 .card[data-tool]{border-left:3px solid var(--brass);padding-left:17px}
-.card .toolrow{display:flex;align-items:baseline;gap:14px;justify-content:space-between;flex-wrap:wrap}
+.card .toolrow{display:flex;align-items:baseline;gap:14px;justify-content:space-between}
 .expand{background:transparent;border:1px solid var(--line);border-radius:4px;color:var(--brass);font-family:var(--mono);font-size:13px;letter-spacing:.06em;cursor:pointer;padding:8px 12px;white-space:nowrap}
 .expand:hover{border-color:var(--brass)}
 .chev{display:inline-block;transition:transform .15s ease}
@@ -122,7 +122,7 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 .pending{color:var(--bone-dim);font-style:italic}
 .note{font-size:13px;color:var(--bone-dim)}
 .err{color:var(--warn)}
-@media (max-width:560px){ .card{padding:13px 14px} .card[data-tool]{padding-left:11px} main,.top,.bar{padding-left:14px;padding-right:14px} }
+@media (max-width:560px){ .card{padding:13px 14px} .expand{white-space:normal;max-width:38%;flex:0 0 auto;text-align:center} .card[data-tool]{padding-left:11px} main,.top,.bar{padding-left:14px;padding-right:14px} }
 </style>
 </head>
 <body>
