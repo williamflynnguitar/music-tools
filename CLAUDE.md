@@ -12,7 +12,22 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
 - `line-ladder/` — stand-alone improvisation line generator, instrument-neutral
   (concept registry + smoothing ladder; handbook cited per concept only)
+- `shell-builder/` — Shell Voicings 101 (pp. 45–51): build and mobilize shells,
+  name the result, comp through changes
+- `inversion-drill/` — drop-2/drop-3 inversions (pp. 52–59, key study p. 82),
+  drilled up the neck and through changes
+- `voice-leading/` — nearest-inversion trainer (p. 79): show / reveal / choose
+  through the practice progressions
+- `quartal-voicings/` — **built** (Sep 2026). Quartal Harmony retroactive
+  chapter: catalogue, modes, the Ex. 5–14 chord-symbol method, ii–V–I planing,
+  Solar and Stella. Brief + spec in `briefs/`; pre-rendered cells in its own
+  `notation/`
 - `triad-voicings/` — closed/open triads and the Ex. 8 key study (pp. 39–43, 81)
+- `comping-rhythms/` — Charleston swing comping rhythms (pp. 83–84), five families
+- `box-buddy/` — chord-box handout generator for band directors (teacher tool,
+  deliberately unlinked from the spine)
+- `composition-assignments/` — prompt cards + inline seed-material tools for
+  composition students (stand-alone)
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its
