@@ -106,6 +106,20 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   +1/-1 transpose chromatically and merge in the breadcrumb ("inv - retro
   - +2"); Reset restores the last hand-entered cell. Chained ops give RI
   for free.
+- **Row Builder transforms** (2026-09-10 request: "include tools that make these
+  transformations happen"): Invert / Retrograde / +1 / −1 / Back to P0 act on the
+  current form, chained, with a breadcrumb reading `P0 · inv · retro · +2 = RI2`.
+  Inversion mirrors around the current form's first note, so the form keeps its
+  starting pitch — the same rule the Cell Lab uses. The 48 forms are closed under
+  those three operations, so every result is a labelled matrix cell: `rowIdentify`
+  finds it (searching P, then I, R, RI) and the matrix highlight, staff, root chart,
+  Play and Copy all follow. A symmetric row makes two labels name the same pitch
+  sequence — the breadcrumb then reads e.g. `P0 · inv · retro = P3`, which is the
+  row telling you it is RI-symmetric. Transposition merges in the breadcrumb and
+  wraps mod 12 (twelve `+1`s collapse to nothing, since the form is the same).
+  Transform buttons do not start playback; if the row is already playing, the new
+  form takes over (Cell Lab's rule). Clicking a matrix label still selects *and*
+  plays, and resets the breadcrumb.
 - Matrix labels: standard four-sided layout (P left, R right, I top, RI
   bottom), P0 = the row as entered, main diagonal is constant and tinted.
   Clicking any label selects and plays that form; the root-chart view and

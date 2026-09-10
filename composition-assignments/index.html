@@ -357,6 +357,15 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
   <div class="trow"><span class="tlbl">Pitch for the selected slot</span></div>
   <div class="pcrow" id="rowChooser"></div>
   <p class="thint" id="rowHint"></p>
+  <div class="trow" id="rowXform">
+    <span class="tlbl">Transform</span>
+    <button class="btn quiet" id="rowInv" type="button">Invert</button>
+    <button class="btn quiet" id="rowRetro" type="button">Retrograde</button>
+    <button class="btn quiet" id="rowUp" type="button">+1</button>
+    <button class="btn quiet" id="rowDown" type="button">&minus;1</button>
+    <button class="btn quiet" id="rowBack" type="button">Back to P0</button>
+  </div>
+  <p class="thint" id="rowChain"></p>
   <div id="rowStaffView">
     <div class="pitches" id="rowNames"></div>
     <div class="staffbox" id="rowStaff"></div>
@@ -941,6 +950,7 @@ const masterBtn=el('master');
 const st={
   flats:false,
   row:Array(12).fill(null), rowActive:0, rowForm:null, rowView:'staff',
+  rowChain:[], rowFrom:'P0',
   penta:[], pentaHome:null,
   letterMap:[...LETTER_DEFAULT], digitMap:[...DIGIT_DEFAULT], alphaKey:'C',
   motifCells:Array(8).fill(false), motifMeter:'4/4', motifGrid:8, motifSel:0,
@@ -1060,6 +1070,28 @@ function rowFormNotes(){                  // selected form, or P0
   return st.row.filter(pc=>pc!=null);
 }
 function rowFormLabel(){ return st.rowForm?st.rowForm.label:'P0'; }
+/* The 48 forms are closed under retrograde, inversion about the first note, and
+   transposition — so every transform lands on a labelled cell of the matrix. */
+function rowIdentify(notes){
+  const M=rowMatrix(st.row), eq=(a,b)=>a.every((x,i)=>x===b[i]);
+  for(let i=0;i<12;i++) if(eq(notes,M.rows[i].notes)) return {kind:'P', idx:i, label:'P'+M.rows[i].t, notes};
+  for(let j=0;j<12;j++) if(eq(notes,M.cols[j].notes)) return {kind:'I', idx:j, label:'I'+M.cols[j].t, notes};
+  for(let i=0;i<12;i++) if(eq(notes,[...M.rows[i].notes].reverse())) return {kind:'R', idx:i, label:'R'+M.rows[i].t, notes};
+  for(let j=0;j<12;j++) if(eq(notes,[...M.cols[j].notes].reverse())) return {kind:'RI', idx:j, label:'RI'+M.cols[j].t, notes};
+  return {kind:null, idx:-1, label:'?', notes};
+}
+function rowRebase(){ st.rowChain=[]; st.rowFrom=rowFormLabel(); }
+function rowChainText(){
+  const cur=rowFormLabel();
+  if(!st.rowChain.length) return cur==='P0'?'P0 — the row as entered.':cur+' — chosen in the matrix.';
+  return st.rowFrom+' · '+st.rowChain.join(' · ')+' = '+cur;
+}
+function rowTransform(fn, tok){
+  if(!rowComplete()) return;
+  st.rowForm=rowIdentify(fn(rowFormNotes()));
+  pushChain(st.rowChain, tok, true); renderRow();
+  if(Player.prog&&Player.prog.mark===el('rowPlay')) playRowForm();
+}
 function renderRow(){
   renderRowSlots(); renderRowChooser();
   const got=st.row.filter(pc=>pc!=null).length;
@@ -1070,6 +1102,8 @@ function renderRow(){
   el('rowChartLbl').textContent=rowComplete()?`${rowFormLabel()} as a 12-bar chart — one bar per pitch, quality left blank.`:'';
   el('rowChart').innerHTML=rowComplete()?rootChart(pcs,st.flats):'<p class="thint">Finish the row to see the chart.</p>';
   renderMatrix();
+  ['rowInv','rowRetro','rowUp','rowDown','rowBack'].forEach(id=>el(id).disabled=!rowComplete());
+  el('rowChain').textContent=rowComplete()?rowChainText():'';
   el('rowPlay').textContent='Play '+rowFormLabel();
   el('rowCopyForm').textContent='Copy '+rowFormLabel();
   el('rowPlay').disabled=el('rowCopyForm').disabled=!rowComplete()&&!st.rowForm;
@@ -1100,7 +1134,15 @@ el('rowMatrix').addEventListener('click',e=>{
   const base=(k==='P'||k==='R')?M.rows[i]:M.cols[i];
   const notes=(k==='R'||k==='RI')?[...base.notes].reverse():base.notes;
   st.rowForm={kind:k, idx:i, label:k+base.t, notes};
-  renderRow(); playRowForm();
+  rowRebase(); renderRow(); playRowForm();
+});
+el('rowInv').addEventListener('click',()=>rowTransform(n=>n.map(pc=>mod12(2*n[0]-pc)),'inv'));
+el('rowRetro').addEventListener('click',()=>rowTransform(n=>[...n].reverse(),'retro'));
+el('rowUp').addEventListener('click',()=>rowTransform(n=>n.map(pc=>mod12(pc+1)),'+1'));
+el('rowDown').addEventListener('click',()=>rowTransform(n=>n.map(pc=>mod12(pc-1)),'−1'));
+el('rowBack').addEventListener('click',()=>{
+  st.rowForm=null; rowRebase(); renderRow();
+  if(Player.prog&&Player.prog.mark===el('rowPlay')) playRowForm();
 });
 function playRowForm(){
   const pcs=rowFormNotes(); if(!pcs.length) return;
@@ -1118,16 +1160,16 @@ el('rowSlots').addEventListener('click',e=>{
 });
 el('rowChooser').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b||b.disabled) return;
-  st.row[st.rowActive]=+b.dataset.pc; st.rowForm=null;
+  st.row[st.rowActive]=+b.dataset.pc; st.rowForm=null; rowRebase();
   for(let k=1;k<=12;k++){ const n=(st.rowActive+k)%12; if(st.row[n]==null){ st.rowActive=n; break; } }
   renderRow();
 });
-el('rowClearSlot').addEventListener('click',()=>{ st.row[st.rowActive]=null; st.rowForm=null; renderRow(); });
-el('rowClear').addEventListener('click',()=>{ st.row=Array(12).fill(null); st.rowActive=0; st.rowForm=null; Player.stop(); renderRow(); });
+el('rowClearSlot').addEventListener('click',()=>{ st.row[st.rowActive]=null; st.rowForm=null; rowRebase(); renderRow(); });
+el('rowClear').addEventListener('click',()=>{ st.row=Array(12).fill(null); st.rowActive=0; st.rowForm=null; rowRebase(); Player.stop(); renderRow(); });
 el('rowRandom').addEventListener('click',()=>{
   const p=[...Array(12).keys()];
   for(let i=11;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [p[i],p[j]]=[p[j],p[i]]; }
-  st.row=p; st.rowForm=null; renderRow();
+  st.row=p; st.rowForm=null; rowRebase(); renderRow();
 });
 el('rowLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('rowPlay')) Player.prog.loop=el('rowLoop').checked; });
 el('rowViewSeg').addEventListener('click',e=>{
@@ -1429,13 +1471,15 @@ function cellChainText(){
   if(!st.cellChain.length) return 'original cell';
   return 'from original: '+st.cellChain.join(' · ');
 }
-function pushChain(tok){                  // merge running semitone transposition
-  const last=st.cellChain[st.cellChain.length-1];
+const semis=s=>s[0]==='+'?+s.slice(1):-s.slice(1);
+function pushChain(chain, tok, wrap){     // merge running semitone transposition
+  const last=chain[chain.length-1];
   if(/^[+−]\d+$/.test(tok)&&last&&/^[+−]\d+$/.test(last)){
-    const val=(last[0]==='+'?+last.slice(1):-last.slice(1))+(tok[0]==='+'?+tok.slice(1):-tok.slice(1));
-    if(val===0) st.cellChain.pop();
-    else st.cellChain[st.cellChain.length-1]=(val>0?'+':'−')+Math.abs(val);
-  } else st.cellChain.push(tok);
+    let val=semis(last)+semis(tok);
+    if(wrap){ val=mod12(val); if(val>6) val-=12; }  // rows: a form repeats every 12
+    if(val===0) chain.pop();
+    else chain[chain.length-1]=(val>0?'+':'−')+Math.abs(val);
+  } else chain.push(tok);
 }
 function renderCell(){
   el('cellSlots').innerHTML=st.cell.map((pc,i)=>
@@ -1456,7 +1500,7 @@ function renderCell(){
 function cellRebase(){ st.cellBase=[...st.cell]; st.cellChain=[]; }
 function cellTransform(fn, tok){
   if(!cellComplete()) return;
-  st.cell=fn(st.cell); pushChain(tok); renderCell();
+  st.cell=fn(st.cell); pushChain(st.cellChain, tok); renderCell();
   if(Player.prog&&Player.prog.mark===el('cellPlay')) playCell();
 }
 function playCell(){
