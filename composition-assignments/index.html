@@ -1220,17 +1220,25 @@ el('motifClear').addEventListener('click',()=>{ st.motifCells=st.motifCells.map(
 el('motifCopy').addEventListener('click',()=>{
   copyText(el('motifCopy'), st.motifCells.map(c=>c?'x':'.').join(' '), 'Copy pattern');
 });
-function motifSteps(rot,spec){            // clicks at attack cells; t in beats
-  const steps=[];
-  rot.forEach((on,i)=>{ if(on) steps.push({t:i/spec.beat, fn:at=>clickBurst(at)}); });
-  return steps;
+/* attacks with their notated durations, so playback observes the ties:
+   each attack is a click transient plus a fixed-pitch tone that rings for
+   the duration until the next attack. When looping, the last note's
+   duration wraps across the barline into the next cycle (the engraved tie
+   into the next repetition); unlooped (Play all), it ends at the barline. */
+function motifSteps(rot,spec,loop){
+  const at=[]; rot.forEach((on,i)=>{ if(on) at.push(i); });
+  return at.map((a,k)=>{
+    const next = k+1<at.length ? at[k+1] : spec.len + (loop?at[0]:0);
+    const durUnits = next-a;
+    return {t:a/spec.beat, fn:(t,spb)=>{ clickBurst(t); tone(55, t, durUnits*spb/spec.beat, .15); }};
+  });
 }
 function playRotation(k){
   const spec=motifSpec(), rot=rotateCells(st.motifCells,k);
   if(!rot.some(c=>c)) return;
   st.motifSel=k; renderMotifRots();
   const mark=el('motifRots').querySelector(`.rot[data-k="${k}"]`);
-  Player.start({ steps:motifSteps(rot,spec), total:spec.len/spec.beat, loop:true, mark });
+  Player.start({ steps:motifSteps(rot,spec,true), total:spec.len/spec.beat, loop:true, mark });
 }
 TOOL_PRIMARY.motif=()=>playRotation(st.motifSel);
 el('motifRots').addEventListener('click',e=>{
@@ -1245,7 +1253,7 @@ el('motifPlayAll').addEventListener('click',()=>{
   if(Player.prog&&Player.prog.mark===el('motifPlayAll')){ Player.stop(); return; }
   const barBeats=spec.len/spec.beat, steps=[];
   for(let k=0;k<spec.len;k++)
-    motifSteps(rotateCells(st.motifCells,k),spec).forEach(s2=>steps.push({t:k*barBeats+s2.t, fn:s2.fn}));
+    motifSteps(rotateCells(st.motifCells,k),spec,false).forEach(s2=>steps.push({t:k*barBeats+s2.t, fn:s2.fn}));
   Player.start({ steps, total:spec.len*barBeats, loop:false, mark:el('motifPlayAll') });
 });
 

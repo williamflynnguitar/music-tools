@@ -81,7 +81,11 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
     grid establish it.
 - **Playback registers**: rows and pentatonics play within one octave from
   their first note (matching the staff); pentatonic drone is the home note
-  an octave below; motif attacks are a band-passed noise burst.
+  an octave below. Motif attacks are a noise-burst transient plus a
+  fixed-pitch tone (G3) held for the notated duration, so playback observes
+  the ties — a looped rotation's last note sustains across the barline into
+  the next cycle (William's 2026-09-09 ruling), while Play all ends each
+  rotation's last note at its barline (separate examples, no self-repeat).
 - Matrix labels: standard four-sided layout (P left, R right, I top, RI
   bottom), P0 = the row as entered, main diagonal is constant and tinted.
   Clicking any label selects and plays that form; the root-chart view and
