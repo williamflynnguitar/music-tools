@@ -10,7 +10,9 @@ Requires: node, python3, lilypond (2.24+) on the PATH.
     cd notation/pipeline
     node gen-arpeggios.js        # → ly/arpeggios/*.ly   (2,376 cells: 198 shapes × 12 keys)
     node gen-fretboard.js        # → ly/fretboard/*.ly   (1,020 cells: 85 fingerings × 12 keys)
-    ./render.sh all              # → ../svg/arpeggios/*.svg, ../svg/fretboard/*.svg
+    node gen-quartal.js          # → ly/quartal/*.ly     (1,443 cells: cards × 12 keys + ii–V–I sets + tune bars)
+    ./render.sh all              # → ../svg/arpeggios/*.svg, ../svg/fretboard/*.svg,
+                                 #   and quartal-voicings/notation/*.svg (per-app store, per that brief)
 
 `render.sh` runs LilyPond in parallel (JOBS=n to override) and skips cells that already
 exist, so re-running after a data change only renders what's new. Delete the SVGs for a

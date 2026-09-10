@@ -5,12 +5,305 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quartal voicings — Quartal Harmony</title>
 <style>
-  /* styles land in the UI pass */
+  :root {
+    --ink: #0a1a20; --petrol: #10303a; --petrol-2: #163f4b;
+    --bone: #e9e2d2; --bone-dim: #a9a597; --brass: #c9a44c; --warn: #d86b4a;
+    --tt: #d0885f;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ink); color: var(--bone); font-family: var(--sans); }
+  body { padding: 28px 32px 48px; max-width: 1180px; margin: 0 auto; }
+  h1 { font-weight: 400; font-size: 26px; margin: 0 0 4px; }
+  h1 small { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-left: 12px; }
+  p.lede { margin: 0 0 20px; color: var(--bone-dim); font-size: 15px; max-width: 68ch; }
+  button { font-family: var(--mono); font-size: 13px; color: var(--bone); background: var(--petrol); border: 1px solid transparent; border-radius: 4px; padding: 8px 10px; cursor: pointer; line-height: 1.1; }
+  button:hover { background: var(--petrol-2); }
+  button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+  button[aria-pressed="true"] { background: var(--brass); color: var(--ink); }
+  button:disabled { opacity: .35; cursor: default; }
+  input[type=number] { width: 64px; background: var(--ink); border: 1px solid var(--petrol-2); border-radius: 4px; padding: 7px 8px; color: var(--bone); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+  fieldset { border: 0; padding: 0; margin: 0; }
+  legend { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-bottom: 8px; padding: 0; }
+
+  .tabs { display: flex; gap: 4px; margin: 0 0 18px; border-bottom: 1px solid var(--petrol-2); flex-wrap: wrap; align-items: center; }
+  .tabs button { font-size: 13px; letter-spacing: .1em; background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0; color: var(--bone-dim); padding: 10px 14px; }
+  .tabs button:hover { background: transparent; color: var(--bone); }
+  .tabs button[aria-pressed="true"] { background: transparent; color: var(--brass); border-bottom-color: var(--brass); }
+  .tabs .readbtn { margin-left: auto; border: 1px solid var(--petrol-2); border-radius: 4px; padding: 7px 12px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+  .tabs .readbtn:hover { border-color: var(--brass); color: var(--bone); }
+
+  .ctrlrow { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 16px; }
+  .seggrp { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .seggrp button { padding: 7px 9px; }
+  .gkeys { display: grid; grid-template-columns: repeat(6, minmax(34px, auto)); gap: 4px; }
+  .hint { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin: 8px 0 0; }
+  .flag { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 8px 0 0; }
+
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 14px; margin-top: 14px; align-items: start; }
+  .card { background: var(--petrol); border-radius: 6px; padding: 14px 16px 12px; }
+  .card header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .card header .where { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .badge { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--bone); background: var(--petrol-2); border-radius: 3px; padding: 3px 7px; }
+  .badge.tt { color: var(--ink); background: var(--tt); }
+  .card .names { font-family: var(--mono); font-size: 13px; color: var(--bone); margin: 6px 0 0; }
+  .card .names .oct { color: var(--brass); margin-left: 8px; font-size: 11px; letter-spacing: .1em; }
+  .card .mdeg { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 0; }
+  .card .mdeg b { font-family: var(--mono); font-weight: 600; font-size: 24px; color: var(--brass); }
+  .card .mdeg span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .card.dim { opacity: .35; }
+  .card.blueadj { box-shadow: inset 0 0 0 1.5px var(--tt); }
+  .card.now { box-shadow: inset 0 0 0 1.5px var(--brass); }
+  .card .gridrow { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .card svg.grid { display: block; }
+  .ly { color: var(--bone); margin: 10px 0 0; }
+  .ly svg { width: 100%; max-width: 420px; height: auto; max-height: 200px; display: block; }
+  .ly text { fill: currentColor; }
+  .lynote { font-family: var(--mono); font-size: 10.5px; color: var(--bone-dim); margin: 4px 0 0; }
+
+  .q { color: var(--brass); font-size: .58em; vertical-align: .5em; margin-left: .05em; letter-spacing: 0; }
+  .sym { font-family: var(--mono); font-size: 21px; }
+  .frac { font-size: 1em; }
+  .frac sup { font-size: .72em; vertical-align: .35em; }
+  .frac sub { font-size: .72em; vertical-align: -.1em; }
+
+  .neckwrap { overflow-x: auto; background: var(--petrol); border-radius: 6px; padding: 10px 8px 2px; margin-top: 14px; }
+  .neck svg { display: block; min-width: 940px; width: 100%; height: auto; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+
+  .panel { background: var(--petrol); border-radius: 6px; padding: 16px 20px; margin-top: 16px; }
+  .panel h3 { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--brass); font-weight: 400; margin: 0 0 10px; }
+  .panel ol { margin: 0; padding-left: 22px; font-size: 15px; line-height: 1.55; }
+  .panel ol li { margin-bottom: 4px; }
+
+  table.gp { border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  table.gp th, table.gp td { text-align: left; padding: 6px 14px 6px 0; border-bottom: 1px solid var(--petrol-2); white-space: nowrap; }
+  table.gp th { color: var(--bone-dim); font-weight: 400; font-size: 11px; letter-spacing: .08em; }
+  table.gp td:first-child { color: var(--bone); }
+  .gpwrap { overflow-x: auto; }
+
+  .fnwrap { overflow-x: auto; margin-top: 14px; }
+  .fncols { display: flex; gap: 0; min-width: 720px; }
+  .fncol { flex: 1; min-width: 58px; border-left: 1px solid var(--petrol-2); padding: 8px 6px 10px; cursor: pointer; text-align: center; }
+  .fncol:last-child { border-right: 1px solid var(--petrol-2); }
+  .fncol:hover { background: var(--petrol); }
+  .fncol.sel { background: var(--petrol); box-shadow: inset 0 2px 0 var(--brass); }
+  .fncol .bass { font-family: var(--mono); font-size: 15px; }
+  .fncol .bfr { font-family: var(--mono); font-size: 10.5px; color: var(--bone-dim); margin-top: 1px; }
+  .fncol .csym { font-family: var(--mono); font-size: 13.5px; margin-top: 8px; min-height: 34px; }
+  .fncol .tdeg { font-family: var(--mono); font-size: 10.5px; color: var(--bone-dim); margin-top: 6px; }
+  .fncol.none { color: var(--bone-dim); }
+  .fncol.none .csym { color: var(--bone-dim); }
+
+  .progrow { display: flex; gap: 14px; flex-wrap: wrap; align-items: stretch; margin-top: 14px; }
+  .progrow .card { width: 240px; position: relative; }
+  .progrow .arrow { align-self: center; font-family: var(--mono); font-size: 12px; color: var(--tt); text-align: center; line-height: 1.4; width: 86px; }
+  .progrow .arrow b { font-size: 20px; display: block; font-weight: 400; }
+  .barcards .card .rl { font-size: 13.5px; line-height: 1.45; color: var(--bone-dim); margin: 8px 0 0; }
+  .barcards .card .rl b { color: var(--bone); font-weight: 400; }
+  .veil { display: none; }
+  .hiddenbar .veil { display: flex; align-items: center; justify-content: center; position: absolute; inset: 0; background: var(--petrol); border-radius: 6px; font-family: var(--mono); color: var(--bone-dim); font-size: 18px; }
+  .barcards .card { position: relative; }
+
+  .drillq { font-size: 17px; margin: 14px 0 10px; }
+  .drillq b { color: var(--brass); font-weight: 400; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; }
+  .choices .card { cursor: pointer; border: 1px solid transparent; }
+  .choices .card:hover { background: var(--petrol-2); }
+  .choices.done .card.right { border-color: #83c88e; }
+  .choices.done .card.wrong { border-color: var(--warn); }
+  .score { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); margin-top: 12px; }
+  .timerbar { height: 3px; background: var(--petrol-2); border-radius: 2px; overflow: hidden; margin: 8px 0 0; max-width: 420px; }
+  .timerbar i { display: block; height: 100%; background: var(--brass); transition: width .25s linear; }
+
+  .readover { position: fixed; inset: 0; background: rgba(10,26,32,.82); z-index: 10000; display: flex; align-items: flex-start; justify-content: center; overflow: auto; padding: 40px 16px; }
+  .readover[hidden] { display: none; }
+  .readbox { background: var(--petrol); border: 1px solid var(--petrol-2); border-radius: 8px; max-width: 76ch; padding: 28px 34px 30px; font-size: 16px; line-height: 1.62; }
+  .readbox h2 { font-weight: 400; font-size: 21px; margin: 0 0 14px; }
+  .readbox h2 small { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-left: 10px; }
+  .readbox p { margin: 0 0 13px; }
+  .readbox b { color: var(--brass); font-weight: 400; }
+  .readbox ul { margin: 0 0 13px; padding-left: 22px; }
+  .readbox li { margin-bottom: 5px; }
+  .readbox .close { float: right; margin: -6px -12px 8px 12px; }
+
+  @media (max-width: 640px) {
+    body { padding: 20px 14px 40px; }
+    .tabs button { padding: 9px 9px; letter-spacing: .04em; }
+    .progrow .card { width: 100%; }
+    .progrow .arrow { width: 100%; }
+  }
 </style>
 </head>
 <body>
-<!-- SPINE-MENU-PLACEHOLDER -->
-<h1>Quartal voicings</h1>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+<h1>Quartal voicings <small>Quartal Harmony · fourths — the retroactive chapter</small></h1>
+<p class="lede">Stack fourths on each degree of the key and one shape serves many chords. The full catalogue, the modal view, the chord-symbol method of Ex.&nbsp;5–14, ii–V–I sets with half-step planing, “Solar” and “Stella by Starlight”, and drills.</p>
+
+<div class="tabs" role="tablist">
+  <button id="tabShapes" aria-pressed="true">Shapes</button>
+  <button id="tabModes" aria-pressed="false">Modes</button>
+  <button id="tabFunction" aria-pressed="false">Function</button>
+  <button id="tabProg" aria-pressed="false">Progressions</button>
+  <button id="tabTunes" aria-pressed="false">Tunes</button>
+  <button id="tabPractice" aria-pressed="false">Practice</button>
+  <button id="readBtn" class="readbtn" type="button">Read</button>
+</div>
+
+<div class="ctrlrow">
+  <fieldset id="fsKey"><legend>Key (in 4ths)</legend><div class="gkeys" id="cKey"></div></fieldset>
+  <fieldset id="fsFamily"><legend>Family</legend><div class="seggrp" id="cFamily"></div></fieldset>
+  <fieldset id="fsSet"><legend>String set</legend><div class="seggrp" id="cSet"></div></fieldset>
+  <fieldset id="fsInv"><legend>Inversion</legend><div class="seggrp" id="cInv"></div></fieldset>
+  <fieldset id="fsBass"><legend>Bass note</legend><div class="seggrp" id="cBass"></div></fieldset>
+  <fieldset id="fsNot"><legend>Notation</legend><div class="seggrp" id="cNot"></div></fieldset>
+  <fieldset><legend>Play · BPM</legend><div class="seggrp"><button id="play">▶ Play</button><input id="bpm" type="number" min="40" max="220" value="110" aria-label="tempo in BPM"></div></fieldset>
+</div>
+
+<section id="paneShapes">
+  <div class="ctrlrow"><fieldset><legend>View</legend><div class="seggrp" id="cView"></div></fieldset></div>
+  <div id="shapesNeck" hidden></div>
+  <div class="legend" id="shapesLegend"></div>
+  <div class="cardgrid" id="shapesCards"></div>
+</section>
+
+<section id="paneModes" hidden>
+  <div class="ctrlrow">
+    <fieldset><legend>Mode</legend><div class="seggrp" id="cMode"></div></fieldset>
+    <fieldset><legend>Tonic</legend><div class="gkeys" id="cTonic"></div></fieldset>
+    <fieldset><legend>Presets</legend><div class="seggrp" id="cModePreset"></div></fieldset>
+    <fieldset><legend>Pentatonic filter</legend><div class="seggrp" id="cPent"></div></fieldset>
+  </div>
+  <p class="hint" id="modeHint"></p>
+  <p class="flag" id="blueHint" hidden></p>
+  <div class="cardgrid" id="modesCards"></div>
+  <div class="panel" id="dirPanel">
+    <h3>Practice directions (from the handout)</h3>
+    <ol>
+      <li>Harmonize the notes of the pentatonic and blues scale.</li>
+      <li>Create melodies with the voicings; stay in one voicing family first.</li>
+      <li>Combine voicing families as curiosity guides you.</li>
+      <li>For colour, plane chromatically between voicings — approach from a half step above or below.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="paneFunction" hidden>
+  <div class="ctrlrow">
+    <fieldset><legend>Shape (root-position stack)</legend><div class="seggrp" id="cFnShape"></div></fieldset>
+    <fieldset id="fsFnPos"><legend>Position</legend><div class="seggrp" id="cFnPos"></div></fieldset>
+  </div>
+  <div class="progrow" id="fnShapeCard"></div>
+  <div class="fnwrap"><div class="fncols" id="fnCols"></div></div>
+  <p class="hint">One shape, twelve bass notes, exactly as Ex. 5 / 10 / 11 — click a column to hear it. Greyed columns have no usable symbol.</p>
+  <div class="panel gpwrap" id="gpPanel"></div>
+</section>
+
+<section id="paneProg" hidden>
+  <div class="ctrlrow">
+    <fieldset><legend>Set</legend><div class="seggrp" id="cProgSet"></div></fieldset>
+    <fieldset><legend>Keys</legend><div class="seggrp" id="cProgCycle"></div></fieldset>
+    <fieldset><legend>Plane V → I</legend><div class="seggrp" id="cPlane"></div></fieldset>
+  </div>
+  <div class="ctrlrow" id="customRow" hidden>
+    <fieldset><legend>I sounds like</legend><div class="seggrp" id="cCustomI"></div></fieldset>
+    <fieldset><legend>ii inversion</legend><div class="seggrp" id="cInvII"></div></fieldset>
+    <fieldset><legend>V inversion</legend><div class="seggrp" id="cInvV"></div></fieldset>
+    <fieldset><legend>I inversion</legend><div class="seggrp" id="cInvI"></div></fieldset>
+  </div>
+  <p class="hint" id="progHint"></p>
+  <div class="progrow" id="progCards"></div>
+  <div class="ly" id="progLy"></div><p class="lynote" id="progLyNote"></p>
+  <p class="flag" id="progFlag" hidden></p>
+</section>
+
+<section id="paneTunes" hidden>
+  <div class="ctrlrow">
+    <fieldset><legend>Tune</legend><div class="seggrp" id="cTune"></div></fieldset>
+    <fieldset><legend>Mode</legend><div class="seggrp" id="cTuneMode"></div></fieldset>
+    <fieldset id="fsReveal"><legend>Reveal</legend><div class="seggrp"><button id="revealNext">Next bar</button><button id="revealAll">All</button><button id="revealReset">Reset</button></div></fieldset>
+  </div>
+  <p class="hint" id="tuneHint"></p>
+  <div class="cardgrid barcards" id="tuneCards"></div>
+</section>
+
+<section id="panePractice" hidden>
+  <div class="ctrlrow"><fieldset><legend>Drill (§9, in order)</legend><div class="seggrp" id="cDrill"></div></fieldset></div>
+  <div id="drillArea"></div>
+</section>
+
+<div class="readover" id="readOver" hidden><div class="readbox" id="readBox"></div></div>
 
 <script>
 /* ===== quartal engine ===== */
@@ -570,6 +863,805 @@ if (location.search.includes('test=1')) {
   console.log(`quartal fixtures: ${r.pass} passed, ${r.fail} failed`);
   r.msgs.forEach(m => console.log(m));
 }
+
+/* ---------- shared LilyPond glyph outlines (clef, accidentals, notehead) ---------- */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/></defs></svg>";
+document.body.insertAdjacentHTML('beforeend', NOTE_DEFS);
+
+/* ---------- live fallback: stacked chord on a treble_8 staff + TAB ----------
+   (Triad Voicings' chordStaffSVG, with an optional parenthesized bass note and
+   a chord-symbol caption; TAB digits anchor under the notehead) */
+function chordStaffSVG(notes, opts = {}){
+  const T0 = 9.4, TS = 1.5;
+  const mk = n => { const letter = n.name[0], acc = n.name.slice(1);
+    const written = n.midi + 12, natural = written - (ACCV[acc] || 0), oct = Math.floor(natural / 12) - 1;
+    return Object.assign({}, n, { acc, y: 4 - ((oct * 7 + 'CDEFGAB'.indexOf(letter)) - 30) * 0.5 }); };
+  const heads = notes.map(mk);
+  const bass = opts.bass ? Object.assign(mk(opts.bass), { isBass: true }) : null;
+  const all = heads.concat(bass ? [bass] : []);
+  const placed = [];
+  all.slice().sort((a, b) => a.y - b.y).forEach(h => { if (!h.acc) return; let col = 0;
+    while (placed.some(p => p.col === col && Math.abs(p.y - h.y) < 2.4)) col++;
+    placed.push({ y: h.y, col }); h.accCol = col; });
+  const accW = placed.length ? (Math.max(...placed.map(p => p.col)) + 1) * 1.5 : 0;
+  const X = 4.2 + accW + (bass ? 0.8 : 0), W = X + 4.4;
+  const use = (id, x, y, sz) => `<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(${sz || 0.004},${-(sz || 0.004)})"/>`;
+  let o = '';
+  for (let i = 0; i < 5; i++) o += `<line x1="0" y1="${i}" x2="${W}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+  o += use('clef', 0.5, 3) + `<text x="0.85" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+  all.forEach(h => {
+    for (let ly = 5; ly <= h.y; ly++) o += `<line x1="${(X - 0.45).toFixed(2)}" y1="${ly}" x2="${(X + 1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    for (let ly = -1; ly >= h.y; ly--) o += `<line x1="${(X - 0.45).toFixed(2)}" y1="${ly}" x2="${(X + 1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    if (h.acc) {
+      const ax = X - 1.35 - h.accCol * 1.5 - (h.isBass ? 0.75 : 0);
+      if (h.acc === '#') o += use('sharp', ax, h.y);
+      else if (h.acc === 'b') o += use('flat', ax + 0.1, h.y);
+      else if (h.acc === 'bb') o += use('flat', ax - 0.85, h.y) + use('flat', ax + 0.1, h.y);
+    }
+    o += `<ellipse cx="${(X + 0.72).toFixed(2)}" cy="${h.y.toFixed(2)}" rx="0.82" ry="0.52" transform="rotate(-18 ${(X + 0.72).toFixed(2)} ${h.y.toFixed(2)})" fill="none" stroke="currentColor" stroke-width="0.26"/>`;
+    if (h.isBass) o += `<text x="${(X - 0.55).toFixed(2)}" y="${(h.y + 0.55).toFixed(2)}" font-family="serif" font-size="1.7" fill="currentColor">(</text><text x="${(X + 1.75).toFixed(2)}" y="${(h.y + 0.55).toFixed(2)}" font-family="serif" font-size="1.7" fill="currentColor">)</text>`;
+  });
+  let top = Math.min(-2.6, ...all.map(h => h.y - 1.6));
+  if (opts.sym) {
+    const m = opts.sym.match(/^([A-G][b#]?)(.*)$/);
+    const root = m ? disp(m[1]) : opts.sym, suf = m ? m[2] : '';
+    o += `<text x="0.2" y="${(top + 0.2).toFixed(2)}" font-family="sans-serif" font-size="2.0" fill="currentColor">${root}<tspan font-size="1.35" dy="-0.8">${suf}</tspan></text>`;
+    top -= 2.9;
+  }
+  let bottom = Math.max(6.4, ...all.map(h => h.y + 1.6));
+  if (opts.tab !== false) {
+    for (let i = 0; i < 6; i++) o += `<line x1="0" y1="${T0 + i * TS}" x2="${W}" y2="${T0 + i * TS}" stroke="currentColor" stroke-width="0.11"/>`;
+    ['T','A','B'].forEach((L, i) => o += `<text x="0.9" y="${(T0 + 2.05 + i * 2.05).toFixed(2)}" font-family="sans-serif" font-weight="700" font-size="2.2" text-anchor="middle" fill="currentColor">${L}</text>`);
+    notes.forEach(n => o += `<text x="${(X + 0.72).toFixed(2)}" y="${(T0 + (n.s - 1) * TS + 0.6).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.7" text-anchor="middle" fill="currentColor">${n.f}</text>`);
+    if (bass) o += `<text x="${(X + 0.72).toFixed(2)}" y="${(T0 + (bass.s - 1) * TS + 0.6).toFixed(2)}" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">(${bass.f})</text>`;
+    bottom = T0 + 5 * TS + 1.2;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${(W * 12).toFixed(0)}" viewBox="-0.3 ${top.toFixed(2)} ${(W + 0.6).toFixed(2)} ${(bottom - top).toFixed(2)}" preserveAspectRatio="xMidYMid meet" style="color:var(--bone)">${o}</svg>`;
+}
+
+/* ---------- chord grid (Box Buddy engine, family palette; frets only) ----------
+   top note brass, lower voices bone, optional bass hollow brass (label = note name) */
+function gridSVG(v, opts = {}){
+  const W = opts.W || 132; const sx = W / 8.2, x0 = sx * 2.0, fy = sx * 1.02, y0 = fy * 0.95;
+  const withBass = opts.bass && v.bass;
+  const allFrets = v.frets.concat(withBass ? [v.bass.f] : []).filter(f => f > 0);
+  const minF = allFrets.length ? Math.min(...allFrets) : 1, maxF = allFrets.length ? Math.max(...allFrets) : 1;
+  const hasOpen = v.frets.includes(0) || (withBass && v.bass.f === 0);
+  let base = (minF <= 1 || hasOpen) ? 1 : minF;
+  const nF = Math.max(5, maxF - base + 1);
+  const H = y0 + nF * fy + fy * 0.55;
+  const used = new Set(v.strings.concat(withBass ? [v.bass.s] : []));
+  const topS = v.strings[v.strings.length - 1];
+  let o = `<svg class="grid" width="${W}" height="${H.toFixed(0)}" viewBox="0 0 ${W} ${H.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  for (let s = 6; s >= 1; s--) { const x = x0 + (6 - s) * sx; o += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0 + nF * fy}" stroke="#a89f8c" stroke-width="${s >= 5 ? 1.4 : 1}"/>`; }
+  for (let i = 0; i <= nF; i++) { const y = y0 + i * fy; o += `<line x1="${x0}" y1="${y}" x2="${x0 + 5 * sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i === 0 && base === 1 ? 4 : 1}"/>`; }
+  if (base > 1) o += `<text x="${x0 - sx * 0.5}" y="${y0 + fy / 2 + 4}" font-size="${sx * 0.6}" text-anchor="end" fill="#6f8a92">${base}fr</text>`;
+  for (let s = 6; s >= 1; s--) { const x = x0 + (6 - s) * sx; if (!used.has(s)) o += `<text x="${x}" y="${y0 - fy * 0.3}" font-size="${sx * 0.65}" text-anchor="middle" fill="#6f8a92">×</text>`; }
+  if (withBass) {
+    const x = x0 + (6 - v.bass.s) * sx;
+    if (v.bass.f === 0) o += `<circle cx="${x}" cy="${y0 - fy * 0.38}" r="${sx * 0.3}" fill="none" stroke="#c9a24a" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
+    else { const y = y0 + (v.bass.f - base) * fy + fy / 2;
+      o += `<circle cx="${x}" cy="${y}" r="${sx * 0.42}" fill="none" stroke="#c9a24a" stroke-width="1.5" stroke-dasharray="2.5 2"/>`;
+      if (v.bass.name) o += `<text x="${x}" y="${y + sx * 0.15}" font-size="${sx * 0.4}" text-anchor="middle" fill="#c9a24a">${disp(v.bass.name)}</text>`; }
+  }
+  v.strings.forEach((s, i) => { const f = v.frets[i], x = x0 + (6 - s) * sx;
+    if (f === 0) { o += `<circle cx="${x}" cy="${y0 - fy * 0.38}" r="${sx * 0.3}" fill="none" stroke="${s === topS ? '#c9a24a' : '#e8e1d1'}" stroke-width="1.6"/>`; return; }
+    const y = y0 + (f - base) * fy + fy / 2;
+    o += `<circle cx="${x}" cy="${y}" r="${sx * 0.42}" fill="${s === topS ? '#c9a24a' : '#e8e1d1'}"/>`; });
+  return o + '</svg>';
+}
+
+/* ---------- full neck 0–15, all placements, top notes emphasised ---------- */
+function qNeckSVG(cards){
+  const NF = 15, cw = 46, ch = 30, padL = 14, padT = 16, padB = 30;
+  const W = padL + NF * cw + padL, H = padT + 5 * ch + padB;
+  const x = f => padL + (f - 0.5) * cw, y = s => padT + (s - 1) * ch;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="all placements on the neck, frets 0 to 15">`;
+  for (const f of [3, 5, 7, 9, 15]) o += `<circle cx="${x(f)}" cy="${padT + 2.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
+  o += `<circle cx="${x(12)}" cy="${padT + 1.5 * ch}" r="4" fill="var(--petrol-2)"/><circle cx="${x(12)}" cy="${padT + 3.5 * ch}" r="4" fill="var(--petrol-2)"/>`;
+  for (let f = 0; f <= NF; f++) { const fx = padL + f * cw; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="var(--bone-dim)" stroke-width="${f === 0 ? 4 : 1}" opacity="${f === 0 ? .9 : .45}"/>`; }
+  for (let s = 1; s <= 6; s++) o += `<line x1="${padL}" y1="${y(s)}" x2="${W - padL}" y2="${y(s)}" stroke="var(--bone-dim)" stroke-width="${0.8 + s * 0.3}" opacity=".6"/>`;
+  for (let f = 1; f <= NF; f++) o += `<text x="${x(f)}" y="${H - 10}" font-family="var(--mono)" font-size="10.5" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
+  cards.forEach((c, i) => {
+    o += `<g class="nd" data-i="${i}">`;
+    c.strings.forEach((s, j) => { const top = j === c.strings.length - 1;
+      o += top ? `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="9.5" fill="var(--brass)"/>`
+               : `<circle cx="${x(c.frets[j])}" cy="${y(s)}" r="6.5" fill="var(--bone)" opacity=".55"/>`; });
+    o += `</g>`;
+  });
+  return o + '</svg>';
+}
+
+/* ---------- chord-symbol typography (Shell Voicing Builder glyph set, D9) ---------- */
+function fmtSym(sym, cls){
+  if (!sym || sym === '—') return `<span class="${cls || 'sym'}" style="color:var(--bone-dim)">—</span>`;
+  const m = sym.match(/^([A-G][b#]?)(.*)$/);
+  let root = m ? disp(m[1]) : sym, suf = (m ? m[2] : '')
+    .replace('6/9', '<span class="frac"><sup>6</sup>⁄<sub>9</sub></span>');
+  return `<span class="${cls || 'sym'}">${root}<span class="q">${suf}</span></span>`;
+}
+
+/* ---------- engraved cells: fetched from ./notation/, live renderer as fallback ---------- */
+const NCACHE = new Map();
+function hydrateNotation(root){
+  (root || document).querySelectorAll('.ly[data-src]').forEach(async el => {
+    const src = el.dataset.src; delete el.dataset.src;
+    const fb = () => { const chords = JSON.parse(el.dataset.chords || '[]');
+      el.innerHTML = `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">` +
+        chords.map(ch => chordStaffSVG(ch.notes, { tab: true, sym: ch.sym, bass: ch.bass })).join('') + `</div>`;
+      el.classList.add('fallback');
+      const n = el.nextElementSibling;
+      if (n && n.classList.contains('lynote') && !/offline/.test(n.textContent)) n.textContent += ' · offline: drawn from LilyPond’s glyphs';
+    };
+    try {
+      let svg = NCACHE.get(src);
+      if (!svg) { const r = await fetch(src, { cache: 'no-cache' }); if (!r.ok) throw 0; svg = await r.text(); if (!svg.startsWith('<svg')) throw 0; NCACHE.set(src, svg); }
+      el.innerHTML = svg;
+    } catch (e) { fb(); }
+  });
+}
+function staffNotes(strings, frets, names){
+  return strings.map((s, i) => ({ s, f: frets[i], name: names[i], midi: OPEN[s] + frets[i] }));
+}
+function bassStaff(ch){ return { s: ch.bass.s, f: ch.bass.f, name: ch.bass.name, midi: OPEN[ch.bass.s] + ch.bass.f }; }
+function cellDiv(src, chords, note){
+  return `<div class="ly" data-src="notation/${src}.svg" data-chords='${JSON.stringify(chords).replace(/'/g, '&#39;')}'></div>` +
+         (note ? `<p class="lynote">${note}</p>` : '');
+}
+
+/* ---------- state + controls ---------- */
+const S = { tab: 'shapes', key: 'C', family: 'q3', set: '432', inv: 0, bass: true, notation: 'on', view: 'cards',
+  mode: 'dorian', tonic: 'D', pent: 'off', fnD: 5, fnPos: 0,
+  prog: { sel: '6a', cycle: false, plane: 'off', customI: '6/9', invII: 0, invV: 0, invI: 0 },
+  tune: { id: 'solar', mode: 'full', revealed: 99 },
+  drill: 0 };
+const SETDEF = { q3: '432', q4: '5432', sw4: '4321', sw5: '54321' };
+const el = id => document.getElementById(id);
+const setArr = () => S.set.split('').map(Number);
+function seg(box, items, cur, pick){
+  box.innerHTML = '';
+  for (const it of items) { const b = document.createElement('button'); b.innerHTML = it.label;
+    b.setAttribute('aria-pressed', String(it.id === cur)); if (it.dis) b.disabled = true;
+    if (it.title) b.title = it.title;
+    b.addEventListener('click', () => pick(it.id)); box.appendChild(b); }
+}
+function currentWalk(key){
+  const inv = S.family === 'q3' ? S.inv : 0;
+  return walkCards(key || S.key, S.family, setArr(), inv);
+}
+
+/* ---------- audio: voices + the shared lookahead scheduler (25 ms / 130 ms) ---------- */
+let ac = null; const actx = () => ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+function unlock(){ const c = actx(); if (c.state === 'suspended') c.resume(); }
+document.addEventListener('pointerdown', unlock);
+function voiceAt(midi, t, dur, g0){
+  const c = actx(), f = 440 * Math.pow(2, (midi - 69) / 12);
+  const o = c.createOscillator(), g = c.createGain(), o2 = c.createOscillator(), g2 = c.createGain();
+  o.type = 'triangle'; o.frequency.value = f; o2.type = 'sine'; o2.frequency.value = f * 2; g2.gain.value = .22;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(g0 || .17, t + .008); g.gain.exponentialRampToValueAtTime(.0008, t + dur);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
+  o.start(t); o2.start(t); o.stop(t + dur + .05); o2.stop(t + dur + .05);
+}
+/* chord strum, low → high, ~15 ms between voices (§7 of the brief) */
+function strumChord(strings, frets, t, dur, bass){
+  const c = actx(); t = t || c.currentTime + 0.02; dur = dur || 1.7;
+  const ns = strings.map((s, i) => OPEN[s] + frets[i]).sort((a, b) => a - b);
+  ns.forEach((m, i) => voiceAt(m, t + i * 0.015, dur));
+  if (bass) voiceAt(OPEN[bass.s] + bass.f, t, dur, .24);
+}
+function clickAt(t, hz, g0){
+  const c = actx(), o = c.createOscillator(), g = c.createGain();
+  o.type = 'square'; o.frequency.value = hz || 1600;
+  g.gain.setValueAtTime(g0 || .3, t); g.gain.exponentialRampToValueAtTime(.001, t + .05);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + .06);
+}
+const sched = { on: false, timer: null, next: 0, beat: 0, total: 0, cb: null };
+function startLoop(totalBeats, cb){
+  stopLoop(); unlock();
+  sched.on = true; sched.beat = -4; sched.next = actx().currentTime + 0.1; sched.total = totalBeats; sched.cb = cb;
+  el('play').textContent = '■ Stop';
+  sched.timer = setInterval(() => {
+    const spb = 60 / (+el('bpm').value || 110);
+    while (sched.next < actx().currentTime + 0.13) {
+      const b = sched.beat;
+      if (b < 0) clickAt(sched.next, 1600, b === -4 ? .5 : .28);          // count-in: four straight quarters, accented 1
+      else { const bi = b % 4; if (bi === 1 || bi === 3) clickAt(sched.next);   // then clicks on 2 and 4
+        sched.cb(b % sched.total, sched.next, spb, b); }
+      sched.next += spb; sched.beat++;
+    }
+  }, 25);
+}
+function stopLoop(){
+  sched.on = false; if (sched.timer) clearInterval(sched.timer); sched.timer = null;
+  el('play').textContent = '▶ Play';
+  document.querySelectorAll('.card.now').forEach(x => x.classList.remove('now'));
+  document.querySelectorAll('.fncol.sel').forEach(x => x.classList.remove('sel'));
+}
+function atTime(t, fn){ setTimeout(() => { if (sched.on) fn(); }, Math.max(0, (t - actx().currentTime) * 1000)); }
+function highlight(sel, idx){
+  document.querySelectorAll(sel + '.now').forEach(x => x.classList.remove('now'));
+  const c = document.querySelector(sel + `[data-i="${idx}"]`); if (c) { c.classList.add('now'); }
+}
+
+/* ---------- cards (Shapes / Modes) ---------- */
+function cardHTML(card, i, opts){
+  opts = opts || {};
+  const key = opts.key || S.key;
+  const cls = ['card', 'qcard']; if (opts.dim) cls.push('dim'); if (opts.blueadj) cls.push('blueadj');
+  const badge = `<span class="badge${card.tt ? ' tt' : ''}">${card.itype}</span>`;
+  let mid = `<div class="names">${card.names.map(disp).join(' · ')}${card.oct ? '<span class="oct">8va</span>' : ''}</div>`;
+  if (opts.modeDeg) mid += `<div class="mdeg"><b>${opts.modeDeg}</b><span>${disp(card.names[card.names.length - 1])} on top</span></div>`;
+  const cell = S.notation === 'on'
+    ? cellDiv(`${card.family}-${card.strings.join('')}-i${card.inv}-d${card.d}-p${card.oct ? 1 : 0}-${key}`,
+              [{ notes: staffNotes(card.strings, card.frets, card.names) }])
+    : '';
+  return `<div class="${cls.join(' ')}" data-i="${i}">
+    <header><span class="where">#${i + 1} · ${Math.min(...card.frets)}fr</span>${badge}</header>
+    ${gridSVG(card)}${mid}${cell}</div>`;
+}
+function wireCards(box, cards){
+  box.querySelectorAll('.qcard').forEach(c => c.addEventListener('click', () => {
+    unlock(); const card = cards[+c.dataset.i]; strumChord(card.strings, card.frets);
+  }));
+  hydrateNotation(box);
+}
+
+function renderShapes(){
+  const cards = currentWalk();
+  el('shapesCards').innerHTML = cards.map((c, i) => cardHTML(c, i)).join('');
+  wireCards(el('shapesCards'), cards);
+  const neckOn = S.view === 'neck';
+  el('shapesNeck').hidden = !neckOn;
+  if (neckOn) {
+    el('shapesNeck').innerHTML = `<div class="neckwrap"><div class="neck">${qNeckSVG(cards)}</div></div>`;
+    el('shapesNeck').querySelectorAll('g.nd').forEach(g => g.addEventListener('click', () => {
+      unlock(); const card = cards[+g.dataset.i]; strumChord(card.strings, card.frets);
+    }));
+  }
+  el('shapesLegend').innerHTML = `<span><i style="background:var(--brass)"></i>top note</span><span><i style="background:var(--bone);opacity:.6"></i>lower voices</span><span><i style="background:var(--tt);border-radius:2px"></i>tritone voicing (TT)</span>`;
+}
+
+function modeTonicPc(){ return PC[S.tonic]; }
+function renderModes(){
+  const parent = NOTES[modeParent(S.mode, modeTonicPc())];
+  S.key = parent;                                   // shapes stay shared across tabs
+  const cards = currentWalk(parent);
+  const tonic = modeTonicPc();
+  const mname = MODES.find(m => m.id === S.mode).name;
+  el('modeHint').textContent = `${disp(S.tonic)} ${mname} = the ${disp(parent)} major shapes, relabeled — visualize each top note as a degree of the mode.`;
+  let keep = null, bluePc = null, blueDiatonic = false, pr = null;
+  if (S.pent !== 'off') {
+    pr = pentRoot(S.mode, tonic);
+    keep = new Set(minPent(pr));
+    if (S.pent === 'blues') { bluePc = (pr + 6) % 12; blueDiatonic = scale(PC[parent]).includes(bluePc);
+      if (blueDiatonic) keep.add(bluePc); }
+  }
+  el('blueHint').hidden = !(S.pent === 'blues' && bluePc !== null && !blueDiatonic);
+  if (!el('blueHint').hidden) el('blueHint').textContent =
+    `♭5 of the pentatonic (${disp(NOTES[bluePc])}) isn’t diatonic — approach it by planing a neighbouring voicing a half step. Outlined cards sit a half step either side of it.`;
+  el('modesCards').innerHTML = cards.map((c, i) => {
+    const top = c.pcs[c.pcs.length - 1];
+    const dim = keep && !keep.has(top);
+    const blueadj = S.pent === 'blues' && bluePc !== null && !blueDiatonic && (top === (bluePc + 1) % 12 || top === (bluePc + 11) % 12);
+    return cardHTML(c, i, { key: parent, modeDeg: MODE_DEG[((top - tonic) % 12 + 12) % 12], dim, blueadj });
+  }).join('');
+  wireCards(el('modesCards'), cards);
+}
+
+/* ---------- Function tab ---------- */
+function fnShape(){
+  const sc = scale(PC[S.key]), fam = FAMILIES[S.family];
+  const inv = S.family === 'q3' ? S.inv : 0;
+  const root = stack(sc, S.fnD, fam.steps), pcs = invert(root, inv);
+  const pls = place(pcs, setArr());
+  if (!pls.length) return null;
+  const pi = Math.min(S.fnPos, pls.length - 1);
+  return { root, pcs, frets: pls[pi], strings: setArr(), inv, pls, pi,
+           names: pcs.map(p => spellPc(p, S.key)), itype: intervalType(pcs), family: S.family,
+           d: S.fnD, oct: pi > 0, tt: /TT|m2/.test(intervalType(pcs)) };
+}
+let fnSel = -1;
+function renderFunction(){
+  const sc = scale(PC[S.key]), fam = FAMILIES[S.family];
+  seg(el('cFnShape'), [0,1,2,3,4,5,6].map(d => {
+    const root = stack(sc, d, fam.steps);
+    return { id: d, label: root.map(p => disp(spellPc(p, S.key))).join('–') };
+  }), S.fnD, d => { S.fnD = d; S.fnPos = 0; fnSel = -1; renderFunction(); });
+  const sh = fnShape();
+  el('fsFnPos').hidden = !sh || sh.pls.length < 2;
+  if (sh && sh.pls.length > 1) seg(el('cFnPos'), sh.pls.map((p, i) => ({ id: i, label: `${Math.min(...p)}fr${i ? ' · 8va' : ''}` })), sh.pi, i => { S.fnPos = i; renderFunction(); });
+  if (!sh) { el('fnShapeCard').innerHTML = '<p class="hint">No placement of this stack fits frets 0–15 on this string set.</p>'; el('fnCols').innerHTML = ''; el('gpPanel').innerHTML = ''; return; }
+  const rows = symTable(sh.pcs);
+  const anchor = Math.min(...sh.frets);
+  const selRow = fnSel >= 0 ? rows[fnSel] : null;
+  const bassFor = r => Object.assign({ name: NOTES[r.bass] }, bassPlace(r.bass, anchor));
+  el('fnShapeCard').innerHTML = `<div class="card" style="width:270px">
+    <header><span class="where">${sh.names.map(disp).join(' · ')} · ${INV_NAMES[sh.inv]}</span><span class="badge${sh.tt ? ' tt' : ''}">${sh.itype}</span></header>
+    ${gridSVG({ strings: sh.strings, frets: sh.frets, bass: selRow && S.bass ? bassFor(selRow) : null }, { bass: true })}
+    <div class="names">${selRow ? (selRow.sym === '—' ? 'no usable symbol over ' + disp(selRow.name) : fmtSym(selRow.name + selRow.sym)) : 'click a bass note below'}</div></div>`;
+  el('fnShapeCard').querySelector('.card').addEventListener('click', () => {
+    unlock(); const b = selRow && S.bass ? bassFor(selRow) : null; strumChord(sh.strings, sh.frets, 0, 0, b); });
+  const top = sh.pcs[sh.pcs.length - 1];
+  el('fnCols').innerHTML = rows.map((r, i) => {
+    const b = bassFor(r);
+    const none = r.sym === '—';
+    return `<div class="fncol${none ? ' none' : ''}${i === fnSel ? ' sel' : ''}" data-i="${i}" ${none ? 'title="contains both 7ths / both 9ths — no usable symbol."' : ''}>
+      <div class="bass">${disp(r.name)}</div>
+      <div class="bfr">${b.s === 6 ? 'E' : 'A'}${b.f}</div>
+      <div class="csym">${none ? '—' : fmtSym(r.name + r.sym, 'csym')}</div>
+      <div class="tdeg">top = ${DUAL[((top - r.bass) % 12 + 12) % 12]}</div></div>`;
+  }).join('');
+  el('fnCols').querySelectorAll('.fncol').forEach(col => col.addEventListener('click', () => {
+    fnSel = +col.dataset.i; renderFunction(); unlock();
+    const r = rows[fnSel]; strumChord(sh.strings, sh.frets, 0, 0, S.bass ? bassFor(r) : null);
+  }));
+  const isP4 = sh.root.every((p, i) => i === 0 || ivl(sh.root[i - 1], p) === 5) && S.family === 'q3';
+  const gp = guideposts(sh.root, isP4 ? GP_CANON : null);
+  const nInv = S.family === 'q3' ? 3 : 1;
+  el('gpPanel').innerHTML = `<h3>Guideposts — to sound like X, the top note must be Y</h3>
+    <table class="gp"><tr><th>Function</th>${['root position','1st inversion','2nd inversion'].slice(0, nInv).map(h => `<th>${h}, top =</th>`).join('')}</tr>
+    ${gp.map(r => `<tr><td>${fmtSym('C' + r.sym, 'gpsym').replace(/^<span[^>]*>C/, m => m.replace('>C', '>'))}</td>${r.tops.slice(0, nInv).map(t => `<td>${t.join(' or ')}</td>`).join('')}</tr>`).join('')}</table>
+    <p class="hint">Derived from the symbol rules (§6) for this construction${isP4 ? ' — the docx guidepost table, exactly' : ''}. Symbols hold for the shape’s pitch classes; the inversion changes which note is on top.</p>`;
+}
+
+/* ---------- Progressions ---------- */
+function progKeyNow(){ return S.prog.cycle ? KEYS[(KEYS.indexOf(S.key) + progCyc) % 12] : S.key; }
+let progCyc = 0;
+function progChords(key){
+  key = key || progKeyNow();
+  if (S.prog.sel === 'custom') {
+    const roots = [spellPc((PC[key] + 2) % 12, key), spellPc((PC[key] + 7) % 12, key), spellPc(PC[key] % 12, key)];
+    const targets = ['m11', '7alt.', S.prog.customI];
+    const invs = [S.prog.invII, S.prog.invV, S.prog.invI];
+    const strings = FAMILIES.q3.sets.map(x => x.join('')).includes(S.set) ? setArr() : [4, 3, 2];
+    const chords = []; let prev = null;
+    for (let i = 0; i < 3; i++) {
+      const hit = funcSearch(targets[i], notePc(roots[i]), invs[i], strings, prev);
+      if (!hit) { chords.push(null); continue; }
+      prev = hit;
+      chords.push({ sym: roots[i] + targets[i], root: roots[i], strings: hit.strings, frets: hit.frets,
+        notes: hit.pcs.map(p => spellDeg(p, roots[i], targets[i])),
+        bass: Object.assign({ name: roots[i] }, bassPlace(notePc(roots[i]), Math.min(...hit.frets))) });
+    }
+    if (S.prog.plane !== 'off' && chords[1]) {
+      const planed = planeChord(chords[1], S.prog.plane, roots[2]);
+      chords[2] = Object.assign(planed, { bass: Object.assign({ name: roots[2] }, bassPlace(notePc(roots[2]), Math.min(...planed.frets))) });
+    }
+    return { chords, flags: [], custom: true };
+  }
+  const p = PRESETS.find(x => x.id === S.prog.sel);
+  const t = transposePreset(p, key);
+  let chords = t.chords.slice();
+  const wantPlane = S.prog.plane, presetPlane = p.plane || 'off';
+  if (wantPlane !== 'off') {
+    const planed = planeChord(chords[1], wantPlane, chords[2].root);
+    chords[2] = Object.assign(planed, { bass: chords[2].bass });
+  }
+  return { chords, flags: t.flags, preset: p, key, matchesCell: wantPlane === presetPlane };
+}
+function progCardHTML(ch, i){
+  if (!ch) return `<div class="card" data-i="${i}"><p class="hint">no voicing found</p></div>`;
+  const pcs = ch.strings.map((s, j) => (OPEN[s] + ch.frets[j]) % 12);
+  const cls = classify(pcs);
+  const tag = (cls ? INV_NAMES[cls.inv] + ' · ' : '') + intervalType(pcs) + ' · ' + Math.min(...ch.frets) + 'fr';
+  return `<div class="card" data-i="${i}">
+    <header>${fmtSym(ch.sym)}${ch.planed ? '<span class="badge tt">planed</span>' : ''}</header>
+    ${gridSVG({ strings: ch.strings, frets: ch.frets, bass: ch.bass }, { bass: S.bass })}
+    <div class="names">${ch.notes.map(disp).join(' · ')}</div>
+    <p class="hint">${tag}${ch.bass ? ` · bass ${disp(ch.bass.name)} (${ch.bass.s === 6 ? 'E' : 'A'}${ch.bass.f})${ch.bass.fifth ? ' — 5th in bass' : ''}` : ''}</p></div>`;
+}
+function renderProg(){
+  seg(el('cProgSet'), PRESETS.map(p => ({ id: p.id, label: 'Ex. ' + p.id })).concat([{ id: 'custom', label: 'Custom' }]),
+    S.prog.sel, id => { S.prog.sel = id;
+      const p = PRESETS.find(x => x.id === id);
+      S.prog.plane = p && p.plane ? p.plane : 'off';
+      el('customRow').hidden = id !== 'custom'; renderProg(); });
+  seg(el('cProgCycle'), [{ id: false, label: 'fixed key' }, { id: true, label: 'cycle of 4ths' }], S.prog.cycle,
+    v => { S.prog.cycle = v; progCyc = 0; renderProg(); });
+  seg(el('cPlane'), [{ id: 'off', label: 'off' }, { id: 'up', label: 'up ½' }, { id: 'down', label: 'down ½' }], S.prog.plane,
+    v => { S.prog.plane = v; renderProg(); });
+  seg(el('cCustomI'), ['6/9', 'Δ13', 'Δ7(♯11)'].map(x => ({ id: x, label: x })), S.prog.customI, v => { S.prog.customI = v; renderProg(); });
+  for (const [id, k] of [['cInvII', 'invII'], ['cInvV', 'invV'], ['cInvI', 'invI']])
+    seg(el(id), [0, 1, 2].map(i => ({ id: i, label: ['root', '1st', '2nd'][i] })), S.prog[k], v => { S.prog[k] = v; renderProg(); });
+  el('customRow').hidden = S.prog.sel !== 'custom';
+  const key = progKeyNow();
+  const P = progChords(key);
+  const p = P.preset;
+  el('progHint').textContent = P.custom
+    ? `ii–V–I in ${disp(key)} — engine-picked shapes whose top notes satisfy each target, nearest placement to the previous chord.`
+    : `Ex. ${p.id}${p.note ? ' — ' + p.note : ''} · written in ${disp(p.key)}${key !== p.key ? `, shown in ${disp(key)} (nearest position)` : ''}.`;
+  const cards = [];
+  P.chords.forEach((ch, i) => {
+    if (i === 2 && S.prog.plane !== 'off') cards.push(`<div class="arrow"><b>${S.prog.plane === 'up' ? '→' : '→'}</b>(half-step planing)</div>`);
+    cards.push(progCardHTML(ch, i));
+  });
+  el('progCards').innerHTML = cards.join('');
+  el('progCards').querySelectorAll('.card').forEach(c => c.addEventListener('click', () => {
+    unlock(); const ch = P.chords[+c.dataset.i]; if (ch) strumChord(ch.strings, ch.frets, 0, 0, S.bass ? ch.bass : null); }));
+  if (S.notation === 'on' && !P.custom && P.matchesCell) {
+    el('progLy').innerHTML = ''; el('progLy').dataset.src = `notation/prog-${p.id}-${key}.svg`;
+    el('progLy').dataset.chords = JSON.stringify(P.chords.map(ch => ({ sym: ch.sym, notes: staffNotes(ch.strings, ch.frets, ch.notes), bass: bassStaff(ch) })));
+    el('progLyNote').textContent = 'staff + TAB engraved with LilyPond · bass in parentheses, as the workbook prints it';
+    hydrateNotation(el('progLy').parentElement);
+  } else if (S.notation === 'on') {
+    el('progLy').innerHTML = `<div style="display:flex;gap:14px;flex-wrap:wrap">` + P.chords.filter(Boolean).map(ch =>
+      chordStaffSVG(staffNotes(ch.strings, ch.frets, ch.notes), { tab: true, sym: ch.sym, bass: S.bass ? bassStaff(ch) : null })).join('') + `</div>`;
+    el('progLyNote').textContent = 'drawn live (custom sets and changed planing have no pre-rendered cell)';
+  } else { el('progLy').innerHTML = ''; el('progLyNote').textContent = ''; }
+  const flags = (P.flags || []).concat(P.chords.filter(c => c && c.flag).map(c => c.sym + ': ' + c.flag));
+  el('progFlag').hidden = !flags.length;
+  if (flags.length) { el('progFlag').textContent = flags.join(' · '); flags.forEach(f => console.warn('quartal:', f)); }
+}
+
+/* ---------- Tunes ---------- */
+function tuneRowCard(row, idx, tid){
+  const chords = row.chords;
+  const barLabel = 'bar ' + row.bar + (row.span ? '–' + (row.bar + row.span - 1) : '');
+  const inner = chords.map(ch => `
+    <div>${fmtSym(ch.sym)}${row.span ? '<span class="badge" style="margin-left:8px">tied</span>' : ''}
+      ${gridSVG({ strings: ch.strings, frets: ch.frets, bass: ch.bass }, { bass: S.bass })}
+      <p class="rl">${readingLine(ch).replace(/^([^:]+):/, '<b>$1</b>:')}</p>
+      <p class="hint">bass ${disp(ch.bass.name)} (${ch.bass.s === 6 ? 'E' : 'A'}${ch.bass.f})${ch.bass.fifth ? ' — 5th in bass' : ''}</p>
+    </div>`).join('');
+  const cell = S.notation === 'on'
+    ? cellDiv(`tune-${tid}-${row.bar}`, chords.map(ch => ({ sym: ch.sym, notes: staffNotes(ch.strings, ch.frets, ch.notes), bass: bassStaff(ch) })))
+    : '';
+  return `<div class="card" data-i="${idx}"><header><span class="where">${barLabel}</span></header>
+    <div class="gridrow">${inner}</div>${cell}<div class="veil">bar ${row.bar} — tap to reveal</div></div>`;
+}
+function renderTunes(){
+  seg(el('cTune'), Object.keys(TUNES).map(t => ({ id: t, label: TUNES[t].name })), S.tune.id,
+    t => { S.tune.id = t; S.tune.revealed = S.tune.mode === 'reveal' ? 0 : 99; renderTunes(); });
+  seg(el('cTuneMode'), [{ id: 'full', label: 'whole tune' }, { id: 'reveal', label: 'bar-by-bar reveal' }], S.tune.mode,
+    m => { S.tune.mode = m; S.tune.revealed = m === 'reveal' ? 0 : 99; renderTunes(); });
+  el('fsReveal').hidden = S.tune.mode !== 'reveal';
+  const tune = TUNES[S.tune.id];
+  el('tuneHint').textContent = `${tune.name} — chord symbols and voicings only, exactly as the workbook has them (frets are the workbook’s, never re-placed). Tap a bar to hear it.`;
+  el('tuneCards').innerHTML = tune.rows.map((row, i) =>
+    `<div class="${i >= S.tune.revealed ? 'hiddenbar' : ''}" style="display:contents">${tuneRowCard(row, i, S.tune.id)}</div>`).join('');
+  el('tuneCards').querySelectorAll('.card').forEach((c, i) => c.addEventListener('click', () => {
+    unlock();
+    if (S.tune.mode === 'reveal' && i >= S.tune.revealed) { S.tune.revealed = i + 1; renderTunes(); }
+    const row = tune.rows[+c.dataset.i];
+    let t = actx().currentTime + 0.03;
+    row.chords.forEach((ch, j) => strumChord(ch.strings, ch.frets, t + j * 0.9, row.chords.length > 1 ? 0.85 : 1.7, S.bass ? ch.bass : null));
+  }));
+  hydrateNotation(el('tuneCards'));
+}
+
+/* ---------- Practice drills (§9, in order) ---------- */
+const DRILLS = ['Linear walk', 'Name that voicing', 'Which note on top?', 'Harmonize the pentatonic', 'ii–V–I in all keys', 'Tune loop'];
+const D = { i: 0, score: 0, asked: 0, cur: null, labels: true, timer: null, preset: '6a', rand: false, plane: 'off', tune: 'solar' };
+/* a drill's delayed next-question must die when the user leaves the drill */
+function drillStill(n){ return S.tab === 'practice' && S.drill === n; }
+function drillHeader(text){ return `<p class="drillq">${text}</p>`; }
+function scoreLine(){ return `<p class="score">${D.asked ? D.score + ' of ' + D.asked + ' right this session' : ''}</p>`; }
+function renderPractice(){
+  stopLoop(); if (D.timer) { clearInterval(D.timer); D.timer = null; }
+  seg(el('cDrill'), DRILLS.map((d, i) => ({ id: i, label: (i + 1) + ' · ' + d })), S.drill,
+    i => { S.drill = i; D.score = 0; D.asked = 0; D.i = 0; renderPractice(); });
+  const A = el('drillArea');
+  if (S.drill === 0) {           // Linear walk — Fretboard-walk style, one card per bar with the click
+    const cards = currentWalk();
+    const card = cards[Math.min(D.i, cards.length - 1)];
+    const tonic = PC[S.key];
+    const deg = MODE_DEG[((card.pcs[card.pcs.length - 1] - tonic) % 12 + 12) % 12];
+    A.innerHTML = drillHeader(`Play the family up and down the neck in <b>${disp(S.key)}</b> — position ${Math.min(D.i, cards.length - 1) + 1} of ${cards.length}. Play starts the click (one position per bar).`) +
+      `<div class="ctrlrow"><div class="seggrp"><button id="dPrev">← Prev</button><button id="dNext">Next →</button><button id="dLab" aria-pressed="${D.labels}">top-note degrees ${D.labels ? 'shown' : 'hidden'}</button></div></div>` +
+      `<div class="cardgrid" style="grid-template-columns:minmax(280px,430px)">` +
+      cardHTML(card, Math.min(D.i, cards.length - 1), D.labels ? { modeDeg: deg } : {}) + `</div>`;
+    wireCards(A, cards);
+    el('dPrev').addEventListener('click', () => { D.i = Math.max(0, D.i - 1); renderPractice(); });
+    el('dNext').addEventListener('click', () => { D.i = Math.min(cards.length - 1, D.i + 1); renderPractice(); });
+    el('dLab').addEventListener('click', () => { D.labels = !D.labels; renderPractice(); });
+  }
+  if (S.drill === 1) newNameQ();
+  if (S.drill === 2) newTopQ();
+  if (S.drill === 3) newPentQ();
+  if (S.drill === 4) {           // ii–V–I in all keys, cycle of 4ths
+    A.innerHTML = drillHeader(`ii–V–I through all 12 keys, cycle of 4ths — <b>Play</b> runs it (2 beats · 2 beats · 4 beats). Pick a workbook set or a random mix of inversions.`) +
+      `<div class="ctrlrow"><div class="seggrp" id="dSet"></div><div class="seggrp" id="dPlane"></div></div><div class="progrow" id="dProg"></div>`;
+    seg(el('dSet'), PRESETS.map(p => ({ id: p.id, label: 'Ex. ' + p.id })).concat([{ id: 'rand', label: 'random inversions' }]),
+      D.rand ? 'rand' : D.preset, id => { D.rand = id === 'rand'; if (!D.rand) D.preset = id; renderPractice(); });
+    seg(el('dPlane'), [{ id: 'off', label: 'planing off' }, { id: 'up', label: 'plane up ½' }], D.plane, v => { D.plane = v; renderPractice(); });
+    drawDrill5(S.key);
+  }
+  if (S.drill === 5) {           // Tune loop — bar-by-bar reveal with the metronome
+    A.innerHTML = drillHeader(`Tune loop — <b>Play</b> reveals and sounds one bar at a time; keep comping when the click moves on.`) +
+      `<div class="ctrlrow"><div class="seggrp" id="dTune"></div></div><div class="cardgrid barcards" id="dBars"></div>`;
+    seg(el('dTune'), Object.keys(TUNES).map(t => ({ id: t, label: TUNES[t].name })), D.tune, t => { D.tune = t; D.i = 0; renderPractice(); });
+    drawDrill6(0);
+  }
+}
+function drawDrill5(key){
+  const saved = { sel: S.prog.sel, plane: S.prog.plane, cycle: S.prog.cycle };
+  S.prog.sel = D.rand ? 'custom' : D.preset; S.prog.plane = D.plane;
+  if (D.rand) { S.prog.invII = Math.floor(Math.random() * 3); S.prog.invV = Math.floor(Math.random() * 3); S.prog.invI = Math.floor(Math.random() * 3); S.prog.customI = ['6/9', 'Δ13', 'Δ7(♯11)'][Math.floor(Math.random() * 3)]; }
+  const P = progChords(key);
+  Object.assign(S.prog, saved);
+  const box = el('dProg'); if (!box) return;
+  const cards = [];
+  P.chords.forEach((ch, i) => {
+    if (i === 2 && D.plane !== 'off') cards.push(`<div class="arrow"><b>→</b>(half-step planing)</div>`);
+    cards.push(progCardHTML(ch, i));
+  });
+  box.innerHTML = `<div class="card" style="width:100%;background:transparent;padding:0"><p class="hint">key of ${disp(key)}</p></div>` + cards.join('');
+  box.querySelectorAll('.card[data-i]').forEach(c => c.addEventListener('click', () => {
+    unlock(); const ch = P.chords[+c.dataset.i]; if (ch) strumChord(ch.strings, ch.frets, 0, 0, S.bass ? ch.bass : null); }));
+  return P;
+}
+function drawDrill6(revealed){
+  const tune = TUNES[D.tune]; const box = el('dBars'); if (!box) return;
+  box.innerHTML = tune.rows.map((row, i) =>
+    `<div class="${i >= revealed ? 'hiddenbar' : ''}" style="display:contents">${tuneRowCard(row, i, D.tune)}</div>`).join('');
+  hydrateNotation(box);
+}
+function newNameQ(){            // Shell Voicing Builder's Name-That-Chord loop, quartal edition
+  const cards = currentWalk().filter(c => !c.oct);
+  const card = cards[Math.floor(Math.random() * cards.length)];
+  const rows = symTable(card.pcs);
+  const bassRow = rows[Math.floor(Math.random() * rows.length)];
+  const right = bassRow.sym === '—' ? '—' : bassRow.name + bassRow.sym;
+  const pool = [...new Set(rows.map(r => r.sym === '—' ? '—' : r.name + r.sym))].filter(x => x !== right);
+  const choices = [right].concat(pool.sort(() => Math.random() - .5).slice(0, 3)).sort(() => Math.random() - .5);
+  D.cur = { card, bassRow, right };
+  const b = Object.assign({ name: bassRow.name }, bassPlace(bassRow.bass, Math.min(...card.frets)));
+  el('drillArea').innerHTML = drillHeader(`Name that voicing: the shape below over the bass note <b>${disp(bassRow.name)}</b>. “—” is a valid answer.`) +
+    `<div class="progrow">${progCardHTML({ sym: '', root: '', strings: card.strings, frets: card.frets, notes: card.names, bass: b }, 0).replace('>—</span>', '>?</span>')}</div>` +
+    `<div class="seggrp"><button id="dHear">▶ hear it</button></div>` +
+    `<div class="choices" id="dChoices">${choices.map((c, i) => `<div class="card" data-c="${i}" style="text-align:center;padding:16px">${fmtSym(c)}</div>`).join('')}</div>` + scoreLine();
+  const hear = () => { unlock(); strumChord(card.strings, card.frets, 0, 0, b); };
+  el('dHear').addEventListener('click', hear); hear();
+  el('dChoices').querySelectorAll('.card').forEach((c, i) => c.addEventListener('click', () => {
+    if (el('dChoices').classList.contains('done')) return;
+    el('dChoices').classList.add('done'); D.asked++;
+    const pick = choices[+c.dataset.c];
+    if (pick === D.cur.right) { D.score++; c.classList.add('right'); }
+    else { c.classList.add('wrong'); el('dChoices').querySelectorAll('.card').forEach((x, j) => { if (choices[j] === D.cur.right) x.classList.add('right'); }); }
+    setTimeout(() => { if (drillStill(1)) newNameQ(); }, 1400);
+  }));
+}
+function newTopQ(){             // Which note on top? — checked against the §6.3 guideposts
+  const fns = GP_CANON;
+  const fn = fns[Math.floor(Math.random() * fns.length)];
+  const inv = Math.floor(Math.random() * 3);
+  const bass = Math.floor(Math.random() * 12);
+  const rights = [];
+  for (let o = 0; o < 12; o++) {
+    const root = CONSTR['P4/P4'].map(x => (bass + o + x) % 12);
+    if (label(bass, root) === fn) rights.push(invert(root, inv)[2]);
+  }
+  if (!rights.length) return newTopQ();
+  const wrongs = [];
+  while (wrongs.length < 4 - Math.min(2, rights.length)) { const w = Math.floor(Math.random() * 12); if (!rights.includes(w) && !wrongs.includes(w)) wrongs.push(w); }
+  const choices = [...new Set(rights)].slice(0, 2).concat(wrongs).sort(() => Math.random() - .5);
+  D.cur = { fn, inv, bass, rights };
+  el('drillArea').innerHTML = drillHeader(`Make the P4/P4 shape sound like ${fmtSym(NOTES[bass] + fn)} in <b>${INV_NAMES[inv]}</b> — which note goes on top?`) +
+    `<div class="choices" id="dChoices" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))">${choices.map((p, i) => `<div class="card" data-c="${i}" style="text-align:center;padding:18px"><span class="sym">${disp(NOTES[p])}</span></div>`).join('')}</div>` + scoreLine();
+  el('dChoices').querySelectorAll('.card').forEach(c => c.addEventListener('click', () => {
+    if (el('dChoices').classList.contains('done')) return;
+    el('dChoices').classList.add('done'); D.asked++;
+    const pick = choices[+c.dataset.c];
+    const gp = guideposts([(bass + 9) % 12, (bass + 2) % 12, (bass + 7) % 12], GP_CANON).find(r => r.sym === fn);
+    if (rights.includes(pick)) { D.score++; c.classList.add('right'); } else c.classList.add('wrong');
+    el('dChoices').querySelectorAll('.card').forEach((x, j) => { if (rights.includes(choices[j])) x.classList.add('right'); });
+    el('drillArea').insertAdjacentHTML('beforeend', `<p class="hint">§6.3: ${fn}, ${INV_NAMES[inv]} → ${gp ? gp.tops[inv].join(' or ') : ''} on top.</p>`);
+    setTimeout(() => { if (drillStill(2)) newTopQ(); }, 1800);
+  }));
+}
+function newPentQ(){            // Harmonize the pentatonic — the Modes filter as a timed drill
+  const tonic = modeTonicPc(), parent = NOTES[modeParent(S.mode, tonic)];
+  const pr = pentRoot(S.mode, tonic), pents = minPent(pr), blue = (pr + 6) % 12;
+  const blueDia = scale(PC[parent]).includes(blue);
+  const pool = pents.concat([blue]);
+  const tone = pool[Math.floor(Math.random() * pool.length)];
+  const isBlue = tone === blue && !blueDia && !pents.includes(tone);
+  const cards = walkCards(parent, S.family, setArr(), S.family === 'q3' ? S.inv : 0).filter(c => !c.oct);
+  const rightCards = cards.filter(c => c.pcs[c.pcs.length - 1] === tone);
+  if (!isBlue && !rightCards.length) return newPentQ();
+  const wrongCards = cards.filter(c => c.pcs[c.pcs.length - 1] !== tone).sort(() => Math.random() - .5).slice(0, 3);
+  let choices;
+  if (isBlue) choices = wrongCards.concat([{ plane: true }]).sort(() => Math.random() - .5);
+  else choices = [rightCards[Math.floor(Math.random() * rightCards.length)]].concat(wrongCards).sort(() => Math.random() - .5);
+  D.cur = { tone, isBlue };
+  const mname = MODES.find(m => m.id === S.mode).name;
+  el('drillArea').innerHTML = drillHeader(`${disp(S.tonic)} ${mname}, ${S.pent === 'blues' || isBlue ? 'blues scale' : 'minor pentatonic'} on ${disp(NOTES[pr])}: play the voicing with <b>${disp(NOTES[tone])}</b> on top.`) +
+    `<div class="timerbar"><i id="dTimer" style="width:100%"></i></div>` +
+    `<div class="choices" id="dChoices">${choices.map((c, i) => c.plane
+      ? `<div class="card" data-c="${i}" style="display:flex;align-items:center;text-align:center;padding:18px">no diatonic card — plane a neighbouring voicing a half step</div>`
+      : `<div class="card" data-c="${i}">${gridSVG(c)}<div class="names">${c.names.map(disp).join(' · ')}</div></div>`).join('')}</div>` + scoreLine();
+  let left = 8000; const step = 250;
+  D.timer = setInterval(() => { left -= step; const bar = el('dTimer'); if (bar) bar.style.width = Math.max(0, left / 80) + '%';
+    const box = el('dChoices'); if (!box || !drillStill(3)) { clearInterval(D.timer); D.timer = null; return; }
+    if (left <= 0) { clearInterval(D.timer); D.timer = null; if (!box.classList.contains('done')) { D.asked++; box.classList.add('done'); reveal(); setTimeout(() => { if (drillStill(3)) newPentQ(); }, 1600); } } }, step);
+  const reveal = () => el('dChoices').querySelectorAll('.card').forEach((x, j) => {
+    const ch = choices[j]; const right = D.cur.isBlue ? !!ch.plane : (!ch.plane && ch.pcs[ch.pcs.length - 1] === D.cur.tone);
+    if (right) x.classList.add('right'); });
+  el('dChoices').querySelectorAll('.card').forEach(c => c.addEventListener('click', () => {
+    if (el('dChoices').classList.contains('done')) return;
+    clearInterval(D.timer); D.timer = null;
+    el('dChoices').classList.add('done'); D.asked++;
+    const ch = choices[+c.dataset.c];
+    const right = D.cur.isBlue ? !!ch.plane : (!ch.plane && ch.pcs && ch.pcs[ch.pcs.length - 1] === D.cur.tone);
+    if (right) D.score++; else c.classList.add('wrong');
+    if (!ch.plane && ch.strings) { unlock(); strumChord(ch.strings, ch.frets); }
+    reveal();
+    setTimeout(() => { if (drillStill(3)) newPentQ(); }, 1500);
+  }));
+}
+
+/* ---------- Play button: per-tab loops on the shared scheduler ---------- */
+function playCurrent(){
+  if (sched.on) return stopLoop();
+  unlock();
+  if (S.tab === 'shapes' || S.tab === 'modes') {
+    const key = S.tab === 'modes' ? NOTES[modeParent(S.mode, modeTonicPc())] : S.key;
+    const cards = currentWalk(key), boxSel = (S.tab === 'modes' ? '#modesCards' : '#shapesCards') + ' .card';
+    if (!cards.length) return;
+    startLoop(cards.length * 4, (b, t, spb) => { if (b % 4) return;
+      const i = b / 4, c = cards[i];
+      strumChord(c.strings, c.frets, t, spb * 3.6);
+      atTime(t, () => highlight(boxSel, i));
+    });
+  } else if (S.tab === 'function') {
+    const sh = fnShape(); if (!sh) return;
+    const rows = symTable(sh.pcs), anchor = Math.min(...sh.frets);
+    startLoop(48, (b, t, spb) => { if (b % 4) return;
+      const i = b / 4, r = rows[i];
+      const bs = Object.assign({ name: NOTES[r.bass] }, bassPlace(r.bass, anchor));
+      strumChord(sh.strings, sh.frets, t, spb * 3.6, S.bass ? bs : null);
+      atTime(t, () => { fnSel = i; document.querySelectorAll('.fncol').forEach((x, j) => x.classList.toggle('sel', j === i)); });
+    });
+  } else if (S.tab === 'prog') {
+    const beatsPerKey = 8;                        // ii 2 · V 2 · I 4 (the I gets the full bar)
+    const nKeys = S.prog.cycle ? 12 : 1;
+    let cache = {};
+    startLoop(beatsPerKey * nKeys, (b, t, spb) => {
+      const ki = Math.floor(b / beatsPerKey), bi = b % beatsPerKey;
+      const key = S.prog.cycle ? KEYS[(KEYS.indexOf(S.key) + ki) % 12] : S.key;
+      if (!cache[key]) cache[key] = progChords(key);
+      const P = cache[key];
+      if (bi === 0 && S.prog.cycle) atTime(t, () => { progCyc = ki; renderProgLite(P, key); });
+      const at = { 0: 0, 2: 1, 4: 2 }[bi];
+      if (at !== undefined && P.chords[at]) {
+        const ch = P.chords[at];
+        strumChord(ch.strings, ch.frets, t, spb * (at === 2 ? 3.8 : 1.8), S.bass ? ch.bass : null);
+        atTime(t, () => highlight('#progCards .card', at));
+      }
+    });
+  } else if (S.tab === 'tunes') {
+    const tune = TUNES[S.tune.id];
+    const map = []; let beat = 0;
+    tune.rows.forEach((row, i) => { const len = (row.span || 1) * 4; map.push({ row, i, start: beat, len }); beat += len; });
+    if (S.tune.mode === 'reveal') { S.tune.revealed = 0; renderTunes(); }
+    startLoop(beat, (b, t, spb) => {
+      const seg = map.find(m => b >= m.start && b < m.start + m.len);
+      if (!seg) return;
+      const local = b - seg.start;
+      const hit = seg.row.chords.length > 1 ? (local === 0 ? 0 : local === 2 ? 1 : -1) : (local === 0 ? 0 : -1);
+      if (hit >= 0) {
+        const ch = seg.row.chords[hit];
+        strumChord(ch.strings, ch.frets, t, spb * (seg.row.chords.length > 1 ? 1.8 : seg.len - 0.2), S.bass ? ch.bass : null);
+        atTime(t, () => { if (S.tune.mode === 'reveal' && seg.i >= S.tune.revealed) { S.tune.revealed = seg.i + 1; renderTunes(); } highlight('#tuneCards .card', seg.i); });
+      }
+    });
+  } else if (S.tab === 'practice') {
+    if (S.drill === 0) {
+      const cards = currentWalk();
+      startLoop(cards.length * 4, (b, t, spb) => { if (b % 4) return;
+        const i = b / 4, c = cards[i];
+        strumChord(c.strings, c.frets, t, spb * 3.6);
+        atTime(t, () => { D.i = i; renderPractice(); });
+      });
+    } else if (S.drill === 4) {
+      let cache = {};
+      startLoop(8 * 12, (b, t, spb) => {
+        const ki = Math.floor(b / 8), bi = b % 8;
+        const key = KEYS[(KEYS.indexOf(S.key) + ki) % 12];
+        if (bi === 0) atTime(t, () => { cache[key] = drawDrill5(key) || cache[key]; });
+        const at = { 0: 0, 2: 1, 4: 2 }[bi];
+        if (at !== undefined) atTime(t - 0.02, () => { const P = cache[key]; if (P && P.chords[at]) { const ch = P.chords[at];
+          strumChord(ch.strings, ch.frets, Math.max(t, actx().currentTime), spb * (at === 2 ? 3.8 : 1.8), S.bass ? ch.bass : null); } });
+      });
+    } else if (S.drill === 5) {
+      const tune = TUNES[D.tune];
+      const map = []; let beat = 0;
+      tune.rows.forEach((row, i) => { const len = (row.span || 1) * 4; map.push({ row, i, start: beat, len }); beat += len; });
+      startLoop(beat, (b, t, spb) => {
+        const seg = map.find(m => b >= m.start && b < m.start + m.len);
+        if (!seg) return;
+        const local = b - seg.start;
+        const hit = seg.row.chords.length > 1 ? (local === 0 ? 0 : local === 2 ? 1 : -1) : (local === 0 ? 0 : -1);
+        if (hit >= 0) { const ch = seg.row.chords[hit];
+          strumChord(ch.strings, ch.frets, t, spb * (seg.row.chords.length > 1 ? 1.8 : seg.len - 0.2), S.bass ? ch.bass : null);
+          atTime(t, () => { drawDrill6(seg.i + 1); highlight('#dBars .card', seg.i); }); }
+      });
+    }
+  }
+}
+function renderProgLite(P, key){
+  el('progHint').textContent = `cycle of 4ths — key of ${disp(key)}`;
+  const cards = [];
+  P.chords.forEach((ch, i) => {
+    if (i === 2 && S.prog.plane !== 'off') cards.push(`<div class="arrow"><b>→</b>(half-step planing)</div>`);
+    cards.push(progCardHTML(ch, i));
+  });
+  el('progCards').innerHTML = cards.join('');
+}
+
+/* ---------- top controls + tabs ---------- */
+function renderControls(){
+  seg(el('cKey'), KEYS.map(k => ({ id: k, label: disp(k) })), S.key, k => { S.key = k; S.fnPos = 0; fnSel = -1; rerender(); });
+  seg(el('cFamily'), Object.keys(FAMILIES).map(f => ({ id: f, label: { q3: '3-note', q4: '4-note', sw4: 'So What', sw5: 'So What 5' }[f], title: FAMILIES[f].name })), S.family,
+    f => { S.family = f; S.set = SETDEF[f]; if (f !== 'q3') S.inv = 0; S.fnD = Math.min(S.fnD, 6); S.fnPos = 0; fnSel = -1; rerender(); });
+  seg(el('cSet'), FAMILIES[S.family].sets.map(s => ({ id: s.join(''), label: s.join('-') })), S.set, s => { S.set = s; S.fnPos = 0; rerender(); });
+  seg(el('cInv'), [0, 1, 2].map(i => ({ id: i, label: ['root', '1st (4th–2nd)', '2nd (2nd–4th)'][i], dis: S.family !== 'q3' && i > 0 })),
+    S.family === 'q3' ? S.inv : 0, i => { if (S.family !== 'q3') return; S.inv = i; S.fnPos = 0; rerender(); });
+  seg(el('cBass'), [{ id: true, label: 'shown' }, { id: false, label: 'hidden' }], S.bass, v => { S.bass = v; rerender(); });
+  seg(el('cNot'), [{ id: 'on', label: 'staff + TAB' }, { id: 'off', label: 'hidden' }], S.notation, v => { S.notation = v; rerender(); });
+  el('fsKey').hidden = S.tab === 'modes' || S.tab === 'tunes';
+  el('fsFamily').hidden = S.tab === 'prog' || S.tab === 'tunes';
+  el('fsSet').hidden = S.tab === 'tunes' || (S.tab === 'prog' && S.prog.sel !== 'custom');
+  el('fsInv').hidden = S.tab === 'prog' || S.tab === 'tunes' || S.family !== 'q3';
+  el('fsBass').hidden = !(S.tab === 'function' || S.tab === 'prog' || S.tab === 'tunes' || S.tab === 'practice');
+  el('fsNot').hidden = S.tab === 'function' || S.tab === 'practice';
+}
+const PANES = { shapes: 'paneShapes', modes: 'paneModes', function: 'paneFunction', prog: 'paneProg', tunes: 'paneTunes', practice: 'panePractice' };
+const RENDER = { shapes: renderShapes, modes: renderModes, function: renderFunction, prog: renderProg, tunes: renderTunes, practice: renderPractice };
+function switchTab(t){
+  stopLoop();
+  S.tab = t;
+  for (const [key, pane] of Object.entries(PANES)) el(pane).hidden = key !== t;
+  for (const [btn, key] of [['tabShapes', 'shapes'], ['tabModes', 'modes'], ['tabFunction', 'function'], ['tabProg', 'prog'], ['tabTunes', 'tunes'], ['tabPractice', 'practice']])
+    el(btn).setAttribute('aria-pressed', String(key === t));
+  rerender();
+}
+function rerender(){
+  renderControls();
+  seg(el('cView'), [{ id: 'cards', label: 'cards' }, { id: 'neck', label: 'cards + neck' }], S.view, v => { S.view = v; rerender(); });
+  seg(el('cMode'), MODES.map(m => ({ id: m.id, label: m.name })), S.mode, m => { S.mode = m; rerender(); });
+  seg(el('cTonic'), NOTES.map(n => ({ id: n, label: disp(n) })), S.tonic, n => { S.tonic = n; rerender(); });
+  seg(el('cModePreset'), MODE_PRESETS.map((p, i) => ({ id: i, label: p.label })),
+    MODE_PRESETS.findIndex(p => p.mode === S.mode && p.tonic === S.tonic),
+    i => { S.mode = MODE_PRESETS[i].mode; S.tonic = MODE_PRESETS[i].tonic; rerender(); });
+  seg(el('cPent'), [{ id: 'off', label: 'off' }, { id: 'pent', label: 'minor pentatonic' }, { id: 'blues', label: 'blues' }], S.pent, v => { S.pent = v; rerender(); });
+  RENDER[S.tab]();
+}
+
+/* ---------- intro panel (spec §2, William's prose) ---------- */
+el('readBox').innerHTML = `
+  <button class="close" id="readClose">close</button>
+  <h2>Quartal harmony<small>the reading text — condensed from “Intro to Quartal Voicings”</small></h2>
+  <p><b>What quartal harmony is.</b> Western harmony is predominantly tertian — stacked in thirds. Quartal harmony stacks fourths. Because the voicings contain no major or minor thirds, they carry weak functional implications: they sound “open” and “ambiguous,” and it’s hard to look at one and say what it “is.” That ambiguity is the feature: one shape serves many chords.</p>
+  <p><b>Two ways jazz musicians use them.</b> <i>Non-functionally (modally)</i>: the voicings describe a key or mode linearly, the way diatonic triads or 7th chords do — stack fourths on each scale degree and you get the seven diatonic quartal voicings of the key. Tension and release happen on the micro level, not against a tonic. <i>Functionally</i>: attach chord symbols to the shapes so they can fulfil ii, V, I roles in a progression. Attaching symbols is how you get functional command of them.</p>
+  <p><b>The three shapes.</b> A three-note quartal voicing contains two fourths, each perfect (P4) or augmented (TT), so there are three usable constructions: <b>P4/P4</b> (five of the seven diatonic voicings), <b>TT/P4</b> (built on the 4th degree of the parent major scale: F–B–E in C) and <b>P4/TT</b> (built on the 1st degree: C–F–B). TT/TT would put an octave in the outer voices and isn’t studied. The tritone voicings have a different colour and yield melodic-minor harmonies (m6/9, ø, Δ7♯5) that the P4/P4 voicings don’t.</p>
+  <p><b>Inversions.</b> Quartal voicings invert like triads. Because the root-position voicing serves several functions, so do its inversions — but the melody note changes, so each inversion gets its own guideposts. The tritone-voicing inversions contain a minor 2nd and are trickier to finger.</p>
+  <p><b>Guideposts (root-position P4/P4).</b> For the voicing to behave as a <b>min11</b>, the ♭3 must be on top. As an <b>altered dominant</b>, the ♭5 or ♭9 must be on top. As a <b>maj6/9</b>, the 5th or 9th must be on top. First inversion → min11 with the natural 11th on top; second inversion → Δ7♯11 with the major 7th on top. (The Function tab derives the full guidepost set for every family.)</p>
+  <p><b>With and without bass notes.</b> Play every functional example both ways: without the bass to stay out of a bassist’s register; with the bass for guitar/horn, guitar/voice and guitar-duo settings.</p>
+  <p><b>Practice suggestions, mapped to the app:</b></p>
+  <ul>
+    <li>Play the 3-note voicings up the neck in all 12 major keys, visualizing the top note as a scale degree → Modes tab, degree labels on.</li>
+    <li>Repeat in common modal keys (D Dorian, G Mixolydian…), reading the top note as a mode degree → Modes tab, mode selector.</li>
+    <li>Apply to modal repertoire (“So What”, “Little Sunflower”) → the Dorian presets; vamp charts are on the deferred list.</li>
+    <li>Create melodies while comping; start inside one voicing family, then mix families; harmonize the pentatonic / blues scale → Modes tab pentatonic filter + family selector.</li>
+    <li>Chromatic planing: approach a voicing from a half step above or below → Progressions tab planing control.</li>
+    <li>Attach chord symbols; study which note must be on top for each function → Function tab.</li>
+    <li>Put voicings and inversions into ii–V–I progressions, with and without bass → Progressions tab.</li>
+    <li>Find the inversions of the tritone voicings → Shapes tab, the P4/TT and TT/P4 cards with inversion 1 or 2.</li>
+  </ul>`;
+el('readBtn').addEventListener('click', () => { el('readOver').hidden = false; });
+el('readClose').addEventListener('click', () => { el('readOver').hidden = true; });
+el('readOver').addEventListener('click', e => { if (e.target === el('readOver')) el('readOver').hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') el('readOver').hidden = true; });
+
+/* ---------- reveal buttons + boot ---------- */
+el('revealNext').addEventListener('click', () => { S.tune.revealed++; renderTunes(); });
+el('revealAll').addEventListener('click', () => { S.tune.revealed = 99; renderTunes(); });
+el('revealReset').addEventListener('click', () => { S.tune.revealed = 0; renderTunes(); });
+el('play').addEventListener('click', playCurrent);
+for (const [btn, key] of [['tabShapes', 'shapes'], ['tabModes', 'modes'], ['tabFunction', 'function'], ['tabProg', 'prog'], ['tabTunes', 'tunes'], ['tabPractice', 'practice']])
+  el(btn).addEventListener('click', () => switchTab(key));
+switchTab('shapes');
 </script>
 </body>
 </html>
