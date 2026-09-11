@@ -65,8 +65,14 @@
   figcaption { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
   figcaption b { font-weight: 400; font-size: 17px; }
   figcaption span { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
-  .passnote { font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; color: var(--bone); margin: 0 0 14px; }
-  .fingernote { font-size: 14px; color: var(--bone-dim); max-width: 64ch; margin: 0 0 14px; border-left: 2px solid var(--brass); padding-left: 12px; }
+  .passnote { font-family: var(--mono); font-size: 12.5px; letter-spacing: .04em; color: var(--bone); margin: 0 0 14px; grid-column: 1 / -1; }
+  /* legend + the no-fingerings callout run the full width of the diagram column,
+     including when "All" puts the figures in a multi-column grid */
+  .fingernote { grid-column: 1 / -1; background: var(--petrol); border-left: 3px solid var(--brass);
+    border-radius: 6px; padding: 13px 18px 14px; margin: 0 0 14px; }
+  .fingernote .fn-head { font-family: var(--mono); font-size: 12.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--brass); margin: 0 0 7px; }
+  .fingernote .fn-body { font-size: 14.5px; color: var(--bone-dim); line-height: 1.5; margin: 0; }
   figure svg { width: 100%; height: auto; display: block; }
   figure .check { font-family: var(--mono); font-size: 11px; color: var(--warn); margin: 6px 0 0; min-height: 1em; }
   .ly { color: var(--bone); margin: 12px 0 4px; }
@@ -692,11 +698,12 @@ function drawNeck() {
   for (let str = 1; str <= 6; str++) for (let f = 0; f <= NECK_TOP; f++) {
     const deg = sc.steps.indexOf(((OPEN[str] + f) % 12 - PC[state.key] + 12) % 12);
     if (deg < 0) continue;
-    const count = ps.reduce((n, q) => n + q.cells.has(str + ":" + f), 0);
-    const op = selCells ? (selCells.has(str + ":" + f) ? 1 : .15) : count ? 1 : .35;
+    // every dot is drawn the same size: how many positions share a note is the
+    // bands' job, and ringing the shared ones just raised "why is that one circled?"
+    const inAny = ps.some(q => q.cells.has(str + ":" + f));
+    const op = selCells ? (selCells.has(str + ":" + f) ? 1 : .15) : inAny ? 1 : .35;
     const fill = deg === 0 ? "var(--brass)" : "var(--bone)";
     o += `<circle cx="${x(f)}" cy="${y(str)}" r="6.5" fill="${fill}" opacity="${op}"/>`;
-    if (count > 1) o += `<circle cx="${x(f)}" cy="${y(str)}" r="9" fill="none" stroke="${fill}" stroke-width="${0.8 + (count - 1) * 1.2}" opacity="${op * .8}"/>`;
   }
   o += `</svg>`;
   return `<figure>
@@ -783,7 +790,12 @@ function render() {
   const altnote = placed.some(q => q.dots.some(d => d.alt))
     ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><circle cx="13" cy="13" r="11" fill="none" stroke="var(--bone)" stroke-width="2.5" stroke-dasharray="4 3"/></svg> dashed = the same note in the other place it falls at the edge of this position — either string, your call</p>`
     : "";
-  const fingernote = noFingers ? `<p class="fingernote">I don’t want to micromanage your fingerings—bebop scale fingering decisions should naturally flow from the muscle memory you’ve acquired in internalizing your 7-note scale fingerings</p>` : "";
+  const fingernote = noFingers ? `<div class="fingernote">
+      <p class="fn-head">No fingerings written for the ${sc.name} scale</p>
+      <p class="fn-body">The diagrams below show the notes only — no finger numbers, and no Fingers label mode.
+      I don’t want to micromanage your fingerings: bebop scale fingering decisions should naturally flow from the
+      muscle memory you’ve acquired in internalizing your 7-note scale fingerings.</p>
+    </div>` : "";
   main.innerHTML = fingernote + (neck ? drawNeck() : passnote + altnote + placed.map(p => figure(p, mode)).join(""));
   if (!neck) hydrateNotation(main);
 
