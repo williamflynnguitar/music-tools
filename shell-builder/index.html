@@ -147,6 +147,27 @@ body.prog-on .progview{display:block}
 .pbeats{display:grid;grid-template-columns:repeat(4,1fr);margin-top:7px}
 .pbeat{display:flex;justify-content:center}
 .pslash{width:9px;height:17px;background:var(--bone-dim);clip-path:polygon(34% 0,100% 0,66% 100%,0 100%);opacity:.8}
+/* per-chord editor (Sep 2026): the tapped chord keeps a brass frame and its
+   editor opens under that system — on a phone that is directly under the bar,
+   so no control is ever off screen or behind a zoom */
+.pslot{border:1px solid transparent;border-radius:3px;padding:3px}
+.pslot.sel{border-color:var(--brass);background:rgba(201,162,74,.07)}
+.pslot.sel .ptag{color:var(--brass)}
+.pedit{border:1px solid var(--line);border-radius:5px;background:var(--petrol);padding:14px 16px;margin:0 0 22px;display:flex;flex-direction:column;gap:11px;grid-column:1/-1}
+.pehead{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding-bottom:9px;border-bottom:1px solid var(--line)}
+.pehead .psym{font-size:24px}
+.pewhere{font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+.perow{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:baseline}
+@media (max-width:480px){.perow{grid-template-columns:1fr;gap:4px}}
+.pelbl{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-dim)}
+.pechips{display:flex;flex-wrap:wrap;gap:6px}
+.pechips button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 10px;font-family:var(--mono);font-size:14px;line-height:1;cursor:pointer;display:inline-flex;align-items:baseline;gap:5px}
+.pechips button:hover{border-color:var(--brass)}
+.pechips button[aria-pressed=true]{background:var(--brass);border-color:var(--brass);color:var(--ink)}
+.pechips button[disabled]{opacity:.32;cursor:default;text-decoration:line-through}
+.pechips button small{font-size:10.5px;color:var(--brass)}
+.pechips button[aria-pressed=true] small{color:var(--ink)}
+.penote{font-size:13px;color:var(--bone-dim);max-width:54ch;margin:0}
 </style>
 </head>
 <body>
@@ -566,9 +587,10 @@ function strum(notes){
 /* offsets that voice the symbol's alterations on the mobile strings, when the
    structure has them and the move is legal; extScore = requested extensions
    actually sounding */
-function pickOffsets(ch, rs, rf){
+function pickOffsets(ch, rs, rf, struct){
+  const sIdx = struct==null ? st.struct : struct;   // per-chord edits pass their own
   const want = (ch.ext||[]).filter(e=>EXT.includes(e));
-  const hasB = [1,3,4].includes(st.struct), hasE = st.struct===4;
+  const hasB = [1,3,4].includes(sIdx), hasE = sIdx===4;
   if(!want.length || !hasB) return {off:{2:0,1:0}, extScore:0};
   const q = QUAL[ch.quality];
   let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
@@ -580,7 +602,7 @@ function pickOffsets(ch, rs, rf){
      silently lost it. Same pairing for b5/#11. */
   const samePc = (a, b) => DEG[a]%12 === DEG[b]%12;
   for(const ob of obs) for(const oe of oes){
-    const v = buildAt(ch.pc, ch.quality, st.struct, rs, rf, {2:ob,1:oe});
+    const v = buildAt(ch.pc, ch.quality, sIdx, rs, rf, {2:ob,1:oe});
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
     let got = 0; want.forEach(w=>{ if(degs.some(d=>samePc(d,w))) got++; });
     let bad = 0; degs.forEach(d=>{ if(EXT.includes(d) && !q.allowed.includes(d) && !(q.altered&&q.altered.includes(d)) && !want.some(w=>samePc(w,d))) bad++; });
@@ -589,14 +611,35 @@ function pickOffsets(ch, rs, rf){
   }
   return best;
 }
+/* ---------- per-chord edits (Sep 2026) ----------
+   Through Changes used to hold one global state, so the Structure list
+   re-voiced every chord in the chart — the A1 report. Each chord now carries
+   its own optional override, keyed by bar, slot and the chord's own text, so
+   an edit in a typed chart belongs to that chord and drops when it is
+   retyped. The sidebar Structure list still sets the chart, and chords with
+   their own structure keep it. */
+const progEdit = new Map();     // key -> {struct?, rs?, rf?, off?}
+let progEditFor = null;         // the progression those edits belong to
+let progPick = null;            // key of the selected chord, null = none
+let progNarrow = false;         // phone layout: editor sits inside the system
+let progVoiced = [];            // the chart as last rendered, for the editor
+function editKey(bi, si, ch){ return bi+':'+si+':'+ch.raw; }
+function edits(){
+  if(progEditFor !== prog.id){ progEdit.clear(); progEditFor = prog.id; progPick = null; }
+  return progEdit;
+}
 /* nearest-position voice leading: pick 6R/5R and the octave whose root fret
    moves least from the previous chord; travelling a few extra frets is worth
    it when that is the only way to sound a requested alteration (b9 lives on
-   the 5R B string, for instance) */
+   the 5R B string, for instance).
+   Per-chord edits ride on top and never disturb the chain: `prev` follows the
+   automatic pick, so editing chord 3 leaves every other chord exactly where
+   it was (William's ruling, Sep 2026). */
 function progVoiceLead(bars){
+  const E = edits();
   let prev = null;
-  return bars.map(bar=>bar.map(ch=>{
-    if(!QUAL[ch.quality]) return {ch, v:null};
+  return bars.map((bar,bi)=>bar.map((ch,si)=>{
+    if(!QUAL[ch.quality]) return {ch, v:null, key:null};
     let best = null, bc = 1e9;
     for(const rs of [6,5]){
       const base = ((ch.pc-OPEN[rs])%12+12)%12;
@@ -606,37 +649,220 @@ function progVoiceLead(bars){
         if(cost<bc){ bc=cost; best={rs, rf, off:p.off}; }
       }
     }
-    const v = buildAt(ch.pc, ch.quality, st.struct, best.rs, best.rf, best.off);
     prev = best.rf;
-    return {ch, v};
+    const key = editKey(bi, si, ch);
+    const ed = E.get(key);
+    const struct = ed && ed.struct!=null ? ed.struct : st.struct;
+    const rs = ed && ed.rs!=null ? ed.rs : best.rs;
+    const rf = ed && ed.rf!=null ? ed.rf : best.rf;
+    /* an explicit B/E choice pins the voicing; a structure or position change
+       re-picks the offsets for what the student just chose */
+    let off = ed && ed.off ? ed.off
+            : (ed && (ed.rs!=null || ed.struct!=null)) ? pickOffsets(ch, rs, rf, struct).off
+            : best.off;
+    if(ed && !ed.off) off = snapToOffered(ch, struct, rs, rf, off);
+    const v = buildAt(ch.pc, ch.quality, struct, rs, rf, off);
+    return {ch, v, key, struct, edited: !!ed};
   }));
+}
+/* ---------- what the B and E strings can take on a given chord ----------
+   The windows are the book's (p. 49 B ±2 around the root's fret, p. 50 E
+   +2/−1) plus the rulings already in move(): the 6R dominant's 13-default
+   walks down to −4, and °7/Δ7#5 from 5R cap the E string at +2. On top of
+   that: judge() must be happy, the chord symbol has to allow the note, and
+   the shape has to be playable. */
+const SPAN4_KEEP = [];   /* "quality|rs|struct|B+E" cells William has kept. The
+                            23 five-fret cells are out for his keep/cut ruling,
+                            so none are offered yet — same pattern as
+                            triad-voicings' SPAN4_KEEP. */
+function cellId(q, rs, struct, degs){ return [q, rs, struct, degs.join('+')].join('|'); }
+/* The symbol decides. A plain dominant is open to every extension it can
+   reach — William, Sep 2026: "extensions depend on harmonic context. That's
+   what developing a good harmonic concept as a player is all about." An
+   explicitly altered symbol takes the altered list only: no natural 9 or 13,
+   and no natural 5 once the symbol carries #5 or b13. Every other quality is
+   already held to the p. 49 list by judge(). */
+function symbolAllows(ch, degs){
+  if(ch.quality!=='7' && ch.quality!=='7sus') return true;
+  const ext = ch.ext || [];
+  if(!ext.some(e=>['b9','#9','b5','#5','b13'].includes(e))) return true;
+  if(degs.some(d=>d==='9'||d==='13')) return false;
+  if(ext.some(e=>e==='#5'||e==='b13') && degs.includes('5')) return false;
+  return true;
+}
+function extOptions(ch, struct, rs, rf){
+  const v0 = buildAt(ch.pc, ch.quality, struct, rs, rf, {2:0,1:0});
+  if(!v0.hasB) return null;
+  const bW = v0.bDef==='13' ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];
+  const eTop = (ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? 2 : 3;
+  const eW = v0.hasE ? [-1,0,1,2,3].filter(o=>o<=eTop) : [0];
+  const cells = [];
+  for(const ob of bW) for(const oe of eW){
+    const off = {2:ob, 1:oe};
+    const v = buildAt(ch.pc, ch.quality, struct, rs, rf, off);
+    if(judge(v, {q:ch.quality, rs, struct, off}).some(m=>m.k!=='ok')) continue;
+    const b = v.notes.find(n=>n.s===2), e = v.notes.find(n=>n.s===1);
+    const degs = [b.deg].concat(e ? [e.deg] : []);
+    if(!symbolAllows(ch, degs)) continue;
+    const fr = v.notes.map(n=>n.f), span = Math.max(...fr) - Math.min(...fr);
+    if(span>=5) continue;                       // six frets or more: never
+    if(span===4 && !SPAN4_KEEP.includes(cellId(ch.quality, rs, struct, degs))) continue;
+    cells.push({ob, oe, b:b.deg, e:e?e.deg:null, span});
+  }
+  return {cells, hasE:v0.hasE};
+}
+/* William's stand-in rule (his teaching, not printed on pp. 45–51), for
+   structures with a B string but no E string: a 6R B string cannot reach b9,
+   so the b13 stands in for it, and a 5R B string cannot reach b13, so the b9
+   stands in. The chart keeps the written symbol either way. */
+function subLabel(ch, opts){
+  if(opts.hasE) return null;
+  const ext = ch.ext || [], degs = new Set(opts.cells.map(c=>c.b));
+  if(ext.includes('b9') && !degs.has('b9') && degs.has('#5')) return {deg:'#5', text:'b13 for b9'};
+  if(ext.some(e=>e==='b13'||e==='#5') && !degs.has('#5') && degs.has('b9')) return {deg:'b9', text:'b9 for b13'};
+  return null;
+}
+/* A chord the student has edited should land on a note the picker would
+   offer. pickOffsets scores the chart's automatic voicings and knows nothing
+   about the symbol filter, so after a structure or position change we snap to
+   the nearest offered cell. The automatic chart voicings are left alone. */
+function snapToOffered(ch, struct, rs, rf, off){
+  const opts = extOptions(ch, struct, rs, rf);
+  if(!opts || !opts.cells.length) return off;
+  if(opts.cells.some(c=>c.ob===off[2] && c.oe===off[1])) return off;
+  let best = opts.cells[0], bd = 1e9;
+  for(const c of opts.cells){
+    const d = Math.abs(c.ob-off[2]) + Math.abs(c.oe-off[1]);
+    if(d<bd){ bd=d; best=c; }
+  }
+  return {2:best.ob, 1:best.oe};
+}
+function positionsFor(ch){
+  const out = [];
+  for(const rs of [6,5]){
+    const base = ((ch.pc-OPEN[rs])%12+12)%12;
+    for(let rf=(base===0?12:base); rf<=15; rf+=12) out.push({rs, rf});
+  }
+  return out.sort((a,b)=>a.rf-b.rf);
+}
+function chipRow(lbl, chips){
+  return `<div class="perow"><span class="pelbl">${lbl}</span><div class="pechips">`
+    + chips.map(c=>`<button type="button" data-act="${c.act}" data-val="${c.val}" aria-pressed="${!!c.on}"${c.off?' disabled':''}>${c.t}${c.sub?`<small>${c.sub}</small>`:''}</button>`).join('')
+    + '</div></div>';
+}
+/* the editor for the selected chord — everything in it applies to that chord
+   alone */
+function editorHTML(it){
+  const ch = it.ch;
+  const curB = it.v.notes.find(n=>n.s===2), curE = it.v.notes.find(n=>n.s===1);
+  const bDeg = curB ? curB.deg : null, eDeg = curE ? curE.deg : null;
+  let h = `<div class="pedit"><div class="pehead"><span class="psym">${fmt(label(ch), ch.rootName)}</span>`
+        + `<span class="pewhere">bar ${it.bar} · ${STRUCT[it.struct].name} · ${it.v.rs}R at ${it.v.rf}fr${it.edited?' · edited':''}</span></div>`;
+  h += chipRow('Structure', STRUCT.map(s=>({t:s.name, on:s.id===it.struct, act:'struct', val:s.id})));
+  h += chipRow('Position', positionsFor(ch).map(p=>({t:p.rs+'R · '+p.rf+'fr', on:p.rs===it.v.rs&&p.rf===it.v.rf, act:'pos', val:p.rs+'.'+p.rf})));
+  const opts = extOptions(ch, it.struct, it.v.rs, it.v.rf);
+  if(opts){
+    const sub = subLabel(ch, opts);
+    /* Whatever is sounding is always shown, even when the symbol filter would
+       not offer it: the chart's own generator can voice a natural 13 under a
+       7b9, and hiding that would leave the panel disagreeing with the chord. */
+    const bOffered = new Set(opts.cells.map(c=>c.b));
+    const bs = [...bOffered], bLoose = bDeg && !bOffered.has(bDeg);
+    if(bLoose) bs.unshift(bDeg);
+    h += chipRow('B string', bs.map(d=>({t:d, on:d===bDeg, act:'b', val:d,
+      sub: sub && sub.deg===d ? sub.text : (bLoose && d===bDeg ? 'as generated' : null)})));
+    if(opts.hasE){
+      const eOffered = new Set(opts.cells.map(c=>c.e));
+      const es = [...eOffered], eLoose = eDeg && !eOffered.has(eDeg);
+      if(eLoose) es.unshift(eDeg);
+      /* dim the notes that will not pair with the B note in force — but when B
+         is itself outside the list there is nothing to pair with, so leave
+         them live rather than stranding the student */
+      const withB = new Set(opts.cells.filter(c=>c.b===bDeg).map(c=>c.e));
+      h += chipRow('E string', es.map(d=>({t:d, on:d===eDeg, act:'e', val:d,
+        sub: eLoose && d===eDeg ? 'as generated' : null,
+        off: !bLoose && d!==eDeg && !withB.has(d)})));
+    }
+  } else h += '<p class="penote">This structure has no B or E string to mobilize.</p>';
+  if(it.edited) h += chipRow('', [{t:'Back to auto', act:'auto', val:'1'}]);
+  return h + '</div>';
 }
 /* slash chart, like the Handbook's: 4-bar systems, symbols above their beats,
    shell diagram above each symbol */
-function renderProg(){
+function renderProg(keepKey){
   const p = PROGS[prog.id];
   el('progCustomBox').style.display = p.text===null ? '' : 'none';
   const text = p.text===null ? el('progCustom').value : p.text;
   const voiced = progVoiceLead(parseInput(text));
+  progVoiced = voiced.flat();
+  /* hold the selection only while that chord is still in the chart */
+  if(progPick && !progVoiced.some(it=>it.key===progPick)) progPick = null;
+  /* re-rendering changes the page height when the editor opens or moves, so
+     note where the anchor chord sits now and put it back afterwards — nothing
+     should slide out from under a thumb */
+  const anchor = keepKey ? el('progChart').querySelector('.pslot[data-key="'+keepKey+'"]') : null;
+  const anchorTop = anchor ? anchor.getBoundingClientRect().top : 0;
   el('progTitle').textContent = p.text===null ? 'Your progression' : p.name;
-  el('progSub').textContent = STRUCT[st.struct].name+' shells. Each root takes the nearest position, 6R or 5R; alterations in the symbol go to the B and E strings when the structure includes them. Brass dots are the mobile strings; click a chord to hear it.';
+  el('progSub').textContent = STRUCT[st.struct].name+' shells. Each root takes the nearest position, 6R or 5R; alterations in the symbol go to the B and E strings when the structure includes them. Brass dots are the mobile strings; tap a chord to hear it and to edit that chord on its own.';
+  /* Where the editor goes: a system is one row on a wide screen, so straight
+     after the system sits right under the tapped bar. On a phone the system
+     stacks one bar per line, and "after the system" would be up to four bars
+     further down — off screen — so there it goes inside the system, directly
+     after the bar that was tapped. */
+  progNarrow = matchMedia('(max-width:560px)').matches;
   let h = '<div class="pchart">';
   for(let i=0;i<voiced.length;i+=4){
-    h += '<div class="psys">';
+    let picked = null, sys = '';
     voiced.slice(i,i+4).forEach((bar,j)=>{
       const bi = i+j;
-      h += `<div class="pbarr${bi===voiced.length-1?' last':''}"><span class="pbn">${bi+1}</span><div class="pslots" style="grid-template-columns:repeat(${Math.max(2,bar.length)},1fr)">`;
+      let hasPick = false;
+      sys += `<div class="pbarr${bi===voiced.length-1?' last':''}"><span class="pbn">${bi+1}</span><div class="pslots" style="grid-template-columns:repeat(${Math.max(2,bar.length)},1fr)">`;
       bar.forEach(it=>{
         if(it.v){
+          it.bar = bi+1;
+          if(it.key===progPick){ picked = it; hasPick = true; }
           const name = label(it.ch);
-          h += `<div class="pslot" data-notes='${JSON.stringify(it.v.notes.map(n=>({s:n.s,f:n.f})))}'>${diagram(it.v,{ghost:true,W:104})}<span class="ptag">${it.v.rs===6?'6R':'5R'} · ${it.v.rf}fr</span><span class="psym">${fmt(name, it.ch.rootName)}</span></div>`;
-        } else h += `<div class="pslot"><span class="ptag">no shell for this symbol</span><span class="psym">${it.ch.raw}</span></div>`;
+          sys += `<div class="pslot${it.key===progPick?' sel':''}" data-key="${it.key}" data-notes='${JSON.stringify(it.v.notes.map(n=>({s:n.s,f:n.f})))}'>${diagram(it.v,{ghost:true,W:104})}<span class="ptag">${it.v.rs===6?'6R':'5R'} · ${it.v.rf}fr${it.edited?' · edited':''}</span><span class="psym">${fmt(name, it.ch.rootName)}</span></div>`;
+        } else sys += `<div class="pslot"><span class="ptag">no shell for this symbol</span><span class="psym">${it.ch.raw}</span></div>`;
       });
-      h += '</div><div class="pbeats">'+'<span class="pbeat"><i class="pslash"></i></span>'.repeat(4)+'</div></div>';
+      sys += '</div><div class="pbeats">'+'<span class="pbeat"><i class="pslash"></i></span>'.repeat(4)+'</div></div>';
+      if(progNarrow && hasPick) sys += editorHTML(picked);
     });
-    h += '</div>';
+    h += '<div class="psys">'+sys+'</div>';
+    if(!progNarrow && picked) h += editorHTML(picked);
   }
   el('progChart').innerHTML = h+'</div>';
+  if(anchor){
+    const a2 = el('progChart').querySelector('.pslot[data-key="'+keepKey+'"]');
+    if(a2) window.scrollBy(0, a2.getBoundingClientRect().top - anchorTop);
+  }
+}
+/* a chip in the editor: everything here writes to the selected chord only */
+function progEditAction(b){
+  const it = progVoiced.find(x=>x.key===progPick);
+  if(!it || !it.v) return;
+  const E = edits(), ed = Object.assign({}, E.get(progPick));
+  const act = b.dataset.act, val = b.dataset.val;
+  if(act==='auto'){ E.delete(progPick); renderProg(progPick); return; }
+  if(act==='struct'){ ed.struct = +val; delete ed.off; }
+  else if(act==='pos'){ const [rs,rf] = val.split('.').map(Number); ed.rs = rs; ed.rf = rf; delete ed.off; }
+  else if(act==='b' || act==='e'){
+    const opts = extOptions(it.ch, it.struct, it.v.rs, it.v.rf);
+    if(!opts) return;
+    const cur = { b:(it.v.notes.find(n=>n.s===2)||{}).deg, e:(it.v.notes.find(n=>n.s===1)||{}).deg };
+    let want;
+    if(act==='b') want = opts.cells.filter(c=>c.b===val);
+    else {
+      const pool = opts.cells.filter(c=>c.e===val), same = pool.filter(c=>c.b===cur.b);
+      want = same.length ? same : pool;      // B outside the list: move it too
+    }
+    const cell = (act==='b' && want.find(c=>c.e===cur.e)) || want[0];
+    if(!cell) return;
+    /* choosing a note pins the whole voicing to what the student is looking at */
+    ed.struct = it.struct; ed.rs = it.v.rs; ed.rf = it.v.rf; ed.off = {2:cell.ob, 1:cell.oe};
+  }
+  E.set(progPick, ed);
+  renderProg(progPick);
 }
 
 /* ---------- state & UI ---------- */
@@ -658,14 +884,26 @@ function initControls(){
   el('progSel').innerHTML = Object.entries(PROGS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('');
   el('progSel').addEventListener('change', e=>{ prog.id=e.target.value; renderProg(); });
   el('progCustom').addEventListener('input', ()=>{ if(PROGS[prog.id].text===null) renderProg(); });
-  el('progChart').addEventListener('click', e=>{ const c=e.target.closest('.pslot[data-notes]'); if(c) strum(JSON.parse(c.dataset.notes)); });
+  el('progChart').addEventListener('click', e=>{
+    const chip = e.target.closest('.pedit button');
+    if(chip){ progEditAction(chip); return; }
+    const c = e.target.closest('.pslot[data-notes]');
+    if(!c) return;
+    strum(JSON.parse(c.dataset.notes));        // tapping a chord still sounds it
+    if(c.dataset.key && c.dataset.key !== progPick){ progPick = c.dataset.key; renderProg(progPick); }
+  });
   el('dia').addEventListener('click', ()=>{ const v = quiz.on&&quiz.cur ? quiz.cur.v : buildVoicing(st); strum(v.notes); });
   document.querySelectorAll('.mover button').forEach(b=>b.addEventListener('click', ()=>move(+b.dataset.s, +b.dataset.d)));
   el('reset').addEventListener('click', ()=>{ st.off={2:0,1:0}; update(); });
   el('ghost').addEventListener('click', ()=>{ ghostOn=!ghostOn; el('ghost').textContent='Ghost root: '+(ghostOn?'on':'off'); el('ghost').setAttribute('aria-pressed',ghostOn); update(); });
   document.addEventListener('keydown', e=>{
+    if(mode==='prog' && e.key==='Escape' && progPick){ e.preventDefault(); progPick=null; renderProg(); return; }
     if(mode!=='build') return;
     if(e.key==='ArrowUp'||e.key==='ArrowDown'){ e.preventDefault(); move(e.shiftKey?1:2, e.key==='ArrowUp'?1:-1); }
+  });
+  /* rotating a phone can flip which side of that breakpoint we are on */
+  window.addEventListener('resize', ()=>{
+    if(mode==='prog' && progPick && matchMedia('(max-width:560px)').matches !== progNarrow) renderProg(progPick);
   });
   el('modeBuild').addEventListener('click', ()=>setAppMode('build'));
   el('modeProg').addEventListener('click', ()=>setAppMode('prog'));
