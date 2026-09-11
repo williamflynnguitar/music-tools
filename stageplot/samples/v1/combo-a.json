@@ -1,0 +1,411 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "combo-a",
+ "ensembleName": "Combo A",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "items": [
+  {
+   "id": "i10",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 40.032000000000004,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in11",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i12",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 72,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [
+    {
+     "id": "in13",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i14",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 115.2,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [
+    {
+     "id": "in15",
+     "phantom": false,
+     "notes": "",
+     "source": "Tenor sax",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i16",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 152.64000000000001,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p5"
+   ],
+   "inputs": [
+    {
+     "id": "in17",
+     "phantom": false,
+     "notes": "",
+     "source": "Tenor sax",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i18",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 213.12,
+   "y": 62.064,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i19",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 252,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i20",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 36,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i21",
+   "kind": "house",
+   "ref": "kb1",
+   "label": "",
+   "x": 213.12,
+   "y": 33.983999999999995,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [
+    {
+     "id": "in22",
+     "phantom": false,
+     "notes": "",
+     "source": "Keys",
+     "type": "stereo-di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i23",
+   "kind": "house",
+   "ref": "gtramp1",
+   "label": "",
+   "x": 252,
+   "y": 135.93599999999998,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [
+    {
+     "id": "in24",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i25",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 36,
+   "y": 130.032,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8"
+   ],
+   "inputs": [
+    {
+     "id": "in26",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i27",
+   "kind": "house",
+   "ref": "kit",
+   "label": "",
+   "x": 144,
+   "y": 108,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p9"
+   ],
+   "inputs": [
+    {
+     "id": "in28",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in29",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in30",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in31",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in32",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in33",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true
+    },
+    {
+     "id": "in34",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true
+    }
+   ],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w35",
+   "number": 1,
+   "x": 213.12,
+   "y": 11.952,
+   "rot": 0,
+   "assignees": [
+    "p6"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w36",
+   "number": 2,
+   "x": 273.888,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p7"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w37",
+   "number": 3,
+   "x": 14.112,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p8"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w38",
+   "number": 4,
+   "x": 95.90400000000001,
+   "y": 96.048,
+   "rot": 90,
+   "assignees": [
+    "p9"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w39",
+   "number": 5,
+   "x": 93.60000000000001,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "request": ""
+  }
+ ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Evan Swope",
+   "role": "trombone",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w39"
+  },
+  {
+   "id": "p3",
+   "name": "Dawson McNeal",
+   "role": "trumpet",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w39"
+  },
+  {
+   "id": "p4",
+   "name": "James Barton",
+   "role": "tenor sax",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w39"
+  },
+  {
+   "id": "p5",
+   "name": "James Hoerst",
+   "role": "tenor sax",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w39"
+  },
+  {
+   "id": "p6",
+   "name": "Dexter Curry",
+   "role": "piano",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w35"
+  },
+  {
+   "id": "p7",
+   "name": "Julian Urrego",
+   "role": "guitar",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w36"
+  },
+  {
+   "id": "p8",
+   "name": "Ian Knickrehm",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w37"
+  },
+  {
+   "id": "p9",
+   "name": "Brendan Thompson",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w38"
+  }
+ ],
+ "songs": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}

@@ -1,0 +1,1200 @@
+{
+ "group-a": {
+  "channels": 12,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "Caden Kennedy",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "Caden Kennedy",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "Caden Kennedy",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "Caden Kennedy",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "Caden Kennedy",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "Caden Kennedy",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "Caden Kennedy",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "Sean McDermott",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Guitar",
+    "Alex Kenney",
+    "mic",
+    0
+   ],
+   [
+    10,
+    "Keys L",
+    "Liz Graber",
+    "stereo-di",
+    0
+   ],
+   [
+    11,
+    "Keys R",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    12,
+    "Vocal",
+    "Liz Graber",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Liz Graber",
+    ""
+   ],
+   [
+    2,
+    "Alex Kenney",
+    ""
+   ],
+   [
+    3,
+    "Sean McDermott",
+    ""
+   ],
+   [
+    4,
+    "Caden Kennedy",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "kb1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    4,
+    0
+   ],
+   [
+    "micstand",
+    1,
+    0
+   ],
+   [
+    "di",
+    3,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Sean McDermott)",
+   "Keys (Liz Graber) — stereo, 2 DIs"
+  ]
+ },
+ "group-b": {
+  "channels": 15,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "Caden Kennedy / A.J. Banks (share kit)",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "Kyler Heckard",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Guitar",
+    "Sid Linafelt",
+    "mic",
+    0
+   ],
+   [
+    10,
+    "Keys L",
+    "Liz Graber",
+    "stereo-di",
+    0
+   ],
+   [
+    11,
+    "Keys R",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    12,
+    "Sax",
+    "James Barton",
+    "mic",
+    0
+   ],
+   [
+    13,
+    "Sax",
+    "Evan Shaw",
+    "mic",
+    0
+   ],
+   [
+    14,
+    "Vocal",
+    "Anna Luttrell",
+    "mic",
+    0
+   ],
+   [
+    15,
+    "Vocal",
+    "Liz Graber",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Liz Graber",
+    ""
+   ],
+   [
+    2,
+    "Sid Linafelt",
+    ""
+   ],
+   [
+    3,
+    "James Barton, Evan Shaw",
+    ""
+   ],
+   [
+    4,
+    "Caden Kennedy, A.J. Banks, Kyler Heckard",
+    ""
+   ],
+   [
+    5,
+    "Anna Luttrell",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "kb1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    5,
+    0
+   ],
+   [
+    "micstand",
+    4,
+    0
+   ],
+   [
+    "di",
+    3,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Kyler Heckard)",
+   "Keys (Liz Graber) — stereo, 2 DIs"
+  ]
+ },
+ "group-c": {
+  "channels": 13,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "A.J. Banks / C.J. Strecker (share kit)",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "Michael Boyle",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Guitar",
+    "Sagan Plantz",
+    "mic",
+    0
+   ],
+   [
+    10,
+    "Vocal",
+    "Emmalynn Reilly",
+    "mic",
+    0
+   ],
+   [
+    11,
+    "Vocal",
+    "Issy Lynn",
+    "mic",
+    0
+   ],
+   [
+    12,
+    "Vocal",
+    "Liam Wallace",
+    "mic",
+    0
+   ],
+   [
+    13,
+    "Vocal",
+    "Jack Wilson",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Sagan Plantz",
+    ""
+   ],
+   [
+    2,
+    "Michael Boyle",
+    ""
+   ],
+   [
+    3,
+    "A.J. Banks, C.J. Strecker",
+    ""
+   ],
+   [
+    4,
+    "",
+    ""
+   ],
+   [
+    5,
+    "",
+    ""
+   ]
+  ],
+  "unassigned": [
+   "Emmalynn Reilly",
+   "Issy Lynn",
+   "Liam Wallace",
+   "Jack Wilson"
+  ],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    5,
+    0
+   ],
+   [
+    "micstand",
+    4,
+    0
+   ],
+   [
+    "di",
+    1,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Michael Boyle)"
+  ]
+ },
+ "combo-a": {
+  "channels": 15,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "Brendan Thompson",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "Brendan Thompson",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "Brendan Thompson",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "Brendan Thompson",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "Brendan Thompson",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "Brendan Thompson",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "Brendan Thompson",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "Ian Knickrehm",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Guitar",
+    "Julian Urrego",
+    "mic",
+    0
+   ],
+   [
+    10,
+    "Keys L",
+    "Dexter Curry",
+    "stereo-di",
+    0
+   ],
+   [
+    11,
+    "Keys R",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    12,
+    "Tenor sax",
+    "James Barton",
+    "mic",
+    0
+   ],
+   [
+    13,
+    "Tenor sax",
+    "James Hoerst",
+    "mic",
+    0
+   ],
+   [
+    14,
+    "Trombone",
+    "Evan Swope",
+    "mic",
+    0
+   ],
+   [
+    15,
+    "Trumpet",
+    "Dawson McNeal",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Dexter Curry",
+    ""
+   ],
+   [
+    2,
+    "Julian Urrego",
+    ""
+   ],
+   [
+    3,
+    "Ian Knickrehm",
+    ""
+   ],
+   [
+    4,
+    "Brendan Thompson",
+    ""
+   ],
+   [
+    5,
+    "Evan Swope, Dawson McNeal, James Barton, James Hoerst",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "kb1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    5,
+    0
+   ],
+   [
+    "micstand",
+    4,
+    0
+   ],
+   [
+    "di",
+    3,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Ian Knickrehm)",
+   "Keys (Dexter Curry) — stereo, 2 DIs"
+  ]
+ },
+ "combo-b": {
+  "channels": 14,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "Elijah Gegen",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "Elijah Gegen",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "Elijah Gegen",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "Elijah Gegen",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "Elijah Gegen",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "Elijah Gegen",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "Elijah Gegen",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "Phoenix Kirk",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Keys L",
+    "Zach Rodenbaugh",
+    "stereo-di",
+    0
+   ],
+   [
+    10,
+    "Keys R",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    11,
+    "Bari sax",
+    "Evan Shaw",
+    "mic",
+    0
+   ],
+   [
+    12,
+    "Alto sax",
+    "Isaiah Epp",
+    "mic",
+    0
+   ],
+   [
+    13,
+    "Trumpet",
+    "Aaron Buller",
+    "mic",
+    0
+   ],
+   [
+    14,
+    "Trumpet",
+    "Parker Holuska",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Zach Rodenbaugh",
+    ""
+   ],
+   [
+    2,
+    "Evan Shaw, Aaron Buller, Parker Holuska, Isaiah Epp",
+    ""
+   ],
+   [
+    3,
+    "Phoenix Kirk",
+    ""
+   ],
+   [
+    4,
+    "Elijah Gegen",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "kb1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    4,
+    0
+   ],
+   [
+    "micstand",
+    4,
+    0
+   ],
+   [
+    "di",
+    3,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Phoenix Kirk)",
+   "Keys (Zach Rodenbaugh) — stereo, 2 DIs"
+  ]
+ },
+ "combo-c": {
+  "channels": 8,
+  "rows": [
+   [
+    1,
+    "Bass",
+    "Isaac Waterman",
+    "di",
+    0
+   ],
+   [
+    2,
+    "Guitar",
+    "Sid Linafelt",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Alto sax",
+    "Noah Georgas",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Bass trombone",
+    "Michael Castillo",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Trombone",
+    "Andy Bunck",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "Trombone",
+    "Victoria McClure",
+    "mic",
+    0
+   ],
+   [
+    7,
+    "Trumpet",
+    "Hunter Bocan",
+    "mic",
+    0
+   ],
+   [
+    8,
+    "Trumpet",
+    "Alton Porter",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Michael Castillo, Andy Bunck",
+    ""
+   ],
+   [
+    2,
+    "Victoria McClure, Hunter Bocan",
+    ""
+   ],
+   [
+    3,
+    "Alton Porter, Noah Georgas",
+    ""
+   ],
+   [
+    4,
+    "Isaac Waterman",
+    ""
+   ],
+   [
+    5,
+    "Sid Linafelt",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    5,
+    0
+   ],
+   [
+    "micstand",
+    6,
+    0
+   ],
+   [
+    "di",
+    1,
+    0
+   ]
+  ],
+  "di": [
+   "Bass (Isaac Waterman)"
+  ]
+ },
+ "big-band": {
+  "channels": 24,
+  "rows": [
+   [
+    1,
+    "Kick",
+    "",
+    "mic",
+    0
+   ],
+   [
+    2,
+    "Snare",
+    "",
+    "mic",
+    0
+   ],
+   [
+    3,
+    "Hi-hat",
+    "",
+    "mic",
+    0
+   ],
+   [
+    4,
+    "Tom 1",
+    "",
+    "mic",
+    0
+   ],
+   [
+    5,
+    "Tom 2",
+    "",
+    "mic",
+    0
+   ],
+   [
+    6,
+    "OH L",
+    "",
+    "mic",
+    1
+   ],
+   [
+    7,
+    "OH R",
+    "",
+    "mic",
+    1
+   ],
+   [
+    8,
+    "Bass",
+    "",
+    "di",
+    0
+   ],
+   [
+    9,
+    "Guitar",
+    "",
+    "mic",
+    0
+   ],
+   [
+    10,
+    "Keys L",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    11,
+    "Keys R",
+    "",
+    "stereo-di",
+    0
+   ],
+   [
+    12,
+    "Bari sax",
+    "",
+    "mic",
+    0
+   ],
+   [
+    13,
+    "Tenor sax 1",
+    "",
+    "mic",
+    0
+   ],
+   [
+    14,
+    "Tenor sax 2",
+    "",
+    "mic",
+    0
+   ],
+   [
+    15,
+    "Alto sax 1",
+    "",
+    "mic",
+    0
+   ],
+   [
+    16,
+    "Alto sax 2",
+    "",
+    "mic",
+    0
+   ],
+   [
+    17,
+    "Trombone 1",
+    "",
+    "mic",
+    0
+   ],
+   [
+    18,
+    "Trombone 2",
+    "",
+    "mic",
+    0
+   ],
+   [
+    19,
+    "Trombone 3",
+    "",
+    "mic",
+    0
+   ],
+   [
+    20,
+    "Trombone 4",
+    "",
+    "mic",
+    0
+   ],
+   [
+    21,
+    "Trumpet 1",
+    "",
+    "mic",
+    0
+   ],
+   [
+    22,
+    "Trumpet 2",
+    "",
+    "mic",
+    0
+   ],
+   [
+    23,
+    "Trumpet 3",
+    "",
+    "mic",
+    0
+   ],
+   [
+    24,
+    "Trumpet 4",
+    "",
+    "mic",
+    0
+   ]
+  ],
+  "monitors": [
+   [
+    1,
+    "Bari sax, Tenor sax 2, Alto sax 1",
+    ""
+   ],
+   [
+    2,
+    "Alto sax 2, Tenor sax 1",
+    ""
+   ],
+   [
+    3,
+    "Trombone 1, Trombone 2, Trombone 3, Trombone 4",
+    ""
+   ],
+   [
+    4,
+    "Trumpet 1, Trumpet 2, Trumpet 3, Trumpet 4",
+    ""
+   ],
+   [
+    5,
+    "Piano, Guitar, Bass, Drums",
+    ""
+   ]
+  ],
+  "unassigned": [],
+  "house": [
+   [
+    "kit",
+    1,
+    0
+   ],
+   [
+    "bassamp",
+    1,
+    0
+   ],
+   [
+    "gtramp1",
+    1,
+    0
+   ],
+   [
+    "kb1",
+    1,
+    0
+   ],
+   [
+    "wedge",
+    5,
+    0
+   ],
+   [
+    "micstand",
+    13,
+    1
+   ],
+   [
+    "di",
+    3,
+    0
+   ]
+  ],
+  "di": [
+   "Bass",
+   "Keys — stereo, 2 DIs"
+  ]
+ }
+}

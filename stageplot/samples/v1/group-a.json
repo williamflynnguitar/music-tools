@@ -1,0 +1,285 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "group-a",
+ "ensembleName": "Group A",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "items": [
+  {
+   "id": "i6",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 213.12,
+   "y": 62.064,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in7",
+     "phantom": false,
+     "notes": "",
+     "source": "Vocal",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i8",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 252,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i9",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 36,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i10",
+   "kind": "house",
+   "ref": "kb1",
+   "label": "",
+   "x": 213.12,
+   "y": 33.983999999999995,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in11",
+     "phantom": false,
+     "notes": "",
+     "source": "Keys",
+     "type": "stereo-di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i12",
+   "kind": "house",
+   "ref": "gtramp1",
+   "label": "",
+   "x": 252,
+   "y": 135.93599999999998,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [
+    {
+     "id": "in13",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i14",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 36,
+   "y": 130.032,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [
+    {
+     "id": "in15",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i16",
+   "kind": "house",
+   "ref": "kit",
+   "label": "",
+   "x": 144,
+   "y": 108,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p5"
+   ],
+   "inputs": [
+    {
+     "id": "in17",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in18",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in19",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in20",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in21",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in22",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true
+    },
+    {
+     "id": "in23",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true
+    }
+   ],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w24",
+   "number": 1,
+   "x": 213.12,
+   "y": 11.952,
+   "rot": 0,
+   "assignees": [
+    "p2"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w25",
+   "number": 2,
+   "x": 273.888,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p3"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w26",
+   "number": 3,
+   "x": 14.112,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p4"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w27",
+   "number": 4,
+   "x": 95.90400000000001,
+   "y": 96.048,
+   "rot": 90,
+   "assignees": [
+    "p5"
+   ],
+   "request": ""
+  }
+ ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Liz Graber",
+   "role": "keys/vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w24"
+  },
+  {
+   "id": "p3",
+   "name": "Alex Kenney",
+   "role": "guitar",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w25"
+  },
+  {
+   "id": "p4",
+   "name": "Sean McDermott",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w26"
+  },
+  {
+   "id": "p5",
+   "name": "Caden Kennedy",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w27"
+  }
+ ],
+ "songs": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}

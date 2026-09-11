@@ -1,0 +1,358 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "combo-b",
+ "ensembleName": "Combo B",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "items": [
+  {
+   "id": "i9",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 40.032000000000004,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in10",
+     "phantom": false,
+     "notes": "",
+     "source": "Bari sax",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i11",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 72,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [
+    {
+     "id": "in12",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i13",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 115.2,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [
+    {
+     "id": "in14",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i15",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 152.64000000000001,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p5"
+   ],
+   "inputs": [
+    {
+     "id": "in16",
+     "phantom": false,
+     "notes": "",
+     "source": "Alto sax",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i17",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 213.12,
+   "y": 62.064,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i18",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 36,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i19",
+   "kind": "house",
+   "ref": "kb1",
+   "label": "",
+   "x": 213.12,
+   "y": 33.983999999999995,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [
+    {
+     "id": "in20",
+     "phantom": false,
+     "notes": "",
+     "source": "Keys",
+     "type": "stereo-di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i21",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 36,
+   "y": 130.032,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [
+    {
+     "id": "in22",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i23",
+   "kind": "house",
+   "ref": "kit",
+   "label": "",
+   "x": 144,
+   "y": 108,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8"
+   ],
+   "inputs": [
+    {
+     "id": "in24",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in25",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in26",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in27",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in28",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in29",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true
+    },
+    {
+     "id": "in30",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true
+    }
+   ],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w31",
+   "number": 1,
+   "x": 213.12,
+   "y": 11.952,
+   "rot": 0,
+   "assignees": [
+    "p6"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w32",
+   "number": 2,
+   "x": 93.60000000000001,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [
+    "p2",
+    "p3",
+    "p4",
+    "p5"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w33",
+   "number": 3,
+   "x": 14.112,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p7"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w34",
+   "number": 4,
+   "x": 95.90400000000001,
+   "y": 96.048,
+   "rot": 90,
+   "assignees": [
+    "p8"
+   ],
+   "request": ""
+  }
+ ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Evan Shaw",
+   "role": "bari sax",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p3",
+   "name": "Aaron Buller",
+   "role": "trumpet",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p4",
+   "name": "Parker Holuska",
+   "role": "trumpet",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p5",
+   "name": "Isaiah Epp",
+   "role": "alto sax",
+   "doubles": [
+    "flute"
+   ],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p6",
+   "name": "Zach Rodenbaugh",
+   "role": "piano",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w31"
+  },
+  {
+   "id": "p7",
+   "name": "Phoenix Kirk",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w33"
+  },
+  {
+   "id": "p8",
+   "name": "Elijah Gegen",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w34"
+  }
+ ],
+ "songs": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}

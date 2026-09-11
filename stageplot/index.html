@@ -121,15 +121,15 @@ svg.deck .hit:active{cursor:grabbing}
 .sheet .subhead{font-family:var(--psans);font-size:9pt;margin:0 0 4px}
 .sheet .meta{font-family:var(--mono);font-size:8.5pt;color:#222;margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
 .sheet .rule{border:0;border-top:1.25pt solid #000;margin:4px 0 5px}
-.sheet h2{font-family:var(--psans);font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:5px 0 2px;padding-bottom:1px;border-bottom:.75pt solid #000;break-after:avoid}
+.sheet h2{font-family:var(--psans);font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;padding-bottom:1px;border-bottom:.75pt solid #000;break-after:avoid}
 .sheet table{width:100%;border-collapse:collapse;font-size:10pt;line-height:1.15}
 .sheet th{font-family:var(--psans);font-size:8pt;text-align:left;font-weight:700;border-bottom:.5pt solid #666;padding:1px 4px 1px 0}
 .sheet td{padding:.5px 4px .5px 0;vertical-align:top;border-bottom:.25pt solid #ddd}
 .sheet td.ch,.sheet td.num{font-family:var(--mono);font-size:9pt;white-space:nowrap}
 .sheet tr{break-inside:avoid}
-.sheet .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start}
-.sheet ul{margin:2px 0;padding-left:14px}
-.sheet li{margin:0 0 1px}
+.sheet .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}
+.sheet ul{margin:1px 0;padding-left:13px}
+.sheet li{margin:0}
 .sheet .flag{font-family:var(--psans);font-size:9pt}
 .sheet .diagram{break-inside:avoid;margin:3px 0 1px}
 .sheet .diagram svg{display:block;width:100%;height:auto}
@@ -140,7 +140,20 @@ svg.deck .hit:active{cursor:grabbing}
 /* changeover sheets */
 .overlay{position:fixed;inset:0;background:rgba(6,16,20,.86);overflow:auto;padding:26px 16px 60px;z-index:900}
 .dlg{max-width:560px;margin:0 auto;background:var(--petrol);border:1px solid var(--line);border-radius:6px;padding:18px 20px 22px}
+.dlg.wide{max-width:680px}
 .dlg h2{font-size:19px;font-weight:400;margin:0 0 4px}
+.dlgh{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);font-weight:400;margin:18px 0 6px}
+.dlg textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;color:var(--bone);font-family:var(--mono);font-size:13px;line-height:1.5;resize:vertical}
+.totals{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--bone-dim);border:1px solid var(--line);border-radius:4px;padding:8px 12px;margin-bottom:12px}
+.totals b{color:var(--bone);font-weight:400;font-size:15px}
+.totals .amber b,.totals .amber{color:var(--amber)}
+.totals .red b,.totals .red{color:var(--red)}
+.instr{display:grid;gap:4px}
+.instrrow{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;background:var(--petrol-2);border-radius:4px;padding:5px 10px;font-size:14px}
+.instrrow .ct{font-family:var(--mono);min-width:24px;text-align:center;font-weight:400}
+table.prev{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+table.prev th{text-align:left;font-family:var(--mono);font-size:11px;color:var(--bone-dim);font-weight:400;border-bottom:1px solid var(--line);padding:3px 0}
+table.prev td{padding:3px 0;border-bottom:1px solid rgba(42,84,97,.4)}
 .dlg p{font-size:14px;color:var(--bone-dim);margin:0 0 14px}
 .pickgrid{display:grid;gap:6px}
 .pickgrid button{text-align:left}
@@ -160,7 +173,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
 @media print{
   @page{size:letter portrait;margin:.5in}
   html,body{background:#fff;color:#000}
-  .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#newDlg{display:none!important}
+  .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#startDlg{display:none!important}
   .app{display:block;padding:0}
   .pagerail{display:block;border:0;padding:0;max-width:none;overflow:visible}
   .sheetbox{overflow:visible}
@@ -293,7 +306,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
   </aside>
 </div>
 
-<div class="overlay" id="newDlg" hidden></div>
+<div class="overlay" id="startDlg" hidden></div>
 <div class="overlay" id="coDlg" hidden></div>
 
 <script>
@@ -342,7 +355,7 @@ const VENUE = {
 };
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 22, labelPt: 12, smallPt: 9.5, tinyPt: 8 };
+const DRAW = { person: 22, margin: 18, labelPt: 12, smallPt: 9.5, tinyPt: 8 };
 
 /* Bring-your-own palette. Free-text description prints after "BYO:". */
 const BYO_KINDS = [
@@ -362,321 +375,445 @@ const KIT_FULL = ["Kick","Snare","Hi-hat","Tom 1","Tom 2","OH L","OH R"];
 const KIT_MIN  = ["Kick","Snare","OH L","OH R"];   // "jazz minimal"
 const kitInputs = names => names.map(n => ({ source:n, type:"mic", phantom:/OH/.test(n) }));
 
-/* ---- roles ------------------------------------------------------- *
- * Role text is free — the category is matched from it, longest and
- * most specific first. A person can hold several roles ("keys/vocals").
- * ------------------------------------------------------------------ */
-const ROLE_PATTERNS = [
-  [/bass\s*(trombone|bone)|b\.?\s*tbn/i, "btbn"],
-  [/trombone|tbn/i,            "tbn"],
-  [/trumpet|flugel|cornet|tpt/i,"tpt"],
-  [/bari/i,                    "bari"],
-  [/tenor/i,                   "tenor"],
-  [/alto|soprano/i,            "alto"],
-  [/sax/i,                     "sax"],
-  [/drum|kit|percussion/i,     "drums"],
-  [/guitar|gtr/i,              "guitar"],
-  [/piano|keys|keyboard|organ|synth|rhodes/i, "keys"],
-  [/bass/i,                    "bass"],
-  [/voc|voice|sing/i,          "vocals"],
-];
-const HORN_CATS = ["bari","tenor","alto","sax","btbn","tbn","tpt"];
-const SEC_ROW = { bari:"sax", tenor:"sax", alto:"sax", sax:"sax", btbn:"tbn", tbn:"tbn", tpt:"tpt" };
-const SEC_LABEL = { sax:"Sax section", tbn:"Trombone section", tpt:"Trumpet section" };
-const GROUP_ORDER = { drums:0, bass:1, guitar:2, keys:3, horn:4, vocals:5, other:6 };
-const ABBREV = [[/alto sax/i,"Alto"],[/tenor sax/i,"Tenor"],[/bari(tone)? sax/i,"Bari"],[/bass trombone/i,"B.Tbn"],
-  [/trombone/i,"Tbn"],[/trumpet/i,"Tpt"],[/guitar/i,"Gtr"],[/piano/i,"Piano"],[/keys|keyboard/i,"Keys"],
-  [/drums/i,"Drums"],[/vocals|voice/i,"Voc"],[/bass/i,"Bass"],[/sax/i,"Sax"]];
+function houseDef(ref){ return VENUE.house.find(h => h.id === ref); }
+function byoDef(kind){ return BYO_KINDS.find(b => b.id === kind); }
+function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()); }
 
-function roleCats(role){
-  const out = [];
-  for (const part of String(role || "").split(/[\/,+]|\band\b/)){
-    const t = part.trim(); if (!t) continue;
-    for (const [re, cat] of ROLE_PATTERNS) if (re.test(t)) { if (!out.includes(cat)) out.push(cat); break; }
+/* ---- instrument library ------------------------------------------ *
+ * ROLES is the one place instrument knowledge lives. A plot is a list
+ * of POSITIONS, each holding a role; names are optional attributes of
+ * a position, never structure. To teach the app a new instrument, add
+ * a row here — nothing else in the file enumerates instruments.
+ *
+ *   grp/sub   where its channels sort (see the channel-ordering rule)
+ *   stance    "standing" | "seated" | "object" (the gear is the marker)
+ *   backline  a VENUE.house id this role implies; SW has no acoustic
+ *             piano, so piano and organ mean a house keyboard
+ *   gearSide  which side of the player the backline sits: "up" behind
+ *             (amps), "down" in front (keyboards)
+ *   zone      where the layout engine wants it (see LAYOUT)
+ * ------------------------------------------------------------------ */
+const MIC = s => [{ source:s, type:"mic", phantom:false }];
+const ROLES = [
+  // voice
+  { id:"voice",     label:"Voice",            short:"Vox",   family:"voice",  grp:"vocals", sub:0, stance:"standing", w:22, d:22, zone:"front-center", inputs:MIC("Vocal") },
+  // rhythm section
+  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
+  { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bassamp", gearSide:"up", inputs:[{ source:"Bass", type:"di", phantom:false }] },
+  { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bassamp", gearSide:"up", inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
+  { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit", inputs:null /* KIT_FULL */ },
+  { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:36, d:30, zone:"rhythm", inputs:MIC("Percussion") },
+  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"kb1", gearSide:"down", inputs:[{ source:"Keys", type:"stereo-di", phantom:false }] },
+  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"kb2", gearSide:"down", inputs:[{ source:"Organ", type:"stereo-di", phantom:false }] },
+  { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", inputs:[{ source:"DJ / laptop", type:"stereo-di", phantom:false }] },
+  { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", inputs:[{ source:"Playback", type:"stereo-di", phantom:false }] },
+  // saxes and other woodwinds — one row
+  { id:"bari",      label:"Bari sax",         short:"Bari",  family:"sax",    grp:"horn",   sub:0, stance:"standing", w:24, d:24, zone:"front", inputs:MIC("Bari sax") },
+  { id:"tenor",     label:"Tenor sax",        short:"Tenor", family:"sax",    grp:"horn",   sub:1, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Tenor sax") },
+  { id:"alto",      label:"Alto sax",         short:"Alto",  family:"sax",    grp:"horn",   sub:2, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Alto sax") },
+  { id:"soprano",   label:"Soprano sax",      short:"Sop",   family:"sax",    grp:"horn",   sub:3, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Soprano sax") },
+  { id:"clarinet",  label:"Clarinet",         short:"Cl",    family:"sax",    grp:"horn",   sub:4, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Clarinet") },
+  { id:"flute",     label:"Flute",            short:"Fl",    family:"sax",    grp:"horn",   sub:5, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Flute") },
+  // brass — low brass row, then high brass row
+  { id:"tuba",      label:"Tuba",             short:"Tuba",  family:"brass",  grp:"horn",   sub:6, stance:"seated",   w:34, d:34, zone:"front", inputs:MIC("Tuba") },
+  { id:"btrombone", label:"Bass trombone",    short:"B.Tbn", family:"brass",  grp:"horn",   sub:7, stance:"seated",   w:26, d:26, zone:"front", inputs:MIC("Bass trombone") },
+  { id:"trombone",  label:"Trombone",         short:"Tbn",   family:"brass",  grp:"horn",   sub:8, stance:"seated",   w:26, d:26, zone:"front", inputs:MIC("Trombone") },
+  { id:"hornsection",label:"Horn section",    pick:"Horn section (generic)", short:"Horns", family:"brass", grp:"horn", sub:9, stance:"standing", w:60, d:24, zone:"front", inputs:[{ source:"Horn section mic 1", type:"mic", phantom:false }, { source:"Horn section mic 2", type:"mic", phantom:false }] },
+  { id:"trumpet",   label:"Trumpet",          short:"Tpt",   family:"brass",  grp:"horn",   sub:10, stance:"seated",  w:22, d:22, zone:"front", inputs:MIC("Trumpet") },
+  { id:"flugel",    label:"Flugelhorn",       short:"Flug",  family:"brass",  grp:"horn",   sub:11, stance:"seated",  w:22, d:22, zone:"front", inputs:MIC("Flugelhorn") },
+  // strings and everything else
+  { id:"acoustic",  label:"Acoustic guitar",  short:"Ac gtr",family:"strings",grp:"guitar", sub:1, stance:"standing", w:22, d:22, zone:"front", inputs:[{ source:"Acoustic guitar", type:"di", phantom:false }] },
+  { id:"violin",    label:"Violin",           short:"Vln",   family:"strings",grp:"strings",sub:0, stance:"standing", w:22, d:22, zone:"mid", inputs:[{ source:"Violin", type:"di", phantom:false }] },
+  { id:"cello",     label:"Cello",            short:"Cello", family:"strings",grp:"strings",sub:1, stance:"seated",   w:28, d:28, zone:"mid", inputs:[{ source:"Cello", type:"di", phantom:false }] },
+  { id:"harmonica", label:"Harmonica",        short:"Harp",  family:"other",  grp:"other",  sub:0, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Harmonica") },
+];
+const ROLE_FALLBACK = { id:"other", label:"Other", short:"Other", family:"other", grp:"other", sub:9, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Input") };
+const GROUP_ORDER = { drums:0, bass:1, guitar:2, keys:3, horn:4, strings:5, vocals:6, other:7 };
+const SEC_ROW_OF = { sax:"sax", brass:null };     // brass splits below
+const SEC_LABEL = { sax:"Sax section", tbn:"Trombone section", tpt:"Trumpet section" };
+function sectionRowOf(role){
+  if (!role) return null;
+  if (role.family === "sax") return "sax";
+  if (["tuba","btrombone","trombone"].includes(role.id)) return "tbn";
+  if (["trumpet","flugel"].includes(role.id)) return "tpt";
+  return null;
+}
+function roleDef(plot, id){
+  return (plot && plot.customRoles || []).find(r => r.id === id) ||
+         ROLES.find(r => r.id === id) || ROLE_FALLBACK;
+}
+function roleOf(plot, pos){ return roleDef(plot, pos.roleId); }
+function roleInputs(role){
+  if (role.id === "drums" || role.stance === "object" && role.backline === "kit") return kitInputs(KIT_FULL);
+  return (role.inputs || []).map(i => Object.assign({ phantom:false, notes:"" }, i));
+}
+/* Free text -> a role id. Used by the v1 migration and by bulk name
+   entry ("Sam Lee — tenor"). Most specific first. */
+const ROLE_MATCH = [
+  [/bass\s*(trombone|bone)|b\.?\s*tbn/i, "btrombone"], [/trombone|tbn/i, "trombone"],
+  [/flugel/i, "flugel"], [/trumpet|cornet|tpt/i, "trumpet"], [/tuba|sousaphone/i, "tuba"],
+  [/bari/i, "bari"], [/tenor/i, "tenor"], [/alto/i, "alto"], [/soprano/i, "soprano"],
+  [/clarinet/i, "clarinet"], [/flute/i, "flute"], [/\bsax/i, "alto"],
+  [/horn section|horns/i, "hornsection"],
+  [/drum|kit\b/i, "drums"], [/percussion|congas|aux perc/i, "perc"],
+  [/upright|double bass|acoustic bass/i, "upright"],
+  [/acoustic guitar|ac\.? gtr/i, "acoustic"], [/guitar|gtr/i, "guitar"],
+  [/organ|hammond|b3/i, "organ"], [/piano|keys|keyboard|synth|rhodes/i, "keys"],
+  [/dj|laptop|ableton/i, "dj"], [/playback|backing track/i, "playback"],
+  [/violin|fiddle/i, "violin"], [/cello/i, "cello"], [/harmonica|harp\b/i, "harmonica"],
+  [/bass/i, "bass"], [/voc|voice|sing|vox/i, "voice"],
+];
+function roleIdFromText(text){
+  for (const [re, id] of ROLE_MATCH) if (re.test(String(text || ""))) return id;
+  return null;
+}
+
+/* ---- positions: labels come from the role, names are optional ----- */
+function positionLabels(plot){
+  const total = {}, seen = {}, out = {};
+  for (const p of plot.positions) total[p.roleId] = (total[p.roleId] || 0) + 1;
+  for (const p of plot.positions){
+    const r = roleOf(plot, p), n = (seen[p.roleId] = (seen[p.roleId] || 0) + 1);
+    const sfx = total[p.roleId] > 1 ? " " + n : "";
+    out[p.id] = { short:r.short + sfx, full:r.label + sfx, index:n, role:r };
   }
   return out;
 }
-const isHorn = cat => HORN_CATS.includes(cat);
-function personGroup(p){                       // channel group for a person's own mic
-  const cats = roleCats(p.role);
-  const horn = cats.find(isHorn); if (horn) return { grp:"horn", sub:HORN_CATS.indexOf(horn) };
-  if (cats.includes("vocals")) return { grp:"vocals", sub:0 };
-  return { grp:"other", sub:0 };
+function posLabel(plot, pos){ const L = positionLabels(plot)[pos.id]; return L ? L.short : "?"; }
+function posNames(pos){ return (pos.names || []).map(s => String(s).trim()).filter(Boolean); }
+function posDoubleText(plot, pos){
+  return (pos.doubles || []).map(d => d.label || roleDef(plot, d.roleId).label).filter(Boolean).join(" / ");
 }
-function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()); }
-function displayName(p){ return p.name && p.name.trim() ? p.name.trim() : titleCase(p.role || "Musician"); }
-function shortName(p){                          // for the diagram: two short lines
-  if (p.name && p.name.trim()){ const bits = p.name.trim().split(/\s+/); return bits.length > 1 ? [bits[0], bits.slice(1).join(" ")] : [bits[0]]; }
-  let r = String(p.role || "");
-  for (const [re, ab] of ABBREV) if (re.test(r)) { r = r.replace(re, ab); break; }
-  return [titleCase(r)];
+/* How a position reads in a table: "Tpt 2 (Sam Ortiz)". Names are
+   dropped wholesale when printNames is off, and nothing else changes. */
+function posText2(plot, pos, labels, opt){
+  const L = (labels || positionLabels(plot))[pos.id], names = posNames(pos);
+  const show = plot.printNames === false ? [] : names;
+  const base = (opt && opt.full) ? L.full : L.short;      // tables read "Tpt 2", not "Trumpet 2"
+  return base + (show.length ? " (" + show.join(" / ") + ")" : "");
 }
-function roleLine(p){
-  const d = (p.doubles || []).filter(Boolean);
-  return titleCase(p.role || "") + (d.length ? " / " + d.join(", ") : "");
+function posShortLines(plot, pos, labels){       // for the diagram: label, then names
+  const L = (labels || positionLabels(plot))[pos.id];
+  const lines = [{ text:L.short, size:"label" }];
+  const dbl = posDoubleText(plot, pos);
+  if (dbl) lines.push({ text:"/ " + dbl, size:"small" });
+  if (plot.printNames !== false) for (const n of posNames(pos)) lines.push({ text:n, size:"small" });
+  return lines;
 }
 
-/* ---- ensemble presets -------------------------------------------- *
- * Positions are fractions of the deck: fx runs 0 at the STAGE-LEFT
- * edge to 1 at stage right, fy runs 0 downstage (audience) to 1
- * upstage — i.e. inches from the downstage-left corner, as in the
- * brief's data model. Stage left is the performer's left, so fx 0
- * draws on the RIGHT of the page (audience at the bottom).
- * Fractions mean a new deck size re-lays every preset proportionally.
- * ------------------------------------------------------------------ */
-const RHY = {                       // the shared rhythm-section block
-  kit:    [.500,.750], kitWedge: [.333,.667,90],
-  bass:   [.125,.667], bassRig:  [.125,.903], bassWedge: [.049,.375],
-  gtr:    [.875,.667], gtrAmp:   [.875,.944], gtrWedge:  [.951,.375],
-  keys:   [.740,.431], kb:       [.740,.236], keysWedge: [.740,.083],
-};
-const FRONT = .278, FRONTWEDGE = .069;   // downstage row, and the wedge line in front of it
-const ENSEMBLES = [
-  { id:"group-a", name:"Group A", note:"Quartet.",
-    people:[
-      { key:"liz",   name:"Liz Graber",    role:"keys/vocals", at:RHY.keys },
-      { key:"alex",  name:"Alex Kenney",   role:"guitar",      at:RHY.gtr },
-      { key:"sean",  name:"Sean McDermott",role:"bass",        at:RHY.bass },
-      { key:"caden", name:"Caden Kennedy", role:"drums",       chair:"kit" },
-    ],
-    items:[ { ref:"kb1", owners:["liz"], at:RHY.kb }, { ref:"gtramp1", owners:["alex"], at:RHY.gtrAmp },
-            { ref:"bassamp", owners:["sean"], at:RHY.bassRig }, { ref:"kit", owners:["caden"], at:RHY.kit } ],
-    wedges:[ { at:RHY.keysWedge, who:["liz"] }, { at:RHY.gtrWedge, who:["alex"] },
-             { at:RHY.bassWedge, who:["sean"] }, { at:RHY.kitWedge, who:["caden"] } ] },
-
-  { id:"group-b", name:"Group B", note:"Two drummers, one kit.",
-    people:[
-      { key:"anna",  name:"Anna Luttrell",  role:"voice",       at:[.500,FRONT] },
-      { key:"james", name:"James Barton",   role:"sax",         at:[.361,FRONT] },
-      { key:"evan",  name:"Evan Shaw",      role:"sax",         at:[.219,FRONT] },
-      { key:"sid",   name:"Sid Linafelt",   role:"guitar",      at:RHY.gtr },
-      { key:"liz",   name:"Liz Graber",     role:"keys/voice",  at:RHY.keys },
-      { key:"kyler", name:"Kyler Heckard",  role:"bass",        at:RHY.bass },
-      { key:"caden", name:"Caden Kennedy",  role:"drums",       chair:"kit" },
-      { key:"aj",    name:"A.J. Banks",     role:"drums",       chair:"kit" },
-    ],
-    items:[ { ref:"kb1", owners:["liz"], at:RHY.kb }, { ref:"gtramp1", owners:["sid"], at:RHY.gtrAmp },
-            { ref:"bassamp", owners:["kyler"], at:RHY.bassRig }, { ref:"kit", owners:["caden","aj"], at:RHY.kit } ],
-    wedges:[ { at:RHY.keysWedge, who:["liz"] }, { at:RHY.gtrWedge, who:["sid"] },
-             { at:[.104,FRONTWEDGE], who:["james","evan"] }, { at:RHY.kitWedge, who:["caden","aj","kyler"] },
-             { at:[.611,FRONTWEDGE], who:["anna"] } ] },
-
-  { id:"group-c", name:"Group C", note:"Four vocalists, two drummers sharing one kit.",
-    people:[
-      { key:"emmalynn", name:"Emmalynn Reilly", role:"vocals", at:[.851,FRONT] },
-      { key:"issy",     name:"Issy Lynn",       role:"vocals", at:[.622,FRONT] },
-      { key:"liam",     name:"Liam Wallace",    role:"vocals", at:[.378,FRONT] },
-      { key:"jack",     name:"Jack Wilson",     role:"vocals", at:[.149,FRONT] },
-      { key:"sagan",    name:"Sagan Plantz",    role:"guitar", at:RHY.gtr },
-      { key:"michael",  name:"Michael Boyle",   role:"bass",   at:RHY.bass },
-      { key:"aj",       name:"A.J. Banks",      role:"drums",  chair:"kit" },
-      { key:"cj",       name:"C.J. Strecker",   role:"drums",  chair:"kit" },
-    ],
-    items:[ { ref:"gtramp1", owners:["sagan"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["michael"], at:RHY.bassRig },
-            { ref:"kit", owners:["aj","cj"], at:RHY.kit } ],
-    // the four vocalists are deliberately left off a mix: the flags are the point
-    wedges:[ { at:RHY.gtrWedge, who:["sagan"] }, { at:RHY.bassWedge, who:["michael"] },
-             { at:RHY.kitWedge, who:["aj","cj"] }, { at:[.736,FRONTWEDGE], who:[] }, { at:[.264,FRONTWEDGE], who:[] } ] },
-
-  { id:"fusion", name:"Fusion Combo", note:"Names not rostered yet.",
-    people:[
-      { key:"sax1", name:"", role:"sax 1",  at:[.600,FRONT] },
-      { key:"sax2", name:"", role:"sax 2",  at:[.400,FRONT] },
-      { key:"gtr",  name:"", role:"guitar", at:RHY.gtr },
-      { key:"bass", name:"", role:"bass",   at:RHY.bass },
-      { key:"drums",name:"", role:"drums",  chair:"kit" },
-    ],
-    items:[ { ref:"gtramp1", owners:["gtr"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["bass"], at:RHY.bassRig },
-            { ref:"kit", owners:["drums"], at:RHY.kit } ],
-    wedges:[ { at:[.500,FRONTWEDGE], who:["sax1","sax2"] }, { at:RHY.gtrWedge, who:["gtr"] },
-             { at:RHY.bassWedge, who:["bass"] }, { at:RHY.kitWedge, who:["drums"] } ] },
-
-  { id:"combo-a", name:"Combo A", note:"",
-    people:[
-      { key:"swope",  name:"Evan Swope",      role:"trombone",  at:[.139,FRONT] },
-      { key:"dawson", name:"Dawson McNeal",   role:"trumpet",   at:[.250,FRONT] },
-      { key:"barton", name:"James Barton",    role:"tenor sax", at:[.400,FRONT] },
-      { key:"hoerst", name:"James Hoerst",    role:"tenor sax", at:[.530,FRONT] },
-      { key:"dexter", name:"Dexter Curry",    role:"piano",     at:RHY.keys },
-      { key:"julian", name:"Julian Urrego",   role:"guitar",    at:RHY.gtr },
-      { key:"ian",    name:"Ian Knickrehm",   role:"bass",      at:RHY.bass },
-      { key:"brendan",name:"Brendan Thompson",role:"drums",     chair:"kit" },
-    ],
-    items:[ { ref:"kb1", owners:["dexter"], at:RHY.kb }, { ref:"gtramp1", owners:["julian"], at:RHY.gtrAmp },
-            { ref:"bassamp", owners:["ian"], at:RHY.bassRig }, { ref:"kit", owners:["brendan"], at:RHY.kit } ],
-    wedges:[ { at:RHY.keysWedge, who:["dexter"] }, { at:RHY.gtrWedge, who:["julian"] },
-             { at:RHY.bassWedge, who:["ian"] }, { at:RHY.kitWedge, who:["brendan"] },
-             { at:[.325,FRONTWEDGE], who:["swope","dawson","barton","hoerst"] } ] },
-
-  { id:"combo-b", name:"Combo B", note:"No guitar.",
-    people:[
-      { key:"shaw",   name:"Evan Shaw",       role:"bari sax",  at:[.139,FRONT] },
-      { key:"buller", name:"Aaron Buller",    role:"trumpet",   at:[.250,FRONT] },
-      { key:"parker", name:"Parker Holuska",  role:"trumpet",   at:[.400,FRONT] },
-      { key:"isaiah", name:"Isaiah Epp",      role:"alto sax",  doubles:["flute"], at:[.530,FRONT] },
-      { key:"zach",   name:"Zach Rodenbaugh", role:"piano",     at:RHY.keys },
-      { key:"phoenix",name:"Phoenix Kirk",    role:"bass",      at:RHY.bass },
-      { key:"elijah", name:"Elijah Gegen",    role:"drums",     chair:"kit" },
-    ],
-    items:[ { ref:"kb1", owners:["zach"], at:RHY.kb }, { ref:"bassamp", owners:["phoenix"], at:RHY.bassRig },
-            { ref:"kit", owners:["elijah"], at:RHY.kit } ],
-    wedges:[ { at:RHY.keysWedge, who:["zach"] }, { at:[.325,FRONTWEDGE], who:["shaw","buller","parker","isaiah"] },
-             { at:RHY.bassWedge, who:["phoenix"] }, { at:RHY.kitWedge, who:["elijah"] } ] },
-
-  { id:"combo-c", name:"Combo C", note:"Six horns, no drums, no piano.",
-    people:[
-      { key:"castillo",name:"Michael Castillo",role:"bass trombone", at:[.139,.278] },
-      { key:"bunck",   name:"Andy Bunck",      role:"trombone",      at:[.271,.300] },
-      { key:"victoria",name:"Victoria McClure",role:"trombone",      at:[.438,.320] },
-      { key:"hunter",  name:"Hunter Bocan",    role:"trumpet",       at:[.604,.320] },
-      { key:"alton",   name:"Alton Porter",    role:"trumpet",       at:[.771,.300] },
-      { key:"noah",    name:"Noah Georgas",    role:"alto sax",      at:[.938,.278] },
-      { key:"sid",     name:"Sid Linafelt",    role:"guitar",        at:RHY.gtr },
-      { key:"isaac",   name:"Isaac Waterman",  role:"bass",          at:RHY.bass },
-    ],
-    items:[ { ref:"gtramp1", owners:["sid"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["isaac"], at:RHY.bassRig } ],
-    wedges:[ { at:[.243,FRONTWEDGE], who:["castillo","bunck"] }, { at:[.521,FRONTWEDGE], who:["victoria","hunter"] },
-             { at:[.833,FRONTWEDGE], who:["alton","noah"] }, { at:[.049,.611], who:["isaac"] }, { at:[.951,.611], who:["sid"] } ] },
-
-  { id:"bigband-1", name:"Big Band 1", note:"17 players. Names not rostered yet.", bigband:true },
-  { id:"bigband-2", name:"Big Band 2", note:"17 players. Names not rostered yet.", bigband:true },
+/* ---- instrumentation templates: shapes, not rosters --------------- */
+const TEMPLATES = [
+  { id:"combo-small", name:"Jazz combo (small)", note:"a horn or two over rhythm",
+    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"combo-large", name:"Jazz combo (large) / little big band", note:"front line of four or five",
+    parts:[["alto",1],["tenor",1],["bari",1],["trumpet",2],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
+    parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"rock", name:"Rock / pop band", note:"lead vocal, gtr, bass, keys, drums",
+    parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"vocalpop", name:"Vocal-forward pop group", note:"three voices over a rhythm section",
+    parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"funk", name:"Funk / soul band", note:"rhythm section plus a horn line",
+    parts:[["voice",1],["alto",1],["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"duo", name:"Singer-songwriter duo / trio", note:"voice, acoustic, upright",
+    parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1],["upright",1]] },
+  { id:"horns-rhythm", name:"Horn section + rhythm", note:"four horns, four rhythm",
+    parts:[["alto",1],["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+  { id:"vocal-jazz", name:"Vocal jazz ensemble + rhythm", note:"four voices, piano trio",
+    parts:[["voice",4],["keys",1],["bass",1],["drums",1]] },
+  { id:"solo", name:"Solo act", note:"one voice, one instrument",
+    parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1]] },
 ];
 
-/* Both big bands share one layout. Chairs are numbered by roster order;
-   lead chairs (Alto 1, Tbn 1, Tpt 1) sit in one column at stage-centre,
-   low chairs (bari, Tbn 4, Tpt 4) nearest the rhythm section. */
-function bigBandPreset(id, name, note){
-  const SX = [.399,.538,.677,.816,.955], BX = [.538,.677,.816,.955];  // sax / brass columns, stage left -> right
-  const people = [
-    { key:"alto1", name:"", role:"alto sax 1",  at:[SX[2],.319] },
-    { key:"alto2", name:"", role:"alto sax 2",  at:[SX[3],.319] },
-    { key:"ten1",  name:"", role:"tenor sax 1", at:[SX[4],.319] },
-    { key:"ten2",  name:"", role:"tenor sax 2", at:[SX[1],.319] },
-    { key:"bari",  name:"", role:"bari sax",    at:[SX[0],.319] },
-    { key:"tpt1",  name:"", role:"trumpet 1",   at:[BX[1],.875] },
-    { key:"tpt2",  name:"", role:"trumpet 2",   at:[BX[2],.875] },
-    { key:"tpt3",  name:"", role:"trumpet 3",   at:[BX[3],.875] },
-    { key:"tpt4",  name:"", role:"trumpet 4",   at:[BX[0],.875] },
-    { key:"tbn1",  name:"", role:"trombone 1",  at:[BX[1],.611] },
-    { key:"tbn2",  name:"", role:"trombone 2",  at:[BX[2],.611] },
-    { key:"tbn3",  name:"", role:"trombone 3",  at:[BX[3],.611] },
-    { key:"tbn4",  name:"", role:"trombone 4",  at:[BX[0],.611] },
-    { key:"piano", name:"", role:"piano",       at:[.201,.306] },
-    { key:"gtr",   name:"", role:"guitar",      at:[.319,.306] },
-    { key:"bass",  name:"", role:"bass",        at:[.069,.250] },
-    { key:"drums", name:"", role:"drums",       chair:"kit" },
-  ];
-  const items = [
-    { ref:"kb1", owners:["piano"], at:[.201,.139] },
-    { ref:"gtramp1", owners:["gtr"], at:[.319,.458] },
-    { ref:"bassamp", owners:["bass"], at:[.069,.417] },
-    { ref:"kit", owners:["drums"], at:[.149,.757] },
-  ];
-  // trumpets stand unless SW turns out to own risers (VENUE.house riser count)
-  const riser = VENUE.house.find(h => h.id === "riser");
-  if (riser && riser.count >= 2){ items.push({ ref:"riser", at:[.608,.875] }, { ref:"riser", at:[.885,.875] }); }
-  const wedges = [
-    { at:[.469,.083], who:["bari","ten2","alto1"] },
-    { at:[.816,.083], who:["alto2","ten1"] },
-    { at:[.431,.611,270], who:["tbn1","tbn2","tbn3","tbn4"] },
-    { at:[.431,.875,270], who:["tpt1","tpt2","tpt3","tpt4"] },
-    { at:[.319,.694], who:["piano","gtr","bass","drums"] },
-  ];
-  return { id, name, note, people, items, wedges };
-}
-function ensemble(id){
-  const e = ENSEMBLES.find(x => x.id === id);
-  return e && e.bigband ? bigBandPreset(e.id, e.name, e.note) : e;
-}
+/* ---- layout engine ------------------------------------------------ *
+ * Conventions, all in one place so they can be argued with:
+ *  - Audience at the bottom. Rows pack front to back in score order:
+ *    voices downstage, then saxes, then low brass, then high brass.
+ *  - Within a row, chairs run stage-left to stage-right in channel
+ *    order (bari nearest the rhythm section, as a big band sits).
+ *  - The rhythm section owns the upstage band: kit upstage centre,
+ *    bass stage left, guitar stage right, keys downstage of them.
+ *  - With eight or more horns the band is a big band: the rhythm
+ *    section moves into a stage-left column and the horn rows take
+ *    the rest of the deck, using its full depth.
+ *  - Amps sit behind their player, keyboards in front of theirs.
+ *  - Everything is a fraction of the deck, so a new VENUE.deck
+ *    re-lays every template proportionally.
+ *  - Wedges land downstage of the group they serve.
+ *  - Anything the director has dragged is pinned and never moved;
+ *    the engine packs around it.
+ * ------------------------------------------------------------------ */
+const LAYOUT = {
+  frontY: .26, frontBackY: .58, rowGapMax: .24,   // the front band, where rows live
+  bigBandY: .28, bigBandBackY: .90, bigBandColumn: .36, hornsForBigBand: 8,
+  edge: 16,                    // inches kept clear of the deck edge when packing a row
+  comfySpacing: 46, minSpacing: 26,
+  rhythm: {                    // standard shape, [fx, fy] per role, extras stagger
+    drums:[.50,.80], bass:[.13,.63], upright:[.13,.63], guitar:[.87,.63],
+    keys:[.74,.40], organ:[.26,.40], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],
+  },
+  rhythmBig: {                 // big-band shape: the stage-left column
+    drums:[.149,.757], bass:[.330,.500], upright:[.330,.500], guitar:[.330,.160],
+    keys:[.104,.382], organ:[.104,.139], perc:[.250,.640], dj:[.104,.640], playback:[.049,.640],
+  },
+  gearUp: .17, gearDown: .26,  // how far the backline sits from its player (fraction of depth)
+  wedgeGap: 30,                // inches downstage of the position it serves
+  stagger: [0, .07, -.07, .14, -.14],
+};
+function clampIn(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
-/* ---- plot construction ------------------------------------------- */
-function idMaker(){ let n = 0; return pre => pre + (++n); }
-function houseDef(ref){ return VENUE.house.find(h => h.id === ref); }
-function byoDef(kind){ return BYO_KINDS.find(b => b.id === kind); }
+function autoLayout(plot, opt){
+  const force = opt && opt.force, D = deckIn(plot), W = D.w, DP = D.d;
+  const labels = positionLabels(plot);
+  const pinned = o => !force && o.moved;
+  const notes = [];
 
-function defaultInputsFor(item, people){
-  const mk = arr => arr.map(i => Object.assign({ phantom:false, notes:"" }, i));
-  if (item.kind === "person"){
-    const p = people.find(x => x.id === item.ownerPersonIds[0]); if (!p) return [];
-    const out = [];
-    for (const cat of roleCats(p.role)){
-      if (cat === "vocals") out.push({ source:"Vocal", type:"mic" });
-      else if (isHorn(cat)) out.push({ source:titleCase(p.name && p.name.trim() ? p.role.replace(/\s*\d+$/, "") : p.role), type:"mic" });
-    }
-    return mk(out);
-  }
-  const def = item.kind === "house" ? houseDef(item.ref) : byoDef(item.ref);
-  if (!def) return [];
-  if (def.cat === "drums") return kitInputs(KIT_FULL);
-  if (def.inputs) return mk(def.inputs);
-  if (def.id === "bassamp") return mk([{ source:"Bass", type:"di" }]);
-  if (def.id === "gtramp1") return mk([{ source:"Guitar", type:"mic", notes:"amp mic" }]);
-  if (def.cat === "keys")   return mk([{ source:"Keys", type:"stereo-di" }]);
-  return [];
-}
+  const byFamily = f => plot.positions.filter(p => roleOf(plot, p).family === f);
+  const rhythm = plot.positions.filter(p => roleOf(plot, p).zone === "rhythm");
+  const voices = byFamily("voice");
+  const winds  = plot.positions.filter(p => ["sax","brass"].includes(roleOf(plot, p).family));
+  const mids   = plot.positions.filter(p => { const r = roleOf(plot, p); return r.zone !== "rhythm" && r.family !== "voice" && !["sax","brass"].includes(r.family); });
+  const big = winds.length >= LAYOUT.hornsForBigBand;
 
-function makePlot(ensembleId, deck){
-  const nid = idMaker();
-  const src = ensemble(ensembleId);
-  const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
-  const W = D.widthFt * 12, DP = D.depthFt * 12;
-  const plot = {
-    v:1, id:nid("plot"), ensembleId: src ? src.id : "", ensembleName: src ? src.name : "New plot",
-    director:"", date:"", showName:"", notes:"", deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
-    items:[], wedges:[], people:[], songs:[],
-    sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } },
-    channelOrder:null,
-  };
-  if (!src) return plot;
-  const byKey = {};
-  for (const pp of src.people){
-    const p = { id:nid("p"), name:pp.name || "", role:pp.role || "", doubles:pp.doubles || [], byo:[], wedgeId:null };
-    plot.people.push(p); byKey[pp.key] = p;
-  }
-  for (const pp of src.people){                       // person markers (chair-sitters ride their gear)
-    if (pp.chair || !pp.at) continue;
-    const it = { id:nid("i"), kind:"person", ref:null, label:"", x:pp.at[0]*W, y:pp.at[1]*DP, rot:0,
-                 ownerPersonIds:[byKey[pp.key].id], inputs:[], notes:"" };
-    it.inputs = defaultInputsFor(it, plot.people).map(i => Object.assign({ id:nid("in") }, i));
-    plot.items.push(it);
-  }
-  for (const si of src.items || []){
-    const def = houseDef(si.ref);
-    const it = { id:nid("i"), kind:"house", ref:si.ref, label:"", x:si.at[0]*W, y:si.at[1]*DP, rot:si.at[2] || 0,
-                 ownerPersonIds:(si.owners || []).map(k => byKey[k].id), inputs:[], notes:"" };
-    it.inputs = (def && def.cat === "drums" && !si.owners) ? [] : defaultInputsFor(it, plot.people).map(i => Object.assign({ id:nid("in") }, i));
-    plot.items.push(it);
-  }
-  (src.wedges || []).forEach((w, i) => {
-    plot.wedges.push({ id:nid("w"), number:i + 1, x:w.at[0]*W, y:w.at[1]*DP, rot:w.at[2] || 0,
-                       assignees:(w.who || []).map(k => byKey[k].id), request:"" });
+  // rows, front to back
+  const rows = [];
+  if (voices.length) rows.push(voices.slice());
+  const sax = winds.filter(p => roleOf(plot, p).family === "sax");
+  const low = winds.filter(p => ["tuba","btrombone","trombone","hornsection"].includes(roleOf(plot, p).id));
+  const high = winds.filter(p => ["trumpet","flugel"].includes(roleOf(plot, p).id));
+  if (winds.length && winds.length <= 5) rows.push(winds.slice());
+  else { if (sax.length) rows.push(sax); if (low.length) rows.push(low); if (high.length) rows.push(high); }
+  if (mids.length) rows.push(mids);
+  for (const r of rows) r.sort((a, b) => { const ra = roleOf(plot, a), rb = roleOf(plot, b);
+    return (ra.sub - rb.sub) || (labels[a.id].index - labels[b.id].index); });
+
+  // row depths
+  const y0 = big ? LAYOUT.bigBandY : LAYOUT.frontY, y1 = big ? LAYOUT.bigBandBackY : LAYOUT.frontBackY;
+  const gap = rows.length > 1 ? Math.min(LAYOUT.rowGapMax, (y1 - y0) / (rows.length - 1)) : 0;
+  const xLo = (big ? LAYOUT.bigBandColumn * W : 0) + LAYOUT.edge, xHi = W - LAYOUT.edge;
+
+  rows.forEach((row, i) => {
+    const fy = y0 + i * gap, span = xHi - xLo;
+    const want = LAYOUT.comfySpacing;
+    let spacing = row.length > 1 ? Math.min(want, span / (row.length - 1)) : 0;
+    if (row.length > 1 && spacing < LAYOUT.minSpacing){ spacing = LAYOUT.minSpacing; notes.push("row of " + row.length + " is tighter than " + LAYOUT.minSpacing + "″"); }
+    const width = spacing * (row.length - 1), start = (xLo + xHi) / 2 - width / 2;
+    row.forEach((p, j) => { if (pinned(p)) return; p.x = clampIn(start + j * spacing, 12, W - 12); p.y = fy * DP; });
   });
-  syncWedgeIds(plot);
+
+  // rhythm section
+  const slots = big ? LAYOUT.rhythmBig : LAYOUT.rhythm;
+  const used = {};
+  for (const p of rhythm){
+    const r = roleOf(plot, p), slot = slots[r.id] || slots.playback || [.5, .8];
+    const n = (used[r.id] = (used[r.id] || 0) + 1) - 1;
+    if (pinned(p)) continue;
+    p.x = clampIn((slot[0] + (LAYOUT.stagger[n] || 0)) * W, 18, W - 18);
+    p.y = clampIn(slot[1] * DP, 18, DP - 18);
+  }
+
+  // backline: an amp behind its player, a keyboard in front
+  for (const p of plot.positions){
+    const r = roleOf(plot, p);
+    if (!r.backline || r.stance === "object") continue;
+    let it = plot.items.find(i => i.kind === "house" && i.ref === r.backline && (i.ownerPositionIds || []).includes(p.id));
+    if (!it){
+      it = { id:nextIdE("i"), kind:"house", ref:r.backline, label:"", x:p.x, y:p.y, rot:0, moved:false, ownerPositionIds:[p.id], inputs:[], notes:"" };
+      plot.items.push(it);
+    }
+    if (pinned(it)) continue;
+    const down = r.gearSide === "down";     // a keyboard sits in front, an amp behind
+    it.x = p.x;
+    it.y = clampIn(p.y + (down ? -LAYOUT.gearDown : LAYOUT.gearUp) * DP, 12, DP - 12);
+  }
+
+  layoutWedges(plot, force);
+  resolveOverlaps(plot, force);
+  plot.layoutNote = notes.length ? notes.join("; ") : "";
   return plot;
 }
-function syncWedgeIds(plot){                    // wedge.assignees is the source of truth
-  const of = {};
-  for (const w of plot.wedges) for (const pid of w.assignees) of[pid] = w.id;
-  for (const p of plot.people) p.wedgeId = of[p.id] || null;
+
+/* Deterministic de-overlap: walk the objects in a fixed order and nudge
+   any that overlap something already placed, or hang off the deck.
+   Pinned (dragged) objects go first, so they never move. */
+function resolveOverlaps(plot, force){
+  const D = deckIn(plot);
+  const all = layoutObjects(plot);
+  const order = all.slice().sort((a, b) => (b.o.moved ? 1 : 0) - (a.o.moved ? 1 : 0) || a.rank - b.rank);
+  const placed = [];
+  const hits = (r, skip) => placed.some(q => Math.min(q.x1, r.x1) - Math.max(q.x0, r.x0) > 1 && Math.min(q.y1, r.y1) - Math.max(q.y0, r.y0) > 1);
+  const fits = r => r.x0 >= -0.5 && r.y0 >= -0.5 && r.x1 <= D.w + 0.5 && r.y1 <= D.d + 0.5;
+  let stuck = 0;
+  for (const e of order){
+    const o = e.o;
+    let r = rectOf(o);
+    if ((o.moved && !force) || (fits(r) && !hits(r))){ placed.push(r); continue; }
+    let done = false;
+    for (let step = 6; step <= 96 && !done; step += 6){
+      for (const [dx, dy] of [[step,0],[-step,0],[0,step],[0,-step],[step,step],[-step,step],[step,-step],[-step,-step]]){
+        const t = Object.assign({}, o, { x:o.x + dx, y:o.y + dy }), tr = rectOf(t);
+        if (fits(tr) && !hits(tr)){ o.x = t.x; o.y = t.y; r = tr; done = true; break; }
+      }
+    }
+    if (!done) stuck++;
+    placed.push(r);
+  }
+  plot.layoutStuck = stuck;
+}
+function layoutObjects(plot){
+  const out = [];
+  for (const p of plot.positions) out.push({ o:p, rank: roleOf(plot, p).stance === "object" ? 0 : 1 });
+  for (const it of plot.items) out.push({ o:it, rank: it.kind === "label" ? 4 : 2 });
+  for (const w of plot.wedges) out.push({ o:w, rank:3 });
+  return out;
+}
+
+/* Monitor groups: who shares a mix. Built in priority order, then
+   merged from the back until they fit SW's wedge count. */
+function monitorGroups(plot){
+  const labels = positionLabels(plot), groups = [];
+  const add = (name, list) => { if (list.length) groups.push({ name, list }); };
+  const fam = f => plot.positions.filter(p => roleOf(plot, p).family === f);
+  const byId = ids => plot.positions.filter(p => ids.includes(roleOf(plot, p).id));
+  const voices = fam("voice");
+  if (voices.length > 3){ add("voices A", voices.slice(0, Math.ceil(voices.length / 2))); add("voices B", voices.slice(Math.ceil(voices.length / 2))); }
+  else add("voices", voices);
+  add("drums", byId(["drums","perc"]));
+  add("bass", byId(["bass","upright"]));
+  add("guitar", byId(["guitar","acoustic"]));
+  add("keys", byId(["keys","organ","dj","playback"]));
+  const sax = fam("sax"), low = byId(["tuba","btrombone","trombone","hornsection"]), high = byId(["trumpet","flugel"]);
+  if (sax.length > 3){ add("saxes A", sax.slice(0, Math.ceil(sax.length / 2))); add("saxes B", sax.slice(Math.ceil(sax.length / 2))); }
+  else add("saxes", sax);
+  add("trombones", low); add("trumpets", high);
+  add("strings", fam("strings").filter(p => roleOf(plot, p).id !== "acoustic"));
+  add("other", plot.positions.filter(p => roleOf(plot, p).family === "other" && roleOf(plot, p).zone !== "rhythm"));
+  while (groups.length > VENUE.monitorMixes){
+    // the lead voices are the last mix anyone should have to share
+    const cost = g => g.list.length + (/voice/.test(g.name) ? 4 : 0);
+    let best = 0, bestSize = Infinity;
+    for (let i = 0; i < groups.length - 1; i++){
+      const size = cost(groups[i]) + cost(groups[i + 1]);
+      if (size < bestSize){ bestSize = size; best = i; }
+    }
+    groups[best].list = groups[best].list.concat(groups[best + 1].list);
+    groups[best].name += " + " + groups[best + 1].name;
+    groups.splice(best + 1, 1);
+  }
+  return groups;
+}
+function layoutWedges(plot, force){
+  const D = deckIn(plot), groups = monitorGroups(plot);
+  const keep = plot.wedges.filter(w => w.moved && !force);
+  const fresh = [];
+  groups.forEach((g, i) => {
+    const xs = g.list.map(p => p.x), ys = g.list.map(p => p.y);
+    const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const cy = ys.reduce((a, b) => a + b, 0) / ys.length, minY = Math.min.apply(null, ys);
+    const existing = plot.wedges[i];
+    // a downstage group gets its wedge in front; a row parked upstage would
+    // put its wedge inside the row ahead of it, so that one goes outboard
+    let x = clampIn(cx, 14, D.w - 14), y = clampIn(minY - LAYOUT.wedgeGap, 10, D.d - 10), rot = 0;
+    if (cy > D.d * .40){
+      const away = cx >= D.w / 2 ? 1 : -1;                 // step away from the middle of the deck
+      const out = clampIn(away > 0 ? Math.max.apply(null, xs) + 26 : Math.min.apply(null, xs) - 26, 14, D.w - 14);
+      const inside = out > Math.min.apply(null, xs) && out < Math.max.apply(null, xs);
+      x = inside ? clampIn(away > 0 ? Math.min.apply(null, xs) - 26 : Math.max.apply(null, xs) + 26, 14, D.w - 14) : out;
+      y = clampIn(cy, 14, D.d - 14);
+      rot = x > cx ? 270 : 90;
+    }
+    if (existing && existing.moved && !force){ fresh.push(existing); }
+    else fresh.push({ id:(existing && existing.id) || nextIdE("w"), number:i + 1, moved:false,
+      x, y, rot, assignees:g.list.map(p => p.id), request:(existing && existing.request) || "" });
+  });
+  for (const w of keep) if (!fresh.includes(w)) fresh.push(w);
+  fresh.forEach((w, i) => { w.number = i + 1; });
+  plot.wedges = fresh;
+  syncWedgeIds(plot);
+}
+
+/* ---- building a plot ---------------------------------------------- */
+let ID_SEQ = 0;
+function nextIdE(pre){ return pre + (++ID_SEQ); }
+function resetIds(){ ID_SEQ = 0; }
+function blankPlot(deck, name){
+  const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
+  return { schemaVersion:2, id:nextIdE("plot"), name:name || "New plot", templateId:"",
+    director:"", date:"", showName:"", notes:"", printNames:true,
+    deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
+    positions:[], items:[], wedges:[], songs:[], customRoles:[],
+    sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } },
+    channelOrder:null };
+}
+function addPosition(plot, roleId, opts){
+  const o = opts || {}, role = roleDef(plot, roleId);
+  const pos = { id:nextIdE("pos"), roleId, x:0, y:0, rot:0, moved:false,
+    names:o.names || [], doubles:(o.doubles || []).slice(), inputs:[], notes:"" };
+  pos.inputs = roleInputs(role).map(i => Object.assign({ id:nextIdE("in") }, i));
+  for (const d of pos.doubles) if (d.input)
+    for (const i of roleInputs(roleDef(plot, d.roleId))) pos.inputs.push(Object.assign({ id:nextIdE("in"), role:d.roleId }, i));
+  plot.positions.push(pos);
+  return pos;
+}
+/* parts: [[roleId|{roleId,doubles}, count], ...] */
+function makeFromParts(parts, deck, name){
+  const plot = blankPlot(deck, name);
+  for (const [what, count] of parts){
+    const spec = typeof what === "string" ? { roleId:what } : what;
+    for (let i = 0; i < count; i++) addPosition(plot, spec.roleId, { doubles:spec.doubles });
+  }
+  autoLayout(plot, { force:true });
+  return plot;
+}
+function makeFromTemplate(id, deck){
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return blankPlot(deck);
+  const plot = makeFromParts(t.parts, deck, t.name);
+  plot.templateId = t.id;
+  return plot;
+}
+
+/* Bulk names: one per line, optionally "Name — instrument". Returns the
+   mapping so it can be previewed before it is applied. */
+function parseNameList(text, plot){
+  const labels = positionLabels(plot);
+  const lines = String(text || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const free = plot.positions.slice();
+  const taken = new Set();
+  const rows = lines.map(line => {
+    const m = /^(.*?)\s*(?:[—–\-|,:]\s*|\()\s*([^()]+)\)?$/.exec(line);
+    const name = (m ? m[1] : line).trim(), instr = m ? m[2].trim() : "";
+    const wantId = instr ? roleIdFromText(instr) : null;
+    let pos = null;
+    if (wantId) pos = free.find(p => !taken.has(p.id) && p.roleId === wantId);
+    if (!pos) pos = free.find(p => !taken.has(p.id));
+    if (pos) taken.add(pos.id);
+    return { name, instr, position:pos, label:pos ? labels[pos.id].full : null };
+  });
+  return rows;
+}
+function applyNameList(plot, rows){
+  for (const r of rows) if (r.position) r.position.names = [r.name];
 }
 
 /* ---- geometry ----------------------------------------------------- */
 function deckIn(plot){ return { w:plot.deck.widthFt * 12, d:plot.deck.depthFt * 12 }; }
 function itemDef(it){ return it.kind === "house" ? houseDef(it.ref) : it.kind === "byo" ? byoDef(it.ref) : null; }
-function footprint(it){
-  if (it.kind === "person") return { w:DRAW.person, d:DRAW.person };
-  if (it.kind === "wedge")  { const w = houseDef("wedge"); return { w:w.w, d:w.d }; }
-  if (it.kind === "label")  return { w:0, d:0 };
-  const def = itemDef(it); return def ? { w:def.w, d:def.d } : { w:18, d:18 };
+function isPosition(o){ return !!o && o.roleId !== undefined; }
+function footprintOf(o, plot){
+  if (isPosition(o)){ const r = roleOf(plot, o); return { w:r.w || 22, d:r.d || 22 }; }
+  if (o.kind === "label") return { w:0, d:0 };
+  if (!o.kind){ const w = houseDef("wedge"); return { w:w.w, d:w.d }; }   // a wedge
+  const def = itemDef(o); return def ? { w:def.w, d:def.d } : { w:18, d:18 };
 }
-function rectOf(it){
-  const f = footprint(it), rot = ((it.rot || 0) % 360 + 360) % 360;
+function rectOf(o, plot){
+  const f = footprintOf(o, plot), rot = ((o.rot || 0) % 360 + 360) % 360;
   const w = (rot === 90 || rot === 270) ? f.d : f.w, d = (rot === 90 || rot === 270) ? f.w : f.d;
-  return { x0:it.x - w/2, x1:it.x + w/2, y0:it.y - d/2, y1:it.y + d/2, w, d };
+  return { x0:o.x - w/2, x1:o.x + w/2, y0:o.y - d/2, y1:o.y + d/2, w, d };
 }
-function offDeck(it, plot){
-  if (it.kind === "label") return false;
-  const r = rectOf(it), D = deckIn(plot), e = 0.5;
+function offDeck(o, plot){
+  if (o.kind === "label") return false;
+  const r = rectOf(o, plot), D = deckIn(plot), e = 0.5;
   return r.x0 < -e || r.y0 < -e || r.x1 > D.w + e || r.y1 > D.d + e;
 }
 function ftIn(inches){
@@ -684,30 +821,39 @@ function ftIn(inches){
   const f = Math.floor(inches / 12), i = inches % 12;
   return (neg ? "-" : "") + f + "′" + (i ? i + "″" : "");
 }
-function zoneOf(it, plot){                      // DSL / CSC / USR, stage left & right from the player
-  const D = deckIn(plot), fx = it.x / D.w, fy = it.y / D.d;
+function zoneOf(o, plot){                       // DSL / CSC / USR, stage left & right from the player
+  const D = deckIn(plot), fx = o.x / D.w, fy = o.y / D.d;
   const ud = fy < 1/3 ? "DS" : fy < 2/3 ? "CS" : "US";
   const lr = fx < 1/3 ? "L" : fx < 2/3 ? "C" : "R";
   return ud + lr;
 }
-function posText(it, plot){ return zoneOf(it, plot) + " (" + ftIn(it.x) + " from SL, " + ftIn(it.y) + " from DS)"; }
+function posText(o, plot){ return zoneOf(o, plot) + " (" + ftIn(o.x) + " from SL, " + ftIn(o.y) + " from DS)"; }
+function diagramGeom(plot){
+  const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + 2*M;
+  let widthIn = 7.5, h = widthIn * vbH / vbW;
+  const maxH = 5.3;
+  if (h > maxH){ widthIn = maxH * vbW / vbH; h = maxH; }
+  return { D, M, vbW, vbH, widthIn, heightIn:h, pt: p => p / 72 * vbW / widthIn,
+           sx: x => M + (D.w - x), sy: y => M + (D.d - y) };
+}
 
-/* Where a player's name goes. Downstage of the marker by default — that is
-   the side the reader's eye follows — but if a wedge or a piece of gear is
-   already there, it flips upstage. Automatic, so a dragged layout stays
-   legible without anyone thinking about it. */
-function personLabelBox(plot, it, g, taken){
-  const p = plot.people.find(x => x.id === it.ownerPersonIds[0]);
-  if (!p) return null;
-  const lines = shortName(p), pt = g.pt(DRAW.labelPt), spt = g.pt(DRAW.smallPt);
-  const w = Math.max.apply(null, lines.map(l => l.length)) * .55 * pt;
-  const h = 1.15 * pt + (lines.length - 1) * 1.05 * pt + (p.name && p.name.trim() ? spt * 1.05 : 0) + .3 * pt;
-  const half = DRAW.person / 2;
-  const mk = side => ({ side, w, h, lines, person:p, x0:it.x - w/2, x1:it.x + w/2,
-    y0: side === "down" ? it.y - half - h : it.y + half,
-    y1: side === "down" ? it.y - half     : it.y + half + h });
-  const others = plot.items.filter(o => o !== it && o.kind !== "label").map(rectOf)
-    .concat(plot.wedges.map(wd => rectOf(Object.assign({ kind:"wedge" }, wd))))
+/* Where a position's label goes. Downstage of the marker by default —
+   the side the reader's eye follows — flipping upstage when a wedge or
+   a piece of gear is already there. Automatic, so a dragged layout
+   stays legible without anyone thinking about it. */
+function positionLabelBox(plot, pos, g, taken, labels){
+  const lines = posShortLines(plot, pos, labels);
+  const pt = g.pt(DRAW.labelPt), spt = g.pt(DRAW.smallPt);
+  const width = t => t.length * .55 * (t === lines[0].text ? pt : spt);
+  const w = Math.max.apply(null, lines.map(l => l.text.length * .55 * (l.size === "label" ? pt : spt)));
+  const h = 1.15 * pt + lines.slice(1).reduce((a, l) => a + (l.size === "label" ? pt : spt) * 1.05, 0) + .3 * pt;
+  const half = footprintOf(pos, plot).d / 2;
+  const mk = side => ({ side, w, h, lines, x0:pos.x - w/2, x1:pos.x + w/2,
+    y0: side === "down" ? pos.y - half - h : pos.y + half,
+    y1: side === "down" ? pos.y - half     : pos.y + half + h });
+  const others = plot.positions.filter(o => o !== pos).map(o => rectOf(o, plot))
+    .concat(plot.items.filter(o => o.kind !== "label").map(o => rectOf(o, plot)))
+    .concat(plot.wedges.map(wd => rectOf(wd, plot)))
     .concat(taken || []);
   const clash = b => others.some(r => Math.min(r.x1, b.x1) - Math.max(r.x0, b.x0) > 1.5 && Math.min(r.y1, b.y1) - Math.max(r.y0, b.y0) > 1.5);
   const down = mk("down");
@@ -715,84 +861,67 @@ function personLabelBox(plot, it, g, taken){
   const up = mk("up");
   return clash(up) ? down : up;
 }
-
-function labelBoxes(plot, g){          // place them in order; each one dodges the ones already down
-  const map = {}, taken = [];
-  for (const it of plot.items){
-    if (it.kind !== "person") continue;
-    const lb = personLabelBox(plot, it, g, taken);
-    if (lb){ map[it.id] = lb; taken.push(lb); }
+function labelBoxes(plot, g){          // place them in order; each dodges the ones already down
+  const map = {}, taken = [], labels = positionLabels(plot);
+  for (const pos of plot.positions){
+    if (roleOf(plot, pos).stance === "object" && !posShortLines(plot, pos, labels).length) continue;
+    const lb = positionLabelBox(plot, pos, g, taken, labels);
+    map[pos.id] = lb; taken.push(lb);
   }
   return map;
 }
 
 /* ---- inputs, channels, and everything derived from them ----------- */
-function itemGroup(it, people){
-  if (it.kind === "person"){
-    const p = people.find(x => x.id === it.ownerPersonIds[0]);
-    return p ? personGroup(p) : { grp:"other", sub:0 };
-  }
-  const def = itemDef(it); const cat = def ? def.cat : "misc";
-  if (cat === "drums") return { grp:"drums", sub:0 };
-  if (cat === "amp")   return { grp:(def.id === "bassamp" || def.id === "byo-bassamp") ? "bass" : "guitar", sub:0 };
-  if (cat === "keys")  return { grp:"keys", sub:0 };
-  if (cat === "bass")  return { grp:"bass", sub:0 };
-  if (cat === "guitar")return { grp:"guitar", sub:0 };
-  return { grp:"other", sub:0 };
-}
-function ownerNames(it, people, namedOnly){
-  const names = it.ownerPersonIds.map(id => { const p = people.find(x => x.id === id); return !p || (namedOnly && !(p.name && p.name.trim())) ? null : displayName(p); }).filter(Boolean);
-  if (names.length > 1 && it.kind === "house" && itemDef(it) && itemDef(it).cat === "drums") return names.join(" / ") + " (share kit)";
-  return names.join(" / ");
+function syncWedgeIds(plot){                    // wedge.assignees is the source of truth
+  for (const w of plot.wedges) w.assignees = [...new Set(w.assignees || [])];
+  const of = {};
+  for (const w of plot.wedges) for (const pid of w.assignees) of[pid] = w.id;
+  for (const p of plot.positions) p.wedgeId = of[p.id] || null;
 }
 function sectionRows(plot){                     // which horn rows exist, and who is in them
   const rows = {};
-  for (const it of plot.items){
-    if (it.kind !== "person") continue;
-    const p = plot.people.find(x => x.id === it.ownerPersonIds[0]); if (!p) continue;
-    for (const cat of roleCats(p.role)){
-      const row = SEC_ROW[cat]; if (!row) continue;
-      (rows[row] = rows[row] || []).push(p);
-      break;
-    }
+  for (const pos of plot.positions){
+    const row = sectionRowOf(roleOf(plot, pos));
+    if (!row) continue;
+    if (!pos.inputs.some(i => i.type === "mic")) continue;
+    (rows[row] = rows[row] || []).push(pos);
   }
   return rows;
 }
 /* One unit = one input as the director edits it. A stereo DI is one
    unit that eats two channels. Numbering walks the units in order. */
 function inputUnits(plot){
-  const units = [], rows = sectionRows(plot), sec = plot.sections || {};
+  const units = [], labels = positionLabels(plot), sec = plot.sections || {}, rows = sectionRows(plot);
   const collapsed = row => sec[row] && sec[row].on && (rows[row] || []).length > 0;
-  for (const it of plot.items){
-    const g = itemGroup(it, plot.people), who = ownerNames(it, plot.people, true);
-    let skipRow = null;
-    if (it.kind === "person"){
-      const p = plot.people.find(x => x.id === it.ownerPersonIds[0]);
-      const cat = p ? roleCats(p.role).find(isHorn) : null;
-      if (cat && collapsed(SEC_ROW[cat])) skipRow = SEC_ROW[cat];
+  const push = (inp, o) => units.push(Object.assign({ key:inp.id, inp, source:inp.source, type:inp.type,
+    phantom:!!inp.phantom, notes:inp.notes || "", chans:inp.type === "stereo-di" ? 2 : 1 }, o));
+  for (const pos of plot.positions){
+    const role = roleOf(plot, pos), who = posText2(plot, pos, labels);
+    for (const inp of pos.inputs){
+      const irole = inp.role ? roleDef(plot, inp.role) : role;
+      const irow = sectionRowOf(irole);
+      if (irow && collapsed(irow) && inp.type === "mic") continue;      // folded into section mics
+      push(inp, { posId:pos.id, who, grp:irole.grp, sub:irole.sub,
+                  stand:inp.type === "mic" && irole.family !== "rhythm" });
     }
-    for (const inp of it.inputs){
-      if (skipRow && inp.type === "mic") continue;      // folded into the section mics
-      units.push({ key:inp.id, itemId:it.id, inp, source:inp.source, who, type:inp.type,
-                   phantom:!!inp.phantom, notes:inp.notes || "", grp:g.grp, sub:g.sub, chans:inp.type === "stereo-di" ? 2 : 1 });
-    }
+  }
+  for (const it of plot.items) for (const inp of (it.inputs || [])){    // v1 files can carry gear inputs
+    const irole = roleDef(plot, inp.role || "other");
+    push(inp, { itemId:it.id, who:(itemDef(it) || {}).short || "", grp:irole.grp, sub:irole.sub, stand:false });
   }
   for (const row of ["sax","tbn","tpt"]){
     if (!collapsed(row)) continue;
     const n = Math.max(1, (sec[row].mics | 0) || 2);
-    const named = rows[row].filter(p => p.name && p.name.trim()).map(displayName).join(", ");
+    const who = rows[row].map(p => posText2(plot, p, labels)).join(", ");
+    const sub = row === "sax" ? 2 : row === "tbn" ? 8 : 10;
     for (let i = 1; i <= n; i++)
-      units.push({ key:"sec:" + row + ":" + i, itemId:null, inp:null, source:SEC_LABEL[row] + " mic " + i,
-                   who:named, type:"mic", phantom:false, notes:"shared section mic", grp:"horn",
-                   sub:HORN_CATS.indexOf(row === "sax" ? "alto" : row === "tbn" ? "tbn" : "tpt"), chans:1, section:row });
+      units.push({ key:"sec:" + row + ":" + i, inp:null, source:SEC_LABEL[row] + " mic " + i, who,
+        type:"mic", phantom:false, notes:"shared section mic", grp:"horn", sub, chans:1, section:row, stand:true });
   }
   units.sort((a, b) => (GROUP_ORDER[a.grp] - GROUP_ORDER[b.grp]) || (a.sub - b.sub) || 0);
   if (plot.channelOrder && plot.channelOrder.length){
     const rank = new Map(plot.channelOrder.map((k, i) => [k, i]));
-    units.sort((a, b) => {
-      const ra = rank.has(a.key) ? rank.get(a.key) : 1e6, rb = rank.has(b.key) ? rank.get(b.key) : 1e6;
-      return ra - rb;
-    });
+    units.sort((a, b) => (rank.has(a.key) ? rank.get(a.key) : 1e6) - (rank.has(b.key) ? rank.get(b.key) : 1e6));
   }
   let ch = 1;
   for (const u of units){ u.ch = ch; u.chLabel = u.chans === 2 ? ch + "–" + (ch + 1) : String(ch); ch += u.chans; }
@@ -809,24 +938,28 @@ function channelRows(plot){                     // one printed row per channel
   return out;
 }
 function channelCount(plot){ return inputUnits(plot).reduce((n, u) => n + u.chans, 0); }
-
 function monitorTable(plot){
   syncWedgeIds(plot);
+  const labels = positionLabels(plot);
   const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => ({
     n:w.number, id:w.id,
-    who:w.assignees.map(id => { const p = plot.people.find(x => x.id === id); return p ? displayName(p) : null; }).filter(Boolean),
+    who:w.assignees.map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean),
     request:w.request || "", empty:w.assignees.length === 0,
   }));
-  const unassigned = plot.people.filter(p => !p.wedgeId).map(displayName);
+  const unassigned = plot.positions.filter(p => !p.wedgeId).map(p => posText2(plot, p, labels));
   return { rows, unassigned };
 }
 function houseNeeds(plot){
   const counts = {}, units = inputUnits(plot);
   for (const it of plot.items) if (it.kind === "house") counts[it.ref] = (counts[it.ref] || 0) + 1;
+  for (const pos of plot.positions){                    // a kit is the position, not a separate item
+    const r = roleOf(plot, pos);
+    if (r.backline && r.stance === "object") counts[r.backline] = (counts[r.backline] || 0) + 1;
+  }
   if (plot.wedges.length) counts.wedge = plot.wedges.length;
   const di = units.reduce((n, u) => n + (u.type === "di" ? 1 : u.type === "stereo-di" ? 2 : 0), 0);
   if (di) counts.di = di;
-  const stands = units.filter(u => u.type === "mic" && (u.section || (u.itemId && (plot.items.find(i => i.id === u.itemId) || {}).kind === "person"))).length;
+  const stands = units.filter(u => u.stand).length;
   if (stands) counts.micstand = stands;
   return VENUE.house.filter(h => counts[h.id]).map(h => ({
     id:h.id, label:h.label, need:counts[h.id], have:h.count === undefined ? 1 : h.count,
@@ -834,19 +967,25 @@ function houseNeeds(plot){
     derived:h.id === "di" || h.id === "micstand",
   }));
 }
-function diSources(plot){ return inputUnits(plot).filter(u => u.type === "di" || u.type === "stereo-di")
-  .map(u => u.source + (u.who ? " (" + u.who + ")" : "") + (u.type === "stereo-di" ? " — stereo, 2 DIs" : "")); }
+function diSources(plot){
+  return inputUnits(plot).filter(u => u.type === "di" || u.type === "stereo-di").map(u => {
+    const who = u.who && u.who !== u.source ? u.who.replace(/^([^(]+)\((.*)\)$/, (m, lab, names) => lab.trim() === u.source ? names : m) : "";
+    return u.source + (who ? " (" + who + ")" : "") + (u.type === "stereo-di" ? " — stereo, 2 DIs" : "");
+  });
+}
 function byoList(plot){
-  const out = [];
+  const out = [], labels = positionLabels(plot);
   for (const it of plot.items) if (it.kind === "byo"){
     const def = byoDef(it.ref);
-    out.push({ what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who:ownerNames(it, plot.people) });
+    const who = (it.ownerPositionIds || []).map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean).join(" / ");
+    out.push({ what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who });
   }
-  for (const p of plot.people) for (const b of (p.byo || [])) if (b.trim()) out.push({ what:b.trim(), who:displayName(p) });
+  for (const p of plot.positions) for (const b of (p.byo || [])) if (String(b).trim())
+    out.push({ what:String(b).trim(), who:posText2(plot, p, labels) });
   return out;
 }
 function warnings(plot){
-  const out = [], D = deckIn(plot);
+  const out = [];
   if (plot.wedges.length > VENUE.monitorMixes)
     out.push({ level:"amber", text:plot.wedges.length + " wedges placed; " + VENUE.shortName + " normally runs " + VENUE.monitorMixes +
       ". Extras may be available from " + VENUE.extraWedgesFrom + " — ask the tech." });
@@ -863,8 +1002,10 @@ function warnings(plot){
     out.push({ level:"amber", text:ch + " channels of " + VENUE.consoleChannels + " — little headroom for talkback or a spare.", fix:canCollapse ? "sections" : null });
   for (const h of houseNeeds(plot)) if (h.over)
     out.push({ level:"amber", text:h.need + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.have + "." });
-  const off = plot.items.filter(it => offDeck(it, plot)).length + plot.wedges.filter(w => offDeck(Object.assign({ kind:"wedge" }, w), plot)).length;
+  const off = plot.positions.concat(plot.items, plot.wedges).filter(o => offDeck(o, plot)).length;
   if (off) out.push({ level:"amber", text:off + " item" + (off > 1 ? "s" : "") + " hanging over the deck edge (outlined red)." });
+  if (plot.layoutNote) out.push({ level:"amber", text:"Tight fit: " + plot.layoutNote + ". Drag anything that reads wrong." });
+  if (plot.layoutStuck) out.push({ level:"amber", text:plot.layoutStuck + " position(s) couldn't be placed clear of everything else — drag them." });
   return out;
 }
 function collapseSections(plot){                // the one-click fix offered by the channel warning
@@ -878,24 +1019,29 @@ function collapseSections(plot){                // the one-click fix offered by 
 /* ---- changeover (derived; nothing extra to author) ---------------- */
 function itemKeyFor(it){ return it.kind + ":" + (it.ref || it.label || ""); }
 function itemLabelFor(it, plot){
-  if (it.kind === "person") return ownerNames(it, plot.people) || "Person";
   if (it.kind === "label") return "Label “" + (it.label || "") + "”";
-  const def = itemDef(it);
-  return (def ? def.label : "Item") + (it.kind === "byo" && it.label ? " — " + it.label : "") +
-         (it.ownerPersonIds && it.ownerPersonIds.length ? " (" + ownerNames(it, plot.people) + ")" : "");
+  const def = itemDef(it), labels = positionLabels(plot);
+  const who = (it.ownerPositionIds || []).map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean).join(" / ");
+  return (def ? def.label : "Item") + (it.kind === "byo" && it.label ? " — " + it.label : "") + (who ? " (" + who + ")" : "");
 }
 function indexItems(plot){
   const m = new Map(), seen = {};
   for (const it of plot.items){
-    if (it.kind === "person") continue;
     const base = itemKeyFor(it), n = (seen[base] = (seen[base] || 0) + 1);
     m.set(base + "#" + n, it);
+  }
+  for (const pos of plot.positions){              // a kit is gear as well as a chair
+    const r = roleOf(plot, pos);
+    if (r.stance !== "object" || !r.backline) continue;
+    const base = "house:" + r.backline, n = (seen[base] = (seen[base] || 0) + 1);
+    m.set(base + "#" + n, Object.assign({ kind:"house", ref:r.backline, ownerPositionIds:[pos.id] }, { x:pos.x, y:pos.y, rot:pos.rot }));
   }
   return m;
 }
 function changeover(a, b){
   const SAME = 6;                                // within half a foot counts as "stays put"
-  const out = { from:a.ensembleName, to:b.ensembleName, items:{ stay:[], move:[], leave:[], arrive:[] },
+  const la = positionLabels(a), lb = positionLabels(b);
+  const out = { from:a.name, to:b.name, items:{ stay:[], move:[], leave:[], arrive:[] },
                 people:{ stay:[], leave:[], arrive:[] }, wedges:{ change:[], leave:[], arrive:[] },
                 channels:{ from:channelCount(a), to:channelCount(b) } };
   const ia = indexItems(a), ib = indexItems(b);
@@ -908,14 +1054,26 @@ function changeover(a, b){
   }
   for (const [k, it] of ib) if (!ia.has(k)) out.items.arrive.push(itemLabelFor(it, b));
 
-  const nameOf = p => displayName(p), pa = new Map(a.people.map(p => [nameOf(p), p])), pb = new Map(b.people.map(p => [nameOf(p), p]));
-  const posOfPerson = (plot, p) => { const it = plot.items.find(i => i.kind === "person" && i.ownerPersonIds.includes(p.id)); return it ? posText(it, plot) : "at their chair"; };
-  for (const [n, p] of pa){
-    if (!pb.has(n)) { out.people.leave.push({ name:n, role:roleLine(p) }); continue; }
-    const q = pb.get(n), from = posOfPerson(a, p), to = posOfPerson(b, q);
-    out.people.stay.push({ name:n, role:roleLine(q), from, to, moved:from !== to });
+  // one entry per occupant where there are names, per chair where there are not
+  const occupants = (plot, labels) => {
+    const list = [];
+    for (const pos of plot.positions){
+      const names = posNames(pos);
+      if (names.length) for (const n of names) list.push({ key:n.toLowerCase(), name:n, role:labels[pos.id].full, pos });
+      else list.push({ key:"chair:" + labels[pos.id].full.toLowerCase(), name:labels[pos.id].full, role:labels[pos.id].full, pos });
+    }
+    return list;
+  };
+  const oa = occupants(a, la), ob = occupants(b, lb);
+  const inB = new Map(ob.map(o => [o.key, o]));
+  const inA = new Map(oa.map(o => [o.key, o]));
+  for (const o of oa){
+    const q = inB.get(o.key);
+    if (!q){ out.people.leave.push({ name:o.name, role:o.role }); continue; }
+    const from = posText(o.pos, a), to = posText(q.pos, b);
+    out.people.stay.push({ name:q.name, role:q.role, from, to, moved:from !== to });
   }
-  for (const [n, p] of pb) if (!pa.has(n)) out.people.arrive.push({ name:n, role:roleLine(p) });
+  for (const o of ob) if (!inA.has(o.key)) out.people.arrive.push({ name:o.name, role:o.role });
 
   const ma = monitorTable(a), mb = monitorTable(b);
   const wa = new Map(ma.rows.map(r => [r.n, r])), wb = new Map(mb.rows.map(r => [r.n, r]));
@@ -925,50 +1083,108 @@ function changeover(a, b){
     const wA = a.wedges.find(w => w.number === n), wB = b.wedges.find(w => w.number === n);
     const moved = Math.abs(wA.x - wB.x) > SAME || Math.abs(wA.y - wB.y) > SAME;
     if (before !== after || moved) out.wedges.change.push({ n, before, after, moved,
-      from:posText(Object.assign({ kind:"wedge" }, wA), a), to:posText(Object.assign({ kind:"wedge" }, wB), b), request:s.request });
+      from:posText(wA, a), to:posText(wB, b), request:s.request });
   }
   for (const [n] of wb) if (!wa.has(n)) out.wedges.arrive.push(n);
   return out;
 }
 
-/* ---- diagram geometry (shared by the canvas, the printed page and check.js) ---- */
-function diagramGeom(plot){
-  const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + 2*M;
-  let widthIn = 7.5, h = widthIn * vbH / vbW;
-  const maxH = 5.3;
-  if (h > maxH){ widthIn = maxH * vbW / vbH; h = maxH; }
-  return { D, M, vbW, vbH, widthIn, heightIn:h, pt: p => p / 72 * vbW / widthIn,
-           sx: x => M + (D.w - x), sy: y => M + (D.d - y) };
-}
-/* ---- files and links ---------------------------------------------- */
+/* ---- files, and reading a v1 file --------------------------------- */
 function plotFileName(plot){
-  const slug = (plot.ensembleName || "plot").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slug = (plot.name || "plot").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return "SW-plot-" + slug + "-" + (plot.date || todayISO()) + ".json";
 }
 function todayISO(){ const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-"); }
-function migratePlot(p){                        // tolerate older/hand-edited files
-  p.v = p.v || 1;
-  p.items = p.items || []; p.wedges = p.wedges || []; p.people = p.people || []; p.songs = p.songs || [];
-  p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
-  p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
-  for (const it of p.items){
-    if (!it.ownerPersonIds) it.ownerPersonIds = it.ownerPersonId ? [it.ownerPersonId] : [];
-    delete it.ownerPersonId;
-    it.inputs = it.inputs || []; it.rot = it.rot || 0; it.notes = it.notes || "";
+
+const V1_ITEM_ROLE = { kit:"drums", bassamp:"bass", gtramp1:"guitar", kb1:"keys", kb2:"organ",
+  "byo-gtramp":"guitar", "byo-bassamp":"bass", "byo-keys":"keys", "byo-kit":"drums",
+  "byo-laptop":"dj", "byo-acoustic":"acoustic", "byo-upright":"upright" };
+/* v1 stored named people plus items that carried the inputs. v2 stores
+   positions that carry their own inputs. Positions are created in v1
+   item order so channel numbers come out identical. */
+function migrateV1(p){
+  const out = blankPlot(p.deck, p.ensembleName || "Plot");
+  out.id = p.id || out.id;
+  for (const k of ["director","date","showName","notes"]) out[k] = p[k] || "";
+  out.sections = Object.assign(out.sections, p.sections || {});
+  out.channelOrder = p.channelOrder || null;
+  const people = p.people || [], posOf = {};      // v1 person id -> v2 position
+  const roleFor = person => {
+    const cats = String(person.role || "").split(/[\/,+]/).map(s => roleIdFromText(s)).filter(Boolean);
+    const instrument = cats.find(c => c !== "voice");
+    return { primary:instrument || cats[0] || "other", doubles:cats.filter(c => c !== (instrument || cats[0])) };
+  };
+  const makePos = (persons, x, y, rot, inputs) => {
+    const first = persons[0], r = roleFor(first);
+    const pos = { id:nextIdE("pos"), roleId:r.primary, x, y, rot:rot || 0, moved:true,
+      names:persons.map(pp => (pp.name || "").trim()).filter(Boolean),
+      doubles:r.doubles.map(d => ({ roleId:d, input:false }))
+        .concat((first.doubles || []).map(d => ({ label:d, input:false }))),
+      byo:[].concat.apply([], persons.map(pp => pp.byo || [])),
+      inputs:(inputs || []).map(i => Object.assign({}, i)), notes:"" };
+    out.positions.push(pos);
+    for (const pp of persons) posOf[pp.id] = pos;
+    return pos;
+  };
+  for (const it of (p.items || [])){
+    const owners = (it.ownerPersonIds || it.ownerPersonId && [it.ownerPersonId] || []).map(id => people.find(x => x.id === id)).filter(Boolean);
+    if (it.kind === "person"){
+      const person = owners[0]; if (!person) continue;
+      const inputs = (it.inputs || []).map(i => Object.assign({}, i, { role:roleIdFromText(i.source) || undefined }));
+      makePos([person], it.x, it.y, it.rot, inputs);
+      continue;
+    }
+    if (it.kind === "label"){ out.items.push(Object.assign({}, it, { moved:true, ownerPositionIds:[] })); continue; }
+    const chairRole = V1_ITEM_ROLE[it.ref];
+    const unmarked = owners.filter(o => !posOf[o.id]);
+    if (owners.length && unmarked.length === owners.length && chairRole && (roleDef(null, chairRole).stance === "object")){
+      // the kit: the gear IS the chair, and both drummers ride it
+      makePos(owners, it.x, it.y, it.rot, (it.inputs || []).map(i => Object.assign({}, i, { role:chairRole })));
+      continue;
+    }
+    const item = { id:nextIdE("i"), kind:it.kind, ref:it.ref, label:it.label || "", x:it.x, y:it.y, rot:it.rot || 0,
+      moved:true, ownerPositionIds:owners.map(o => posOf[o.id] && posOf[o.id].id).filter(Boolean), inputs:[], notes:it.notes || "" };
+    const inputs = (it.inputs || []).map(i => Object.assign({}, i, { role:chairRole || undefined }));
+    const target = owners.map(o => posOf[o.id]).find(Boolean);
+    if (target) target.inputs = target.inputs.concat(inputs);          // gear inputs belong to its player
+    else item.inputs = inputs;                                          // orphan gear keeps them
+    out.items.push(item);
   }
+  for (const person of people) if (!posOf[person.id]){                  // rostered but never placed
+    const pos = makePos([person], 0, 0, 0, []);
+    pos.moved = false;
+  }
+  out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true,
+    assignees:[...new Set((w.assignees || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))], request:w.request || "" }));
+  out.songs = (p.songs || []).map(s => ({ title:s.title || "", onstage:(s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean) }));
+  syncWedgeIds(out);
+  return out;
+}
+function migratePlot(p){
+  if (!p) return blankPlot();
+  if (!p.schemaVersion || p.schemaVersion < 2) return migrateV1(p);
+  p.positions = p.positions || []; p.items = p.items || []; p.wedges = p.wedges || [];
+  p.songs = p.songs || []; p.customRoles = p.customRoles || [];
+  p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
+  p.printNames = p.printNames !== false;
+  p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
+  for (const pos of p.positions){ pos.names = pos.names || []; pos.doubles = pos.doubles || []; pos.inputs = pos.inputs || []; pos.rot = pos.rot || 0; }
+  for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; it.inputs = it.inputs || []; }
   for (const w of p.wedges) w.assignees = w.assignees || [];
   syncWedgeIds(p);
   return p;
 }
+
 /* ===== end stage plot engine ===== */
 </script>
 <script>
 /* ================= session state ================= */
-const S = { plots:[], active:0, tab:"house", sel:null, snap:true, readOnly:false, undo:[], redo:[] };
+const S = { plots:[], active:0, tab:"positions", sel:null, snap:true, readOnly:false, undo:[], redo:[] };
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 const plot = () => S.plots[S.active];
 const nextId = pre => pre + Math.random().toString(36).slice(2, 8);
+const find = (p, id) => p.positions.find(o => o.id === id) || p.items.find(o => o.id === id) || p.wedges.find(o => o.id === id) || null;
 
 function snapshot(){ return JSON.stringify({ plots:S.plots, active:S.active }); }
 function commit(fn){                                   // every mutation goes through here
@@ -980,8 +1196,8 @@ function commit(fn){                                   // every mutation goes th
   S.redo.length = 0;
   render();
 }
-function undo(){ if (!S.undo.length) return; const now = snapshot(); const prev = S.undo.pop(); S.redo.push(now); restore(prev); }
-function redo(){ if (!S.redo.length) return; const now = snapshot(); const next = S.redo.pop(); S.undo.push(now); restore(next); }
+function undo(){ if (!S.undo.length) return; const now = snapshot(); S.redo.push(now); restore(S.undo.pop()); }
+function redo(){ if (!S.redo.length) return; const now = snapshot(); S.undo.push(now); restore(S.redo.pop()); }
 function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migratePlot); S.active = Math.min(o.active, S.plots.length - 1); S.sel = null; render(); }
 
 /* ================= the stage diagram ================= */
@@ -990,16 +1206,17 @@ function wedgePath(w, d){                              // trapezoid, throw face 
   return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
 }
 function diagramSVG(plot, opt){
-  const o = opt || {}, print = o.mode === "print", g = diagramGeom(plot), D = g.D, LB = labelBoxes(plot, g);
+  const o = opt || {}, print = o.mode === "print", g = diagramGeom(plot), D = g.D;
+  const LB = labelBoxes(plot, g), labels = positionLabels(plot);
   const ink = print ? "#000" : "#e8e1d1", dim = print ? "#555" : "#a89f8c";
   const deckFill = print ? "#fff" : "#0d232b", houseFill = print ? "#e6e6e6" : "#1a4551";
   const halo = print ? "#fff" : "#0d232b";
   const P = [], t = (s, x, y, pt, cls, extra) =>
     P.push('<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + g.pt(pt).toFixed(1) +
-      '" text-anchor="middle" fill="' + (cls === "dim" ? dim : ink) + '" font-family="' + (print ? "Helvetica, Arial, sans-serif" : "Helvetica, Arial, sans-serif") +
-      '" paint-order="stroke" stroke="' + halo + '" stroke-width="' + (g.pt(pt) * .18).toFixed(2) + '"' + (extra || "") + '>' + esc(s) + '</text>');
+      '" text-anchor="middle" fill="' + (cls === "dim" ? dim : ink) + '" font-family="Helvetica, Arial, sans-serif" paint-order="stroke" stroke="' +
+      halo + '" stroke-width="' + (g.pt(pt) * .18).toFixed(2) + '"' + (extra || "") + '>' + esc(s) + '</text>');
 
-  // deck, grid, context
+  // deck, grid, fixed context
   P.push('<rect x="' + g.M + '" y="' + g.M + '" width="' + D.w + '" height="' + D.d + '" fill="' + deckFill + '" stroke="' + ink + '" stroke-width="1.6"/>');
   if (!print && S.snap){
     let dots = "";
@@ -1026,58 +1243,56 @@ function diagramSVG(plot, opt){
   t("STAGE LEFT", g.M + D.w + 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(90 ' + (g.M + D.w + 11) + ' ' + (g.M + D.d/2) + ')"');
   t(plot.deck.widthFt + "′ × " + plot.deck.depthFt + "′", g.M + D.w - 26, g.M - 11, DRAW.tinyPt, "dim");
 
-  const bad = it => offDeck(it, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
-  const draw = (it, body) => {
-    const sel = !print && S.sel === it.id;
-    P.push('<g transform="translate(' + g.sx(it.x).toFixed(1) + ',' + g.sy(it.y).toFixed(1) + ') rotate(' + (it.rot || 0) + ')"' +
-      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + it.id + '"') + '>' + body + '</g>');
+  const bad = obj => offDeck(obj, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
+  const draw = (obj, body) => {
+    const sel = !print && S.sel === obj.id;
+    P.push('<g transform="translate(' + g.sx(obj.x).toFixed(1) + ',' + g.sy(obj.y).toFixed(1) + ') rotate(' + (obj.rot || 0) + ')"' +
+      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '"') + '>' + body + '</g>');
   };
+  const stroke = obj => (!print && S.sel === obj.id) ? "#c9a24a" : ink;
+  const swid = obj => (!print && S.sel === obj.id) ? 2.5 : 1.3;
 
   // wedges first, so people and gear sit on top
   for (const w of plot.wedges){
-    const def = houseDef("wedge"), it = Object.assign({ kind:"wedge" }, w);
-    const sel = !print && S.sel === w.id;
-    draw(it, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + (sel ? "#c9a24a" : ink) + '" stroke-width="' + (sel ? 2.5 : 1.3) + '"' + bad(it) + '/>');
-    const px = g.sx(w.x), py = g.sy(w.y);
-    t(String(w.number), px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt);
+    const def = houseDef("wedge");
+    draw(w, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + stroke(w) + '" stroke-width="' + swid(w) + '"' + bad(w) + '/>');
+    t(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(DRAW.smallPt) * .35, DRAW.smallPt);
   }
+  // backline and other gear
   for (const it of plot.items){
-    const sel = !print && S.sel === it.id;
-    const stroke = sel ? "#c9a24a" : ink, sw = sel ? 2.5 : 1.3;
-    if (it.kind === "person"){
-      const p = plot.people.find(x => x.id === it.ownerPersonIds[0]); if (!p) continue;
-      const r = DRAW.person / 2;
-      draw(it, '<circle r="' + r + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + bad(it) + '/>');
-      const lb = LB[it.id], px = g.sx(it.x);
-      let ly = g.sy(lb.y1) + g.pt(DRAW.labelPt) * .95;
-      for (const ln of lb.lines){ t(ln, px, ly, DRAW.labelPt); ly += g.pt(DRAW.labelPt) * 1.05; }
-      if (p.name && p.name.trim()) t(roleLine(p), px, ly - g.pt(DRAW.labelPt) * .15, DRAW.smallPt, "dim");
-      continue;
-    }
-    if (it.kind === "label"){
-      draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt);
-      continue;
-    }
+    if (it.kind === "label"){ draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt); continue; }
     const def = itemDef(it); if (!def) continue;
-    const f = footprint(it), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
+    const f = footprintOf(it, plot), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
     let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
-      (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + dash + bad(it) + '/>';
-    if (def.cat === "drums") body += '<circle r="' + (f.d * .19) + '" cy="' + (f.d * .29) + '" fill="none" stroke="' + stroke + '" stroke-width="1.1"/>';
-    if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke + '" stroke-width=".7" opacity=".7"/>'; }
+      (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
+    if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    const owner = ownerNames(it, plot.people);
-    const short = (it.kind === "byo" ? "BYO " + def.label : def.short) + (it.kind === "byo" && it.label ? "" : "");
-    if (def.cat === "drums" && owner){
-      // the kit is the drummer's chair: short label on top, then whose it is
-      let ky = py - f.d/2 + g.pt(DRAW.smallPt) * 1.5;
-      t(short, px, ky, DRAW.smallPt, "dim");
-      ky += g.pt(DRAW.labelPt) * 1.15;
-      for (const n of owner.replace(/ \(share kit\)/, "").split(" / ")){ t(n, px, ky, DRAW.labelPt); ky += g.pt(DRAW.labelPt) * 1.05; }
-      if (/share kit/.test(owner)) t("(share kit)", px, ky - g.pt(DRAW.labelPt) * .2, DRAW.smallPt, "dim");
-    } else {
-      t(short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, it.kind === "byo" ? "dim" : "");
-      if (it.kind === "byo" && it.label) t(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    t(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim");
+    if (it.kind === "byo" && it.label) t(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+  }
+  // positions
+  for (const pos of plot.positions){
+    const role = roleOf(plot, pos), f = footprintOf(pos, plot), px = g.sx(pos.x), py = g.sy(pos.y);
+    const lines = posShortLines(plot, pos, labels);
+    if (role.stance === "object"){
+      let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' + houseFill +
+        '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>';
+      if (role.id === "drums") body += '<circle r="' + (f.d * .19) + '" cy="' + (f.d * .29) + '" fill="none" stroke="' + stroke(pos) + '" stroke-width="1.1"/>';
+      draw(pos, body);
+      let ky = py - f.d/2 + g.pt(DRAW.labelPt) * 1.3;                 // labels ride inside the shape
+      for (const ln of lines){
+        t(ln.text, px, ky, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
+        ky += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.08;
+      }
+      continue;
+    }
+    draw(pos, '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>');
+    const lb = LB[pos.id];
+    let ly = (lb ? g.sy(lb.y1) : py + f.d/2) + g.pt(DRAW.labelPt) * .95;
+    for (const ln of lines){
+      t(ln.text, px, ly, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
+      ly += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.05;
     }
   }
   return '<svg viewBox="0 0 ' + g.vbW.toFixed(0) + ' ' + g.vbH.toFixed(0) + '" xmlns="http://www.w3.org/2000/svg"' +
@@ -1093,8 +1308,8 @@ function deliverLine(p){
 }
 function sheetHTML(p){
   const units = inputUnits(p), rows = channelRows(p), mon = monitorTable(p), needs = houseNeeds(p),
-        byo = byoList(p), di = diSources(p), ch = channelCount(p), H = [];
-  H.push('<h1>' + esc(p.ensembleName || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
+        byo = byoList(p), di = diSources(p), ch = channelCount(p), labels = positionLabels(p), H = [];
+  H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta"><span>' + (p.director ? "Director: " + esc(p.director) : "Director: —") + '</span>' +
     '<span>' + (p.date ? "Performance: " + esc(p.date) : "Performance: —") + '</span>' +
@@ -1106,7 +1321,7 @@ function sheetHTML(p){
   H.push('<p class="flag" style="margin:2px 0 0;font-size:8pt">Drawn from the performer\'s view: audience at the bottom, stage left and right are the player\'s. Grey = house gear, dashed = the band brings it.</p>');
 
   const left = [], right = [];
-  left.push('<h2>Monitors</h2><table><thead><tr><th style="width:12%">Mix</th><th style="width:40%">Who</th><th>What they want</th></tr></thead><tbody>');
+  left.push('<h2>Monitors</h2><table><thead><tr><th style="width:10%">Mix</th><th style="width:46%">Who</th><th>What they want</th></tr></thead><tbody>');
   if (!mon.rows.length) left.push('<tr><td colspan="3" class="empty">No wedges placed.</td></tr>');
   for (const r of mon.rows)
     left.push('<tr><td class="num">' + r.n + '</td><td>' + (r.who.length ? esc(r.who.join(", ")) : '<span class="empty">no one assigned</span>') +
@@ -1131,12 +1346,11 @@ function sheetHTML(p){
   left.push('<p style="margin:2px 0">' + (diCount ? '<b>' + diCount + '</b> house DI' + (diCount > 1 ? "s" : "") : "None") + '</p>');
   if (di.length) left.push('<ul>' + di.map(d => '<li>' + esc(d) + '</li>').join("") + '</ul>');
 
-  right.push('<h2>Input list</h2><table><thead><tr><th style="width:10%">Ch</th><th>Source</th><th style="width:30%">Who</th><th style="width:14%">Type</th><th style="width:10%">48V</th></tr></thead><tbody>');
+  right.push('<h2>Input list</h2><table><thead><tr><th style="width:10%">Ch</th><th>Source</th><th style="width:34%">Position</th><th style="width:13%">Type</th><th style="width:9%">48V</th></tr></thead><tbody>');
   if (!rows.length) right.push('<tr><td colspan="5" class="empty">No inputs.</td></tr>');
   let lastWho = null;
   for (const r of rows){
-    let who = r.who && r.who !== lastWho ? r.who : ""; if (r.who) lastWho = r.who;
-    who = who.replace(/ \(share kit\)/, "");
+    const who = r.who && r.who !== lastWho ? r.who : ""; if (r.who) lastWho = r.who;
     right.push('<tr><td class="ch">' + r.ch + '</td><td>' + esc(r.source) + '</td><td>' + esc(who) + '</td><td class="num">' +
       ({ mic:"mic", di:"DI", "stereo-di":"DI ×2", xlr:"XLR" }[r.type] || r.type) + '</td><td class="num">' + (r.phantom ? "48V" : "") + '</td></tr>');
   }
@@ -1146,9 +1360,9 @@ function sheetHTML(p){
   H.push('<div class="cols"><div>' + left.join("") + '</div><div>' + right.join("") + '</div></div>');
 
   if (p.songs && p.songs.length){
-    const onstage = p.people.filter(pp => p.songs.some(s => (s.onstage || []).includes(pp.id)));
+    const onstage = p.positions.filter(pp => p.songs.some(s => (s.onstage || []).includes(pp.id)));
     H.push('<h2>Personnel by song</h2><table><thead><tr><th>Song</th>' +
-      onstage.map(pp => '<th style="font-size:7pt">' + esc(displayName(pp)) + '</th>').join("") + '</tr></thead><tbody>' +
+      onstage.map(pp => '<th style="font-size:7pt">' + esc(labels[pp.id].short) + '</th>').join("") + '</tr></thead><tbody>' +
       p.songs.map(s => '<tr><td>' + esc(s.title || "—") + '</td>' +
         onstage.map(pp => '<td class="num">' + ((s.onstage || []).includes(pp.id) ? "✓" : "") + '</td>').join("") + '</tr>').join("") +
       '</tbody></table>');
@@ -1164,9 +1378,9 @@ function changeoverHTML(co){
   let h = '<h1>Changeover: ' + esc(co.from) + ' → ' + esc(co.to) + '</h1>' +
     '<p class="meta">Channels ' + co.channels.from + ' → ' + co.channels.to + '</p><hr class="rule">';
   h += '<div class="cols"><div>';
-  h += list("People staying on", co.people.stay, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>' + (a.moved ? " — moves to " + esc(a.to) : ""));
-  h += list("Arriving", co.people.arrive, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>');
-  h += list("Coming off", co.people.leave, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>');
+  h += list("Stays on", co.people.stay, a => esc(a.name) + (a.moved ? " — moves to " + esc(a.to) : ""));
+  h += list("Arriving", co.people.arrive, a => esc(a.name));
+  h += list("Coming off", co.people.leave, a => esc(a.name));
   h += '</div><div>';
   h += list("Stays put", co.items.stay, a => esc(a));
   h += list("Moves", co.items.move, a => esc(a.what) + ": " + esc(a.from) + " → " + esc(a.to));
@@ -1184,6 +1398,7 @@ function changeoverHTML(co){
   h += '<p class="foot">Positions are DS/CS/US (downstage, centre, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
   return h;
 }
+
 /* ================= render ================= */
 function render(opt){
   const keepRail = opt && opt.keepRail;
@@ -1195,7 +1410,7 @@ function render(opt){
   $("bChange").hidden = S.plots.length < 2;
   $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
   renderTabs();
-  if (!p){ $("warns").innerHTML = ""; $("deck").innerHTML = ""; $("sheet").innerHTML = ""; $("panel").innerHTML = ""; return; }
+  if (!p){ $("warns").innerHTML = ""; $("sheet").innerHTML = ""; $("panel").innerHTML = ""; $("canvashead").innerHTML = ""; return; }
   renderWarnings(p);
   renderCanvas(p);
   renderSheet(p);
@@ -1205,13 +1420,13 @@ function renderTabs(){
   const t = $("tabs"); t.hidden = S.plots.length < 2;
   t.innerHTML = S.plots.map((p, i) =>
     '<span class="tab" aria-current="' + (i === S.active) + '"><button class="btn sm" style="border:0;padding:0" data-go="' + i + '">' +
-    esc(p.ensembleName || "Plot") + '</button>' + (S.readOnly ? "" : '<button class="x" data-close="' + i + '" title="close">×</button>') + '</span>').join("") +
+    esc(p.name || "Plot") + '</button>' + (S.readOnly ? "" : '<button class="x" data-close="' + i + '" title="close">×</button>') + '</span>').join("") +
     (S.readOnly ? "" : '<button class="btn sm" id="bAddTab">+ plot</button>');
   t.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { S.active = +b.dataset.go; S.sel = null; render(); });
   t.querySelectorAll("[data-close]").forEach(b => b.onclick = () => commit(() => {
     S.plots.splice(+b.dataset.close, 1); S.active = Math.max(0, Math.min(S.active, S.plots.length - 1)); S.sel = null;
   }));
-  const add = $("bAddTab"); if (add) add.onclick = () => openNew();
+  const add = $("bAddTab"); if (add) add.onclick = () => openStart();
 }
 function renderWarnings(p){
   const w = warnings(p);
@@ -1220,10 +1435,17 @@ function renderWarnings(p){
   $("warns").querySelectorAll("[data-fix]").forEach(b => b.onclick = () => commit(() => collapseSections(plot())));
 }
 function renderCanvas(p){
-  $("canvashead").innerHTML = '<span>' + esc(p.ensembleName) + '</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
-    '<span>' + channelCount(p) + ' ch · ' + p.wedges.length + ' mixes</span>' +
-    (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>');
-  const b = $("bSnap"); if (b) b.onclick = () => { S.snap = !S.snap; render(); };
+  $("canvashead").innerHTML = '<span>' + esc(p.name) + '</span><span>' + p.positions.length + ' positions</span>' +
+    '<span>' + channelCount(p) + ' ch · ' + p.wedges.length + ' mixes</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
+    (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>' +
+      '<button class="btn sm" id="bRelayout">re-layout</button>');
+  if (!S.readOnly){
+    $("bSnap").onclick = () => { S.snap = !S.snap; render(); };
+    $("bRelayout").onclick = () => {
+      if (!confirm("Lay this plot out again from scratch?\n\nAnything you have dragged goes back to where the engine puts it.")) return;
+      commit(() => { const q = plot(); q.positions.concat(q.items, q.wedges).forEach(o => o.moved = false); autoLayout(q, { force:true }); });
+    };
+  }
   $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
   $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates, Delete removes.";
   if (!S.readOnly) wireCanvas();
@@ -1245,40 +1467,44 @@ function renderSheet(p){
 }
 
 /* ================= left rail ================= */
-const RAIL_TABS = [["house","House"],["byo","Bring-own"],["people","People"],["wedges","Wedges"],["misc","Misc"],["inputs","Inputs"],["details","Details"]];
+const RAIL_TABS = [["positions","Positions"],["house","House"],["byo","Bring-own"],["wedges","Wedges"],["misc","Misc"],["inputs","Inputs"],["details","Details"]];
 function renderRailTabs(){
   $("railtabs").innerHTML = RAIL_TABS.map(([k, l]) => '<button data-tab="' + k + '" aria-pressed="' + (S.tab === k) + '">' + l + '</button>').join("");
   $("railtabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderRailTabs(); renderPanel(plot()); });
 }
-function placedCount(p, ref){ return p.items.filter(i => i.kind === "house" && i.ref === ref).length + (ref === "wedge" ? p.wedges.length : 0); }
+function placedCount(p, ref){
+  return p.items.filter(i => i.kind === "house" && i.ref === ref).length +
+         p.positions.filter(pos => { const r = roleOf(p, pos); return r.stance === "object" && r.backline === ref; }).length +
+         (ref === "wedge" ? p.wedges.length : 0);
+}
 function freeSpot(p, n){ const D = deckIn(p); return { x:D.w / 2 + ((n % 5) - 2) * 14, y:D.d / 2 - ((n % 3) - 1) * 14 }; }
+function roleOptions(p, selected){
+  const all = ROLES.concat(p.customRoles || []);
+  const fams = ["voice","rhythm","sax","brass","strings","other"];
+  return fams.map(f => {
+    const list = all.filter(r => r.family === f);
+    if (!list.length) return "";
+    return '<optgroup label="' + f + '">' + list.map(r => '<option value="' + r.id + '"' + (r.id === selected ? " selected" : "") + '>' +
+      esc(r.pick || r.label) + '</option>').join("") + '</optgroup>';
+  }).join("");
+}
 function addHouse(ref){
   commit(() => {
     const p = plot();
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
-      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, assignees:[], request:"" });
+      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true, assignees:[], request:"" });
       S.sel = p.wedges[p.wedges.length - 1].id; return;
     }
     const spot = freeSpot(p, p.items.length);
-    const it = { id:nextId("i"), kind:"house", ref, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" };
-    it.inputs = defaultInputsFor(it, p.people).map(i => Object.assign({ id:nextId("in") }, i));
+    const it = { id:nextId("i"), kind:"house", ref, label:"", x:spot.x, y:spot.y, rot:0, moved:true, ownerPositionIds:[], inputs:[], notes:"" };
     p.items.push(it); S.sel = it.id;
   });
 }
 function addByo(kind){
   commit(() => {
-    const p = plot(), def = byoDef(kind), spot = freeSpot(p, p.items.length);
-    const it = { id:nextId("i"), kind:"byo", ref:kind, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" };
-    it.inputs = (def.cat === "drums" ? kitInputs(KIT_FULL) : defaultInputsFor(it, p.people)).map(i => Object.assign({ id:nextId("in") }, i));
-    p.items.push(it); S.sel = it.id;
-  });
-}
-function placePerson(pid){
-  commit(() => {
     const p = plot(), spot = freeSpot(p, p.items.length);
-    const it = { id:nextId("i"), kind:"person", ref:null, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[pid], inputs:[], notes:"" };
-    it.inputs = defaultInputsFor(it, p.people).map(i => Object.assign({ id:nextId("in") }, i));
+    const it = { id:nextId("i"), kind:"byo", ref:kind, label:"", x:spot.x, y:spot.y, rot:0, moved:true, ownerPositionIds:[], inputs:[], notes:"" };
     p.items.push(it); S.sel = it.id;
   });
 }
@@ -1293,43 +1519,46 @@ function bindText(el, get, set){
 }
 function renderPanel(p){
   const el = $("panel"); if (!p) { el.innerHTML = ""; return; }
-  const H = [];
+  const labels = positionLabels(p), H = [];
+
+  if (S.tab === "positions"){
+    H.push('<label class="chk"><input type="checkbox" id="cPrintNames"' + (p.printNames !== false ? " checked" : "") + '> Print names</label>');
+    H.push('<div class="insprow" style="margin:8px 0"><button class="btn sm" id="bInstr">Instrumentation…</button>' +
+      '<button class="btn sm" id="bBulk">Paste names…</button></div>');
+    H.push("<h3>Positions</h3><div class='plist'>");
+    for (const pos of p.positions){
+      const w = p.wedges.find(w => w.assignees.includes(pos.id));
+      H.push('<div class="prow" style="align-items:flex-start"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
+        '<span class="role">' + esc(labels[pos.id].role.label) + '</span><br>' +
+        '<input type="text" data-pname="' + pos.id + '" placeholder="name (optional)" style="width:100%;margin-top:3px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 6px;font-size:13px"></span>' +
+        '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
+        '<button class="btn sm" data-psel="' + pos.id + '">edit</button></div>');
+    }
+    H.push('</div><div class="insprow" style="margin-top:10px"><select id="newRole" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
+      roleOptions(p, "voice") + '</select><button class="btn sm" id="bAddPos">+ add</button></div>' +
+      '<button class="btn sm" id="bCustomRole" style="margin-top:6px">custom role…</button>' +
+      '<p class="note">Names are optional everywhere. Positions carry the channels; a plot with no names at all still prints completely.</p>');
+  }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push("</div><p class='note'>Labels print on the page exactly as written here. Correct them in VENUE at the top of the file.</p>");
+    H.push("</div><p class='note'>Backline appears on its own when a position needs it — a guitar brings an amp, piano means a house keyboard. Add one here only if you want an extra.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
     for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + '</span></button>');
-    H.push("</div><p class='note'>Select a placed item to type what it is — “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>.</p>");
-  }
-  if (S.tab === "people"){
-    const unplaced = p.people.filter(pp => !p.items.some(i => i.ownerPersonIds.includes(pp.id)));
-    if (unplaced.length){
-      H.push("<h3>Not on stage</h3><div class='plist'>");
-      for (const pp of unplaced) H.push('<button class="pitem" data-place="' + pp.id + '"><span>' + esc(displayName(pp)) + '</span><span class="ct">place</span></button>');
-      H.push("</div>");
-    }
-    H.push("<h3>Roster</h3><div class='plist'>");
-    for (const pp of p.people){
-      const w = p.wedges.find(w => w.assignees.includes(pp.id));
-      H.push('<div class="prow"><span class="nm">' + esc(displayName(pp)) + '<br><span class="role">' + esc(roleLine(pp)) + '</span></span>' +
-        '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
-        '<button class="btn sm" data-pedit="' + pp.id + '">edit</button></div>');
-    }
-    H.push('</div><button class="btn sm" id="bAddPerson" style="margin-top:8px">+ person</button>');
+    H.push("</div><p class='note'>Select a placed item to type what it is — “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>. Channels come from the position it belongs to.</p>");
   }
   if (S.tab === "wedges"){
-    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Type what each mix wants — that line is what the tech reads.</p>");
+    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Mixes list positions, so they read fine before anyone is named.</p>");
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
       H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
         '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>');
-      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-wassign="' + w.id + '" value="' + pp.id + '"' +
-        (w.assignees.includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      for (const pos of p.positions) H.push('<label class="chk"><input type="checkbox" data-wassign="' + w.id + '" value="' + pos.id + '"' +
+        (w.assignees.includes(pos.id) ? " checked" : "") + '> ' + esc(posText2(p, pos, labels)) + '</label>');
       H.push('<div class="fld" style="margin:6px 0 0"><input type="text" data-wreq="' + w.id + '" placeholder="more me, less drums…"></div></div>');
     }
     H.push('<button class="btn sm" data-house="wedge">+ wedge</button>');
@@ -1338,8 +1567,7 @@ function renderPanel(p){
     H.push("<h3>Stands, power, risers</h3><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["stand","di","power","riser"].includes(h.cat))){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
-      H.push('<button class="pitem' + (h.id === "micstand" ? " dim" : "") + '" data-house="' + h.id + '"><span>' + esc(h.label) +
-        '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
+      H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
     H.push('</div><p class="note">Mic stands and DI boxes are counted from the input list, so you only place them here if you want them drawn.</p>' +
       '<div class="plist"><button class="pitem" data-label="1"><span>Text label</span></button></div>');
@@ -1347,7 +1575,7 @@ function renderPanel(p){
   if (S.tab === "inputs"){
     const units = inputUnits(p);
     H.push('<h3>Input list — ' + channelCount(p) + " of " + VENUE.consoleChannels + " channels</h3>");
-    H.push('<p class="note">Order is drums, bass, guitars, keys, horns (bari→tenor→alto→trombones→trumpets), vocals. Move one and the numbers freeze for this plot.</p>');
+    H.push('<p class="note">Order is drums, bass, guitars, keys, horns (bari→tenor→alto→trombones→trumpets), strings, vocals. Move one and the numbers freeze for this plot.</p>');
     for (const u of units){
       H.push('<div class="inputrow"><span class="ch">' + u.chLabel + '</span><span>' + esc(u.source) + (u.who ? ' <span class="role">' + esc(u.who) + '</span>' : "") +
         '</span><span class="mv"><button data-up="' + u.key + '">↑</button><button data-down="' + u.key + '">↓</button></span></div>');
@@ -1357,12 +1585,12 @@ function renderPanel(p){
     if (Object.keys(rows).length){
       H.push("<h3>Section mics</h3>");
       for (const row of Object.keys(rows)) H.push('<label class="chk"><input type="checkbox" data-sec="' + row + '"' + (p.sections[row].on ? " checked" : "") + '> ' +
-        esc(SEC_LABEL[row]) + " (" + rows[row].length + " players → " + p.sections[row].mics + " mics)</label>");
+        esc(SEC_LABEL[row]) + " (" + rows[row].length + " positions → " + p.sections[row].mics + " mics)</label>");
     }
   }
   if (S.tab === "details"){
-    H.push('<div class="fld"><label>Ensemble</label><input type="text" id="fEns"></div>' +
-      '<div class="fld"><label>Director</label><input type="text" id="fDir"></div>' +
+    H.push('<div class="fld"><label>Act / ensemble</label><input type="text" id="fEns"></div>' +
+      '<div class="fld"><label>Director / contact</label><input type="text" id="fDir"></div>' +
       '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
       '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
@@ -1372,8 +1600,8 @@ function renderPanel(p){
     (p.songs || []).forEach((s, i) => {
       H.push('<div class="wedgecard"><header><input type="text" data-song="' + i + '" value="' + esc(s.title) + '" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:4px 6px">' +
         '<button class="btn sm" data-songdel="' + i + '">×</button></header>');
-      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-songp="' + i + '" value="' + pp.id + '"' +
-        ((s.onstage || []).includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      for (const pos of p.positions) H.push('<label class="chk"><input type="checkbox" data-songp="' + i + '" value="' + pos.id + '"' +
+        ((s.onstage || []).includes(pos.id) ? " checked" : "") + '> ' + esc(posText2(p, pos, labels)) + '</label>');
       H.push('</div>');
     });
     H.push('<button class="btn sm" id="bAddSong">+ song</button>');
@@ -1382,14 +1610,14 @@ function renderPanel(p){
 
   el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
   el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
-  el.querySelectorAll("[data-place]").forEach(b => b.onclick = () => placePerson(b.dataset.place));
-  el.querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
-    const it = p.items.find(i => i.ownerPersonIds.includes(b.dataset.pedit));
-    if (it) { S.sel = it.id; render(); } else { S.selPerson = b.dataset.pedit; placePerson(b.dataset.pedit); }
+  el.querySelectorAll("[data-psel]").forEach(b => b.onclick = () => { S.sel = b.dataset.psel; render(); });
+  el.querySelectorAll("[data-pname]").forEach(i => {
+    const pos = p.positions.find(x => x.id === i.dataset.pname);
+    bindText(i, () => posNames(pos).join(" / "), v => pos.names = v.split(/\s*[\/,]\s*/).map(s => s.trim()).filter(Boolean));
   });
   el.querySelectorAll("[data-label]").forEach(b => b.onclick = () => commit(() => {
     const spot = freeSpot(p, p.items.length);
-    p.items.push({ id:nextId("i"), kind:"label", ref:null, label:"Text", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" });
+    p.items.push({ id:nextId("i"), kind:"label", ref:null, label:"Text", x:spot.x, y:spot.y, rot:0, moved:true, ownerPositionIds:[], inputs:[], notes:"" });
     S.sel = p.items[p.items.length - 1].id;
   }));
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
@@ -1410,7 +1638,15 @@ function renderPanel(p){
     p2.channelOrder = keys;
   }));
   const unf = $("bUnfreeze"); if (unf) unf.onclick = () => commit(() => { plot().channelOrder = null; });
-  const ap = $("bAddPerson"); if (ap) ap.onclick = () => commit(() => { p.people.push({ id:nextId("p"), name:"", role:"vocals", doubles:[], byo:[], wedgeId:null }); });
+  const pn = $("cPrintNames"); if (pn) pn.onchange = () => commit(() => { plot().printNames = pn.checked; });
+  const bi = $("bInstr"); if (bi) bi.onclick = () => openInstrumentation(plot());
+  const bb = $("bBulk"); if (bb) bb.onclick = () => openBulkNames();
+  const bcr = $("bCustomRole"); if (bcr) bcr.onclick = () => openCustomRole();
+  const bap = $("bAddPos"); if (bap) bap.onclick = () => commit(() => {
+    const q = plot(), pos = addPosition(q, $("newRole").value);
+    const spot = freeSpot(q, q.positions.length); pos.x = spot.x; pos.y = spot.y;
+    autoLayout(q, { force:false }); S.sel = pos.id;
+  });
   const as = $("bAddSong"); if (as) as.onclick = () => commit(() => { (p.songs = p.songs || []).push({ title:"", onstage:[] }); });
   el.querySelectorAll("[data-song]").forEach(i => bindText(i, () => p.songs[+i.dataset.song].title, v => p.songs[+i.dataset.song].title = v));
   el.querySelectorAll("[data-songdel]").forEach(b => b.onclick = () => commit(() => p.songs.splice(+b.dataset.songdel, 1)));
@@ -1419,7 +1655,7 @@ function renderPanel(p){
     s.onstage = c.checked ? s.onstage.concat([c.value]) : s.onstage.filter(x => x !== c.value);
   }));
   if ($("fEns")){
-    bindText($("fEns"), () => p.ensembleName, v => p.ensembleName = v);
+    bindText($("fEns"), () => p.name, v => p.name = v);
     bindText($("fDir"), () => p.director, v => p.director = v);
     bindText($("fShow"), () => p.showName, v => p.showName = v);
     bindText($("fDate"), () => p.date, v => p.date = v);
@@ -1430,24 +1666,27 @@ function renderPanel(p){
 }
 
 /* ================= inspector ================= */
-function selected(p){
-  return p.items.find(i => i.id === S.sel) || p.wedges.find(w => w.id === S.sel) || null;
-}
 function renderInspector(p){
-  const el = $("inspector"), sel = selected(p);
+  const el = $("inspector"), sel = find(p, S.sel);
   if (!sel || S.readOnly){ el.hidden = true; return; }
   el.hidden = false;
-  const isWedge = !sel.kind, H = [];
+  const labels = positionLabels(p), H = [];
+  const isWedge = !sel.kind && !isPosition(sel);
   if (isWedge){
-    H.push('<h3>Mix ' + sel.number + '<span>' + posText(Object.assign({ kind:"wedge" }, sel), p) + '</span></h3>');
+    H.push('<h3>Mix ' + sel.number + '<span>' + posText(sel, p) + '</span></h3>');
     H.push('<div class="fld"><label>What this mix wants</label><input type="text" id="iReq"></div>');
-    H.push('<p class="note">Assign players in the Wedges tab.</p>');
-  } else if (sel.kind === "person"){
-    const pp = p.people.find(x => x.id === sel.ownerPersonIds[0]) || { name:"", role:"" };
-    H.push('<h3>' + esc(displayName(pp)) + '<span>' + posText(sel, p) + '</span></h3>');
-    H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Name</label><input type="text" id="iName"></div>' +
-      '<div class="fld" style="flex:1"><label>Role</label><input type="text" id="iRole"></div></div>');
-    H.push('<div class="fld"><label>Doubles</label><input type="text" id="iDbl" placeholder="flute, clarinet"></div>');
+    H.push('<p class="note">Assign positions in the Wedges tab.</p>');
+  } else if (isPosition(sel)){
+    H.push('<h3>' + esc(labels[sel.id].full) + '<span>' + posText(sel, p) + '</span></h3>');
+    H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
+      roleOptions(p, sel.roleId) + '</select></div></div>');
+    H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
+    H.push('<div class="fld"><span class="lbl">Doubles</span>');
+    (sel.doubles || []).forEach((d, i) => H.push('<div class="inputrow" style="grid-template-columns:1fr auto auto"><span>' +
+      esc(d.label || roleDef(p, d.roleId).label) + '</span><label class="chk"><input type="checkbox" data-dbl="' + i + '"' + (d.input ? " checked" : "") + '> own channel</label>' +
+      '<button class="btn sm" data-dbldel="' + i + '">×</button></div>'));
+    H.push('<div class="insprow" style="margin-top:5px"><select id="dblRole" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:4px">' +
+      roleOptions(p, "flute") + '</select><button class="btn sm" id="bAddDbl">+ double</button></div></div>');
     H.push('<div class="fld"><label>Brings (not drawn)</label><input type="text" id="iByo" placeholder="own snare, pedalboard"></div>');
   } else {
     const def = itemDef(sel);
@@ -1455,13 +1694,13 @@ function renderInspector(p){
     if (sel.kind === "byo" || sel.kind === "label")
       H.push('<div class="fld"><label>' + (sel.kind === "label" ? "Text" : "What is it (prints after “BYO:”)") + '</label><input type="text" id="iLabel"></div>');
     if (sel.kind !== "label"){
-      H.push('<div class="fld"><span class="lbl">Whose</span>');
-      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-owner="' + pp.id + '"' +
-        (sel.ownerPersonIds.includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      H.push('<div class="fld"><span class="lbl">Belongs to</span>');
+      for (const pos of p.positions) H.push('<label class="chk"><input type="checkbox" data-owner="' + pos.id + '"' +
+        ((sel.ownerPositionIds || []).includes(pos.id) ? " checked" : "") + '> ' + esc(posText2(p, pos, labels)) + '</label>');
       H.push('</div>');
     }
   }
-  if (!isWedge && sel.kind !== "label"){
+  if (isPosition(sel)){
     H.push('<div class="fld"><span class="lbl">Inputs</span>');
     sel.inputs.forEach((inp, i) => {
       H.push('<div class="inputrow" style="grid-template-columns:1fr auto auto auto"><input type="text" data-isrc="' + i + '" value="' + esc(inp.source) + '" style="background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 5px">' +
@@ -1472,7 +1711,7 @@ function renderInspector(p){
     });
     H.push('<div class="insprow" style="margin-top:6px"><button class="btn sm" data-iadd="mic">+ mic</button><button class="btn sm" data-iadd="di">+ DI</button>' +
       '<button class="btn sm" data-iadd="stereo-di">+ stereo DI</button>' +
-      (itemDef(sel) && itemDef(sel).cat === "drums" ? '<button class="btn sm" id="bKitFull">full kit (7)</button><button class="btn sm" id="bKitMin">jazz minimal (4)</button>' : "") +
+      (roleOf(p, sel).id === "drums" ? '<button class="btn sm" id="bKitFull">full kit (7)</button><button class="btn sm" id="bKitMin">jazz minimal (4)</button>' : "") +
       '</div></div>');
     H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
   }
@@ -1482,17 +1721,34 @@ function renderInspector(p){
 
   const mut = fn => commit(fn);
   if ($("iReq")) bindText($("iReq"), () => sel.request, v => sel.request = v);
-  if ($("iName")){
-    const pp = p.people.find(x => x.id === sel.ownerPersonIds[0]);
-    bindText($("iName"), () => pp.name, v => pp.name = v);
-    bindText($("iRole"), () => pp.role, v => { pp.role = v; });
-    bindText($("iDbl"), () => (pp.doubles || []).join(", "), v => pp.doubles = v.split(",").map(s => s.trim()).filter(Boolean));
-    bindText($("iByo"), () => (pp.byo || []).join(", "), v => pp.byo = v.split(",").map(s => s.trim()).filter(Boolean));
-  }
+  if ($("iNames")) bindText($("iNames"), () => posNames(sel).join(" / "), v => sel.names = v.split(/\s*[\/,]\s*/).map(s => s.trim()).filter(Boolean));
+  if ($("iByo")) bindText($("iByo"), () => (sel.byo || []).join(", "), v => sel.byo = v.split(",").map(s => s.trim()).filter(Boolean));
   if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
   if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
+  if ($("iRole")) $("iRole").onchange = () => mut(() => {
+    const q = plot(), pos = find(q, sel.id), old = roleOf(q, pos);
+    pos.roleId = $("iRole").value;
+    const fresh = roleInputs(roleDef(q, pos.roleId)).map(i => Object.assign({ id:nextId("in") }, i));
+    const kept = pos.inputs.filter(i => i.role);            // doubles keep their own channels
+    pos.inputs = fresh.concat(kept);
+    autoLayout(q, { force:false });
+  });
+  el.querySelectorAll("[data-dbl]").forEach(c => c.onchange = () => mut(() => {
+    const q = plot(), pos = find(q, sel.id), d = pos.doubles[+c.dataset.dbl];
+    d.input = c.checked;
+    pos.inputs = pos.inputs.filter(i => i.role !== d.roleId);
+    if (d.input && d.roleId) for (const i of roleInputs(roleDef(q, d.roleId))) pos.inputs.push(Object.assign({ id:nextId("in"), role:d.roleId }, i));
+  }));
+  el.querySelectorAll("[data-dbldel]").forEach(b => b.onclick = () => mut(() => {
+    const q = plot(), pos = find(q, sel.id), d = pos.doubles.splice(+b.dataset.dbldel, 1)[0];
+    if (d && d.roleId) pos.inputs = pos.inputs.filter(i => i.role !== d.roleId);
+  }));
+  if ($("bAddDbl")) $("bAddDbl").onclick = () => mut(() => {
+    const q = plot(), pos = find(q, sel.id);
+    (pos.doubles = pos.doubles || []).push({ roleId:$("dblRole").value, input:false });
+  });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
-    sel.ownerPersonIds = c.checked ? sel.ownerPersonIds.concat([c.value]) : sel.ownerPersonIds.filter(x => x !== c.value);
+    sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);
   }));
   el.querySelectorAll("[data-isrc]").forEach(i => bindText(i, () => sel.inputs[+i.dataset.isrc].source, v => sel.inputs[+i.dataset.isrc].source = v));
   el.querySelectorAll("[data-itype]").forEach(s => s.onchange = () => mut(() => sel.inputs[+s.dataset.itype].type = s.value));
@@ -1501,11 +1757,14 @@ function renderInspector(p){
   el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => sel.inputs.push({ id:nextId("in"), source:"Input", type:b.dataset.iadd, phantom:false, notes:"" })));
   if ($("bKitFull")) $("bKitFull").onclick = () => mut(() => sel.inputs = kitInputs(KIT_FULL).map(i => Object.assign({ id:nextId("in") }, i)));
   if ($("bKitMin")) $("bKitMin").onclick = () => mut(() => sel.inputs = kitInputs(KIT_MIN).map(i => Object.assign({ id:nextId("in") }, i)));
-  $("bRot").onclick = () => mut(() => sel.rot = ((sel.rot || 0) + 90) % 360);
+  $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
   $("bDel").onclick = () => mut(() => {
-    const p2 = plot();
-    p2.items = p2.items.filter(i => i.id !== sel.id); p2.wedges = p2.wedges.filter(w => w.id !== sel.id);
-    syncWedgeIds(p2); S.sel = null;
+    const q = plot();
+    q.positions = q.positions.filter(o => o.id !== sel.id);
+    q.items = q.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
+    q.wedges = q.wedges.filter(w => w.id !== sel.id);
+    for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== sel.id);
+    syncWedgeIds(q); S.sel = null;
   });
   $("bDesel").onclick = () => { S.sel = null; render(); };
 }
@@ -1516,8 +1775,7 @@ function wireCanvas(){
   svg.addEventListener("pointerdown", e => {
     const g = e.target.closest("g[data-id]");
     if (!g){ if (S.sel){ S.sel = null; render(); } return; }
-    const p = plot(), id = g.dataset.id;
-    const obj = p.items.find(i => i.id === id) || p.wedges.find(w => w.id === id);
+    const p = plot(), id = g.dataset.id, obj = find(p, id);
     if (!obj) return;
     S.sel = id;
     svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
@@ -1529,18 +1787,17 @@ function wireCanvas(){
       return { x:D.w - (q.x - geo.M), y:D.d - (q.y - geo.M) }; };
     const start = toDeck(e), ox = obj.x, oy = obj.y;
     let moved = false;
-    const el = g;
     const move = ev => {
       const q = toDeck(ev);
       let x = ox + (q.x - start.x), y = oy + (q.y - start.y);
       if (S.snap){ x = Math.round(x / 6) * 6; y = Math.round(y / 6) * 6; }
       if (Math.abs(x - obj.x) < .01 && Math.abs(y - obj.y) < .01) return;
       obj.x = x; obj.y = y; moved = true;
-      if (el) el.setAttribute("transform", "translate(" + geo.sx(x).toFixed(1) + "," + geo.sy(y).toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
+      g.setAttribute("transform", "translate(" + geo.sx(x).toFixed(1) + "," + geo.sy(y).toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
     };
     const up = () => {
       svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); svg.removeEventListener("pointercancel", up);
-      if (moved){ S.undo.push(before); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; }
+      if (moved){ obj.moved = true; S.undo.push(before); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; }
       render();
     };
     svg.setPointerCapture(e.pointerId);
@@ -1552,17 +1809,23 @@ document.addEventListener("keydown", e => {
   const meta = e.metaKey || e.ctrlKey;
   if (meta && e.key.toLowerCase() === "z"){ e.preventDefault(); if (e.target.blur) e.target.blur(); e.shiftKey ? redo() : undo(); return; }
   if (typing || S.readOnly || !plot()) return;
-  const p = plot(), sel = selected(p); if (!sel) return;
+  const p = plot(), sel = find(p, S.sel); if (!sel) return;
   const step = e.shiftKey ? 12 : (S.snap ? 6 : 1);
-  const nudge = (dx, dy) => { e.preventDefault(); commit(() => { sel.x += dx; sel.y += dy; }); };
+  const nudge = (dx, dy) => { e.preventDefault(); commit(() => { sel.x += dx; sel.y += dy; sel.moved = true; }); };
   if (e.key === "ArrowLeft")  nudge(step, 0);          // page left is stage right
   else if (e.key === "ArrowRight") nudge(-step, 0);
   else if (e.key === "ArrowUp")    nudge(0, step);
   else if (e.key === "ArrowDown")  nudge(0, -step);
-  else if (e.key.toLowerCase() === "r") commit(() => sel.rot = ((sel.rot || 0) + 90) % 360);
+  else if (e.key.toLowerCase() === "r") commit(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
   else if (e.key === "Delete" || e.key === "Backspace"){
     e.preventDefault();
-    commit(() => { p.items = p.items.filter(i => i.id !== sel.id); p.wedges = p.wedges.filter(w => w.id !== sel.id); syncWedgeIds(p); S.sel = null; });
+    commit(() => {
+      p.positions = p.positions.filter(o => o.id !== sel.id);
+      p.items = p.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
+      p.wedges = p.wedges.filter(w => w.id !== sel.id);
+      for (const w of p.wedges) w.assignees = w.assignees.filter(id => id !== sel.id);
+      syncWedgeIds(p); S.sel = null;
+    });
   } else if (e.key === "Escape"){ S.sel = null; render(); }
 });
 
@@ -1576,11 +1839,13 @@ function toast(msg){
   document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
 }
 function loadJSON(text, name){
-  let data; try { data = JSON.parse(text); } catch (err) { toast("That file isn't a plot (" + err.message + ")"); return; }
+  let data; try { data = JSON.parse(text); } catch (err) { toast("That file isn't a plot (" + err.message + ")"); return false; }
   const plots = Array.isArray(data.plots) ? data.plots : [data];
-  if (!plots.length || !plots[0].items) { toast("That JSON has no plot in it"); return; }
+  if (!plots.length || !(plots[0].positions || plots[0].items)) { toast("That JSON has no plot in it"); return false; }
   commit(() => { for (const p of plots) S.plots.push(migratePlot(p)); S.active = S.plots.length - 1; S.sel = null; });
+  $("startDlg").hidden = true;
   toast("Loaded " + (name || "plot"));
+  return true;
 }
 const B64 = { enc(u8){ let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
     return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
@@ -1606,8 +1871,8 @@ async function decodeHash(hash){
 }
 function emailText(p){
   const mon = monitorTable(p), rows = channelRows(p), needs = houseNeeds(p), byo = byoList(p), di = diSources(p), L = [];
-  L.push(p.ensembleName + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
-  L.push((p.director ? "Director: " + p.director + "  " : "") + (p.date ? "Performance: " + p.date : ""));
+  L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
+  L.push((p.director ? "Contact: " + p.director + "  " : "") + (p.date ? "Performance: " + p.date : ""));
   L.push("Channels " + channelCount(p) + "/" + VENUE.consoleChannels + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");
   for (const r of mon.rows) L.push("  Mix " + r.n + ": " + (r.who.join(", ") || "no one assigned") + (r.request ? " — " + r.request : ""));
@@ -1615,7 +1880,7 @@ function emailText(p){
   L.push("", "INPUT LIST");
   for (const r of rows) L.push("  " + String(r.ch).padStart(2) + ". " + r.source + (r.who ? " (" + r.who + ")" : "") + " [" + r.type + (r.phantom ? ", 48V" : "") + "]");
   L.push("", "HOUSE EQUIPMENT NEEDED");
-  for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (SW lists " + n.have + ")" : ""));
+  for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
   L.push("", "MUSICIANS PROVIDE");
   if (!byo.length) L.push("  Nothing — all house gear.");
   for (const b of byo) L.push("  " + b.what + (b.who ? " — " + b.who : ""));
@@ -1624,19 +1889,175 @@ function emailText(p){
   if (p.notes) L.push("", "NOTES", "  " + p.notes.replace(/\n/g, "\n  "));
   return L.join("\n");
 }
-function openNew(){
-  const dlg = $("newDlg");
-  dlg.innerHTML = '<div class="dlg"><h2>New plot</h2><p>Pick the ensemble — roster, backline and a starting layout come with it.</p><div class="pickgrid">' +
-    ENSEMBLES.map(e => '<button class="btn" data-ens="' + e.id + '">' + esc(e.name) + '<span class="sub">' + esc(e.note || "") + '</span></button>').join("") +
-    '<button class="btn" data-ens="">Blank plot<span class="sub">empty deck</span></button></div>' +
-    '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div></div>';
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch (err){
+    const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } finally { ta.remove(); }
+  }
+}
+
+/* ================= start screen: template, build, load ================= */
+const EXAMPLES = [                      // saved plots that ship with the tool, not app structure
+  ["group-a.json","Group A"], ["group-b.json","Group B"], ["group-c.json","Group C"],
+  ["combo-a.json","Combo A"], ["combo-b.json","Combo B"], ["combo-c.json","Combo C"], ["big-band.json","Big Band"],
+];
+function openStart(){
+  const dlg = $("startDlg");
+  dlg.innerHTML = '<div class="dlg wide"><h2>New plot</h2>' +
+    '<p>Three ways in. All of them land in the same editor.</p>' +
+    '<h3 class="dlgh">Start from a shape</h3><div class="pickgrid">' +
+    TEMPLATES.map(t => '<button class="btn" data-tpl="' + t.id + '">' + esc(t.name) + '<span class="sub">' + esc(t.note || "") + '</span></button>').join("") +
+    '</div>' +
+    '<h3 class="dlgh">Build the instrumentation</h3>' +
+    '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against SW\'s 32 channels and 5 mixes</span></button>' +
+    '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
+    '<h3 class="dlgh">Open something</h3>' +
+    '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button></div>' +
+    '<div id="examples" class="note">Examples…</div>' +
+    (S.plots.length ? '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div>' : "") +
+    '</div>';
   dlg.hidden = false;
-  dlg.querySelectorAll("[data-ens]").forEach(b => b.onclick = () => {
-    commit(() => { S.plots.push(makePlot(b.dataset.ens || null)); S.active = S.plots.length - 1; S.sel = null; });
+  dlg.querySelectorAll("[data-tpl]").forEach(b => b.onclick = () => {
+    const id = b.dataset.tpl;
+    commit(() => { S.plots.push(id ? makeFromTemplate(id) : blankPlot()); S.active = S.plots.length - 1; S.sel = null; });
     dlg.hidden = true;
   });
-  $("bCancelNew").onclick = () => { dlg.hidden = true; if (!S.plots.length) openNew(); };
+  $("bStartBuild").onclick = () => { dlg.hidden = true; openInstrumentation(null); };
+  $("bStartLoad").onclick = () => $("fileIn").click();
+  const cancel = $("bCancelNew"); if (cancel) cancel.onclick = () => { dlg.hidden = true; };
+  renderExamples();
 }
+function renderExamples(){
+  const box = $("examples"); if (!box) return;
+  box.innerHTML = 'Examples: ' + EXAMPLES.map(([f, n]) => '<button class="btn sm" data-ex="' + f + '">' + esc(n) + '</button>').join(" ") +
+    '<div id="exNote" style="margin-top:6px"></div>';
+  box.querySelectorAll("[data-ex]").forEach(b => b.onclick = async () => {
+    try {
+      const r = await fetch("samples/" + b.dataset.ex);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      loadJSON(await r.text(), b.textContent);
+    } catch (err){
+      $("exNote").textContent = "Opening a file straight off disk (file://) blocks that fetch — use Load and pick stageplot/samples/" + b.dataset.ex + " instead.";
+    }
+  });
+}
+
+/* ================= instrumentation form ================= */
+function openInstrumentation(target){
+  const dlg = $("startDlg");
+  const counts = {};
+  if (target) for (const pos of target.positions) counts[pos.roleId] = (counts[pos.roleId] || 0) + 1;
+  const all = () => ROLES.concat((target && target.customRoles) || []);
+  const entries = () => Object.keys(counts).filter(k => counts[k] > 0).map(k => [k, counts[k]]);
+  const draw = () => {
+    const preview = makeFromParts(entries(), target ? target.deck : null, "preview");
+    const ch = channelCount(preview), mixes = preview.wedges.length, pos = preview.positions.length;
+    const chCls = ch > VENUE.consoleChannels ? "red" : ch > VENUE.warnChannelsAt ? "amber" : "";
+    dlg.innerHTML = '<div class="dlg wide"><h2>' + (target ? "Instrumentation" : "Build the instrumentation") + '</h2>' +
+      '<p>How many of each. Everything else — channels, wedges, backline — follows from it.</p>' +
+      '<div class="totals"><span class="' + chCls + '"><b>' + ch + '</b> / ' + VENUE.consoleChannels + ' channels</span>' +
+      '<span><b>' + pos + '</b> positions</span><span><b>' + mixes + '</b> / ' + VENUE.monitorMixes + ' mixes</span></div>' +
+      '<div class="instr">' + entries().map(([id, n]) => {
+        const r = roleDef(target, id);
+        return '<div class="instrrow"><span>' + esc(r.pick || r.label) + '</span>' +
+          '<button class="btn sm" data-dec="' + id + '">−</button><b class="ct">' + n + '</b><button class="btn sm" data-inc="' + id + '">+</button></div>';
+      }).join("") + '</div>' +
+      '<div class="insprow" style="margin-top:10px"><select id="instrAdd" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:6px">' +
+      roleOptions(target || { customRoles:[] }, "") + '</select><button class="btn sm" id="bInstrAdd">+ add</button></div>' +
+      '<div class="insprow" style="margin-top:16px"><button class="btn on" id="bInstrOk">' + (target ? "Apply" : "Create plot") + '</button>' +
+      '<button class="btn" id="bInstrCancel">cancel</button></div></div>';
+    dlg.hidden = false;
+    dlg.querySelectorAll("[data-inc]").forEach(b => b.onclick = () => { counts[b.dataset.inc]++; draw(); });
+    dlg.querySelectorAll("[data-dec]").forEach(b => b.onclick = () => { counts[b.dataset.dec] = Math.max(0, counts[b.dataset.dec] - 1); draw(); });
+    $("bInstrAdd").onclick = () => { const id = $("instrAdd").value; counts[id] = (counts[id] || 0) + 1; draw(); };
+    $("bInstrCancel").onclick = () => { dlg.hidden = true; if (!S.plots.length) openStart(); };
+    $("bInstrOk").onclick = () => {
+      if (!target){
+        commit(() => { S.plots.push(makeFromParts(entries(), null, "New plot")); S.active = S.plots.length - 1; S.sel = null; });
+      } else commit(() => {
+        const q = plot();
+        for (const [id, want] of entries()){
+          const have = q.positions.filter(x => x.roleId === id);
+          for (let i = have.length; i < want; i++) addPosition(q, id);
+          for (let i = want; i < have.length; i++) removePosition(q, have[i].id);
+        }
+        for (const pos of q.positions.slice()) if (!counts[pos.roleId]) removePosition(q, pos.id);
+        autoLayout(q, { force:false });
+      });
+      dlg.hidden = true;
+    };
+  };
+  draw();
+}
+function removePosition(p, id){
+  p.positions = p.positions.filter(o => o.id !== id);
+  p.items = p.items.filter(o => !(o.ownerPositionIds || []).includes(id));
+  for (const w of p.wedges) w.assignees = w.assignees.filter(x => x !== id);
+  p.wedges = p.wedges.filter(w => w.assignees.length || w.moved);
+  syncWedgeIds(p);
+}
+
+/* ================= bulk name entry ================= */
+function openBulkNames(){
+  const dlg = $("startDlg"), p = plot();
+  let text = "";
+  const draw = () => {
+    const rows = parseNameList(text, p);
+    dlg.innerHTML = '<div class="dlg wide"><h2>Paste the roster</h2>' +
+      '<p>One per line. “Name — instrument” aims each name at the right position; plain names fill the list in order. Nothing is applied until you say so.</p>' +
+      '<textarea id="bulkText" rows="9" placeholder="Sam Ortiz — keys&#10;Dana Bell — guitar&#10;Chris Aoki — bass&#10;Jo Fischer — drums"></textarea>' +
+      (rows.length ? '<h3 class="dlgh">Preview</h3><table class="prev"><thead><tr><th>Name</th><th>Goes to</th></tr></thead><tbody>' +
+        rows.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + (r.label ? esc(r.label) : '<span style="color:var(--amber)">no position left</span>') + '</td></tr>').join("") +
+        '</tbody></table>' : "") +
+      '<div class="insprow" style="margin-top:14px"><button class="btn on" id="bBulkOk"' + (rows.some(r => r.position) ? "" : " disabled") + '>Apply ' +
+      rows.filter(r => r.position).length + ' name(s)</button><button class="btn" id="bBulkCancel">cancel</button></div></div>';
+    dlg.hidden = false;
+    const ta = $("bulkText");
+    ta.value = text;
+    ta.oninput = () => { text = ta.value; const at = ta.selectionStart; draw(); const t2 = $("bulkText"); t2.focus(); t2.setSelectionRange(at, at); };
+    $("bBulkCancel").onclick = () => { dlg.hidden = true; };
+    $("bBulkOk").onclick = () => { commit(() => applyNameList(plot(), parseNameList(text, plot()))); dlg.hidden = true; };
+  };
+  draw();
+}
+
+/* ================= custom role ================= */
+function openCustomRole(){
+  const dlg = $("startDlg");
+  dlg.innerHTML = '<div class="dlg"><h2>Custom instrument</h2>' +
+    '<p>Anything that walks in the door. It lands in this plot and travels with the file.</p>' +
+    '<div class="fld"><label>Name</label><input type="text" id="crLabel" placeholder="Steel pan"></div>' +
+    '<div class="fld"><label>Short label for the diagram</label><input type="text" id="crShort" placeholder="Pan"></div>' +
+    '<div class="insprow"><div class="fld" style="flex:1"><label>Input</label><select id="crType">' +
+    '<option value="mic">mic</option><option value="di">DI</option><option value="stereo-di">stereo DI (2 ch)</option><option value="xlr">XLR</option><option value="none">none</option>' +
+    '</select></div><div class="fld" style="width:90px"><label>How many</label><input type="text" id="crCount" value="1"></div>' +
+    '<div class="fld" style="flex:1"><label>Space it takes</label><select id="crSize">' +
+    '<option value="22">a player</option><option value="36">a table or a cello</option><option value="72">a kit-sized rig</option></select></div></div>' +
+    '<div class="insprow" style="margin-top:10px"><button class="btn on" id="bCrOk">Add it</button><button class="btn" id="bCrCancel">cancel</button></div></div>';
+  dlg.hidden = false;
+  $("bCrCancel").onclick = () => { dlg.hidden = true; };
+  $("bCrOk").onclick = () => {
+    const label = ($("crLabel").value || "Custom").trim();
+    const short = ($("crShort").value || label.slice(0, 6)).trim();
+    const type = $("crType").value, n = Math.max(0, parseInt($("crCount").value, 10) || 0), size = +$("crSize").value;
+    commit(() => {
+      const q = plot();
+      const id = "custom-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Math.random().toString(36).slice(2, 5);
+      const inputs = [];
+      for (let i = 0; i < (type === "none" ? 0 : n); i++)
+        inputs.push({ source:label + (n > 1 ? " " + (i + 1) : ""), type, phantom:false });
+      q.customRoles.push({ id, label, short, family:"other", grp:"other", sub:9, stance:size >= 72 ? "object" : "standing",
+        w:size, d:size >= 72 ? 60 : size, zone:size >= 36 ? "mid" : "front", inputs });
+      const pos = addPosition(q, id);
+      autoLayout(q, { force:false });
+      S.sel = pos.id;
+    });
+    dlg.hidden = true;
+  };
+}
+
+/* ================= changeover ================= */
 function openChangeover(){
   const dlg = $("coDlg"), sheets = [];
   for (let i = 0; i < S.plots.length - 1; i++)
@@ -1650,12 +2071,12 @@ function openChangeover(){
 }
 
 /* ================= wiring ================= */
-$("bNew").onclick = openNew;
+$("bNew").onclick = openStart;
 $("bLoad").onclick = () => $("fileIn").click();
 $("fileIn").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => loadJSON(t, f.name)); e.target.value = ""; };
 $("bSave").onclick = () => {
   const p = plot();
-  if (S.plots.length > 1 && confirm("Save all " + S.plots.length + " plots as one showcase file?\n\nCancel saves just " + p.ensembleName + "."))
+  if (S.plots.length > 1 && confirm("Save all " + S.plots.length + " plots as one showcase file?\n\nCancel saves just " + p.name + "."))
     download("SW-showcase-" + todayISO() + ".json", JSON.stringify({ plots:S.plots, active:S.active }, null, 1));
   else download(plotFileName(p), JSON.stringify(p, null, 1));
 };
@@ -1669,7 +2090,7 @@ $("bShare").onclick = async () => {
 $("bEmail").onclick = async () => {
   const p = plot(), text = emailText(p);
   await copyText(text);
-  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.ensembleName + (p.date ? " — " + p.date : ""));
+  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + p.date : ""));
   const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
   toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
   location.href = mail;
@@ -1678,13 +2099,6 @@ $("bPrint").onclick = () => window.print();
 $("bChange").onclick = openChangeover;
 $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bEditCopy").onclick = () => { S.readOnly = false; history.replaceState(null, "", location.pathname + location.search); render(); };
-async function copyText(t){
-  try { await navigator.clipboard.writeText(t); }
-  catch (err){
-    const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } finally { ta.remove(); }
-  }
-}
 window.addEventListener("dragover", e => { e.preventDefault(); });
 window.addEventListener("drop", e => {
   e.preventDefault(); const f = e.dataTransfer.files[0];
@@ -1704,8 +2118,9 @@ window.addEventListener("resize", () => { if (plot()) renderSheet(plot()); });
     } catch (err){ toast("Link didn't open: " + err.message); }
   }
   render();
-  openNew();
+  openStart();
 })();
+
 </script>
 </body>
 </html>

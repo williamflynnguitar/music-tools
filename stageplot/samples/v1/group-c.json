@@ -1,265 +1,233 @@
 {
- "schemaVersion": 2,
+ "v": 1,
  "id": "plot1",
- "name": "Group C",
- "templateId": "",
+ "ensembleId": "group-c",
+ "ensembleName": "Group C",
  "director": "",
  "date": "",
  "showName": "",
  "notes": "",
- "printNames": true,
  "deck": {
   "widthFt": 24,
   "depthFt": 12
  },
- "positions": [
+ "items": [
   {
-   "id": "pos2",
-   "roleId": "voice",
+   "id": "i10",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 245.088,
    "y": 40.032000000000004,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Emmalynn Reilly"
+   "ownerPersonIds": [
+    "p2"
    ],
-   "doubles": [],
-   "byo": [],
    "inputs": [
     {
      "id": "in11",
      "phantom": false,
      "notes": "",
      "source": "Vocal",
-     "type": "mic",
-     "role": "voice"
+     "type": "mic"
     }
    ],
-   "notes": "",
-   "wedgeId": null
+   "notes": ""
   },
   {
-   "id": "pos3",
-   "roleId": "voice",
+   "id": "i12",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 179.136,
    "y": 40.032000000000004,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Issy Lynn"
+   "ownerPersonIds": [
+    "p3"
    ],
-   "doubles": [],
-   "byo": [],
    "inputs": [
     {
      "id": "in13",
      "phantom": false,
      "notes": "",
      "source": "Vocal",
-     "type": "mic",
-     "role": "voice"
+     "type": "mic"
     }
    ],
-   "notes": "",
-   "wedgeId": null
+   "notes": ""
   },
   {
-   "id": "pos4",
-   "roleId": "voice",
+   "id": "i14",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 108.864,
    "y": 40.032000000000004,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Liam Wallace"
+   "ownerPersonIds": [
+    "p4"
    ],
-   "doubles": [],
-   "byo": [],
    "inputs": [
     {
      "id": "in15",
      "phantom": false,
      "notes": "",
      "source": "Vocal",
-     "type": "mic",
-     "role": "voice"
+     "type": "mic"
     }
    ],
-   "notes": "",
-   "wedgeId": null
+   "notes": ""
   },
   {
-   "id": "pos5",
-   "roleId": "voice",
+   "id": "i16",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 42.912,
    "y": 40.032000000000004,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Jack Wilson"
+   "ownerPersonIds": [
+    "p5"
    ],
-   "doubles": [],
-   "byo": [],
    "inputs": [
     {
      "id": "in17",
      "phantom": false,
      "notes": "",
      "source": "Vocal",
-     "type": "mic",
-     "role": "voice"
+     "type": "mic"
     }
    ],
-   "notes": "",
-   "wedgeId": null
+   "notes": ""
   },
   {
-   "id": "pos6",
-   "roleId": "guitar",
+   "id": "i18",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 252,
    "y": 96.048,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Sagan Plantz"
+   "ownerPersonIds": [
+    "p6"
    ],
-   "doubles": [],
-   "byo": [],
-   "inputs": [
-    {
-     "id": "in21",
-     "phantom": false,
-     "notes": "amp mic",
-     "source": "Guitar",
-     "type": "mic",
-     "role": "guitar"
-    }
-   ],
-   "notes": "",
-   "wedgeId": "w32"
+   "inputs": [],
+   "notes": ""
   },
   {
-   "id": "pos7",
-   "roleId": "bass",
+   "id": "i19",
+   "kind": "person",
+   "ref": null,
+   "label": "",
    "x": 36,
    "y": 96.048,
    "rot": 0,
-   "moved": true,
-   "names": [
-    "Michael Boyle"
+   "ownerPersonIds": [
+    "p7"
    ],
-   "doubles": [],
-   "byo": [],
-   "inputs": [
-    {
-     "id": "in23",
-     "phantom": false,
-     "notes": "",
-     "source": "Bass",
-     "type": "di",
-     "role": "bass"
-    }
-   ],
-   "notes": "",
-   "wedgeId": "w33"
+   "inputs": [],
+   "notes": ""
   },
   {
-   "id": "pos10",
-   "roleId": "drums",
-   "x": 144,
-   "y": 108,
-   "rot": 0,
-   "moved": true,
-   "names": [
-    "A.J. Banks",
-    "C.J. Strecker"
-   ],
-   "doubles": [],
-   "byo": [],
-   "inputs": [
-    {
-     "id": "in25",
-     "source": "Kick",
-     "type": "mic",
-     "phantom": false,
-     "role": "drums"
-    },
-    {
-     "id": "in26",
-     "source": "Snare",
-     "type": "mic",
-     "phantom": false,
-     "role": "drums"
-    },
-    {
-     "id": "in27",
-     "source": "Hi-hat",
-     "type": "mic",
-     "phantom": false,
-     "role": "drums"
-    },
-    {
-     "id": "in28",
-     "source": "Tom 1",
-     "type": "mic",
-     "phantom": false,
-     "role": "drums"
-    },
-    {
-     "id": "in29",
-     "source": "Tom 2",
-     "type": "mic",
-     "phantom": false,
-     "role": "drums"
-    },
-    {
-     "id": "in30",
-     "source": "OH L",
-     "type": "mic",
-     "phantom": true,
-     "role": "drums"
-    },
-    {
-     "id": "in31",
-     "source": "OH R",
-     "type": "mic",
-     "phantom": true,
-     "role": "drums"
-    }
-   ],
-   "notes": "",
-   "wedgeId": "w34"
-  }
- ],
- "items": [
-  {
-   "id": "i8",
+   "id": "i20",
    "kind": "house",
    "ref": "gtramp1",
    "label": "",
    "x": 252,
    "y": 135.93599999999998,
    "rot": 0,
-   "moved": true,
-   "ownerPositionIds": [
-    "pos6"
+   "ownerPersonIds": [
+    "p6"
    ],
-   "inputs": [],
+   "inputs": [
+    {
+     "id": "in21",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic"
+    }
+   ],
    "notes": ""
   },
   {
-   "id": "i9",
+   "id": "i22",
    "kind": "house",
    "ref": "bassamp",
    "label": "",
    "x": 36,
    "y": 130.032,
    "rot": 0,
-   "moved": true,
-   "ownerPositionIds": [
-    "pos7"
+   "ownerPersonIds": [
+    "p7"
    ],
-   "inputs": [],
+   "inputs": [
+    {
+     "id": "in23",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i24",
+   "kind": "house",
+   "ref": "kit",
+   "label": "",
+   "x": 144,
+   "y": 108,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8",
+    "p9"
+   ],
+   "inputs": [
+    {
+     "id": "in25",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in26",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in27",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in28",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in29",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in30",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true
+    },
+    {
+     "id": "in31",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true
+    }
+   ],
    "notes": ""
   }
  ],
@@ -270,9 +238,8 @@
    "x": 273.888,
    "y": 54,
    "rot": 0,
-   "moved": true,
    "assignees": [
-    "pos6"
+    "p6"
    ],
    "request": ""
   },
@@ -282,9 +249,8 @@
    "x": 14.112,
    "y": 54,
    "rot": 0,
-   "moved": true,
    "assignees": [
-    "pos7"
+    "p7"
    ],
    "request": ""
   },
@@ -294,9 +260,9 @@
    "x": 95.90400000000001,
    "y": 96.048,
    "rot": 90,
-   "moved": true,
    "assignees": [
-    "pos10"
+    "p8",
+    "p9"
    ],
    "request": ""
   },
@@ -306,7 +272,6 @@
    "x": 211.968,
    "y": 9.936,
    "rot": 0,
-   "moved": true,
    "assignees": [],
    "request": ""
   },
@@ -316,13 +281,77 @@
    "x": 76.03200000000001,
    "y": 9.936,
    "rot": 0,
-   "moved": true,
    "assignees": [],
    "request": ""
   }
  ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Emmalynn Reilly",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p3",
+   "name": "Issy Lynn",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p4",
+   "name": "Liam Wallace",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p5",
+   "name": "Jack Wilson",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p6",
+   "name": "Sagan Plantz",
+   "role": "guitar",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p7",
+   "name": "Michael Boyle",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w33"
+  },
+  {
+   "id": "p8",
+   "name": "A.J. Banks",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w34"
+  },
+  {
+   "id": "p9",
+   "name": "C.J. Strecker",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w34"
+  }
+ ],
  "songs": [],
- "customRoles": [],
  "sections": {
   "sax": {
    "on": false,

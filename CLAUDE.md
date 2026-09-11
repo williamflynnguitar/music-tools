@@ -28,11 +28,13 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   deliberately unlinked from the spine)
 - `composition-assignments/` — prompt cards + inline seed-material tools for
   composition students (stand-alone)
-- `stageplot/` — **built** (Sep 2026). Stage plots for the WSU ensembles at
-  Somewhere Works: venue config, ensemble presets, monitors, derived input
-  list, changeover sheets. Brief in `briefs/`. Not a practice tool — the
-  deliverable is a printed page for the sound tech, so print is the primary
-  surface
+- `stageplot/` — **built** (Sep 2026, v2). Stage plots for any act loading into
+  Somewhere Works: venue config, an instrument library, instrumentation
+  templates, an auto-layout engine, monitors, derived input list, changeover
+  sheets. Positions are primary and names optional; the fall 2026 WSU rosters
+  live in `stageplot/samples/`, not in the code. Briefs in `briefs/`. Not a
+  practice tool — the deliverable is a printed page for the sound tech, so
+  print is the primary surface
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its

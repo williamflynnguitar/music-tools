@@ -1,7 +1,7 @@
 {
  "schemaVersion": 2,
  "id": "plot1",
- "name": "Group C",
+ "name": "Combo A",
  "templateId": "",
  "director": "",
  "date": "",
@@ -15,13 +15,13 @@
  "positions": [
   {
    "id": "pos2",
-   "roleId": "voice",
-   "x": 245.088,
+   "roleId": "trombone",
+   "x": 40.032000000000004,
    "y": 40.032000000000004,
    "rot": 0,
    "moved": true,
    "names": [
-    "Emmalynn Reilly"
+    "Evan Swope"
    ],
    "doubles": [],
    "byo": [],
@@ -30,23 +30,23 @@
      "id": "in11",
      "phantom": false,
      "notes": "",
-     "source": "Vocal",
+     "source": "Trombone",
      "type": "mic",
-     "role": "voice"
+     "role": "trombone"
     }
    ],
    "notes": "",
-   "wedgeId": null
+   "wedgeId": "w39"
   },
   {
    "id": "pos3",
-   "roleId": "voice",
-   "x": 179.136,
+   "roleId": "trumpet",
+   "x": 72,
    "y": 40.032000000000004,
    "rot": 0,
    "moved": true,
    "names": [
-    "Issy Lynn"
+    "Dawson McNeal"
    ],
    "doubles": [],
    "byo": [],
@@ -55,23 +55,23 @@
      "id": "in13",
      "phantom": false,
      "notes": "",
-     "source": "Vocal",
+     "source": "Trumpet",
      "type": "mic",
-     "role": "voice"
+     "role": "trumpet"
     }
    ],
    "notes": "",
-   "wedgeId": null
+   "wedgeId": "w39"
   },
   {
    "id": "pos4",
-   "roleId": "voice",
-   "x": 108.864,
+   "roleId": "tenor",
+   "x": 115.2,
    "y": 40.032000000000004,
    "rot": 0,
    "moved": true,
    "names": [
-    "Liam Wallace"
+    "James Barton"
    ],
    "doubles": [],
    "byo": [],
@@ -80,23 +80,23 @@
      "id": "in15",
      "phantom": false,
      "notes": "",
-     "source": "Vocal",
+     "source": "Tenor sax",
      "type": "mic",
-     "role": "voice"
+     "role": "tenor"
     }
    ],
    "notes": "",
-   "wedgeId": null
+   "wedgeId": "w39"
   },
   {
    "id": "pos5",
-   "roleId": "voice",
-   "x": 42.912,
+   "roleId": "tenor",
+   "x": 152.64000000000001,
    "y": 40.032000000000004,
    "rot": 0,
    "moved": true,
    "names": [
-    "Jack Wilson"
+    "James Hoerst"
    ],
    "doubles": [],
    "byo": [],
@@ -105,29 +105,54 @@
      "id": "in17",
      "phantom": false,
      "notes": "",
-     "source": "Vocal",
+     "source": "Tenor sax",
      "type": "mic",
-     "role": "voice"
+     "role": "tenor"
     }
    ],
    "notes": "",
-   "wedgeId": null
+   "wedgeId": "w39"
   },
   {
    "id": "pos6",
+   "roleId": "keys",
+   "x": 213.12,
+   "y": 62.064,
+   "rot": 0,
+   "moved": true,
+   "names": [
+    "Dexter Curry"
+   ],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in22",
+     "phantom": false,
+     "notes": "",
+     "source": "Keys",
+     "type": "stereo-di",
+     "role": "keys"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w35"
+  },
+  {
+   "id": "pos7",
    "roleId": "guitar",
    "x": 252,
    "y": 96.048,
    "rot": 0,
    "moved": true,
    "names": [
-    "Sagan Plantz"
+    "Julian Urrego"
    ],
    "doubles": [],
    "byo": [],
    "inputs": [
     {
-     "id": "in21",
+     "id": "in24",
      "phantom": false,
      "notes": "amp mic",
      "source": "Guitar",
@@ -136,23 +161,23 @@
     }
    ],
    "notes": "",
-   "wedgeId": "w32"
+   "wedgeId": "w36"
   },
   {
-   "id": "pos7",
+   "id": "pos8",
    "roleId": "bass",
    "x": 36,
    "y": 96.048,
    "rot": 0,
    "moved": true,
    "names": [
-    "Michael Boyle"
+    "Ian Knickrehm"
    ],
    "doubles": [],
    "byo": [],
    "inputs": [
     {
-     "id": "in23",
+     "id": "in26",
      "phantom": false,
      "notes": "",
      "source": "Bass",
@@ -161,66 +186,65 @@
     }
    ],
    "notes": "",
-   "wedgeId": "w33"
+   "wedgeId": "w37"
   },
   {
-   "id": "pos10",
+   "id": "pos12",
    "roleId": "drums",
    "x": 144,
    "y": 108,
    "rot": 0,
    "moved": true,
    "names": [
-    "A.J. Banks",
-    "C.J. Strecker"
+    "Brendan Thompson"
    ],
    "doubles": [],
    "byo": [],
    "inputs": [
     {
-     "id": "in25",
+     "id": "in28",
      "source": "Kick",
      "type": "mic",
      "phantom": false,
      "role": "drums"
     },
     {
-     "id": "in26",
+     "id": "in29",
      "source": "Snare",
      "type": "mic",
      "phantom": false,
      "role": "drums"
     },
     {
-     "id": "in27",
+     "id": "in30",
      "source": "Hi-hat",
      "type": "mic",
      "phantom": false,
      "role": "drums"
     },
     {
-     "id": "in28",
+     "id": "in31",
      "source": "Tom 1",
      "type": "mic",
      "phantom": false,
      "role": "drums"
     },
     {
-     "id": "in29",
+     "id": "in32",
      "source": "Tom 2",
      "type": "mic",
      "phantom": false,
      "role": "drums"
     },
     {
-     "id": "in30",
+     "id": "in33",
      "source": "OH L",
      "type": "mic",
      "phantom": true,
      "role": "drums"
     },
     {
-     "id": "in31",
+     "id": "in34",
      "source": "OH R",
      "type": "mic",
      "phantom": true,
@@ -228,12 +252,27 @@
     }
    ],
    "notes": "",
-   "wedgeId": "w34"
+   "wedgeId": "w38"
   }
  ],
  "items": [
   {
-   "id": "i8",
+   "id": "i9",
+   "kind": "house",
+   "ref": "kb1",
+   "label": "",
+   "x": 213.12,
+   "y": 33.983999999999995,
+   "rot": 0,
+   "moved": true,
+   "ownerPositionIds": [
+    "pos6"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i10",
    "kind": "house",
    "ref": "gtramp1",
    "label": "",
@@ -242,13 +281,13 @@
    "rot": 0,
    "moved": true,
    "ownerPositionIds": [
-    "pos6"
+    "pos7"
    ],
    "inputs": [],
    "notes": ""
   },
   {
-   "id": "i9",
+   "id": "i11",
    "kind": "house",
    "ref": "bassamp",
    "label": "",
@@ -257,7 +296,7 @@
    "rot": 0,
    "moved": true,
    "ownerPositionIds": [
-    "pos7"
+    "pos8"
    ],
    "inputs": [],
    "notes": ""
@@ -265,10 +304,10 @@
  ],
  "wedges": [
   {
-   "id": "w32",
+   "id": "w35",
    "number": 1,
-   "x": 273.888,
-   "y": 54,
+   "x": 213.12,
+   "y": 11.952,
    "rot": 0,
    "moved": true,
    "assignees": [
@@ -277,9 +316,9 @@
    "request": ""
   },
   {
-   "id": "w33",
+   "id": "w36",
    "number": 2,
-   "x": 14.112,
+   "x": 273.888,
    "y": 54,
    "rot": 0,
    "moved": true,
@@ -289,35 +328,42 @@
    "request": ""
   },
   {
-   "id": "w34",
+   "id": "w37",
    "number": 3,
+   "x": 14.112,
+   "y": 54,
+   "rot": 0,
+   "moved": true,
+   "assignees": [
+    "pos8"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w38",
+   "number": 4,
    "x": 95.90400000000001,
    "y": 96.048,
    "rot": 90,
    "moved": true,
    "assignees": [
-    "pos10"
+    "pos12"
    ],
    "request": ""
   },
   {
-   "id": "w35",
-   "number": 4,
-   "x": 211.968,
-   "y": 9.936,
-   "rot": 0,
-   "moved": true,
-   "assignees": [],
-   "request": ""
-  },
-  {
-   "id": "w36",
+   "id": "w39",
    "number": 5,
-   "x": 76.03200000000001,
+   "x": 93.60000000000001,
    "y": 9.936,
    "rot": 0,
    "moved": true,
-   "assignees": [],
+   "assignees": [
+    "pos2",
+    "pos3",
+    "pos4",
+    "pos5"
+   ],
    "request": ""
   }
  ],

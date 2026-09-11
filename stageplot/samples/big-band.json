@@ -1,0 +1,587 @@
+{
+ "schemaVersion": 2,
+ "id": "plot1",
+ "name": "Big Band 1",
+ "templateId": "",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "printNames": true,
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "positions": [
+  {
+   "id": "pos2",
+   "roleId": "alto",
+   "x": 194.976,
+   "y": 45.936,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in20",
+     "phantom": false,
+     "notes": "",
+     "source": "Alto sax 1",
+     "type": "mic",
+     "role": "alto"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w62"
+  },
+  {
+   "id": "pos3",
+   "roleId": "alto",
+   "x": 235.00799999999998,
+   "y": 45.936,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in22",
+     "phantom": false,
+     "notes": "",
+     "source": "Alto sax 2",
+     "type": "mic",
+     "role": "alto"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w63"
+  },
+  {
+   "id": "pos4",
+   "roleId": "tenor",
+   "x": 275.03999999999996,
+   "y": 45.936,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in24",
+     "phantom": false,
+     "notes": "",
+     "source": "Tenor sax 1",
+     "type": "mic",
+     "role": "tenor"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w63"
+  },
+  {
+   "id": "pos5",
+   "roleId": "tenor",
+   "x": 154.94400000000002,
+   "y": 45.936,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in26",
+     "phantom": false,
+     "notes": "",
+     "source": "Tenor sax 2",
+     "type": "mic",
+     "role": "tenor"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w62"
+  },
+  {
+   "id": "pos6",
+   "roleId": "bari",
+   "x": 114.912,
+   "y": 45.936,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in28",
+     "phantom": false,
+     "notes": "",
+     "source": "Bari sax",
+     "type": "mic",
+     "role": "bari"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w62"
+  },
+  {
+   "id": "pos7",
+   "roleId": "trumpet",
+   "x": 194.976,
+   "y": 126,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in30",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet 1",
+     "type": "mic",
+     "role": "trumpet"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w65"
+  },
+  {
+   "id": "pos8",
+   "roleId": "trumpet",
+   "x": 235.00799999999998,
+   "y": 126,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in32",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet 2",
+     "type": "mic",
+     "role": "trumpet"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w65"
+  },
+  {
+   "id": "pos9",
+   "roleId": "trumpet",
+   "x": 275.03999999999996,
+   "y": 126,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in34",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet 3",
+     "type": "mic",
+     "role": "trumpet"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w65"
+  },
+  {
+   "id": "pos10",
+   "roleId": "trumpet",
+   "x": 154.94400000000002,
+   "y": 126,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in36",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet 4",
+     "type": "mic",
+     "role": "trumpet"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w65"
+  },
+  {
+   "id": "pos11",
+   "roleId": "trombone",
+   "x": 194.976,
+   "y": 87.984,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in38",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone 1",
+     "type": "mic",
+     "role": "trombone"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w64"
+  },
+  {
+   "id": "pos12",
+   "roleId": "trombone",
+   "x": 235.00799999999998,
+   "y": 87.984,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in40",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone 2",
+     "type": "mic",
+     "role": "trombone"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w64"
+  },
+  {
+   "id": "pos13",
+   "roleId": "trombone",
+   "x": 275.03999999999996,
+   "y": 87.984,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in42",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone 3",
+     "type": "mic",
+     "role": "trombone"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w64"
+  },
+  {
+   "id": "pos14",
+   "roleId": "trombone",
+   "x": 154.94400000000002,
+   "y": 87.984,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in44",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone 4",
+     "type": "mic",
+     "role": "trombone"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w64"
+  },
+  {
+   "id": "pos15",
+   "roleId": "keys",
+   "x": 57.888000000000005,
+   "y": 44.064,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in49",
+     "phantom": false,
+     "notes": "",
+     "source": "Keys",
+     "type": "stereo-di",
+     "role": "keys"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w66"
+  },
+  {
+   "id": "pos16",
+   "roleId": "guitar",
+   "x": 91.872,
+   "y": 44.064,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in51",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic",
+     "role": "guitar"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w66"
+  },
+  {
+   "id": "pos17",
+   "roleId": "bass",
+   "x": 19.872,
+   "y": 36,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in53",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di",
+     "role": "bass"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w66"
+  },
+  {
+   "id": "pos21",
+   "roleId": "drums",
+   "x": 42.912,
+   "y": 109.008,
+   "rot": 0,
+   "moved": true,
+   "names": [],
+   "doubles": [],
+   "byo": [],
+   "inputs": [
+    {
+     "id": "in55",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false,
+     "role": "drums"
+    },
+    {
+     "id": "in56",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false,
+     "role": "drums"
+    },
+    {
+     "id": "in57",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false,
+     "role": "drums"
+    },
+    {
+     "id": "in58",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false,
+     "role": "drums"
+    },
+    {
+     "id": "in59",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false,
+     "role": "drums"
+    },
+    {
+     "id": "in60",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true,
+     "role": "drums"
+    },
+    {
+     "id": "in61",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true,
+     "role": "drums"
+    }
+   ],
+   "notes": "",
+   "wedgeId": "w66"
+  }
+ ],
+ "items": [
+  {
+   "id": "i18",
+   "kind": "house",
+   "ref": "kb1",
+   "label": "",
+   "x": 57.888000000000005,
+   "y": 20.016000000000002,
+   "rot": 0,
+   "moved": true,
+   "ownerPositionIds": [
+    "pos15"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i19",
+   "kind": "house",
+   "ref": "gtramp1",
+   "label": "",
+   "x": 91.872,
+   "y": 65.952,
+   "rot": 0,
+   "moved": true,
+   "ownerPositionIds": [
+    "pos16"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i20",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 19.872,
+   "y": 60.047999999999995,
+   "rot": 0,
+   "moved": true,
+   "ownerPositionIds": [
+    "pos17"
+   ],
+   "inputs": [],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w62",
+   "number": 1,
+   "x": 135.072,
+   "y": 11.952,
+   "rot": 0,
+   "moved": true,
+   "assignees": [
+    "pos6",
+    "pos5",
+    "pos2"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w63",
+   "number": 2,
+   "x": 235.00799999999998,
+   "y": 11.952,
+   "rot": 0,
+   "moved": true,
+   "assignees": [
+    "pos3",
+    "pos4"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w64",
+   "number": 3,
+   "x": 124.128,
+   "y": 87.984,
+   "rot": 270,
+   "moved": true,
+   "assignees": [
+    "pos11",
+    "pos12",
+    "pos13",
+    "pos14"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w65",
+   "number": 4,
+   "x": 124.128,
+   "y": 126,
+   "rot": 270,
+   "moved": true,
+   "assignees": [
+    "pos7",
+    "pos8",
+    "pos9",
+    "pos10"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w66",
+   "number": 5,
+   "x": 91.872,
+   "y": 99.93599999999999,
+   "rot": 0,
+   "moved": true,
+   "assignees": [
+    "pos15",
+    "pos16",
+    "pos17",
+    "pos21"
+   ],
+   "request": ""
+  }
+ ],
+ "songs": [],
+ "customRoles": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}
