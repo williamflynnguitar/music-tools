@@ -28,6 +28,11 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   deliberately unlinked from the spine)
 - `composition-assignments/` — prompt cards + inline seed-material tools for
   composition students (stand-alone)
+- `stageplot/` — **built** (Sep 2026). Stage plots for the WSU ensembles at
+  Somewhere Works: venue config, ensemble presets, monitors, derived input
+  list, changeover sheets. Brief in `briefs/`. Not a practice tool — the
+  deliverable is a printed page for the sound tech, so print is the primary
+  surface
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its
@@ -75,6 +80,13 @@ palette, explicit `index.html` hrefs so file:// works) duplicated between
 `===== spine menu =====` markers at the top of each tool's body —
 keep the copies byte-identical, like the `SCALES` block. The landing page
 itself doesn't carry it; authoring pages (`edit.html`) stay unlinked.
+
+Don't hand-edit the copies: edit the canonical page (`fretboard/index.html`)
+and run `node scripts/spine-sync.js`, which copies the block into every other
+carrier. `node scripts/spine-sync.js --check` reports drift and also catches a
+tool that is on the landing page but not in the spine, or the reverse. The
+block hides itself in print — tools whose deliverable is paper (Box Buddy,
+Chartwright, Stage Plot) were printing the chip before Sep 2026.
 
 ## Audio
 

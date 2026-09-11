@@ -28,7 +28,7 @@
      "id": "in20",
      "phantom": false,
      "notes": "",
-     "source": "Alto sax",
+     "source": "Alto sax 1",
      "type": "mic"
     }
    ],
@@ -50,7 +50,7 @@
      "id": "in22",
      "phantom": false,
      "notes": "",
-     "source": "Alto sax",
+     "source": "Alto sax 2",
      "type": "mic"
     }
    ],
@@ -72,7 +72,7 @@
      "id": "in24",
      "phantom": false,
      "notes": "",
-     "source": "Tenor sax",
+     "source": "Tenor sax 1",
      "type": "mic"
     }
    ],
@@ -94,7 +94,7 @@
      "id": "in26",
      "phantom": false,
      "notes": "",
-     "source": "Tenor sax",
+     "source": "Tenor sax 2",
      "type": "mic"
     }
    ],
@@ -138,7 +138,7 @@
      "id": "in30",
      "phantom": false,
      "notes": "",
-     "source": "Trumpet",
+     "source": "Trumpet 1",
      "type": "mic"
     }
    ],
@@ -160,7 +160,7 @@
      "id": "in32",
      "phantom": false,
      "notes": "",
-     "source": "Trumpet",
+     "source": "Trumpet 2",
      "type": "mic"
     }
    ],
@@ -182,7 +182,7 @@
      "id": "in34",
      "phantom": false,
      "notes": "",
-     "source": "Trumpet",
+     "source": "Trumpet 3",
      "type": "mic"
     }
    ],
@@ -204,7 +204,7 @@
      "id": "in36",
      "phantom": false,
      "notes": "",
-     "source": "Trumpet",
+     "source": "Trumpet 4",
      "type": "mic"
     }
    ],
@@ -226,7 +226,7 @@
      "id": "in38",
      "phantom": false,
      "notes": "",
-     "source": "Trombone",
+     "source": "Trombone 1",
      "type": "mic"
     }
    ],
@@ -248,7 +248,7 @@
      "id": "in40",
      "phantom": false,
      "notes": "",
-     "source": "Trombone",
+     "source": "Trombone 2",
      "type": "mic"
     }
    ],
@@ -270,7 +270,7 @@
      "id": "in42",
      "phantom": false,
      "notes": "",
-     "source": "Trombone",
+     "source": "Trombone 3",
      "type": "mic"
     }
    ],
@@ -292,7 +292,7 @@
      "id": "in44",
      "phantom": false,
      "notes": "",
-     "source": "Trombone",
+     "source": "Trombone 4",
      "type": "mic"
     }
    ],
