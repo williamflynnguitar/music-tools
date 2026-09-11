@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage Plot</title>
+<!-- Link preview -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="William Flynn Guitar">
+<meta property="og:title" content="Stage Plot">
+<meta property="og:description" content="Stage plots for jazz ensembles at Somewhere Works: layout, monitors, inputs, and house gear on one page.">
+<meta property="og:url" content="https://williamflynnguitar.github.io/music-tools/stageplot/">
+<meta property="og:image" content="https://williamflynnguitar.github.io/music-tools/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="William Flynn playing archtop guitar">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Stage plots for jazz ensembles at Somewhere Works: layout, monitors, inputs, and house gear on one page.">
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a;
+  --amber:#d8a640; --red:#d4715f; --good:#7fb28a;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --psans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.45}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+[hidden]{display:none!important}
+
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 16px 8px;border-bottom:1px solid var(--line)}
+.wordmark{font-size:22px;font-weight:400;margin:0;white-space:nowrap}
+.wordmark em{font-style:italic;color:var(--brass)}
+.venue{font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.04em;line-height:1.3}
+.grow{flex:1}
+.btn{background:transparent;border:1px solid var(--line);border-radius:4px;padding:6px 12px;font-size:14px}
+.btn:hover{border-color:var(--brass)}
+.btn.on{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.sm{padding:3px 8px;font-size:12px;font-family:var(--mono)}
+.bar-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+.tabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:6px 16px;border-bottom:1px solid var(--line)}
+.tab{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-bottom-color:transparent;border-radius:4px 4px 0 0;padding:5px 10px;font-size:13px;background:transparent}
+.tab[aria-current=true]{background:var(--petrol);border-color:var(--brass)}
+.tab .x{color:var(--bone-dim);font-family:var(--mono);font-size:12px}
+.tab .x:hover{color:var(--red)}
+
+.warnbar{display:flex;flex-direction:column;gap:0}
+.warn{display:flex;align-items:baseline;gap:10px;padding:7px 16px;font-size:14px;border-bottom:1px solid var(--line)}
+.warn.amber{background:rgba(216,166,64,.13);color:#f0d79a}
+.warn.red{background:rgba(212,113,95,.15);color:#f3b8ac}
+.warn .btn{border-color:currentColor;font-size:13px;padding:2px 9px}
+
+/* ---------- three regions ---------- */
+.app{display:grid;grid-template-columns:290px minmax(360px,1fr) minmax(320px,460px);align-items:start;min-height:0}
+@media (max-width:1200px){.app{grid-template-columns:270px 1fr}.pagerail{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:820px){.app{grid-template-columns:1fr}.rail{border-right:0;border-bottom:1px solid var(--line)}}
+
+/* left rail */
+.rail{border-right:1px solid var(--line);padding:10px 12px 40px;min-width:0}
+.railtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.railtabs button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:4px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim)}
+.railtabs button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone);border-color:var(--brass)}
+.panel h3{font-size:13px;font-weight:400;color:var(--bone-dim);margin:14px 0 6px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.panel h3:first-child{margin-top:0}
+.plist{display:flex;flex-direction:column;gap:5px}
+.pitem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--petrol);border:1px solid transparent;border-radius:4px;padding:7px 9px;font-size:13.5px;line-height:1.25}
+.pitem:hover{background:var(--petrol-2);border-color:var(--brass)}
+.pitem .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
+.pitem .ct.over{color:var(--amber)}
+.pitem.dim{opacity:.55}
+.prow{display:flex;align-items:center;gap:8px;background:var(--petrol);border-radius:4px;padding:6px 9px;font-size:13.5px}
+.prow .nm{flex:1;min-width:0}
+.prow .role{color:var(--bone-dim);font-size:12px;font-family:var(--mono)}
+.fld{margin-bottom:10px}
+.fld label,.fld .lbl{display:block;font-size:12px;color:var(--bone-dim);margin-bottom:3px}
+.fld input[type=text],.fld input[type=date],.fld select,.fld textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:6px 8px;color:var(--bone);font-size:14px}
+.fld textarea{min-height:60px;resize:vertical}
+.chk{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--bone);padding:2px 0}
+.chk input{accent-color:var(--brass)}
+.note{font-size:12.5px;color:var(--bone-dim);line-height:1.4;margin:6px 0}
+.wedgecard{border:1px solid var(--line);border-radius:4px;padding:8px 9px;margin-bottom:8px}
+.wedgecard header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.wedgecard header b{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--brass)}
+.inputrow{display:grid;grid-template-columns:26px 1fr auto;gap:6px;align-items:center;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(42,84,97,.5)}
+.inputrow .ch{font-family:var(--mono);color:var(--brass);font-size:12px}
+.inputrow .mv{display:flex;gap:2px}
+.inputrow .mv button{background:transparent;border:1px solid var(--line);border-radius:2px;font-size:10px;line-height:1;padding:2px 4px;color:var(--bone-dim)}
+
+/* center canvas */
+.canvaswrap{padding:12px 14px 40px;min-width:0}
+.canvashead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.05em}
+.deckwrap{background:#08151a;border:1px solid var(--line);border-radius:5px;padding:6px}
+svg.deck{display:block;width:100%;height:auto;touch-action:none}
+svg.deck .hit{cursor:grab}
+svg.deck g.sel rect,svg.deck g.sel circle,svg.deck g.sel path{stroke:var(--brass);stroke-width:2.4}
+svg.deck .hit:active{cursor:grabbing}
+.inspector{margin-top:12px;border:1px solid var(--line);border-radius:5px;padding:10px 12px}
+.inspector h3{margin:0 0 8px;font-size:15px;font-weight:400}
+.inspector h3 span{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin-left:8px}
+.insprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.legendnote{font-size:12.5px;color:var(--bone-dim);margin-top:8px;line-height:1.4}
+
+/* right rail — the printed page, live */
+.pagerail{border-left:1px solid var(--line);padding:12px 14px 40px;min-width:0}
+.pagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.05em}
+#sheetScale{transform-origin:top left}
+.sheetbox{overflow:hidden}
+
+/* ---------- the printed page ---------- */
+.sheet{width:7.5in;background:#fff;color:#000;font-family:var(--serif);font-size:10pt;line-height:1.22;position:relative}
+.sheet .pagerule{position:absolute;left:0;right:0;border-top:1px dashed #b9b9b9;pointer-events:none}
+.sheet .pagerule span{position:absolute;right:0;top:2px;font-family:var(--psans);font-size:7pt;color:#999}
+.sheet h1{font-size:14pt;font-weight:400;margin:0 0 2px;line-height:1.12}
+.sheet .subhead{font-family:var(--psans);font-size:9pt;margin:0 0 4px}
+.sheet .meta{font-family:var(--mono);font-size:8.5pt;color:#222;margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
+.sheet .rule{border:0;border-top:1.25pt solid #000;margin:4px 0 5px}
+.sheet h2{font-family:var(--psans);font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:7px 0 2px;padding-bottom:1px;border-bottom:.75pt solid #000;break-after:avoid}
+.sheet table{width:100%;border-collapse:collapse;font-size:10pt;line-height:1.15}
+.sheet th{font-family:var(--psans);font-size:8pt;text-align:left;font-weight:700;border-bottom:.5pt solid #666;padding:1px 4px 1px 0}
+.sheet td{padding:1px 4px 1px 0;vertical-align:top;border-bottom:.25pt solid #ddd}
+.sheet td.ch,.sheet td.num{font-family:var(--mono);font-size:9pt;white-space:nowrap}
+.sheet tr{break-inside:avoid}
+.sheet .cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start}
+.sheet ul{margin:2px 0;padding-left:14px}
+.sheet li{margin:0 0 1px}
+.sheet .flag{font-family:var(--psans);font-size:9pt}
+.sheet .diagram{break-inside:avoid;margin:3px 0 1px}
+.sheet .diagram svg{display:block;width:100%;height:auto}
+.sheet .foot{font-family:var(--psans);font-size:7.5pt;color:#444;margin-top:5px;border-top:.5pt solid #999;padding-top:3px}
+.sheet .notes{white-space:pre-wrap}
+.sheet .empty{color:#666;font-style:italic}
+
+/* changeover sheets */
+.overlay{position:fixed;inset:0;background:rgba(6,16,20,.86);overflow:auto;padding:26px 16px 60px;z-index:900}
+.dlg{max-width:560px;margin:0 auto;background:var(--petrol);border:1px solid var(--line);border-radius:6px;padding:18px 20px 22px}
+.dlg h2{font-size:19px;font-weight:400;margin:0 0 4px}
+.dlg p{font-size:14px;color:var(--bone-dim);margin:0 0 14px}
+.pickgrid{display:grid;gap:6px}
+.pickgrid button{text-align:left}
+.pickgrid .sub{display:block;font-size:12px;color:var(--bone-dim);font-family:var(--mono)}
+.cosheets{max-width:7.5in;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.cosheet{background:#fff;color:#000;padding:.35in;font-size:10pt}
+.cosheet h1{font-size:14pt;font-weight:400;margin:0 0 2px}
+.cobar{max-width:7.5in;margin:0 auto 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--petrol-2);border:1px solid var(--brass);border-radius:4px;padding:9px 16px;font-size:14px;z-index:950}
+
+/* read-only (shared link) */
+body.ro .rail,body.ro .canvaswrap,body.ro .inspector{display:none}
+body.ro .app{display:block;padding:14px}
+body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
+
+/* ---------- print: the page is the product ---------- */
+@media print{
+  @page{size:letter portrait;margin:.5in}
+  html,body{background:#fff;color:#000}
+  .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#newDlg{display:none!important}
+  .app{display:block;padding:0}
+  .pagerail{display:block;border:0;padding:0;max-width:none;overflow:visible}
+  .sheetbox{overflow:visible}
+  #sheetScale{transform:none!important;width:auto!important;height:auto!important}
+  .sheet{width:7.5in;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet .pagerule{display:none}
+  body.co-open .pagerail{display:none!important}
+  body.co-open .overlay{position:static;background:#fff;padding:0;overflow:visible}
+  body.co-open .cobar{display:none}
+  body.co-open .cosheets{max-width:none;gap:0}
+  body.co-open .cosheet{padding:0;break-after:page}
+  body.co-open .cosheet:last-child{break-after:auto}
+}
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media print{
+    .sp-menu{display:none;}
+  }
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+      <a class="sp-item" data-sp="stageplot" href="../stageplot/index.html">Stage plot</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+
+<div class="top">
+  <h1 class="wordmark">Stage <em>plot</em></h1>
+  <div class="venue" id="venueLine"></div>
+  <div class="grow"></div>
+  <div class="bar-actions" id="topActions">
+    <button class="btn" id="bNew">New</button>
+    <button class="btn" id="bLoad">Load</button>
+    <button class="btn" id="bSave">Save</button>
+    <button class="btn" id="bShare">Share link</button>
+    <button class="btn" id="bEmail">Email text</button>
+    <button class="btn" id="bChange" hidden>Changeover</button>
+    <button class="btn" id="bPrint">Print</button>
+    <button class="btn sm" id="bUndo" title="Undo (⌘Z)">undo</button>
+    <button class="btn sm" id="bRedo" title="Redo (⇧⌘Z)">redo</button>
+    <button class="btn" id="bEditCopy" hidden>Edit a copy</button>
+  </div>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div class="tabs" id="tabs" hidden></div>
+<div class="warnbar" id="warns"></div>
+
+<div class="app">
+  <aside class="rail" id="rail">
+    <div class="railtabs" id="railtabs"></div>
+    <div class="panel" id="panel"></div>
+  </aside>
+
+  <main class="canvaswrap">
+    <div class="canvashead" id="canvashead"></div>
+    <div class="deckwrap"><svg class="deck" id="deck" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <p class="legendnote" id="legendnote"></p>
+    <div class="inspector" id="inspector" hidden></div>
+  </main>
+
+  <aside class="pagerail">
+    <div class="pagehead" id="pagehead"></div>
+    <div class="sheetbox" id="sheetbox"><div id="sheetScale"><div class="sheet" id="sheet"></div></div></div>
+  </aside>
+</div>
+
+<div class="overlay" id="newDlg" hidden></div>
+<div class="overlay" id="coDlg" hidden></div>
+
+<script>
+/* ===== stage plot engine — headless (no DOM). Extracted and run by check.js. ===== */
+/* ------------------------------------------------------------------ *
+ * VENUE — the ONLY place venue facts live. Everything else in this
+ * file reads from here. Change the deck size on one line and every
+ * preset re-lays out proportionally; plots already saved keep the deck
+ * they were drawn on (Plot.deck), so old files never shift.
+ * Values marked ASSUMED are placeholders William is confirming with
+ * the SW tech; do not invent models to fill them in.
+ * ------------------------------------------------------------------ */
+const VENUE = {
+  name: "Somewhere Works — The Lot",
+  shortName: "SW",
+  address: "235 N Emporia, Wichita KS 67202",
+  deliverTo: "somewhereworks@wichita.edu",   // ASSUMED — confirm with tech
+  leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
+  deck: { widthFt: 24, depthFt: 12 },        // ASSUMED — tech is checking real dimensions
+  monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
+  extraWedgesFrom: "Shocker Studios",        // confirmed: where extra wedges might come from
+  consoleChannels: 32,                       // confirmed
+  warnChannelsAt: 28,                        // leave headroom for talkback/spare
+  house: [
+    // id, label (printed verbatim on the page), short (fits in the diagram),
+    // category, footprint in inches (w across the stage x d upstage), count
+    { id:"kit",     label:"House drum kit (Gretsch 4-pc, hats/ride/2 crash)", short:"House kit",  cat:"drums",  w:72, d:60 },  // ASSUMED model — tech's example said Yamaha; confirm
+    { id:"bassamp", label:"House bass rig (Ampeg 8×10 + head)",               short:"Bass rig",   cat:"amp",    w:26, d:20 },  // ASSUMED model
+    { id:"gtramp1", label:"House guitar amp (model TBD)",                     short:"Gtr amp",    cat:"amp",    w:26, d:12 },  // ASSUMED
+    { id:"kb1",     label:"House keyboard 1 (model TBD)",                     short:"Keyboard 1", cat:"keys",   w:54, d:16 },  // ASSUMED
+    { id:"kb2",     label:"House keyboard 2 (model TBD)",                     short:"Keyboard 2", cat:"keys",   w:54, d:16 },  // ASSUMED
+    { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
+    { id:"micstand",label:"Mic stand (boom)", short:"Mic",     cat:"stand",   w:12, d:12, count:8 },   // ASSUMED count
+    { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
+    { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:6,  d:6,  count:8 },   // ASSUMED count
+    { id:"power",   label:"Power strip",      short:"Power",   cat:"power",   w:14, d:4,  count:6 },   // ASSUMED count
+    { id:"riser",   label:"Riser 8×4",        short:"Riser",   cat:"riser",   w:96, d:48, count:0 },   // ASSUMED — unknown if SW has any
+  ],
+  // Fixed context drawn outside the deck, not draggable:
+  context: {
+    trussCorners: true,          // four corners
+    mainsDownstageLR: true,      // PA stacks outside DS corners
+    drapeUpstage: true,
+    audienceLabel: "AUDIENCE",
+  }
+};
+
+/* Drawing constants — not venue facts, so they live outside VENUE. */
+const DRAW = { person: 22, margin: 28, labelPt: 12, smallPt: 9.5, tinyPt: 8 };
+
+/* Bring-your-own palette. Free-text description prints after "BYO:". */
+const BYO_KINDS = [
+  { id:"byo-gtramp",  label:"Guitar amp",    cat:"amp",   w:26, d:12, inputs:[{source:"Guitar", type:"mic", notes:"amp mic"}] },
+  { id:"byo-bassamp", label:"Bass amp",      cat:"amp",   w:26, d:20, inputs:[{source:"Bass", type:"di"}] },
+  { id:"byo-keys",    label:"Keyboard",      cat:"keys",  w:54, d:16, inputs:[{source:"Keys", type:"stereo-di"}] },
+  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:72, d:60, inputs:null /* kit set */ },
+  { id:"byo-pedals",  label:"Pedalboard",    cat:"misc",  w:24, d:12, inputs:[] },
+  { id:"byo-laptop",  label:"Laptop",        cat:"keys",  w:16, d:12, inputs:[{source:"Laptop", type:"stereo-di"}] },
+  { id:"byo-acoustic",label:"Acoustic guitar",cat:"guitar",w:18, d:10, inputs:[{source:"Acoustic guitar", type:"di"}] },
+  { id:"byo-upright", label:"Upright bass",  cat:"bass",  w:24, d:24, inputs:[{source:"Upright bass", type:"di"}] },
+  { id:"byo-misc",    label:"Misc",          cat:"misc",  w:18, d:18, inputs:[] },
+];
+
+/* Kit mic sets. Console order, not the order they were listed in the brief. */
+const KIT_FULL = ["Kick","Snare","Hi-hat","Tom 1","Tom 2","OH L","OH R"];
+const KIT_MIN  = ["Kick","Snare","OH L","OH R"];   // "jazz minimal"
+const kitInputs = names => names.map(n => ({ source:n, type:"mic", phantom:/OH/.test(n) }));
+
+/* ---- roles ------------------------------------------------------- *
+ * Role text is free — the category is matched from it, longest and
+ * most specific first. A person can hold several roles ("keys/vocals").
+ * ------------------------------------------------------------------ */
+const ROLE_PATTERNS = [
+  [/bass\s*(trombone|bone)|b\.?\s*tbn/i, "btbn"],
+  [/trombone|tbn/i,            "tbn"],
+  [/trumpet|flugel|cornet|tpt/i,"tpt"],
+  [/bari/i,                    "bari"],
+  [/tenor/i,                   "tenor"],
+  [/alto|soprano/i,            "alto"],
+  [/sax/i,                     "sax"],
+  [/drum|kit|percussion/i,     "drums"],
+  [/guitar|gtr/i,              "guitar"],
+  [/piano|keys|keyboard|organ|synth|rhodes/i, "keys"],
+  [/bass/i,                    "bass"],
+  [/voc|voice|sing/i,          "vocals"],
+];
+const HORN_CATS = ["bari","tenor","alto","sax","btbn","tbn","tpt"];
+const SEC_ROW = { bari:"sax", tenor:"sax", alto:"sax", sax:"sax", btbn:"tbn", tbn:"tbn", tpt:"tpt" };
+const SEC_LABEL = { sax:"Sax section", tbn:"Trombone section", tpt:"Trumpet section" };
+const GROUP_ORDER = { drums:0, bass:1, guitar:2, keys:3, horn:4, vocals:5, other:6 };
+const ABBREV = [[/alto sax/i,"Alto"],[/tenor sax/i,"Tenor"],[/bari(tone)? sax/i,"Bari"],[/bass trombone/i,"B.Tbn"],
+  [/trombone/i,"Tbn"],[/trumpet/i,"Tpt"],[/guitar/i,"Gtr"],[/piano/i,"Piano"],[/keys|keyboard/i,"Keys"],
+  [/drums/i,"Drums"],[/vocals|voice/i,"Voc"],[/bass/i,"Bass"],[/sax/i,"Sax"]];
+
+function roleCats(role){
+  const out = [];
+  for (const part of String(role || "").split(/[\/,+]|\band\b/)){
+    const t = part.trim(); if (!t) continue;
+    for (const [re, cat] of ROLE_PATTERNS) if (re.test(t)) { if (!out.includes(cat)) out.push(cat); break; }
+  }
+  return out;
+}
+const isHorn = cat => HORN_CATS.includes(cat);
+function personGroup(p){                       // channel group for a person's own mic
+  const cats = roleCats(p.role);
+  const horn = cats.find(isHorn); if (horn) return { grp:"horn", sub:HORN_CATS.indexOf(horn) };
+  if (cats.includes("vocals")) return { grp:"vocals", sub:0 };
+  return { grp:"other", sub:0 };
+}
+function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()); }
+function displayName(p){ return p.name && p.name.trim() ? p.name.trim() : titleCase(p.role || "Musician"); }
+function shortName(p){                          // for the diagram: two short lines
+  if (p.name && p.name.trim()){ const bits = p.name.trim().split(/\s+/); return bits.length > 1 ? [bits[0], bits.slice(1).join(" ")] : [bits[0]]; }
+  let r = String(p.role || "");
+  for (const [re, ab] of ABBREV) if (re.test(r)) { r = r.replace(re, ab); break; }
+  return [titleCase(r)];
+}
+function roleLine(p){
+  const d = (p.doubles || []).filter(Boolean);
+  return titleCase(p.role || "") + (d.length ? " / " + d.join(", ") : "");
+}
+
+/* ---- ensemble presets -------------------------------------------- *
+ * Positions are fractions of the deck: fx runs 0 at the STAGE-LEFT
+ * edge to 1 at stage right, fy runs 0 downstage (audience) to 1
+ * upstage — i.e. inches from the downstage-left corner, as in the
+ * brief's data model. Stage left is the performer's left, so fx 0
+ * draws on the RIGHT of the page (audience at the bottom).
+ * Fractions mean a new deck size re-lays every preset proportionally.
+ * ------------------------------------------------------------------ */
+const RHY = {                       // the shared rhythm-section block
+  kit:    [.500,.750], kitWedge: [.333,.667,90],
+  bass:   [.125,.667], bassRig:  [.125,.903], bassWedge: [.049,.375],
+  gtr:    [.875,.667], gtrAmp:   [.875,.944], gtrWedge:  [.951,.375],
+  keys:   [.740,.431], kb:       [.740,.236], keysWedge: [.740,.083],
+};
+const FRONT = .278, FRONTWEDGE = .069;   // downstage row, and the wedge line in front of it
+const ENSEMBLES = [
+  { id:"group-a", name:"Group A", note:"Quartet.",
+    people:[
+      { key:"liz",   name:"Liz Graber",    role:"keys/vocals", at:RHY.keys },
+      { key:"alex",  name:"Alex Kenney",   role:"guitar",      at:RHY.gtr },
+      { key:"sean",  name:"Sean McDermott",role:"bass",        at:RHY.bass },
+      { key:"caden", name:"Caden Kennedy", role:"drums",       chair:"kit" },
+    ],
+    items:[ { ref:"kb1", owners:["liz"], at:RHY.kb }, { ref:"gtramp1", owners:["alex"], at:RHY.gtrAmp },
+            { ref:"bassamp", owners:["sean"], at:RHY.bassRig }, { ref:"kit", owners:["caden"], at:RHY.kit } ],
+    wedges:[ { at:RHY.keysWedge, who:["liz"] }, { at:RHY.gtrWedge, who:["alex"] },
+             { at:RHY.bassWedge, who:["sean"] }, { at:RHY.kitWedge, who:["caden"] } ] },
+
+  { id:"group-b", name:"Group B", note:"Two drummers, one kit.",
+    people:[
+      { key:"anna",  name:"Anna Luttrell",  role:"voice",       at:[.500,FRONT] },
+      { key:"james", name:"James Barton",   role:"sax",         at:[.361,FRONT] },
+      { key:"evan",  name:"Evan Shaw",      role:"sax",         at:[.219,FRONT] },
+      { key:"sid",   name:"Sid Linafelt",   role:"guitar",      at:RHY.gtr },
+      { key:"liz",   name:"Liz Graber",     role:"keys/voice",  at:RHY.keys },
+      { key:"kyler", name:"Kyler Heckard",  role:"bass",        at:RHY.bass },
+      { key:"caden", name:"Caden Kennedy",  role:"drums",       chair:"kit" },
+      { key:"aj",    name:"A.J. Banks",     role:"drums",       chair:"kit" },
+    ],
+    items:[ { ref:"kb1", owners:["liz"], at:RHY.kb }, { ref:"gtramp1", owners:["sid"], at:RHY.gtrAmp },
+            { ref:"bassamp", owners:["kyler"], at:RHY.bassRig }, { ref:"kit", owners:["caden","aj"], at:RHY.kit } ],
+    wedges:[ { at:RHY.keysWedge, who:["liz"] }, { at:RHY.gtrWedge, who:["sid"] },
+             { at:[.104,FRONTWEDGE], who:["james","evan"] }, { at:RHY.kitWedge, who:["caden","aj","kyler"] },
+             { at:[.611,FRONTWEDGE], who:["anna"] } ] },
+
+  { id:"group-c", name:"Group C", note:"Four vocalists, two drummers sharing one kit.",
+    people:[
+      { key:"emmalynn", name:"Emmalynn Reilly", role:"vocals", at:[.851,FRONT] },
+      { key:"issy",     name:"Issy Lynn",       role:"vocals", at:[.622,FRONT] },
+      { key:"liam",     name:"Liam Wallace",    role:"vocals", at:[.378,FRONT] },
+      { key:"jack",     name:"Jack Wilson",     role:"vocals", at:[.149,FRONT] },
+      { key:"sagan",    name:"Sagan Plantz",    role:"guitar", at:RHY.gtr },
+      { key:"michael",  name:"Michael Boyle",   role:"bass",   at:RHY.bass },
+      { key:"aj",       name:"A.J. Banks",      role:"drums",  chair:"kit" },
+      { key:"cj",       name:"C.J. Strecker",   role:"drums",  chair:"kit" },
+    ],
+    items:[ { ref:"gtramp1", owners:["sagan"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["michael"], at:RHY.bassRig },
+            { ref:"kit", owners:["aj","cj"], at:RHY.kit } ],
+    // the four vocalists are deliberately left off a mix: the flags are the point
+    wedges:[ { at:RHY.gtrWedge, who:["sagan"] }, { at:RHY.bassWedge, who:["michael"] },
+             { at:RHY.kitWedge, who:["aj","cj"] }, { at:[.736,FRONTWEDGE], who:[] }, { at:[.264,FRONTWEDGE], who:[] } ] },
+
+  { id:"fusion", name:"Fusion Combo", note:"Names not rostered yet.",
+    people:[
+      { key:"sax1", name:"", role:"sax 1",  at:[.600,FRONT] },
+      { key:"sax2", name:"", role:"sax 2",  at:[.400,FRONT] },
+      { key:"gtr",  name:"", role:"guitar", at:RHY.gtr },
+      { key:"bass", name:"", role:"bass",   at:RHY.bass },
+      { key:"drums",name:"", role:"drums",  chair:"kit" },
+    ],
+    items:[ { ref:"gtramp1", owners:["gtr"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["bass"], at:RHY.bassRig },
+            { ref:"kit", owners:["drums"], at:RHY.kit } ],
+    wedges:[ { at:[.500,FRONTWEDGE], who:["sax1","sax2"] }, { at:RHY.gtrWedge, who:["gtr"] },
+             { at:RHY.bassWedge, who:["bass"] }, { at:RHY.kitWedge, who:["drums"] } ] },
+
+  { id:"combo-a", name:"Combo A", note:"",
+    people:[
+      { key:"swope",  name:"Evan Swope",      role:"trombone",  at:[.139,FRONT] },
+      { key:"dawson", name:"Dawson McNeal",   role:"trumpet",   at:[.250,FRONT] },
+      { key:"barton", name:"James Barton",    role:"tenor sax", at:[.400,FRONT] },
+      { key:"hoerst", name:"James Hoerst",    role:"tenor sax", at:[.530,FRONT] },
+      { key:"dexter", name:"Dexter Curry",    role:"piano",     at:RHY.keys },
+      { key:"julian", name:"Julian Urrego",   role:"guitar",    at:RHY.gtr },
+      { key:"ian",    name:"Ian Knickrehm",   role:"bass",      at:RHY.bass },
+      { key:"brendan",name:"Brendan Thompson",role:"drums",     chair:"kit" },
+    ],
+    items:[ { ref:"kb1", owners:["dexter"], at:RHY.kb }, { ref:"gtramp1", owners:["julian"], at:RHY.gtrAmp },
+            { ref:"bassamp", owners:["ian"], at:RHY.bassRig }, { ref:"kit", owners:["brendan"], at:RHY.kit } ],
+    wedges:[ { at:RHY.keysWedge, who:["dexter"] }, { at:RHY.gtrWedge, who:["julian"] },
+             { at:RHY.bassWedge, who:["ian"] }, { at:RHY.kitWedge, who:["brendan"] },
+             { at:[.325,FRONTWEDGE], who:["swope","dawson","barton","hoerst"] } ] },
+
+  { id:"combo-b", name:"Combo B", note:"No guitar.",
+    people:[
+      { key:"shaw",   name:"Evan Shaw",       role:"bari sax",  at:[.139,FRONT] },
+      { key:"buller", name:"Aaron Buller",    role:"trumpet",   at:[.250,FRONT] },
+      { key:"parker", name:"Parker Holuska",  role:"trumpet",   at:[.400,FRONT] },
+      { key:"isaiah", name:"Isaiah Epp",      role:"alto sax",  doubles:["flute"], at:[.530,FRONT] },
+      { key:"zach",   name:"Zach Rodenbaugh", role:"piano",     at:RHY.keys },
+      { key:"phoenix",name:"Phoenix Kirk",    role:"bass",      at:RHY.bass },
+      { key:"elijah", name:"Elijah Gegen",    role:"drums",     chair:"kit" },
+    ],
+    items:[ { ref:"kb1", owners:["zach"], at:RHY.kb }, { ref:"bassamp", owners:["phoenix"], at:RHY.bassRig },
+            { ref:"kit", owners:["elijah"], at:RHY.kit } ],
+    wedges:[ { at:RHY.keysWedge, who:["zach"] }, { at:[.325,FRONTWEDGE], who:["shaw","buller","parker","isaiah"] },
+             { at:RHY.bassWedge, who:["phoenix"] }, { at:RHY.kitWedge, who:["elijah"] } ] },
+
+  { id:"combo-c", name:"Combo C", note:"Six horns, no drums, no piano.",
+    people:[
+      { key:"castillo",name:"Michael Castillo",role:"bass trombone", at:[.139,.278] },
+      { key:"bunck",   name:"Andy Bunck",      role:"trombone",      at:[.271,.300] },
+      { key:"victoria",name:"Victoria McClure",role:"trombone",      at:[.438,.320] },
+      { key:"hunter",  name:"Hunter Bocan",    role:"trumpet",       at:[.604,.320] },
+      { key:"alton",   name:"Alton Porter",    role:"trumpet",       at:[.771,.300] },
+      { key:"noah",    name:"Noah Georgas",    role:"alto sax",      at:[.938,.278] },
+      { key:"sid",     name:"Sid Linafelt",    role:"guitar",        at:RHY.gtr },
+      { key:"isaac",   name:"Isaac Waterman",  role:"bass",          at:RHY.bass },
+    ],
+    items:[ { ref:"gtramp1", owners:["sid"], at:RHY.gtrAmp }, { ref:"bassamp", owners:["isaac"], at:RHY.bassRig } ],
+    wedges:[ { at:[.243,FRONTWEDGE], who:["castillo","bunck"] }, { at:[.521,FRONTWEDGE], who:["victoria","hunter"] },
+             { at:[.833,FRONTWEDGE], who:["alton","noah"] }, { at:[.049,.611], who:["isaac"] }, { at:[.951,.611], who:["sid"] } ] },
+
+  { id:"bigband-1", name:"Big Band 1", note:"17 players. Names not rostered yet.", bigband:true },
+  { id:"bigband-2", name:"Big Band 2", note:"17 players. Names not rostered yet.", bigband:true },
+];
+
+/* Both big bands share one layout. Chairs are numbered by roster order;
+   lead chairs (Alto 1, Tbn 1, Tpt 1) sit in one column at stage-centre,
+   low chairs (bari, Tbn 4, Tpt 4) nearest the rhythm section. */
+function bigBandPreset(id, name, note){
+  const SX = [.399,.538,.677,.816,.955], BX = [.538,.677,.816,.955];  // sax / brass columns, stage left -> right
+  const people = [
+    { key:"alto1", name:"", role:"alto sax 1",  at:[SX[2],.319] },
+    { key:"alto2", name:"", role:"alto sax 2",  at:[SX[3],.319] },
+    { key:"ten1",  name:"", role:"tenor sax 1", at:[SX[4],.319] },
+    { key:"ten2",  name:"", role:"tenor sax 2", at:[SX[1],.319] },
+    { key:"bari",  name:"", role:"bari sax",    at:[SX[0],.319] },
+    { key:"tpt1",  name:"", role:"trumpet 1",   at:[BX[1],.875] },
+    { key:"tpt2",  name:"", role:"trumpet 2",   at:[BX[2],.875] },
+    { key:"tpt3",  name:"", role:"trumpet 3",   at:[BX[3],.875] },
+    { key:"tpt4",  name:"", role:"trumpet 4",   at:[BX[0],.875] },
+    { key:"tbn1",  name:"", role:"trombone 1",  at:[BX[1],.611] },
+    { key:"tbn2",  name:"", role:"trombone 2",  at:[BX[2],.611] },
+    { key:"tbn3",  name:"", role:"trombone 3",  at:[BX[3],.611] },
+    { key:"tbn4",  name:"", role:"trombone 4",  at:[BX[0],.611] },
+    { key:"piano", name:"", role:"piano",       at:[.201,.306] },
+    { key:"gtr",   name:"", role:"guitar",      at:[.319,.306] },
+    { key:"bass",  name:"", role:"bass",        at:[.069,.250] },
+    { key:"drums", name:"", role:"drums",       chair:"kit" },
+  ];
+  const items = [
+    { ref:"kb1", owners:["piano"], at:[.201,.139] },
+    { ref:"gtramp1", owners:["gtr"], at:[.319,.458] },
+    { ref:"bassamp", owners:["bass"], at:[.069,.417] },
+    { ref:"kit", owners:["drums"], at:[.149,.757] },
+  ];
+  // trumpets stand unless SW turns out to own risers (VENUE.house riser count)
+  const riser = VENUE.house.find(h => h.id === "riser");
+  if (riser && riser.count >= 2){ items.push({ ref:"riser", at:[.608,.875] }, { ref:"riser", at:[.885,.875] }); }
+  const wedges = [
+    { at:[.469,.083], who:["bari","ten2","alto1"] },
+    { at:[.816,.083], who:["alto2","ten1"] },
+    { at:[.431,.611,270], who:["tbn1","tbn2","tbn3","tbn4"] },
+    { at:[.431,.875,270], who:["tpt1","tpt2","tpt3","tpt4"] },
+    { at:[.319,.694], who:["piano","gtr","bass","drums"] },
+  ];
+  return { id, name, note, people, items, wedges };
+}
+function ensemble(id){
+  const e = ENSEMBLES.find(x => x.id === id);
+  return e && e.bigband ? bigBandPreset(e.id, e.name, e.note) : e;
+}
+
+/* ---- plot construction ------------------------------------------- */
+function idMaker(){ let n = 0; return pre => pre + (++n); }
+function houseDef(ref){ return VENUE.house.find(h => h.id === ref); }
+function byoDef(kind){ return BYO_KINDS.find(b => b.id === kind); }
+
+function defaultInputsFor(item, people){
+  const mk = arr => arr.map(i => Object.assign({ phantom:false, notes:"" }, i));
+  if (item.kind === "person"){
+    const p = people.find(x => x.id === item.ownerPersonIds[0]); if (!p) return [];
+    const out = [];
+    for (const cat of roleCats(p.role)){
+      if (cat === "vocals") out.push({ source:"Vocal", type:"mic" });
+      else if (isHorn(cat)) out.push({ source:titleCase(p.name && p.name.trim() ? p.role.replace(/\s*\d+$/, "") : p.role), type:"mic" });
+    }
+    return mk(out);
+  }
+  const def = item.kind === "house" ? houseDef(item.ref) : byoDef(item.ref);
+  if (!def) return [];
+  if (def.cat === "drums") return kitInputs(KIT_FULL);
+  if (def.inputs) return mk(def.inputs);
+  if (def.id === "bassamp") return mk([{ source:"Bass", type:"di" }]);
+  if (def.id === "gtramp1") return mk([{ source:"Guitar", type:"mic", notes:"amp mic" }]);
+  if (def.cat === "keys")   return mk([{ source:"Keys", type:"stereo-di" }]);
+  return [];
+}
+
+function makePlot(ensembleId, deck){
+  const nid = idMaker();
+  const src = ensemble(ensembleId);
+  const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
+  const W = D.widthFt * 12, DP = D.depthFt * 12;
+  const plot = {
+    v:1, id:nid("plot"), ensembleId: src ? src.id : "", ensembleName: src ? src.name : "New plot",
+    director:"", date:"", showName:"", notes:"", deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
+    items:[], wedges:[], people:[], songs:[],
+    sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } },
+    channelOrder:null,
+  };
+  if (!src) return plot;
+  const byKey = {};
+  for (const pp of src.people){
+    const p = { id:nid("p"), name:pp.name || "", role:pp.role || "", doubles:pp.doubles || [], byo:[], wedgeId:null };
+    plot.people.push(p); byKey[pp.key] = p;
+  }
+  for (const pp of src.people){                       // person markers (chair-sitters ride their gear)
+    if (pp.chair || !pp.at) continue;
+    const it = { id:nid("i"), kind:"person", ref:null, label:"", x:pp.at[0]*W, y:pp.at[1]*DP, rot:0,
+                 ownerPersonIds:[byKey[pp.key].id], inputs:[], notes:"" };
+    it.inputs = defaultInputsFor(it, plot.people).map(i => Object.assign({ id:nid("in") }, i));
+    plot.items.push(it);
+  }
+  for (const si of src.items || []){
+    const def = houseDef(si.ref);
+    const it = { id:nid("i"), kind:"house", ref:si.ref, label:"", x:si.at[0]*W, y:si.at[1]*DP, rot:si.at[2] || 0,
+                 ownerPersonIds:(si.owners || []).map(k => byKey[k].id), inputs:[], notes:"" };
+    it.inputs = (def && def.cat === "drums" && !si.owners) ? [] : defaultInputsFor(it, plot.people).map(i => Object.assign({ id:nid("in") }, i));
+    plot.items.push(it);
+  }
+  (src.wedges || []).forEach((w, i) => {
+    plot.wedges.push({ id:nid("w"), number:i + 1, x:w.at[0]*W, y:w.at[1]*DP, rot:w.at[2] || 0,
+                       assignees:(w.who || []).map(k => byKey[k].id), request:"" });
+  });
+  syncWedgeIds(plot);
+  return plot;
+}
+function syncWedgeIds(plot){                    // wedge.assignees is the source of truth
+  const of = {};
+  for (const w of plot.wedges) for (const pid of w.assignees) of[pid] = w.id;
+  for (const p of plot.people) p.wedgeId = of[p.id] || null;
+}
+
+/* ---- geometry ----------------------------------------------------- */
+function deckIn(plot){ return { w:plot.deck.widthFt * 12, d:plot.deck.depthFt * 12 }; }
+function itemDef(it){ return it.kind === "house" ? houseDef(it.ref) : it.kind === "byo" ? byoDef(it.ref) : null; }
+function footprint(it){
+  if (it.kind === "person") return { w:DRAW.person, d:DRAW.person };
+  if (it.kind === "wedge")  { const w = houseDef("wedge"); return { w:w.w, d:w.d }; }
+  if (it.kind === "label")  return { w:0, d:0 };
+  const def = itemDef(it); return def ? { w:def.w, d:def.d } : { w:18, d:18 };
+}
+function rectOf(it){
+  const f = footprint(it), rot = ((it.rot || 0) % 360 + 360) % 360;
+  const w = (rot === 90 || rot === 270) ? f.d : f.w, d = (rot === 90 || rot === 270) ? f.w : f.d;
+  return { x0:it.x - w/2, x1:it.x + w/2, y0:it.y - d/2, y1:it.y + d/2, w, d };
+}
+function offDeck(it, plot){
+  if (it.kind === "label") return false;
+  const r = rectOf(it), D = deckIn(plot), e = 0.5;
+  return r.x0 < -e || r.y0 < -e || r.x1 > D.w + e || r.y1 > D.d + e;
+}
+function ftIn(inches){
+  const neg = inches < 0; inches = Math.abs(Math.round(inches));
+  const f = Math.floor(inches / 12), i = inches % 12;
+  return (neg ? "-" : "") + f + "′" + (i ? i + "″" : "");
+}
+function zoneOf(it, plot){                      // DSL / CSC / USR, stage left & right from the player
+  const D = deckIn(plot), fx = it.x / D.w, fy = it.y / D.d;
+  const ud = fy < 1/3 ? "DS" : fy < 2/3 ? "CS" : "US";
+  const lr = fx < 1/3 ? "L" : fx < 2/3 ? "C" : "R";
+  return ud + lr;
+}
+function posText(it, plot){ return zoneOf(it, plot) + " (" + ftIn(it.x) + " from SL, " + ftIn(it.y) + " from DS)"; }
+
+/* Where a player's name goes. Downstage of the marker by default — that is
+   the side the reader's eye follows — but if a wedge or a piece of gear is
+   already there, it flips upstage. Automatic, so a dragged layout stays
+   legible without anyone thinking about it. */
+function personLabelBox(plot, it, g, taken){
+  const p = plot.people.find(x => x.id === it.ownerPersonIds[0]);
+  if (!p) return null;
+  const lines = shortName(p), pt = g.pt(DRAW.labelPt), spt = g.pt(DRAW.smallPt);
+  const w = Math.max.apply(null, lines.map(l => l.length)) * .55 * pt;
+  const h = 1.15 * pt + (lines.length - 1) * 1.05 * pt + (p.name && p.name.trim() ? spt * 1.05 : 0) + .3 * pt;
+  const half = DRAW.person / 2;
+  const mk = side => ({ side, w, h, lines, person:p, x0:it.x - w/2, x1:it.x + w/2,
+    y0: side === "down" ? it.y - half - h : it.y + half,
+    y1: side === "down" ? it.y - half     : it.y + half + h });
+  const others = plot.items.filter(o => o !== it && o.kind !== "label").map(rectOf)
+    .concat(plot.wedges.map(wd => rectOf(Object.assign({ kind:"wedge" }, wd))))
+    .concat(taken || []);
+  const clash = b => others.some(r => Math.min(r.x1, b.x1) - Math.max(r.x0, b.x0) > 1.5 && Math.min(r.y1, b.y1) - Math.max(r.y0, b.y0) > 1.5);
+  const down = mk("down");
+  if (!clash(down)) return down;
+  const up = mk("up");
+  return clash(up) ? down : up;
+}
+
+function labelBoxes(plot, g){          // place them in order; each one dodges the ones already down
+  const map = {}, taken = [];
+  for (const it of plot.items){
+    if (it.kind !== "person") continue;
+    const lb = personLabelBox(plot, it, g, taken);
+    if (lb){ map[it.id] = lb; taken.push(lb); }
+  }
+  return map;
+}
+
+/* ---- inputs, channels, and everything derived from them ----------- */
+function itemGroup(it, people){
+  if (it.kind === "person"){
+    const p = people.find(x => x.id === it.ownerPersonIds[0]);
+    return p ? personGroup(p) : { grp:"other", sub:0 };
+  }
+  const def = itemDef(it); const cat = def ? def.cat : "misc";
+  if (cat === "drums") return { grp:"drums", sub:0 };
+  if (cat === "amp")   return { grp:(def.id === "bassamp" || def.id === "byo-bassamp") ? "bass" : "guitar", sub:0 };
+  if (cat === "keys")  return { grp:"keys", sub:0 };
+  if (cat === "bass")  return { grp:"bass", sub:0 };
+  if (cat === "guitar")return { grp:"guitar", sub:0 };
+  return { grp:"other", sub:0 };
+}
+function ownerNames(it, people, namedOnly){
+  const names = it.ownerPersonIds.map(id => { const p = people.find(x => x.id === id); return !p || (namedOnly && !(p.name && p.name.trim())) ? null : displayName(p); }).filter(Boolean);
+  if (names.length > 1 && it.kind === "house" && itemDef(it) && itemDef(it).cat === "drums") return names.join(" / ") + " (share kit)";
+  return names.join(" / ");
+}
+function sectionRows(plot){                     // which horn rows exist, and who is in them
+  const rows = {};
+  for (const it of plot.items){
+    if (it.kind !== "person") continue;
+    const p = plot.people.find(x => x.id === it.ownerPersonIds[0]); if (!p) continue;
+    for (const cat of roleCats(p.role)){
+      const row = SEC_ROW[cat]; if (!row) continue;
+      (rows[row] = rows[row] || []).push(p);
+      break;
+    }
+  }
+  return rows;
+}
+/* One unit = one input as the director edits it. A stereo DI is one
+   unit that eats two channels. Numbering walks the units in order. */
+function inputUnits(plot){
+  const units = [], rows = sectionRows(plot), sec = plot.sections || {};
+  const collapsed = row => sec[row] && sec[row].on && (rows[row] || []).length > 0;
+  for (const it of plot.items){
+    const g = itemGroup(it, plot.people), who = ownerNames(it, plot.people, true);
+    let skipRow = null;
+    if (it.kind === "person"){
+      const p = plot.people.find(x => x.id === it.ownerPersonIds[0]);
+      const cat = p ? roleCats(p.role).find(isHorn) : null;
+      if (cat && collapsed(SEC_ROW[cat])) skipRow = SEC_ROW[cat];
+    }
+    for (const inp of it.inputs){
+      if (skipRow && inp.type === "mic") continue;      // folded into the section mics
+      units.push({ key:inp.id, itemId:it.id, inp, source:inp.source, who, type:inp.type,
+                   phantom:!!inp.phantom, notes:inp.notes || "", grp:g.grp, sub:g.sub, chans:inp.type === "stereo-di" ? 2 : 1 });
+    }
+  }
+  for (const row of ["sax","tbn","tpt"]){
+    if (!collapsed(row)) continue;
+    const n = Math.max(1, (sec[row].mics | 0) || 2);
+    const named = rows[row].filter(p => p.name && p.name.trim()).map(displayName).join(", ");
+    for (let i = 1; i <= n; i++)
+      units.push({ key:"sec:" + row + ":" + i, itemId:null, inp:null, source:SEC_LABEL[row] + " mic " + i,
+                   who:named, type:"mic", phantom:false, notes:"shared section mic", grp:"horn",
+                   sub:HORN_CATS.indexOf(row === "sax" ? "alto" : row === "tbn" ? "tbn" : "tpt"), chans:1, section:row });
+  }
+  units.sort((a, b) => (GROUP_ORDER[a.grp] - GROUP_ORDER[b.grp]) || (a.sub - b.sub) || 0);
+  if (plot.channelOrder && plot.channelOrder.length){
+    const rank = new Map(plot.channelOrder.map((k, i) => [k, i]));
+    units.sort((a, b) => {
+      const ra = rank.has(a.key) ? rank.get(a.key) : 1e6, rb = rank.has(b.key) ? rank.get(b.key) : 1e6;
+      return ra - rb;
+    });
+  }
+  let ch = 1;
+  for (const u of units){ u.ch = ch; u.chLabel = u.chans === 2 ? ch + "–" + (ch + 1) : String(ch); ch += u.chans; }
+  return units;
+}
+function channelRows(plot){                     // one printed row per channel
+  const out = [];
+  for (const u of inputUnits(plot)){
+    if (u.chans === 2){
+      out.push({ ch:u.ch, source:u.source + " L", who:u.who, type:u.type, phantom:u.phantom, notes:u.notes, key:u.key });
+      out.push({ ch:u.ch + 1, source:u.source + " R", who:"", type:u.type, phantom:u.phantom, notes:"", key:u.key });
+    } else out.push({ ch:u.ch, source:u.source, who:u.who, type:u.type, phantom:u.phantom, notes:u.notes, key:u.key });
+  }
+  return out;
+}
+function channelCount(plot){ return inputUnits(plot).reduce((n, u) => n + u.chans, 0); }
+
+function monitorTable(plot){
+  syncWedgeIds(plot);
+  const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => ({
+    n:w.number, id:w.id,
+    who:w.assignees.map(id => { const p = plot.people.find(x => x.id === id); return p ? displayName(p) : null; }).filter(Boolean),
+    request:w.request || "", empty:w.assignees.length === 0,
+  }));
+  const unassigned = plot.people.filter(p => !p.wedgeId).map(displayName);
+  return { rows, unassigned };
+}
+function houseNeeds(plot){
+  const counts = {}, units = inputUnits(plot);
+  for (const it of plot.items) if (it.kind === "house") counts[it.ref] = (counts[it.ref] || 0) + 1;
+  if (plot.wedges.length) counts.wedge = plot.wedges.length;
+  const di = units.reduce((n, u) => n + (u.type === "di" ? 1 : u.type === "stereo-di" ? 2 : 0), 0);
+  if (di) counts.di = di;
+  const stands = units.filter(u => u.type === "mic" && (u.section || (u.itemId && (plot.items.find(i => i.id === u.itemId) || {}).kind === "person"))).length;
+  if (stands) counts.micstand = stands;
+  return VENUE.house.filter(h => counts[h.id]).map(h => ({
+    id:h.id, label:h.label, need:counts[h.id], have:h.count === undefined ? 1 : h.count,
+    over:counts[h.id] > (h.count === undefined ? 1 : h.count),
+    derived:h.id === "di" || h.id === "micstand",
+  }));
+}
+function diSources(plot){ return inputUnits(plot).filter(u => u.type === "di" || u.type === "stereo-di")
+  .map(u => u.source + (u.who ? " (" + u.who + ")" : "") + (u.type === "stereo-di" ? " — stereo, 2 DIs" : "")); }
+function byoList(plot){
+  const out = [];
+  for (const it of plot.items) if (it.kind === "byo"){
+    const def = byoDef(it.ref);
+    out.push({ what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who:ownerNames(it, plot.people) });
+  }
+  for (const p of plot.people) for (const b of (p.byo || [])) if (b.trim()) out.push({ what:b.trim(), who:displayName(p) });
+  return out;
+}
+function warnings(plot){
+  const out = [], D = deckIn(plot);
+  if (plot.wedges.length > VENUE.monitorMixes)
+    out.push({ level:"amber", text:plot.wedges.length + " wedges placed; " + VENUE.shortName + " normally runs " + VENUE.monitorMixes +
+      ". Extras may be available from " + VENUE.extraWedgesFrom + " — ask the tech." });
+  const mon = monitorTable(plot);
+  const empty = mon.rows.filter(r => r.empty).map(r => r.n);
+  if (empty.length) out.push({ level:"amber", text:"Wedge " + empty.join(", ") + ": no one assigned." });
+  if (mon.unassigned.length) out.push({ level:"amber", text:mon.unassigned.length + " on stage with no wedge: " + mon.unassigned.join(", ") + "." });
+  const ch = channelCount(plot);
+  const rows = sectionRows(plot), sec = plot.sections || {};
+  const canCollapse = Object.keys(rows).some(r => !(sec[r] && sec[r].on) && rows[r].length > ((sec[r] && sec[r].mics) || 2));
+  if (ch > VENUE.consoleChannels)
+    out.push({ level:"red", text:ch + " channels — the console has " + VENUE.consoleChannels + ".", fix:canCollapse ? "sections" : null });
+  else if (ch > VENUE.warnChannelsAt)
+    out.push({ level:"amber", text:ch + " channels of " + VENUE.consoleChannels + " — little headroom for talkback or a spare.", fix:canCollapse ? "sections" : null });
+  for (const h of houseNeeds(plot)) if (h.over)
+    out.push({ level:"amber", text:h.need + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.have + "." });
+  const off = plot.items.filter(it => offDeck(it, plot)).length + plot.wedges.filter(w => offDeck(Object.assign({ kind:"wedge" }, w), plot)).length;
+  if (off) out.push({ level:"amber", text:off + " item" + (off > 1 ? "s" : "") + " hanging over the deck edge (outlined red)." });
+  return out;
+}
+function collapseSections(plot){                // the one-click fix offered by the channel warning
+  const rows = sectionRows(plot);
+  for (const row of Object.keys(rows)){
+    const s = plot.sections[row];
+    if (!s.on && rows[row].length > (s.mics || 2)) s.on = true;
+  }
+}
+
+/* ---- changeover (derived; nothing extra to author) ---------------- */
+function itemKeyFor(it){ return it.kind + ":" + (it.ref || it.label || ""); }
+function itemLabelFor(it, plot){
+  if (it.kind === "person") return ownerNames(it, plot.people) || "Person";
+  if (it.kind === "label") return "Label “" + (it.label || "") + "”";
+  const def = itemDef(it);
+  return (def ? def.label : "Item") + (it.kind === "byo" && it.label ? " — " + it.label : "") +
+         (it.ownerPersonIds && it.ownerPersonIds.length ? " (" + ownerNames(it, plot.people) + ")" : "");
+}
+function indexItems(plot){
+  const m = new Map(), seen = {};
+  for (const it of plot.items){
+    if (it.kind === "person") continue;
+    const base = itemKeyFor(it), n = (seen[base] = (seen[base] || 0) + 1);
+    m.set(base + "#" + n, it);
+  }
+  return m;
+}
+function changeover(a, b){
+  const SAME = 6;                                // within half a foot counts as "stays put"
+  const out = { from:a.ensembleName, to:b.ensembleName, items:{ stay:[], move:[], leave:[], arrive:[] },
+                people:{ stay:[], leave:[], arrive:[] }, wedges:{ change:[], leave:[], arrive:[] },
+                channels:{ from:channelCount(a), to:channelCount(b) } };
+  const ia = indexItems(a), ib = indexItems(b);
+  for (const [k, it] of ia){
+    const other = ib.get(k);
+    if (!other) { out.items.leave.push(itemLabelFor(it, a)); continue; }
+    if (Math.abs(it.x - other.x) <= SAME && Math.abs(it.y - other.y) <= SAME && (it.rot || 0) === (other.rot || 0))
+      out.items.stay.push(itemLabelFor(other, b));
+    else out.items.move.push({ what:itemLabelFor(other, b), from:posText(it, a), to:posText(other, b) });
+  }
+  for (const [k, it] of ib) if (!ia.has(k)) out.items.arrive.push(itemLabelFor(it, b));
+
+  const nameOf = p => displayName(p), pa = new Map(a.people.map(p => [nameOf(p), p])), pb = new Map(b.people.map(p => [nameOf(p), p]));
+  const posOfPerson = (plot, p) => { const it = plot.items.find(i => i.kind === "person" && i.ownerPersonIds.includes(p.id)); return it ? posText(it, plot) : "at their chair"; };
+  for (const [n, p] of pa){
+    if (!pb.has(n)) { out.people.leave.push({ name:n, role:roleLine(p) }); continue; }
+    const q = pb.get(n), from = posOfPerson(a, p), to = posOfPerson(b, q);
+    out.people.stay.push({ name:n, role:roleLine(q), from, to, moved:from !== to });
+  }
+  for (const [n, p] of pb) if (!pa.has(n)) out.people.arrive.push({ name:n, role:roleLine(p) });
+
+  const ma = monitorTable(a), mb = monitorTable(b);
+  const wa = new Map(ma.rows.map(r => [r.n, r])), wb = new Map(mb.rows.map(r => [r.n, r]));
+  for (const [n, r] of wa){
+    if (!wb.has(n)) { out.wedges.leave.push(n); continue; }
+    const s = wb.get(n), before = r.who.join(", ") || "—", after = s.who.join(", ") || "—";
+    const wA = a.wedges.find(w => w.number === n), wB = b.wedges.find(w => w.number === n);
+    const moved = Math.abs(wA.x - wB.x) > SAME || Math.abs(wA.y - wB.y) > SAME;
+    if (before !== after || moved) out.wedges.change.push({ n, before, after, moved,
+      from:posText(Object.assign({ kind:"wedge" }, wA), a), to:posText(Object.assign({ kind:"wedge" }, wB), b), request:s.request });
+  }
+  for (const [n] of wb) if (!wa.has(n)) out.wedges.arrive.push(n);
+  return out;
+}
+
+/* ---- diagram geometry (shared by the canvas, the printed page and check.js) ---- */
+function diagramGeom(plot){
+  const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + 2*M;
+  let widthIn = 7.5, h = widthIn * vbH / vbW;
+  const maxH = 5.3;
+  if (h > maxH){ widthIn = maxH * vbW / vbH; h = maxH; }
+  return { D, M, vbW, vbH, widthIn, heightIn:h, pt: p => p / 72 * vbW / widthIn,
+           sx: x => M + (D.w - x), sy: y => M + (D.d - y) };
+}
+/* ---- files and links ---------------------------------------------- */
+function plotFileName(plot){
+  const slug = (plot.ensembleName || "plot").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return "SW-plot-" + slug + "-" + (plot.date || todayISO()) + ".json";
+}
+function todayISO(){ const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-"); }
+function migratePlot(p){                        // tolerate older/hand-edited files
+  p.v = p.v || 1;
+  p.items = p.items || []; p.wedges = p.wedges || []; p.people = p.people || []; p.songs = p.songs || [];
+  p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
+  p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
+  for (const it of p.items){
+    if (!it.ownerPersonIds) it.ownerPersonIds = it.ownerPersonId ? [it.ownerPersonId] : [];
+    delete it.ownerPersonId;
+    it.inputs = it.inputs || []; it.rot = it.rot || 0; it.notes = it.notes || "";
+  }
+  for (const w of p.wedges) w.assignees = w.assignees || [];
+  syncWedgeIds(p);
+  return p;
+}
+/* ===== end stage plot engine ===== */
+</script>
+<script>
+/* ================= session state ================= */
+const S = { plots:[], active:0, tab:"house", sel:null, snap:true, readOnly:false, undo:[], redo:[] };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const plot = () => S.plots[S.active];
+const nextId = pre => pre + Math.random().toString(36).slice(2, 8);
+
+function snapshot(){ return JSON.stringify({ plots:S.plots, active:S.active }); }
+function commit(fn){                                   // every mutation goes through here
+  if (S.readOnly) return;
+  const before = snapshot();
+  fn();
+  if (snapshot() === before) return;
+  S.undo.push(before); if (S.undo.length > 50) S.undo.shift();
+  S.redo.length = 0;
+  render();
+}
+function undo(){ if (!S.undo.length) return; const now = snapshot(); const prev = S.undo.pop(); S.redo.push(now); restore(prev); }
+function redo(){ if (!S.redo.length) return; const now = snapshot(); const next = S.redo.pop(); S.undo.push(now); restore(next); }
+function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migratePlot); S.active = Math.min(o.active, S.plots.length - 1); S.sel = null; render(); }
+
+/* ================= the stage diagram ================= */
+function wedgePath(w, d){                              // trapezoid, throw face toward the top
+  const x = -w/2, y = -d/2, t = w * .62;
+  return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
+}
+function diagramSVG(plot, opt){
+  const o = opt || {}, print = o.mode === "print", g = diagramGeom(plot), D = g.D, LB = labelBoxes(plot, g);
+  const ink = print ? "#000" : "#e8e1d1", dim = print ? "#555" : "#a89f8c";
+  const deckFill = print ? "#fff" : "#0d232b", houseFill = print ? "#e6e6e6" : "#1a4551";
+  const halo = print ? "#fff" : "#0d232b";
+  const P = [], t = (s, x, y, pt, cls, extra) =>
+    P.push('<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + g.pt(pt).toFixed(1) +
+      '" text-anchor="middle" fill="' + (cls === "dim" ? dim : ink) + '" font-family="' + (print ? "Helvetica, Arial, sans-serif" : "Helvetica, Arial, sans-serif") +
+      '" paint-order="stroke" stroke="' + halo + '" stroke-width="' + (g.pt(pt) * .18).toFixed(2) + '"' + (extra || "") + '>' + esc(s) + '</text>');
+
+  // deck, grid, context
+  P.push('<rect x="' + g.M + '" y="' + g.M + '" width="' + D.w + '" height="' + D.d + '" fill="' + deckFill + '" stroke="' + ink + '" stroke-width="1.6"/>');
+  if (!print && S.snap){
+    let dots = "";
+    for (let x = 6; x < D.w; x += 6) for (let y = 6; y < D.d; y += 6) dots += "M" + (g.sx(x) - .6) + "," + g.sy(y) + "h1.2";
+    P.push('<path d="' + dots + '" stroke="#1d4350" stroke-width="1"/>');
+  }
+  const c = VENUE.context;
+  if (c.drapeUpstage){
+    let z = ""; for (let x = 0; x <= D.w; x += 8) z += (x ? "L" : "M") + (g.M + x) + "," + (g.M - 7 + (x / 8 % 2 ? 4 : 0));
+    P.push('<path d="' + z + '" fill="none" stroke="' + dim + '" stroke-width="1"/>');
+    t("DRAPE", g.M + D.w/2, g.M - 11, DRAW.tinyPt, "dim");
+  }
+  if (c.trussCorners) for (const [cx, cy] of [[g.M, g.M], [g.M + D.w, g.M], [g.M, g.M + D.d], [g.M + D.w, g.M + D.d]]){
+    P.push('<rect x="' + (cx - 7) + '" y="' + (cy - 7) + '" width="14" height="14" fill="none" stroke="' + dim + '" stroke-width="1.2"/>' +
+           '<path d="M' + (cx - 7) + ',' + (cy - 7) + 'l14,14M' + (cx + 7) + ',' + (cy - 7) + 'l-14,14" stroke="' + dim + '" stroke-width="1"/>');
+  }
+  if (c.mainsDownstageLR) for (const side of [-1, 1]){
+    const x = side < 0 ? g.M - 24 : g.M + D.w + 8, y = g.M + D.d + 4;
+    P.push('<rect x="' + x + '" y="' + y + '" width="16" height="24" fill="none" stroke="' + dim + '" stroke-width="1.2"/>');
+    t("PA", x + 8, y + 15, DRAW.tinyPt, "dim");
+  }
+  t(c.audienceLabel, g.M + D.w/2, g.M + D.d + 26, DRAW.smallPt, "dim", ' letter-spacing="' + (g.pt(DRAW.smallPt) * .3).toFixed(1) + '"');
+  t("STAGE RIGHT", g.M - 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(-90 ' + (g.M - 11) + ' ' + (g.M + D.d/2) + ')"');
+  t("STAGE LEFT", g.M + D.w + 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(90 ' + (g.M + D.w + 11) + ' ' + (g.M + D.d/2) + ')"');
+  t(plot.deck.widthFt + "′ × " + plot.deck.depthFt + "′", g.M + D.w - 26, g.M - 11, DRAW.tinyPt, "dim");
+
+  const bad = it => offDeck(it, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
+  const draw = (it, body) => {
+    const sel = !print && S.sel === it.id;
+    P.push('<g transform="translate(' + g.sx(it.x).toFixed(1) + ',' + g.sy(it.y).toFixed(1) + ') rotate(' + (it.rot || 0) + ')"' +
+      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + it.id + '"') + '>' + body + '</g>');
+  };
+
+  // wedges first, so people and gear sit on top
+  for (const w of plot.wedges){
+    const def = houseDef("wedge"), it = Object.assign({ kind:"wedge" }, w);
+    const sel = !print && S.sel === w.id;
+    draw(it, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + (sel ? "#c9a24a" : ink) + '" stroke-width="' + (sel ? 2.5 : 1.3) + '"' + bad(it) + '/>');
+    const px = g.sx(w.x), py = g.sy(w.y);
+    t(String(w.number), px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt);
+  }
+  for (const it of plot.items){
+    const sel = !print && S.sel === it.id;
+    const stroke = sel ? "#c9a24a" : ink, sw = sel ? 2.5 : 1.3;
+    if (it.kind === "person"){
+      const p = plot.people.find(x => x.id === it.ownerPersonIds[0]); if (!p) continue;
+      const r = DRAW.person / 2;
+      draw(it, '<circle r="' + r + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + bad(it) + '/>');
+      const lb = LB[it.id], px = g.sx(it.x);
+      let ly = g.sy(lb.y1) + g.pt(DRAW.labelPt) * .95;
+      for (const ln of lb.lines){ t(ln, px, ly, DRAW.labelPt); ly += g.pt(DRAW.labelPt) * 1.05; }
+      if (p.name && p.name.trim()) t(roleLine(p), px, ly - g.pt(DRAW.labelPt) * .15, DRAW.smallPt, "dim");
+      continue;
+    }
+    if (it.kind === "label"){
+      draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt);
+      continue;
+    }
+    const def = itemDef(it); if (!def) continue;
+    const f = footprint(it), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
+    let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
+      (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke + '" stroke-width="' + sw + '"' + dash + bad(it) + '/>';
+    if (def.cat === "drums") body += '<circle r="' + (f.d * .19) + '" cy="' + (f.d * .29) + '" fill="none" stroke="' + stroke + '" stroke-width="1.1"/>';
+    if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke + '" stroke-width=".7" opacity=".7"/>'; }
+    draw(it, body);
+    const px = g.sx(it.x), py = g.sy(it.y);
+    const owner = ownerNames(it, plot.people);
+    const short = (it.kind === "byo" ? "BYO " + def.label : def.short) + (it.kind === "byo" && it.label ? "" : "");
+    if (def.cat === "drums" && owner){
+      // the kit is the drummer's chair: short label on top, then whose it is
+      let ky = py - f.d/2 + g.pt(DRAW.smallPt) * 1.5;
+      t(short, px, ky, DRAW.smallPt, "dim");
+      ky += g.pt(DRAW.labelPt) * 1.15;
+      for (const n of owner.replace(/ \(share kit\)/, "").split(" / ")){ t(n, px, ky, DRAW.labelPt); ky += g.pt(DRAW.labelPt) * 1.05; }
+      if (/share kit/.test(owner)) t("(share kit)", px, ky - g.pt(DRAW.labelPt) * .2, DRAW.smallPt, "dim");
+    } else {
+      t(short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, it.kind === "byo" ? "dim" : "");
+      if (it.kind === "byo" && it.label) t(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    }
+  }
+  return '<svg viewBox="0 0 ' + g.vbW.toFixed(0) + ' ' + g.vbH.toFixed(0) + '" xmlns="http://www.w3.org/2000/svg"' +
+         (print ? ' style="width:' + g.widthIn.toFixed(2) + 'in;height:auto"' : "") + '>' + P.join("") + '</svg>';
+}
+
+/* ================= the printed page ================= */
+function deliverLine(p){
+  if (!VENUE.leadDays) return "Please deliver to " + VENUE.deliverTo + " as far in advance as possible.";
+  if (!p.date) return "Please deliver to " + VENUE.deliverTo + " at least " + VENUE.leadDays + " days ahead.";
+  const d = new Date(p.date + "T12:00:00"); d.setDate(d.getDate() - VENUE.leadDays);
+  return "Please deliver to " + VENUE.deliverTo + " by " + d.toISOString().slice(0, 10) + ".";
+}
+function sheetHTML(p){
+  const units = inputUnits(p), rows = channelRows(p), mon = monitorTable(p), needs = houseNeeds(p),
+        byo = byoList(p), di = diSources(p), ch = channelCount(p), H = [];
+  H.push('<h1>' + esc(p.ensembleName || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
+  H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
+  H.push('<p class="meta"><span>' + (p.director ? "Director: " + esc(p.director) : "Director: —") + '</span>' +
+    '<span>' + (p.date ? "Performance: " + esc(p.date) : "Performance: —") + '</span>' +
+    '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
+    '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
+    '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
+  H.push('<hr class="rule">');
+  H.push('<div class="diagram">' + diagramSVG(p, { mode:"print" }) + '</div>');
+  H.push('<p class="flag" style="margin:2px 0 0;font-size:8pt">Drawn from the performer\'s view: audience at the bottom, stage left and right are the player\'s. Grey = house gear, dashed = the band brings it.</p>');
+
+  const left = [], right = [];
+  left.push('<h2>Monitors</h2><table><thead><tr><th style="width:12%">Mix</th><th style="width:40%">Who</th><th>What they want</th></tr></thead><tbody>');
+  if (!mon.rows.length) left.push('<tr><td colspan="3" class="empty">No wedges placed.</td></tr>');
+  for (const r of mon.rows)
+    left.push('<tr><td class="num">' + r.n + '</td><td>' + (r.who.length ? esc(r.who.join(", ")) : '<span class="empty">no one assigned</span>') +
+      '</td><td>' + (r.request ? esc(r.request) : '<span class="empty">—</span>') + '</td></tr>');
+  left.push('</tbody></table>');
+  if (mon.unassigned.length) left.push('<p class="flag" style="margin:3px 0 0"><b>No wedge assigned:</b> ' + esc(mon.unassigned.join(", ")) + '</p>');
+
+  left.push('<h2>House equipment needed</h2><ul>');
+  if (!needs.length) left.push('<li class="empty">Nothing from the house.</li>');
+  for (const n of needs) left.push('<li>' + (n.need > 1 ? n.need + " × " : "") + esc(n.label) +
+    (n.derived ? ' <span style="font-size:8pt;color:#555">(from the input list)</span>' : "") +
+    (n.over ? ' <b>— ' + VENUE.shortName + ' lists ' + n.have + '</b>' : "") + '</li>');
+  left.push('</ul>');
+
+  left.push('<h2>Musicians provide</h2><ul>');
+  if (!byo.length) left.push('<li class="empty">Nothing — all house gear.</li>');
+  for (const b of byo) left.push('<li>' + esc(b.what) + (b.who ? " — " + esc(b.who) : "") + '</li>');
+  left.push('</ul>');
+
+  left.push('<h2>DI boxes needed</h2>');
+  const diCount = units.reduce((n, u) => n + (u.type === "di" ? 1 : u.type === "stereo-di" ? 2 : 0), 0);
+  left.push('<p style="margin:2px 0">' + (diCount ? '<b>' + diCount + '</b> house DI' + (diCount > 1 ? "s" : "") : "None") + '</p>');
+  if (di.length) left.push('<ul>' + di.map(d => '<li>' + esc(d) + '</li>').join("") + '</ul>');
+
+  right.push('<h2>Input list</h2><table><thead><tr><th style="width:10%">Ch</th><th>Source</th><th style="width:30%">Who</th><th style="width:14%">Type</th><th style="width:10%">48V</th></tr></thead><tbody>');
+  if (!rows.length) right.push('<tr><td colspan="5" class="empty">No inputs.</td></tr>');
+  let lastWho = null;
+  for (const r of rows){
+    let who = r.who && r.who !== lastWho ? r.who : ""; if (r.who) lastWho = r.who;
+    who = who.replace(/ \(share kit\)/, "");
+    right.push('<tr><td class="ch">' + r.ch + '</td><td>' + esc(r.source) + '</td><td>' + esc(who) + '</td><td class="num">' +
+      ({ mic:"mic", di:"DI", "stereo-di":"DI ×2", xlr:"XLR" }[r.type] || r.type) + '</td><td class="num">' + (r.phantom ? "48V" : "") + '</td></tr>');
+  }
+  right.push('</tbody></table>');
+  const noted = rows.filter(r => r.notes);
+  if (noted.length) right.push('<p class="flag" style="margin:3px 0 0">' + noted.map(r => "Ch " + r.ch + ": " + esc(r.notes)).join(" · ") + '</p>');
+  H.push('<div class="cols"><div>' + left.join("") + '</div><div>' + right.join("") + '</div></div>');
+
+  if (p.songs && p.songs.length){
+    const onstage = p.people.filter(pp => p.songs.some(s => (s.onstage || []).includes(pp.id)));
+    H.push('<h2>Personnel by song</h2><table><thead><tr><th>Song</th>' +
+      onstage.map(pp => '<th style="font-size:7pt">' + esc(displayName(pp)) + '</th>').join("") + '</tr></thead><tbody>' +
+      p.songs.map(s => '<tr><td>' + esc(s.title || "—") + '</td>' +
+        onstage.map(pp => '<td class="num">' + ((s.onstage || []).includes(pp.id) ? "✓" : "") + '</td>').join("") + '</tr>').join("") +
+      '</tbody></table>');
+  }
+  if (p.notes) H.push('<h2>Notes</h2><p class="notes">' + esc(p.notes) + '</p>');
+  H.push('<p class="foot">' + esc(deliverLine(p)) + ' Prepared with the stage plot tool — williamflynnguitar.github.io/music-tools/stageplot/</p>');
+  return H.join("");
+}
+
+/* ================= changeover sheets ================= */
+function changeoverHTML(co){
+  const list = (title, arr, fmt) => arr.length ? '<h2>' + title + '</h2><ul>' + arr.map(a => '<li>' + fmt(a) + '</li>').join("") + '</ul>' : "";
+  let h = '<h1>Changeover: ' + esc(co.from) + ' → ' + esc(co.to) + '</h1>' +
+    '<p class="meta">Channels ' + co.channels.from + ' → ' + co.channels.to + '</p><hr class="rule">';
+  h += '<div class="cols"><div>';
+  h += list("People staying on", co.people.stay, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>' + (a.moved ? " — moves to " + esc(a.to) : ""));
+  h += list("Arriving", co.people.arrive, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>');
+  h += list("Coming off", co.people.leave, a => esc(a.name) + ' <span style="font-size:8pt">(' + esc(a.role) + ')</span>');
+  h += '</div><div>';
+  h += list("Stays put", co.items.stay, a => esc(a));
+  h += list("Moves", co.items.move, a => esc(a.what) + ": " + esc(a.from) + " → " + esc(a.to));
+  h += list("Comes on", co.items.arrive, a => esc(a));
+  h += list("Comes off", co.items.leave, a => esc(a));
+  h += '</div></div>';
+  if (co.wedges.change.length || co.wedges.arrive.length || co.wedges.leave.length){
+    h += '<h2>Monitor changes</h2><table><thead><tr><th style="width:10%">Mix</th><th>Was</th><th>Becomes</th><th style="width:26%">Request</th></tr></thead><tbody>' +
+      co.wedges.change.map(w => '<tr><td class="num">' + w.n + '</td><td>' + esc(w.before) + '</td><td>' + esc(w.after) +
+        (w.moved ? ' <span style="font-size:8pt">(moves to ' + esc(w.to) + ')</span>' : "") + '</td><td>' + esc(w.request || "—") + '</td></tr>').join("") +
+      (co.wedges.arrive.length ? '<tr><td colspan="4">Wedge ' + co.wedges.arrive.join(", ") + " added</td></tr>" : "") +
+      (co.wedges.leave.length ? '<tr><td colspan="4">Wedge ' + co.wedges.leave.join(", ") + " struck</td></tr>" : "") +
+      '</tbody></table>';
+  }
+  h += '<p class="foot">Positions are DS/CS/US (downstage, centre, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
+  return h;
+}
+/* ================= render ================= */
+function render(opt){
+  const keepRail = opt && opt.keepRail;
+  const p = plot();
+  $("venueLine").innerHTML = esc(VENUE.name) + "<br>" + esc(VENUE.address);
+  document.body.classList.toggle("ro", S.readOnly);
+  for (const id of ["bNew","bSave","bShare","bEmail","bUndo","bRedo","bLoad"]) $(id).hidden = S.readOnly && id !== "bSave";
+  $("bEditCopy").hidden = !S.readOnly;
+  $("bChange").hidden = S.plots.length < 2;
+  $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
+  renderTabs();
+  if (!p){ $("warns").innerHTML = ""; $("deck").innerHTML = ""; $("sheet").innerHTML = ""; $("panel").innerHTML = ""; return; }
+  renderWarnings(p);
+  renderCanvas(p);
+  renderSheet(p);
+  if (!keepRail){ renderRailTabs(); renderPanel(p); renderInspector(p); }
+}
+function renderTabs(){
+  const t = $("tabs"); t.hidden = S.plots.length < 2;
+  t.innerHTML = S.plots.map((p, i) =>
+    '<span class="tab" aria-current="' + (i === S.active) + '"><button class="btn sm" style="border:0;padding:0" data-go="' + i + '">' +
+    esc(p.ensembleName || "Plot") + '</button>' + (S.readOnly ? "" : '<button class="x" data-close="' + i + '" title="close">×</button>') + '</span>').join("") +
+    (S.readOnly ? "" : '<button class="btn sm" id="bAddTab">+ plot</button>');
+  t.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { S.active = +b.dataset.go; S.sel = null; render(); });
+  t.querySelectorAll("[data-close]").forEach(b => b.onclick = () => commit(() => {
+    S.plots.splice(+b.dataset.close, 1); S.active = Math.max(0, Math.min(S.active, S.plots.length - 1)); S.sel = null;
+  }));
+  const add = $("bAddTab"); if (add) add.onclick = () => openNew();
+}
+function renderWarnings(p){
+  const w = warnings(p);
+  $("warns").innerHTML = w.map((x, i) => '<div class="warn ' + x.level + '"><span>' + esc(x.text) + '</span>' +
+    (x.fix === "sections" ? '<button class="btn" data-fix="' + i + '">Use section mics</button>' : "") + '</div>').join("");
+  $("warns").querySelectorAll("[data-fix]").forEach(b => b.onclick = () => commit(() => collapseSections(plot())));
+}
+function renderCanvas(p){
+  $("canvashead").innerHTML = '<span>' + esc(p.ensembleName) + '</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
+    '<span>' + channelCount(p) + ' ch · ' + p.wedges.length + ' mixes</span>' +
+    (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>');
+  const b = $("bSnap"); if (b) b.onclick = () => { S.snap = !S.snap; render(); };
+  $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
+  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates, Delete removes.";
+  if (!S.readOnly) wireCanvas();
+}
+function renderSheet(p){
+  const sheet = $("sheet");
+  sheet.innerHTML = sheetHTML(p);
+  const box = $("sheetbox"), avail = Math.min(box.clientWidth, document.documentElement.clientWidth - 8);
+  const scale = Math.min(1, avail / (7.5 * 96));
+  $("sheetScale").style.transform = "scale(" + scale + ")";
+  $("sheetScale").style.width = (7.5 * 96) + "px";
+  const h = sheet.scrollHeight, pageH = 10 * 96, pages = Math.max(1, Math.ceil((h - 4) / pageH));
+  for (let i = 1; i < pages; i++){
+    const r = document.createElement("div"); r.className = "pagerule"; r.style.top = (i * pageH) + "px";
+    r.innerHTML = "<span>page " + (i + 1) + "</span>"; sheet.appendChild(r);
+  }
+  box.style.height = (h * scale) + "px";
+  $("pagehead").innerHTML = '<span>The printed page</span><span>≈ ' + pages + ' page' + (pages > 1 ? "s" : "") + ' (US Letter)</span>';
+}
+
+/* ================= left rail ================= */
+const RAIL_TABS = [["house","House"],["byo","Bring-own"],["people","People"],["wedges","Wedges"],["misc","Misc"],["inputs","Inputs"],["details","Details"]];
+function renderRailTabs(){
+  $("railtabs").innerHTML = RAIL_TABS.map(([k, l]) => '<button data-tab="' + k + '" aria-pressed="' + (S.tab === k) + '">' + l + '</button>').join("");
+  $("railtabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderRailTabs(); renderPanel(plot()); });
+}
+function placedCount(p, ref){ return p.items.filter(i => i.kind === "house" && i.ref === ref).length + (ref === "wedge" ? p.wedges.length : 0); }
+function freeSpot(p, n){ const D = deckIn(p); return { x:D.w / 2 + ((n % 5) - 2) * 14, y:D.d / 2 - ((n % 3) - 1) * 14 }; }
+function addHouse(ref){
+  commit(() => {
+    const p = plot();
+    if (ref === "wedge"){
+      const spot = freeSpot(p, p.wedges.length);
+      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, assignees:[], request:"" });
+      S.sel = p.wedges[p.wedges.length - 1].id; return;
+    }
+    const spot = freeSpot(p, p.items.length);
+    const it = { id:nextId("i"), kind:"house", ref, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" };
+    it.inputs = defaultInputsFor(it, p.people).map(i => Object.assign({ id:nextId("in") }, i));
+    p.items.push(it); S.sel = it.id;
+  });
+}
+function addByo(kind){
+  commit(() => {
+    const p = plot(), def = byoDef(kind), spot = freeSpot(p, p.items.length);
+    const it = { id:nextId("i"), kind:"byo", ref:kind, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" };
+    it.inputs = (def.cat === "drums" ? kitInputs(KIT_FULL) : defaultInputsFor(it, p.people)).map(i => Object.assign({ id:nextId("in") }, i));
+    p.items.push(it); S.sel = it.id;
+  });
+}
+function placePerson(pid){
+  commit(() => {
+    const p = plot(), spot = freeSpot(p, p.items.length);
+    const it = { id:nextId("i"), kind:"person", ref:null, label:"", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[pid], inputs:[], notes:"" };
+    it.inputs = defaultInputsFor(it, p.people).map(i => Object.assign({ id:nextId("in") }, i));
+    p.items.push(it); S.sel = it.id;
+  });
+}
+function bindText(el, get, set){
+  el.value = get() || "";
+  let pushed = false;
+  el.addEventListener("focus", () => { pushed = false; });
+  el.addEventListener("input", () => {
+    if (!pushed){ S.undo.push(snapshot()); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; pushed = true; }
+    set(el.value); render({ keepRail:true });
+  });
+}
+function renderPanel(p){
+  const el = $("panel"); if (!p) { el.innerHTML = ""; return; }
+  const H = [];
+  if (S.tab === "house"){
+    H.push("<h3>House backline</h3><div class='plist'>");
+    for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))){
+      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
+      H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
+    }
+    H.push("</div><p class='note'>Labels print on the page exactly as written here. Correct them in VENUE at the top of the file.</p>");
+  }
+  if (S.tab === "byo"){
+    H.push("<h3>The band brings</h3><div class='plist'>");
+    for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + '</span></button>');
+    H.push("</div><p class='note'>Select a placed item to type what it is — “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>.</p>");
+  }
+  if (S.tab === "people"){
+    const unplaced = p.people.filter(pp => !p.items.some(i => i.ownerPersonIds.includes(pp.id)));
+    if (unplaced.length){
+      H.push("<h3>Not on stage</h3><div class='plist'>");
+      for (const pp of unplaced) H.push('<button class="pitem" data-place="' + pp.id + '"><span>' + esc(displayName(pp)) + '</span><span class="ct">place</span></button>');
+      H.push("</div>");
+    }
+    H.push("<h3>Roster</h3><div class='plist'>");
+    for (const pp of p.people){
+      const w = p.wedges.find(w => w.assignees.includes(pp.id));
+      H.push('<div class="prow"><span class="nm">' + esc(displayName(pp)) + '<br><span class="role">' + esc(roleLine(pp)) + '</span></span>' +
+        '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
+        '<button class="btn sm" data-pedit="' + pp.id + '">edit</button></div>');
+    }
+    H.push('</div><button class="btn sm" id="bAddPerson" style="margin-top:8px">+ person</button>');
+  }
+  if (S.tab === "wedges"){
+    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Type what each mix wants — that line is what the tech reads.</p>");
+    for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
+      H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
+        '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>');
+      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-wassign="' + w.id + '" value="' + pp.id + '"' +
+        (w.assignees.includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      H.push('<div class="fld" style="margin:6px 0 0"><input type="text" data-wreq="' + w.id + '" placeholder="more me, less drums…"></div></div>');
+    }
+    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>');
+  }
+  if (S.tab === "misc"){
+    H.push("<h3>Stands, power, risers</h3><div class='plist'>");
+    for (const h of VENUE.house.filter(h => ["stand","di","power","riser"].includes(h.cat))){
+      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
+      H.push('<button class="pitem' + (h.id === "micstand" ? " dim" : "") + '" data-house="' + h.id + '"><span>' + esc(h.label) +
+        '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
+    }
+    H.push('</div><p class="note">Mic stands and DI boxes are counted from the input list, so you only place them here if you want them drawn.</p>' +
+      '<div class="plist"><button class="pitem" data-label="1"><span>Text label</span></button></div>');
+  }
+  if (S.tab === "inputs"){
+    const units = inputUnits(p);
+    H.push('<h3>Input list — ' + channelCount(p) + " of " + VENUE.consoleChannels + " channels</h3>");
+    H.push('<p class="note">Order is drums, bass, guitars, keys, horns (bari→tenor→alto→trombones→trumpets), vocals. Move one and the numbers freeze for this plot.</p>');
+    for (const u of units){
+      H.push('<div class="inputrow"><span class="ch">' + u.chLabel + '</span><span>' + esc(u.source) + (u.who ? ' <span class="role">' + esc(u.who) + '</span>' : "") +
+        '</span><span class="mv"><button data-up="' + u.key + '">↑</button><button data-down="' + u.key + '">↓</button></span></div>');
+    }
+    if (p.channelOrder) H.push('<button class="btn sm" id="bUnfreeze" style="margin-top:8px">reset to automatic order</button>');
+    const rows = sectionRows(p);
+    if (Object.keys(rows).length){
+      H.push("<h3>Section mics</h3>");
+      for (const row of Object.keys(rows)) H.push('<label class="chk"><input type="checkbox" data-sec="' + row + '"' + (p.sections[row].on ? " checked" : "") + '> ' +
+        esc(SEC_LABEL[row]) + " (" + rows[row].length + " players → " + p.sections[row].mics + " mics)</label>");
+    }
+  }
+  if (S.tab === "details"){
+    H.push('<div class="fld"><label>Ensemble</label><input type="text" id="fEns"></div>' +
+      '<div class="fld"><label>Director</label><input type="text" id="fDir"></div>' +
+      '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
+      '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
+      '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
+      '<h3>Deck (this plot)</h3><div class="insprow"><input type="text" id="fW" style="width:70px"> ft wide <input type="text" id="fD" style="width:70px"> ft deep</div>' +
+      '<p class="note">New plots start from VENUE.deck (' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′). This plot keeps what is saved with it.</p>' +
+      '<h3>Songs</h3>');
+    (p.songs || []).forEach((s, i) => {
+      H.push('<div class="wedgecard"><header><input type="text" data-song="' + i + '" value="' + esc(s.title) + '" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:4px 6px">' +
+        '<button class="btn sm" data-songdel="' + i + '">×</button></header>');
+      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-songp="' + i + '" value="' + pp.id + '"' +
+        ((s.onstage || []).includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      H.push('</div>');
+    });
+    H.push('<button class="btn sm" id="bAddSong">+ song</button>');
+  }
+  el.innerHTML = H.join("");
+
+  el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
+  el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
+  el.querySelectorAll("[data-place]").forEach(b => b.onclick = () => placePerson(b.dataset.place));
+  el.querySelectorAll("[data-pedit]").forEach(b => b.onclick = () => {
+    const it = p.items.find(i => i.ownerPersonIds.includes(b.dataset.pedit));
+    if (it) { S.sel = it.id; render(); } else { S.selPerson = b.dataset.pedit; placePerson(b.dataset.pedit); }
+  });
+  el.querySelectorAll("[data-label]").forEach(b => b.onclick = () => commit(() => {
+    const spot = freeSpot(p, p.items.length);
+    p.items.push({ id:nextId("i"), kind:"label", ref:null, label:"Text", x:spot.x, y:spot.y, rot:0, ownerPersonIds:[], inputs:[], notes:"" });
+    S.sel = p.items[p.items.length - 1].id;
+  }));
+  el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
+  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); syncWedgeIds(p); }));
+  el.querySelectorAll("[data-wassign]").forEach(c => c.onchange = () => commit(() => {
+    const w = p.wedges.find(w => w.id === c.dataset.wassign);
+    if (c.checked){ for (const o of p.wedges) o.assignees = o.assignees.filter(id => id !== c.value); w.assignees.push(c.value); }
+    else w.assignees = w.assignees.filter(id => id !== c.value);
+    syncWedgeIds(p);
+  }));
+  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => w.request = v); });
+  el.querySelectorAll("[data-sec]").forEach(c => c.onchange = () => commit(() => { plot().sections[c.dataset.sec].on = c.checked; }));
+  el.querySelectorAll("[data-up],[data-down]").forEach(b => b.onclick = () => commit(() => {
+    const p2 = plot(), keys = inputUnits(p2).map(u => u.key), k = b.dataset.up || b.dataset.down, i = keys.indexOf(k);
+    const j = b.dataset.up ? i - 1 : i + 1;
+    if (j < 0 || j >= keys.length) return;
+    keys.splice(j, 0, keys.splice(i, 1)[0]);
+    p2.channelOrder = keys;
+  }));
+  const unf = $("bUnfreeze"); if (unf) unf.onclick = () => commit(() => { plot().channelOrder = null; });
+  const ap = $("bAddPerson"); if (ap) ap.onclick = () => commit(() => { p.people.push({ id:nextId("p"), name:"", role:"vocals", doubles:[], byo:[], wedgeId:null }); });
+  const as = $("bAddSong"); if (as) as.onclick = () => commit(() => { (p.songs = p.songs || []).push({ title:"", onstage:[] }); });
+  el.querySelectorAll("[data-song]").forEach(i => bindText(i, () => p.songs[+i.dataset.song].title, v => p.songs[+i.dataset.song].title = v));
+  el.querySelectorAll("[data-songdel]").forEach(b => b.onclick = () => commit(() => p.songs.splice(+b.dataset.songdel, 1)));
+  el.querySelectorAll("[data-songp]").forEach(c => c.onchange = () => commit(() => {
+    const s = plot().songs[+c.dataset.songp]; s.onstage = s.onstage || [];
+    s.onstage = c.checked ? s.onstage.concat([c.value]) : s.onstage.filter(x => x !== c.value);
+  }));
+  if ($("fEns")){
+    bindText($("fEns"), () => p.ensembleName, v => p.ensembleName = v);
+    bindText($("fDir"), () => p.director, v => p.director = v);
+    bindText($("fShow"), () => p.showName, v => p.showName = v);
+    bindText($("fDate"), () => p.date, v => p.date = v);
+    bindText($("fNotes"), () => p.notes, v => p.notes = v);
+    bindText($("fW"), () => String(p.deck.widthFt), v => { const n = parseFloat(v); if (n > 0) p.deck.widthFt = n; });
+    bindText($("fD"), () => String(p.deck.depthFt), v => { const n = parseFloat(v); if (n > 0) p.deck.depthFt = n; });
+  }
+}
+
+/* ================= inspector ================= */
+function selected(p){
+  return p.items.find(i => i.id === S.sel) || p.wedges.find(w => w.id === S.sel) || null;
+}
+function renderInspector(p){
+  const el = $("inspector"), sel = selected(p);
+  if (!sel || S.readOnly){ el.hidden = true; return; }
+  el.hidden = false;
+  const isWedge = !sel.kind, H = [];
+  if (isWedge){
+    H.push('<h3>Mix ' + sel.number + '<span>' + posText(Object.assign({ kind:"wedge" }, sel), p) + '</span></h3>');
+    H.push('<div class="fld"><label>What this mix wants</label><input type="text" id="iReq"></div>');
+    H.push('<p class="note">Assign players in the Wedges tab.</p>');
+  } else if (sel.kind === "person"){
+    const pp = p.people.find(x => x.id === sel.ownerPersonIds[0]) || { name:"", role:"" };
+    H.push('<h3>' + esc(displayName(pp)) + '<span>' + posText(sel, p) + '</span></h3>');
+    H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Name</label><input type="text" id="iName"></div>' +
+      '<div class="fld" style="flex:1"><label>Role</label><input type="text" id="iRole"></div></div>');
+    H.push('<div class="fld"><label>Doubles</label><input type="text" id="iDbl" placeholder="flute, clarinet"></div>');
+    H.push('<div class="fld"><label>Brings (not drawn)</label><input type="text" id="iByo" placeholder="own snare, pedalboard"></div>');
+  } else {
+    const def = itemDef(sel);
+    H.push('<h3>' + esc(def ? def.label : "Label") + '<span>' + posText(sel, p) + '</span></h3>');
+    if (sel.kind === "byo" || sel.kind === "label")
+      H.push('<div class="fld"><label>' + (sel.kind === "label" ? "Text" : "What is it (prints after “BYO:”)") + '</label><input type="text" id="iLabel"></div>');
+    if (sel.kind !== "label"){
+      H.push('<div class="fld"><span class="lbl">Whose</span>');
+      for (const pp of p.people) H.push('<label class="chk"><input type="checkbox" data-owner="' + pp.id + '"' +
+        (sel.ownerPersonIds.includes(pp.id) ? " checked" : "") + '> ' + esc(displayName(pp)) + '</label>');
+      H.push('</div>');
+    }
+  }
+  if (!isWedge && sel.kind !== "label"){
+    H.push('<div class="fld"><span class="lbl">Inputs</span>');
+    sel.inputs.forEach((inp, i) => {
+      H.push('<div class="inputrow" style="grid-template-columns:1fr auto auto auto"><input type="text" data-isrc="' + i + '" value="' + esc(inp.source) + '" style="background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 5px">' +
+        '<select data-itype="' + i + '" style="background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px">' +
+        ["mic","di","stereo-di","xlr"].map(t => '<option value="' + t + '"' + (inp.type === t ? " selected" : "") + '>' + t + '</option>').join("") + '</select>' +
+        '<label class="chk" title="phantom power"><input type="checkbox" data-iph="' + i + '"' + (inp.phantom ? " checked" : "") + '>48V</label>' +
+        '<button class="btn sm" data-idel="' + i + '">×</button></div>');
+    });
+    H.push('<div class="insprow" style="margin-top:6px"><button class="btn sm" data-iadd="mic">+ mic</button><button class="btn sm" data-iadd="di">+ DI</button>' +
+      '<button class="btn sm" data-iadd="stereo-di">+ stereo DI</button>' +
+      (itemDef(sel) && itemDef(sel).cat === "drums" ? '<button class="btn sm" id="bKitFull">full kit (7)</button><button class="btn sm" id="bKitMin">jazz minimal (4)</button>' : "") +
+      '</div></div>');
+    H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
+  }
+  H.push('<div class="insprow"><button class="btn sm" id="bRot">rotate (R)</button><button class="btn sm" id="bDel">delete</button>' +
+    '<button class="btn sm" id="bDesel">done</button></div>');
+  el.innerHTML = H.join("");
+
+  const mut = fn => commit(fn);
+  if ($("iReq")) bindText($("iReq"), () => sel.request, v => sel.request = v);
+  if ($("iName")){
+    const pp = p.people.find(x => x.id === sel.ownerPersonIds[0]);
+    bindText($("iName"), () => pp.name, v => pp.name = v);
+    bindText($("iRole"), () => pp.role, v => { pp.role = v; });
+    bindText($("iDbl"), () => (pp.doubles || []).join(", "), v => pp.doubles = v.split(",").map(s => s.trim()).filter(Boolean));
+    bindText($("iByo"), () => (pp.byo || []).join(", "), v => pp.byo = v.split(",").map(s => s.trim()).filter(Boolean));
+  }
+  if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
+  if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
+  el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
+    sel.ownerPersonIds = c.checked ? sel.ownerPersonIds.concat([c.value]) : sel.ownerPersonIds.filter(x => x !== c.value);
+  }));
+  el.querySelectorAll("[data-isrc]").forEach(i => bindText(i, () => sel.inputs[+i.dataset.isrc].source, v => sel.inputs[+i.dataset.isrc].source = v));
+  el.querySelectorAll("[data-itype]").forEach(s => s.onchange = () => mut(() => sel.inputs[+s.dataset.itype].type = s.value));
+  el.querySelectorAll("[data-iph]").forEach(c => c.onchange = () => mut(() => sel.inputs[+c.dataset.iph].phantom = c.checked));
+  el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => mut(() => sel.inputs.splice(+b.dataset.idel, 1)));
+  el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => sel.inputs.push({ id:nextId("in"), source:"Input", type:b.dataset.iadd, phantom:false, notes:"" })));
+  if ($("bKitFull")) $("bKitFull").onclick = () => mut(() => sel.inputs = kitInputs(KIT_FULL).map(i => Object.assign({ id:nextId("in") }, i)));
+  if ($("bKitMin")) $("bKitMin").onclick = () => mut(() => sel.inputs = kitInputs(KIT_MIN).map(i => Object.assign({ id:nextId("in") }, i)));
+  $("bRot").onclick = () => mut(() => sel.rot = ((sel.rot || 0) + 90) % 360);
+  $("bDel").onclick = () => mut(() => {
+    const p2 = plot();
+    p2.items = p2.items.filter(i => i.id !== sel.id); p2.wedges = p2.wedges.filter(w => w.id !== sel.id);
+    syncWedgeIds(p2); S.sel = null;
+  });
+  $("bDesel").onclick = () => { S.sel = null; render(); };
+}
+
+/* ================= canvas interaction ================= */
+function wireCanvas(){
+  const svg = $("deck");
+  svg.addEventListener("pointerdown", e => {
+    const g = e.target.closest("g[data-id]");
+    if (!g){ if (S.sel){ S.sel = null; render(); } return; }
+    const p = plot(), id = g.dataset.id;
+    const obj = p.items.find(i => i.id === id) || p.wedges.find(w => w.id === id);
+    if (!obj) return;
+    S.sel = id;
+    svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
+    g.classList.add("sel");
+    renderInspector(p);
+    const before = snapshot(), D = deckIn(p), geo = diagramGeom(p);
+    const pt = svg.createSVGPoint();
+    const toDeck = ev => { pt.x = ev.clientX; pt.y = ev.clientY; const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+      return { x:D.w - (q.x - geo.M), y:D.d - (q.y - geo.M) }; };
+    const start = toDeck(e), ox = obj.x, oy = obj.y;
+    let moved = false;
+    const el = g;
+    const move = ev => {
+      const q = toDeck(ev);
+      let x = ox + (q.x - start.x), y = oy + (q.y - start.y);
+      if (S.snap){ x = Math.round(x / 6) * 6; y = Math.round(y / 6) * 6; }
+      if (Math.abs(x - obj.x) < .01 && Math.abs(y - obj.y) < .01) return;
+      obj.x = x; obj.y = y; moved = true;
+      if (el) el.setAttribute("transform", "translate(" + geo.sx(x).toFixed(1) + "," + geo.sy(y).toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
+    };
+    const up = () => {
+      svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); svg.removeEventListener("pointercancel", up);
+      if (moved){ S.undo.push(before); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; }
+      render();
+    };
+    svg.setPointerCapture(e.pointerId);
+    svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
+  });
+}
+document.addEventListener("keydown", e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""));
+  const meta = e.metaKey || e.ctrlKey;
+  if (meta && e.key.toLowerCase() === "z"){ e.preventDefault(); if (e.target.blur) e.target.blur(); e.shiftKey ? redo() : undo(); return; }
+  if (typing || S.readOnly || !plot()) return;
+  const p = plot(), sel = selected(p); if (!sel) return;
+  const step = e.shiftKey ? 12 : (S.snap ? 6 : 1);
+  const nudge = (dx, dy) => { e.preventDefault(); commit(() => { sel.x += dx; sel.y += dy; }); };
+  if (e.key === "ArrowLeft")  nudge(step, 0);          // page left is stage right
+  else if (e.key === "ArrowRight") nudge(-step, 0);
+  else if (e.key === "ArrowUp")    nudge(0, step);
+  else if (e.key === "ArrowDown")  nudge(0, -step);
+  else if (e.key.toLowerCase() === "r") commit(() => sel.rot = ((sel.rot || 0) + 90) % 360);
+  else if (e.key === "Delete" || e.key === "Backspace"){
+    e.preventDefault();
+    commit(() => { p.items = p.items.filter(i => i.id !== sel.id); p.wedges = p.wedges.filter(w => w.id !== sel.id); syncWedgeIds(p); S.sel = null; });
+  } else if (e.key === "Escape"){ S.sel = null; render(); }
+});
+
+/* ================= files, links, print ================= */
+function download(name, text, type){
+  const a = document.createElement("a"), url = URL.createObjectURL(new Blob([text], { type:type || "application/json" }));
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function toast(msg){
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+}
+function loadJSON(text, name){
+  let data; try { data = JSON.parse(text); } catch (err) { toast("That file isn't a plot (" + err.message + ")"); return; }
+  const plots = Array.isArray(data.plots) ? data.plots : [data];
+  if (!plots.length || !plots[0].items) { toast("That JSON has no plot in it"); return; }
+  commit(() => { for (const p of plots) S.plots.push(migratePlot(p)); S.active = S.plots.length - 1; S.sel = null; });
+  toast("Loaded " + (name || "plot"));
+}
+const B64 = { enc(u8){ let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
+  dec(str){ const s = atob(str.replace(/-/g, "+").replace(/_/g, "/")); const u = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; } };
+async function encodeHash(){
+  const json = JSON.stringify({ plots:S.plots, active:S.active });
+  const bytes = new TextEncoder().encode(json);
+  if (self.CompressionStream){
+    const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer();
+    return "#s=" + B64.enc(new Uint8Array(buf));
+  }
+  return "#j=" + B64.enc(bytes);
+}
+async function decodeHash(hash){
+  const m = /^#([sj])=(.+)$/.exec(hash); if (!m) return null;
+  let bytes = B64.dec(m[2]);
+  if (m[1] === "s"){
+    if (!self.DecompressionStream) throw new Error("this browser can't open compressed links — ask for the .json file");
+    bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function emailText(p){
+  const mon = monitorTable(p), rows = channelRows(p), needs = houseNeeds(p), byo = byoList(p), di = diSources(p), L = [];
+  L.push(p.ensembleName + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
+  L.push((p.director ? "Director: " + p.director + "  " : "") + (p.date ? "Performance: " + p.date : ""));
+  L.push("Channels " + channelCount(p) + "/" + VENUE.consoleChannels + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
+  L.push("MONITORS");
+  for (const r of mon.rows) L.push("  Mix " + r.n + ": " + (r.who.join(", ") || "no one assigned") + (r.request ? " — " + r.request : ""));
+  if (mon.unassigned.length) L.push("  No wedge assigned: " + mon.unassigned.join(", "));
+  L.push("", "INPUT LIST");
+  for (const r of rows) L.push("  " + String(r.ch).padStart(2) + ". " + r.source + (r.who ? " (" + r.who + ")" : "") + " [" + r.type + (r.phantom ? ", 48V" : "") + "]");
+  L.push("", "HOUSE EQUIPMENT NEEDED");
+  for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (SW lists " + n.have + ")" : ""));
+  L.push("", "MUSICIANS PROVIDE");
+  if (!byo.length) L.push("  Nothing — all house gear.");
+  for (const b of byo) L.push("  " + b.what + (b.who ? " — " + b.who : ""));
+  L.push("", "DI BOXES");
+  L.push("  " + (di.length ? di.join("; ") : "None"));
+  if (p.notes) L.push("", "NOTES", "  " + p.notes.replace(/\n/g, "\n  "));
+  return L.join("\n");
+}
+function openNew(){
+  const dlg = $("newDlg");
+  dlg.innerHTML = '<div class="dlg"><h2>New plot</h2><p>Pick the ensemble — roster, backline and a starting layout come with it.</p><div class="pickgrid">' +
+    ENSEMBLES.map(e => '<button class="btn" data-ens="' + e.id + '">' + esc(e.name) + '<span class="sub">' + esc(e.note || "") + '</span></button>').join("") +
+    '<button class="btn" data-ens="">Blank plot<span class="sub">empty deck</span></button></div>' +
+    '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div></div>';
+  dlg.hidden = false;
+  dlg.querySelectorAll("[data-ens]").forEach(b => b.onclick = () => {
+    commit(() => { S.plots.push(makePlot(b.dataset.ens || null)); S.active = S.plots.length - 1; S.sel = null; });
+    dlg.hidden = true;
+  });
+  $("bCancelNew").onclick = () => { dlg.hidden = true; if (!S.plots.length) openNew(); };
+}
+function openChangeover(){
+  const dlg = $("coDlg"), sheets = [];
+  for (let i = 0; i < S.plots.length - 1; i++)
+    sheets.push('<div class="cosheet">' + changeoverHTML(changeover(S.plots[i], S.plots[i + 1])) + '</div>');
+  dlg.innerHTML = '<div class="cobar"><button class="btn" id="bCoClose">close</button><button class="btn" id="bCoPrint">Print changeover sheets</button>' +
+    '<span class="venue">' + sheets.length + ' transition' + (sheets.length > 1 ? "s" : "") + ', in tab order</span></div>' +
+    '<div class="cosheets">' + (sheets.join("") || '<div class="cosheet">Add a second plot to get a changeover sheet.</div>') + '</div>';
+  dlg.hidden = false; document.body.classList.add("co-open");
+  $("bCoClose").onclick = () => { dlg.hidden = true; document.body.classList.remove("co-open"); };
+  $("bCoPrint").onclick = () => window.print();
+}
+
+/* ================= wiring ================= */
+$("bNew").onclick = openNew;
+$("bLoad").onclick = () => $("fileIn").click();
+$("fileIn").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => loadJSON(t, f.name)); e.target.value = ""; };
+$("bSave").onclick = () => {
+  const p = plot();
+  if (S.plots.length > 1 && confirm("Save all " + S.plots.length + " plots as one showcase file?\n\nCancel saves just " + p.ensembleName + "."))
+    download("SW-showcase-" + todayISO() + ".json", JSON.stringify({ plots:S.plots, active:S.active }, null, 1));
+  else download(plotFileName(p), JSON.stringify(p, null, 1));
+};
+$("bShare").onclick = async () => {
+  try {
+    const hash = await encodeHash(), url = location.href.split("#")[0] + hash;
+    await copyText(url);
+    toast("Read-only link copied (" + Math.round(url.length / 1024 * 10) / 10 + " KB)");
+  } catch (err){ toast("Couldn't build the link: " + err.message); }
+};
+$("bEmail").onclick = async () => {
+  const p = plot(), text = emailText(p);
+  await copyText(text);
+  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.ensembleName + (p.date ? " — " + p.date : ""));
+  const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
+  toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
+  location.href = mail;
+};
+$("bPrint").onclick = () => window.print();
+$("bChange").onclick = openChangeover;
+$("bUndo").onclick = undo; $("bRedo").onclick = redo;
+$("bEditCopy").onclick = () => { S.readOnly = false; history.replaceState(null, "", location.pathname + location.search); render(); };
+async function copyText(t){
+  try { await navigator.clipboard.writeText(t); }
+  catch (err){
+    const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } finally { ta.remove(); }
+  }
+}
+window.addEventListener("dragover", e => { e.preventDefault(); });
+window.addEventListener("drop", e => {
+  e.preventDefault(); const f = e.dataTransfer.files[0];
+  if (f) f.text().then(t => loadJSON(t, f.name));
+});
+window.addEventListener("resize", () => { if (plot()) renderSheet(plot()); });
+
+/* ================= start ================= */
+(async function init(){
+  if (location.hash.length > 3){
+    try {
+      const data = await decodeHash(location.hash);
+      if (data && data.plots){
+        S.plots = data.plots.map(migratePlot); S.active = data.active || 0; S.readOnly = true;
+        render(); return;
+      }
+    } catch (err){ toast("Link didn't open: " + err.message); }
+  }
+  render();
+  openNew();
+})();
+</script>
+</body>
+</html>

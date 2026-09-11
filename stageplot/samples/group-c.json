@@ -1,0 +1,370 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "group-c",
+ "ensembleName": "Group C",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "items": [
+  {
+   "id": "i10",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 245.088,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in11",
+     "phantom": false,
+     "notes": "",
+     "source": "Vocal",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i12",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 179.136,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [
+    {
+     "id": "in13",
+     "phantom": false,
+     "notes": "",
+     "source": "Vocal",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i14",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 108.864,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [
+    {
+     "id": "in15",
+     "phantom": false,
+     "notes": "",
+     "source": "Vocal",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i16",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 42.912,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p5"
+   ],
+   "inputs": [
+    {
+     "id": "in17",
+     "phantom": false,
+     "notes": "",
+     "source": "Vocal",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i18",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 252,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i19",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 36,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i20",
+   "kind": "house",
+   "ref": "gtramp1",
+   "label": "",
+   "x": 252,
+   "y": 135.93599999999998,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [
+    {
+     "id": "in21",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i22",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 36,
+   "y": 130.032,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [
+    {
+     "id": "in23",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i24",
+   "kind": "house",
+   "ref": "kit",
+   "label": "",
+   "x": 144,
+   "y": 108,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8",
+    "p9"
+   ],
+   "inputs": [
+    {
+     "id": "in25",
+     "source": "Kick",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in26",
+     "source": "Snare",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in27",
+     "source": "Hi-hat",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in28",
+     "source": "Tom 1",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in29",
+     "source": "Tom 2",
+     "type": "mic",
+     "phantom": false
+    },
+    {
+     "id": "in30",
+     "source": "OH L",
+     "type": "mic",
+     "phantom": true
+    },
+    {
+     "id": "in31",
+     "source": "OH R",
+     "type": "mic",
+     "phantom": true
+    }
+   ],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w32",
+   "number": 1,
+   "x": 273.888,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p6"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w33",
+   "number": 2,
+   "x": 14.112,
+   "y": 54,
+   "rot": 0,
+   "assignees": [
+    "p7"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w34",
+   "number": 3,
+   "x": 95.90400000000001,
+   "y": 96.048,
+   "rot": 90,
+   "assignees": [
+    "p8",
+    "p9"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w35",
+   "number": 4,
+   "x": 211.968,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [],
+   "request": ""
+  },
+  {
+   "id": "w36",
+   "number": 5,
+   "x": 76.03200000000001,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [],
+   "request": ""
+  }
+ ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Emmalynn Reilly",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p3",
+   "name": "Issy Lynn",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p4",
+   "name": "Liam Wallace",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p5",
+   "name": "Jack Wilson",
+   "role": "vocals",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": null
+  },
+  {
+   "id": "p6",
+   "name": "Sagan Plantz",
+   "role": "guitar",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p7",
+   "name": "Michael Boyle",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w33"
+  },
+  {
+   "id": "p8",
+   "name": "A.J. Banks",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w34"
+  },
+  {
+   "id": "p9",
+   "name": "C.J. Strecker",
+   "role": "drums",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w34"
+  }
+ ],
+ "songs": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}

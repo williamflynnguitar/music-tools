@@ -1,0 +1,362 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "combo-c",
+ "ensembleName": "Combo C",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "",
+ "deck": {
+  "widthFt": 24,
+  "depthFt": 12
+ },
+ "items": [
+  {
+   "id": "i10",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 40.032000000000004,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p2"
+   ],
+   "inputs": [
+    {
+     "id": "in11",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass trombone",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i12",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 78.048,
+   "y": 43.199999999999996,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p3"
+   ],
+   "inputs": [
+    {
+     "id": "in13",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i14",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 126.144,
+   "y": 46.08,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p4"
+   ],
+   "inputs": [
+    {
+     "id": "in15",
+     "phantom": false,
+     "notes": "",
+     "source": "Trombone",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i16",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 173.952,
+   "y": 46.08,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p5"
+   ],
+   "inputs": [
+    {
+     "id": "in17",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i18",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 222.048,
+   "y": 43.199999999999996,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p6"
+   ],
+   "inputs": [
+    {
+     "id": "in19",
+     "phantom": false,
+     "notes": "",
+     "source": "Trumpet",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i20",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 270.144,
+   "y": 40.032000000000004,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p7"
+   ],
+   "inputs": [
+    {
+     "id": "in21",
+     "phantom": false,
+     "notes": "",
+     "source": "Alto sax",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i22",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 252,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i23",
+   "kind": "person",
+   "ref": null,
+   "label": "",
+   "x": 36,
+   "y": 96.048,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p9"
+   ],
+   "inputs": [],
+   "notes": ""
+  },
+  {
+   "id": "i24",
+   "kind": "house",
+   "ref": "gtramp1",
+   "label": "",
+   "x": 252,
+   "y": 135.93599999999998,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p8"
+   ],
+   "inputs": [
+    {
+     "id": "in25",
+     "phantom": false,
+     "notes": "amp mic",
+     "source": "Guitar",
+     "type": "mic"
+    }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i26",
+   "kind": "house",
+   "ref": "bassamp",
+   "label": "",
+   "x": 36,
+   "y": 130.032,
+   "rot": 0,
+   "ownerPersonIds": [
+    "p9"
+   ],
+   "inputs": [
+    {
+     "id": "in27",
+     "phantom": false,
+     "notes": "",
+     "source": "Bass",
+     "type": "di"
+    }
+   ],
+   "notes": ""
+  }
+ ],
+ "wedges": [
+  {
+   "id": "w28",
+   "number": 1,
+   "x": 69.984,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [
+    "p2",
+    "p3"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w29",
+   "number": 2,
+   "x": 150.048,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [
+    "p4",
+    "p5"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w30",
+   "number": 3,
+   "x": 239.904,
+   "y": 9.936,
+   "rot": 0,
+   "assignees": [
+    "p6",
+    "p7"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w31",
+   "number": 4,
+   "x": 14.112,
+   "y": 87.984,
+   "rot": 0,
+   "assignees": [
+    "p9"
+   ],
+   "request": ""
+  },
+  {
+   "id": "w32",
+   "number": 5,
+   "x": 273.888,
+   "y": 87.984,
+   "rot": 0,
+   "assignees": [
+    "p8"
+   ],
+   "request": ""
+  }
+ ],
+ "people": [
+  {
+   "id": "p2",
+   "name": "Michael Castillo",
+   "role": "bass trombone",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w28"
+  },
+  {
+   "id": "p3",
+   "name": "Andy Bunck",
+   "role": "trombone",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w28"
+  },
+  {
+   "id": "p4",
+   "name": "Victoria McClure",
+   "role": "trombone",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w29"
+  },
+  {
+   "id": "p5",
+   "name": "Hunter Bocan",
+   "role": "trumpet",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w29"
+  },
+  {
+   "id": "p6",
+   "name": "Alton Porter",
+   "role": "trumpet",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w30"
+  },
+  {
+   "id": "p7",
+   "name": "Noah Georgas",
+   "role": "alto sax",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w30"
+  },
+  {
+   "id": "p8",
+   "name": "Sid Linafelt",
+   "role": "guitar",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w32"
+  },
+  {
+   "id": "p9",
+   "name": "Isaac Waterman",
+   "role": "bass",
+   "doubles": [],
+   "byo": [],
+   "wedgeId": "w31"
+  }
+ ],
+ "songs": [],
+ "sections": {
+  "sax": {
+   "on": false,
+   "mics": 2
+  },
+  "tbn": {
+   "on": false,
+   "mics": 2
+  },
+  "tpt": {
+   "on": false,
+   "mics": 2
+  }
+ },
+ "channelOrder": null
+}
