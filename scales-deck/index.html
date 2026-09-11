@@ -579,7 +579,11 @@ const CONCEPTS = [
 const OPEN_MIDI = { 1:64, 2:59, 3:55, 4:50, 5:45, 6:40 };
 const midiOf = d => OPEN_MIDI[d.string] + d.fret;
 const rootMidi = p => Math.min(...p.dots.filter(d => d.root).map(midiOf));
-const topMidi = p => Math.max(...p.dots.map(midiOf));
+// William (2026-09-11): Middle 6 turns around on the 9th, one scale step above its 1st-string root
+const topMidi = p => {
+  const top = Math.max(...p.dots.map(midiOf)), r1 = p.dots.find(d => d.string === 1 && d.root);
+  return basePos(p.id) === "M6" && r1 && midiOf(r1) === top ? scaleStep(p.key, top, 1) : top;
+};
 const inKey = (key, m) => degreeOf(key, ((m % 12) + 12) % 12) >= 0;
 const scaleStep = (key, m, dir) => { do m += dir; while (!inKey(key, m)); return m; };
 
@@ -588,8 +592,11 @@ const scaleStep = (key, m, dir) => { do m += dir; while (!inKey(key, m)); return
 // under the lowest dot on strings 4–6, or the open string there (p. 65: G, M5 at 9–13fr,
 // reaches C on the 6th string, 8fr)
 function ladder(p, withExt) {
-  const by = new Map(), add = (d, tag) => { const m = midiOf(d); if (!by.has(m)) by.set(m, []); by.get(m).push(Object.assign({}, d, tag, { midi: m })); };
+  const by = new Map(), add = (d, tag) => { const m = midiOf(d); if (!by.has(m)) by.set(m, []);
+    if (!by.get(m).some(x => x.string === d.string && x.fret === d.fret)) by.get(m).push(Object.assign({}, d, tag, { midi: m })); };
   p.dots.forEach(d => add(d, {}));
+  const turn = topMidi(p);                                  // Middle 6's 9th: always on offer
+  if (!by.has(turn)) add(p.extended.find(x => x.string === 1 && midiOf(x) === turn) || mkDot(p.key, 1, turn - OPEN_MIDI[1], 4), { ext: true });
   if (withExt) {
     p.extended.forEach(d => { const m = midiOf(d); if (!(by.get(m) || []).some(x => !x.ext)) add(d, { ext: true }); });
     const reachFret = Math.min(...p.dots.filter(d => d.string >= 4).map(d => d.fret)) - 1, root = rootMidi(p);
@@ -691,9 +698,10 @@ function perfZigzag(ps, key) {
     const up = ps[k], dn = ps[k + 1], next = ps[k + 2];
     run(k, rootMidi(up), topMidi(up));
     if (!dn) { run(k, topMidi(up), rootMidi(up)); break; }
-    if (topMidi(dn) < topMidi(up)) flags.push(`${dn.id} tops out below ${up.id}`);
-    run(k + 1, topMidi(up), topMidi(dn));
-    run(k + 1, topMidi(dn), next ? scaleStep(key, rootMidi(next), -1) : rootMidi(dn));
+    // a Middle 6 9th can sit above the next fingering's top (dorian, the minors, half-whole):
+    // then the line turns on the 9th and comes straight down through k+1
+    if (topMidi(dn) > topMidi(up)) run(k + 1, topMidi(up), topMidi(dn));
+    run(k + 1, Math.max(topMidi(up), topMidi(dn)), next ? scaleStep(key, rootMidi(next), -1) : rootMidi(dn));
   }
   notes.forEach((n, i) => { if (i && n.pos !== notes[i - 1].pos) { notes[i - 1].finger = notes[i - 1].fingerIn || null; n.finger = n.fingerIn || null; } });
   return { unit: 8, bars: barsOf(notes, 8, downbeats), flags };

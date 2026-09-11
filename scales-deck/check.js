@@ -19,18 +19,12 @@ const withVariant = (v, f) => { const s = state.variants; state.variants = v; tr
 const P6_3RD = { "major:P6": "B on 3rd string" };   // every printed P6 example uses this variant
 
 const KNOWN = {
-  "c1 Easy D M6": ["note 16: book has 1:12 (engine skips)", "note 17: book has 1:10 (engine skips)"],
-  "c1 Intermediate D M6": ["note 16: book has 1:12 (engine skips)", "note 17: book has 1:10 (engine skips)", "bar lengths: engine 8,8,8,8, book 8,8,8,8,8"],
   "c1 Easy C I6": ["note 31: book has 5:7 (engine skips)", "note 31: engine has 6:12 (book skips)"],
-  "c3 Easy F": ["note 30: engine has 5:8 (book skips)", "note 76: book has 1:15 (engine skips)", "note 77: book has 1:13 (engine skips)", "bar lengths: engine 8,8,8,8,8,8,8,6,8,8,8,8, book 8,8,8,6,8,8,8,6,8,8,8,8"],
-  "c6 Easy C string 4": ["finger on note 3 (4:3): engine 2, book 1"],
+  "c3 Easy F": ["note 30: engine has 5:8 (book skips)", "bar lengths: engine 8,8,8,8,8,8,8,6,8,8,8,8, book 8,8,8,6,8,8,8,6,8,8,8,8"],
 };
 const WHY = {
-  "c1 Easy D M6": "book tops M6 one note past the p. 7 diagram (also p. 68 in F)",
-  "c1 Intermediate D M6": "same M6 top",
-  "c1 Easy C I6": "book descends through E on the 5th string, 7fr, outside I6",
-  "c3 Easy F": "p. 68 bar 4 drops F to fit 3/4; bar 10 the M6 top again",
-  "c6 Easy C string 4": "p. 71 prints 1 going up, 2 coming down",
+  "c1 Easy C I6": "book descends through E on the 5th string, 7fr, outside I6 (asked 2026-09-11, no ruling yet)",
+  "c3 Easy F": "p. 68 bar 4 drops F to keep continuous eighths in 3/4; the engine's join rule is under review",
 };
 
 function diff(a, b) {
@@ -105,12 +99,13 @@ withVariant(P6_3RD, () => {
   compare("c3 Easy F", E.perfZigzag(E.CONCEPTS[2].steps().slice(0, 6).map(c => c.p), "F"), C3, { bars: "8,8,8,6,8,8,8,6,8,8,8,8" });
 });
 
-/* ---- p. 71, concept 6: C major, quarter notes, fingers ---- */
+/* ---- p. 71, concept 6: C major, quarter notes, fingers. String 4's ascending F is printed
+   with finger 1; William confirmed it's a misprint for 2 (2026-09-11), so the fixture reads 2 ---- */
 const C6 = {
   1: "0@0 1@1 3@3 5@1 | 7@3 8@4 10@1 12@3 | 13@1 15@3 13@1 12@3 | 10@1 8@4 7@3 5@1 | 3@3 1@1 0@0",
   2: "0@0 1@1 3@3 5@1 | 6@2 8@4 10@1 12@3 | 13@1 15@3 13@1 12@3 | 10@1 8@4 6@2 5@1 | 3@3 1@1 0@0",
   3: "0@0 2@1 4@3 5@1 | 7@3 9@1 10@2 12@1 | 14@3 12@1 10@2 9@1 | 7@3 5@1 4@3 2@1 | 0@0",
-  4: "0@0 2@1 3@1 5@1 | 7@3 9@1 10@2 12@1 | 14@3 15@4 14@3 12@1 | 10@2 9@1 7@3 5@1 | 3@2 2@1 0@0",
+  4: "0@0 2@1 3@2 5@1 | 7@3 9@1 10@2 12@1 | 14@3 15@4 14@3 12@1 | 10@2 9@1 7@3 5@1 | 3@2 2@1 0@0",
   5: "0@0 2@1 3@2 5@1 | 7@3 8@1 10@3 12@1 | 14@3 15@4 14@3 12@1 | 10@3 8@1 7@3 5@1 | 3@2 2@1 0@0",
   6: "0@0 1@1 3@3 5@1 | 7@3 8@4 10@1 12@3 | 13@1 15@3 13@1 12@3 | 10@1 8@4 7@3 5@1 | 3@3 1@1 0@0",
 };
