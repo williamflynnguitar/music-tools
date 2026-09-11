@@ -17,6 +17,11 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Six movable major-scale fingerings with notation.">
 <style>
+/* Repeated taps must not hand the browser a double-tap zoom (Sep 2026):
+   tapping a chord twice to hear it again zoomed the page on iOS and the
+   controls had to be pinched back out. Pinch zoom is untouched. */
+button,[data-band]{touch-action:manipulation}
+
   :root {
     --ink: #0a1a20;
     --petrol: #10303a;

@@ -17,6 +17,11 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Swing comping rhythms, one family at a time.">
 <style>
+/* Repeated taps must not hand the browser a double-tap zoom (Sep 2026):
+   tapping a chord twice to hear it again zoomed the page on iOS and the
+   controls had to be pinched back out. Pinch zoom is untouched. */
+button,.choices .bar,.check{touch-action:manipulation}
+
 :root{
   --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
   --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a;
