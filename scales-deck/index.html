@@ -42,6 +42,7 @@
   .opt { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; color: var(--bone-dim); }
   .opt select, .opt input { font-family: var(--mono); font-size: 13px; color: var(--bone); background: var(--petrol); border: 1px solid var(--petrol-2); border-radius: 4px; padding: 6px 8px; }
   .opt input { width: 90px; }
+  .opt[hidden] { display: none; }   /* the flex rule above would otherwise override hidden */
   button { font-family: var(--mono); font-size: 13px; color: var(--bone); background: var(--petrol); border: 1px solid transparent; border-radius: 4px; padding: 8px 6px; cursor: pointer; line-height: 1.1; }
   button:hover { background: var(--petrol-2); }
   button:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
@@ -67,6 +68,25 @@
   .hint { font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 8px; }
   .legend { display: flex; gap: 18px; font-family: var(--mono); font-size: 11px; color: var(--bone-dim); margin-top: 10px; }
   .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+
+  .player { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 12px; padding: 12px 14px; background: var(--petrol); border-radius: 6px; }
+  .player[hidden] { display: none; }
+  .player .play { min-width: 108px; min-height: 46px; padding: 12px 16px; font-size: 15px; background: var(--petrol-2); }
+  .player .play.on { background: var(--brass); color: var(--ink); }
+  .player button { touch-action: manipulation; }
+  .player .toggles[hidden] { display: none; }
+  .player .finger { font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .player .finger b { display: inline-block; min-width: 1.5ch; margin-left: 8px; font-size: 26px; font-weight: 600; color: var(--brass); text-align: center; font-variant-numeric: tabular-nums; }
+  .player .tempo { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; color: var(--bone-dim); }
+  .player .tempo button { width: 44px; height: 44px; padding: 0; font-size: 18px; }
+  .player .bpm { font-variant-numeric: tabular-nums; font-size: 21px; color: var(--bone); min-width: 3ch; text-align: center; }
+  .player .toggles { display: flex; gap: 3px; }
+  .player .toggles button { min-height: 44px; padding: 10px 11px; }
+  .count { flex-basis: 100%; display: flex; flex-wrap: wrap; align-content: flex-start; align-items: center; gap: 4px; min-height: 58px; font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .count .lab { flex-basis: 100%; font-size: 12px; color: var(--bone-dim); }   /* a label row, then the eighths: the strip never rewraps mid-line */
+  .count .c { width: 28px; padding: 5px 0; border-radius: 3px; text-align: center; color: var(--bone-dim); background: var(--ink); }
+  .count .c.and { color: #7f8c86; }
+  .count .c.on { background: var(--brass); color: var(--ink); }
 </style>
 </head>
 <body>
@@ -157,8 +177,16 @@
   </aside>
   <main>
     <div class="card" id="card"></div>
+    <div class="player" id="player" hidden>
+      <button class="play" id="play">▶ Play</button>
+      <div class="tempo"><button id="slower" aria-label="Slower">−</button><span class="bpm" id="bpm" aria-live="polite">100</span><button id="faster" aria-label="Faster">+</button><span>BPM</span></div>
+      <div class="toggles" id="feel" role="group" aria-label="Eighths"><button id="straight" aria-pressed="true">Straight</button><button id="swing" aria-pressed="false">Swing</button></div>
+      <div class="toggles"><button id="clicks" aria-pressed="true">Click on 2 &amp; 4</button></div>
+      <span class="finger" id="finger" hidden>finger<b id="fingerNum">–</b></span>
+      <div class="count" id="count" aria-hidden="true"></div>
+    </div>
     <nav><button id="prev">← Prev</button><div class="bar"><i id="fill"></i></div><button id="next">Next →</button></nav>
-    <p class="hint">← → step · Home restart</p>
+    <p class="hint">← → step · Home restart · Space play</p>
   </main>
 </div>
 
@@ -416,12 +444,17 @@ function svgShape(p, opts = {}) {
   // The bebop scales carry no fingerings (William's ruling) — label their dots
   // with scale degrees instead of leaving them blank.
   const noFingers = Object.values(SH()).every(sh => sh.notes.every(n => !n[2]));
-  const all = (showExt ? p.dots.concat(p.extended) : p.dots).concat(p.alts || []);
+  const drawn = (showExt ? p.dots.concat(p.extended) : p.dots).concat(p.alts || []);
+  // notes the card's line plays that the diagram wouldn't otherwise draw (Middle 6's 9th in Easy,
+  // an index reach) are drawn hollow like the computed notes, so every note the player lights is there
+  const extra = [];
+  for (const n of opts.also || []) if (!drawn.concat(extra).some(d => d.string === n.string && d.fret === n.fret)) extra.push(mkDot(p.key, n.string, n.fret, n.fingerIn || 0, { ext: true }));
+  const all = drawn.concat(extra);
   const minF = Math.min(...all.map(d => d.fret)), maxF = Math.max(...all.map(d => d.fret));
   const span = maxF - minF + 1, cw = 54, ch = 30, padL = 16, padT = 48, padR = 16, padB = 18;
   const W = padL + span * cw + padR, H = padT + 5 * ch + padB;
   const x = f => padL + (f - minF + 0.5) * cw, y = s => padT + (s - 1) * ch;
-  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} ${SCALE().name}, ${SH()[p.id].name}">`;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${p.key} ${SCALE().name}, ${SH()[p.id].name}" data-geom="shape" data-minf="${minF}" data-cw="${cw}" data-ch="${ch}" data-padl="${padL}" data-padt="${padT}">`;
   const nutCol = 1 - minF;
   if (nutCol < 0 || nutCol > 1) o += `<text x="${x(minF)}" y="${padT-30}" font-family="var(--mono)" font-size="12" fill="var(--brass)" text-anchor="middle">${minF}fr</text><line x1="${x(minF)}" y1="${padT-26}" x2="${x(minF)}" y2="${padT-17}" stroke="var(--brass)" stroke-width="1.5"/>`;
   for (let f = 0; f <= span; f++) { const fx = padL + f * cw, nut = f === nutCol; o += `<line x1="${fx}" y1="${y(1)}" x2="${fx}" y2="${y(6)}" stroke="${nut?'var(--bone)':'var(--bone-dim)'}" stroke-width="${nut?6:f===0||f===span?2.5:1}" opacity="${nut?.9:.7}"/>`; }
@@ -445,7 +478,7 @@ function svgStrings(key, strings, pairs = []) {    // horizontal lanes, frets 0�
   const cw = 40, ch = 34, padL = 30, padT = 26, padB = 14, span = NECK_TOP + 1;
   const W = padL + span * cw + 16, H = padT + (strings.length - 1) * ch + padB + 12;
   const x = f => padL + (f + 0.5) * cw, y = i => padT + i * ch;
-  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} ${SCALE().name} on string${strings.length>1?'s':''} ${strings.join(' and ')}">`;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${key} ${SCALE().name} on string${strings.length>1?'s':''} ${strings.join(' and ')}" data-geom="strings" data-strings="${strings.join(",")}" data-cw="${cw}" data-ch="${ch}" data-padl="${padL}" data-padt="${padT}">`;
   for (let f = 0; f <= NECK_TOP; f++) {
     o += `<line x1="${padL+f*cw}" y1="${y(0)-12}" x2="${padL+f*cw}" y2="${y(strings.length-1)+12}" stroke="var(--bone-dim)" stroke-width="${f===0?3:1}" opacity=".5"/>`;
     if ([3,5,7,9,12,15,17].includes(f)) o += `<text x="${x(f)}" y="${H-2}" font-family="var(--mono)" font-size="11" fill="var(--bone-dim)" text-anchor="middle">${f}</text>`;
@@ -494,7 +527,13 @@ const CONCEPTS = [
        return inScale.map((k, i) => {
          const fn = SCALE().degrees[degreeOf(k, PC[state.key])];
          const c = allPlacements(k, "desc").filter(p => p.dots.some(d => d.string === 1 && d.fret === top));
-         const p = (i === 0 ? c.find(x => basePos(x.id) === "P6") : null) || nearest(c, prev) || place(posId("P6", "desc"), k); prev = p;
+         const first = SCALE().cycle[0];                  // Pinky 6, or Ring 6 in half-whole (which has no Pinky 6)
+         // no fingering holds the note as a dot (the 9th of Middle 6 in dorian and the minors): take one
+         // whose window holds it, the cycle's own fingering for this key's step first, as p. 67 cycles them
+         const held = c.length ? [] : allPlacements(k, "desc").filter(x => x.dots.concat(x.extended).some(d => d.string === 1 && d.fret === top));
+         const own = SCALE().cycle[keysFrom(state.key).indexOf(k) % SCALE().cycle.length];
+         const p = (i === 0 ? c.find(x => basePos(x.id) === first) : null) || nearest(c, prev)
+           || held.find(x => basePos(x.id) === own) || nearest(held, prev) || place(posId(first, "desc"), k); prev = p;
          return { p, key: k, shape: p.id, sub: `Step ${i+1} of ${inScale.length} · start on ${state.key} (1st string, ${top}fr), here degree ${fn}`,
            opts: { dim: d => d.string < 1, ring: d => d.string === 1 && d.fret === top },
            flag: skipped ? `${skipped} of 6 keys skipped: the held ${state.key} is not in their ${SCALE().name.toLowerCase()} scale` : "",
@@ -547,7 +586,7 @@ const CONCEPTS = [
      return base.map(s => Object.assign({}, s, { opts: { ext: false, dim: upper(s.p), ring: s.opts.ring }, sub: s.sub.replace(/Step/, "1-octave · step"),
        instr: `Play only the upper octave: start on the ${SH()[s.p.id].rootString === 6 ? "4th" : "3rd"} string root and go up. ` + (saved.startsWith("Advanced") ? tierText(saved) : "") })); } },
  { n: 6, name: "Horizontal scales on a single string", tiers: ["Easy","Intermediate / Advanced"],
-   steps() { return [1,2,3,4,5,6].map((s, i) => ({ svg: svgStrings(state.key, [s]), key: state.key, shape: `string ${s}`, sub: `String ${s} of 6 · lowest ${state.key} major note first`,
+   steps() { return [1,2,3,4,5,6].map((s, i) => ({ svg: svgStrings(state.key, [s]), string: s, key: state.key, shape: `string ${s}`, sub: `String ${s} of 6 · lowest ${state.key} major note first`,
      instr: state.tier === "Easy" ? `Play up and down the scale entirely on this string to around the 12th–15th fret. Shift logically: open space above the index when moving up, below the pinky or ring when moving down.` : `Play ${TXT.int(state.interval)} and the pattern ${state.pattern} along this one string. Large shifts are the point.` })); } },
  { n: 7, name: "Horizontal intervals across two strings", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
@@ -804,6 +843,42 @@ function stringFingers(fr) {
   plan.gs.forEach(g => g.forEach(f => fingers.set(f, [1, 2, 3, 4][f - g[0]])));
   return { fingers, flags, groups: plan.gs };
 }
+// what a card plays, or null where there is no line yet: concepts 1 and 2 on every tier; concept 3
+// on Easy, the zigzag from this card's pair up the neck (card index = first + note.pos); concept 6
+// on Easy
+function cardPerformance(n, cards, i, tier, key) {
+  const card = cards[i];
+  if (!card) return null;
+  if (n === 1 && card.p) return { perf: perfPosition(card.p, tier), first: i };
+  if (n === 2 && card.p && card.opts && card.opts.ring) {
+    const ring = card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d));
+    return ring ? { perf: perfDescending(card.p, tier, ring), first: i } : null;
+  }
+  if (n === 3 && tier === "Easy" && card.p) { const first = i - i % 2; return { perf: perfZigzag(cards.slice(first).map(c => c.p), key), first }; }
+  if (n === 6 && tier === "Easy" && card.string) return { perf: perfString(key, card.string), first: i };
+  return null;
+}
+// the audio timeline of a performance, in seconds from the first count-in click: one bar of four
+// quarter-note clicks (accent on 1), then the line; clicks on beats 2 and 4 of every bar when on
+// (a 3/4 bar has only beat 2); eighths straight, or swung long-short 2:1 inside each beat
+function schedule(perf, bpm, swing, clicks) {
+  const spb = 60 / bpm, perBeat = perf.unit / 4, events = [], slots = [];
+  for (let k = 0; k < 4; k++) events.push({ t: k * spb, kind: "count", beat: k + 1, accent: k === 0 });
+  let t = 4 * spb;
+  perf.bars.forEach((b, bar) => {
+    for (let i = 0; i < b.len; i++) {
+      slots.push(t);
+      events.push({ t, kind: "slot", bar, slot: i, len: b.len });
+      if (clicks && i % perBeat === 0 && (i / perBeat === 1 || i / perBeat === 3)) events.push({ t, kind: "click" });
+      t += perf.unit === 8 ? (swing ? (i % 2 ? 1 / 3 : 2 / 3) : 1 / 2) * spb : spb;
+    }
+  });
+  slots.push(t);
+  let at = 0;
+  perf.bars.forEach(b => b.notes.forEach(n => { events.push({ t: slots[at], kind: "note", note: n, dur: slots[at + n.dur] - slots[at] }); at += n.dur; }));
+  const order = { count: 0, slot: 1, note: 2, click: 3 };
+  return { events: events.sort((a, b) => a.t - b.t || order[a.kind] - order[b.kind]), end: t };
+}
 /* ===== end note path engine ===== */
 
 /* ---------- state + ui ---------- */
@@ -821,21 +896,36 @@ function rebuild(resetIndex) {
   seg(document.getElementById("keys"), KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; rebuild(true); });
   seg(document.getElementById("concepts"), CONCEPTS.map((x, i) => ({ id: i, label: x.name, n: x.n })), state.concept, i => { state.concept = i; rebuild(true); }, true);
   seg(document.getElementById("tiers"), c.tiers.map(t => ({ id: t, label: t })), state.tier, t => { state.tier = t; rebuild(true); });
-  const needInt = state.tier.startsWith("Advanced 1") || (c.n === 7 && state.tier !== "Easy") || (c.n === 6 && state.tier !== "Easy");
-  const needPat = state.tier.startsWith("Advanced 2") || (c.n === 6 && state.tier !== "Easy");
+  const readsTier = c.n !== 4 && c.n !== 8;                // concepts 4 and 8 don't use the interval or pattern
+  const needInt = (state.tier.startsWith("Advanced 1") && readsTier) || (c.n === 7 && state.tier !== "Easy") || (c.n === 6 && state.tier !== "Easy");
+  const needPat = (state.tier.startsWith("Advanced 2") && readsTier) || (c.n === 6 && state.tier !== "Easy");
   document.getElementById("optInterval").hidden = !needInt; document.getElementById("optPattern").hidden = !needPat;
   steps = c.steps();
   if (resetIndex) state.i = 0; else state.i = Math.min(state.i, steps.length - 1);
   show();
 }
-function show() {
+function show(keepPlaying) {
+  if (!keepPlaying) stopPlayer();
   const s = steps[state.i], c = CONCEPTS[state.concept], card = document.getElementById("card");
-  const visual = s.text ? "" : s.svg ? s.svg : svgShape(s.p, s.opts);
+  if (!keepPlaying) card.style.minHeight = "";
+  if (!keepPlaying) current = cardPerformance(c.n, steps, state.i, state.tier, state.key);
+  const line = keepPlaying && player.run ? player.run.path : current;
+  const also = line && s.p ? line.perf.bars.flatMap(b => b.notes).filter(n => line.first + n.pos === state.i) : [];
+  const visual = s.text ? "" : s.svg ? s.svg : svgShape(s.p, Object.assign({}, s.opts, { also }));
   card.innerHTML = `<header><span class="where">${c.n}. ${c.name} · ${state.tier}</span><span class="where">${state.i+1} / ${steps.length}</span></header>
     <p class="title"><span class="key">${s.key}</span><span class="name">${SCALE().name.toLowerCase()}</span><span class="shape">${s.shape}</span></p>
     <p class="sub">${s.sub}</p>${visual}<p class="instr">${s.instr}</p>${s.flag ? `<p class="flag">${s.flag}</p>` : ""}
     ${s.p ? `<div class="legend"><span><i style="background:var(--brass)"></i>root</span><span><i style="background:var(--bone)"></i>book dot</span>${SCALE().passing != null ? `<span><i style="background:var(--bone);border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></i>passing tone (diamond)</span>` : ""}${s.p.alts && s.p.alts.length ? `<span><i style="border:1.5px dashed var(--bone)"></i>either string, your call</span>` : ""}${s.opts && s.opts.ext ? `<span><i style="border:1.5px solid var(--bone)"></i>below the root (computed)</span>` : ""}${s.opts && s.opts.ring ? `<span><i style="border:2px solid var(--brass)"></i>start here</span>` : ""}</div>` : ""}`;
-  const sh = s.p && SH()[s.p.id], fsV = document.getElementById("fsVariant");
+  if (!keepPlaying) syncVariant(s); else holdLayout(card);   // mid-line, nothing above or below the card moves
+  document.getElementById("player").hidden = !current;
+  if (current) document.getElementById("feel").hidden = current.perf.unit === 4;   // quarter-note lines have nothing to swing
+  document.getElementById("finger").hidden = !(current && c.n === 6);              // shown before Play too, so the bar doesn't reflow
+  document.getElementById("fill").style.width = `${(state.i + 1) / steps.length * 100}%`;
+  document.getElementById("prev").disabled = state.i === 0;
+  document.getElementById("next").disabled = state.i === steps.length - 1;
+}
+function syncVariant(s) {
+  const sh = s && s.p && SH()[s.p.id], fsV = document.getElementById("fsVariant");
   fsV.hidden = !(sh && sh.variants);
   if (sh && sh.variants) {
     const key = state.scale + ":" + s.p.id;
@@ -844,19 +934,217 @@ function show() {
         state.variants[key] || "",
         v => { if (v) state.variants[key] = v; else delete state.variants[key]; rebuild(false); });
   }
-  document.getElementById("fill").style.width = `${(state.i + 1) / steps.length * 100}%`;
-  document.getElementById("prev").disabled = state.i === 0;
-  document.getElementById("next").disabled = state.i === steps.length - 1;
 }
 document.getElementById("prev").addEventListener("click", () => { if (state.i > 0) { state.i--; show(); } });
 document.getElementById("next").addEventListener("click", () => { if (state.i < steps.length - 1) { state.i++; show(); } });
 document.getElementById("interval").addEventListener("change", e => { state.interval = +e.target.value; rebuild(false); });
 document.getElementById("pattern").addEventListener("input", e => { state.pattern = e.target.value.trim() || "1231"; rebuild(false); });
+
+/* ---------- player: the card's line, heard and seen ----------
+   Web Audio lookahead scheduler (25 ms tick, 120 ms ahead) over schedule()'s timeline; the
+   diagram highlight and the count strip read the audio clock, never the reverse. One card at a
+   time; concept 3 plays the zigzag from this card's pair up the neck and the card follows the
+   hand. Tempo, feel and click live in memory only. */
+const SVGNS = "http://www.w3.org/2000/svg";
+const player = { bpm: 100, swing: false, clicks: true, timer: 0, raf: 0, run: null };
+let current = null, ac = null, silentEl = null, wakeLock = null;
+const audio = () => {
+  if (ac) return ac;
+  // iOS 17+: a "playback" session so the ringer/silent switch doesn't mute Web Audio
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  return (ac = new (window.AudioContext || window.webkitAudioContext)());
+};
+// inside the Play tap (two-and-four's unlock): resume from any non-running state (iOS reports
+// "interrupted" after a call, an alarm or a screen lock), start a silent buffer, and loop a silent
+// <audio> so the ringer switch doesn't mute Web Audio on Safari before 17
+function unlockAudio(c) {
+  if (c.state !== "running") c.resume();
+  try { const b = c.createBuffer(1, 1, c.sampleRate), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch (e) {}
+  try {
+    if (!silentEl) { silentEl = new Audio("data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA=="); silentEl.loop = true; }
+    const p = silentEl.play(); if (p && p.catch) p.catch(() => {});
+  } catch (e) {}
+}
+const silentStop = () => { try { if (silentEl) silentEl.pause(); } catch (e) {} };
+// keep the screen awake while a line plays: a student with the guitar in hand doesn't touch the phone
+async function requestWake() {
+  if (!("wakeLock" in navigator) || wakeLock || document.visibilityState !== "visible") return;
+  try {
+    const lock = await navigator.wakeLock.request("screen");
+    if (!player.run || wakeLock) { lock.release(); return; }   // stopped, or another request won, while this one waited
+    wakeLock = lock;
+    lock.addEventListener("release", () => { if (wakeLock === lock) wakeLock = null; });   // hiding the page releases it
+  } catch (e) {}
+}
+function releaseWake() { const lock = wakeLock; wakeLock = null; try { if (lock) lock.release().catch(() => {}); } catch (e) {} }
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || !player.run) return;
+  requestWake();
+  if (ac && ac.state !== "running") ac.resume();          // allowed without a gesture once unlocked
+});
+// the audio clock as heard: less the output latency (Bluetooth can add 0.2 s), from
+// getOutputTimestamp when it agrees with currentTime to within half a second
+function heardTime(c) {
+  let heard = c.currentTime - (c.outputLatency || 0);
+  if (c.getOutputTimestamp) {
+    const o = c.getOutputTimestamp();
+    if (o.performanceTime > 0) { const h = o.contextTime + (performance.now() - o.performanceTime) / 1000; if (Math.abs(h - heard) < .5) heard = h; }
+  }
+  return heard;
+}
+function pluck(midi, t, dur, out) {
+  const c = audio(), f = 440 * Math.pow(2, (midi - 69) / 12), end = t + Math.max(dur, .12);
+  const o = c.createOscillator(), o2 = c.createOscillator(), g2 = c.createGain(), lp = c.createBiquadFilter(), g = c.createGain();
+  o.type = "triangle"; o.frequency.value = f; o2.type = "sine"; o2.frequency.value = f * 2; g2.gain.value = .16;
+  lp.type = "lowpass"; lp.frequency.setValueAtTime(Math.min(f * 9, 12000), t); lp.frequency.exponentialRampToValueAtTime(f * 2.2, t + .35);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.24, t + .005);
+  g.gain.exponentialRampToValueAtTime(.07, t + Math.max(.02, Math.min(dur * .5, .22))); g.gain.exponentialRampToValueAtTime(.0008, end);
+  o.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(out || c.destination);
+  o.start(t); o2.start(t); o.stop(end + .05); o2.stop(end + .05);
+}
+function tick(t, accent, out) {
+  const c = audio(), o = c.createOscillator(), g = c.createGain();
+  o.type = "square"; o.frequency.value = accent ? 2100 : 1550;
+  g.gain.setValueAtTime(accent ? .2 : .12, t); g.gain.exponentialRampToValueAtTime(.001, t + .04);
+  o.connect(g); g.connect(out || c.destination); o.start(t); o.stop(t + .05);
+}
+function stopPlayer() {
+  const run = player.run;
+  clearInterval(player.timer); cancelAnimationFrame(player.raf);
+  player.timer = 0; player.run = null;
+  if (run && ac) {                                         // fade whatever is still sounding or already queued
+    run.bus.gain.setTargetAtTime(0, ac.currentTime, .015);
+    setTimeout(() => { try { run.bus.disconnect(); } catch (e) {} }, 500);
+  }
+  const b = document.getElementById("play");
+  if (b) { b.textContent = "▶ Play"; b.classList.remove("on"); }
+  const g = document.querySelector("#card .now"); if (g) g.remove();
+  const fn = document.getElementById("fingerNum"); if (fn) fn.textContent = "–";
+  paintCount(null);
+  releaseWake(); silentStop();
+  if (run && CONCEPTS[state.concept].n === 3 && steps[state.i]) syncVariant(steps[state.i]);   // concept 3 may have turned cards
+}
+function startPlayer() {
+  current = cardPerformance(CONCEPTS[state.concept].n, steps, state.i, state.tier, state.key);   // the card on screen now
+  if (!current) return;
+  stopPlayer();
+  const c = audio();
+  unlockAudio(c);
+  const sch = schedule(current.perf, player.bpm, player.swing, true);   // clicks are gated as they're queued, so the toggle is live
+  const bus = c.createGain(); bus.connect(c.destination);
+  const run = player.run = { path: current, t0: c.currentTime + .12, events: sch.events, next: 0, cue: 0, bus };
+  run.end = run.t0 + sch.end + .25;
+  const card = document.getElementById("card"), svg = card.querySelector("svg[data-geom]");
+  run.svgH = svg ? svg.getBoundingClientRect().height : 0; run.cardH = card.offsetHeight;
+  const b = document.getElementById("play"); b.textContent = "■ Stop"; b.classList.add("on");
+  requestWake();
+  player.timer = setInterval(() => {
+    const now = c.currentTime;
+    while (run.next < run.events.length && run.t0 + run.events[run.next].t < now + .12) {
+      const e = run.events[run.next++], at = run.t0 + e.t;
+      if (e.kind === "note") pluck(e.note.midi, at, e.dur * .95, bus);
+      else if (e.kind === "count") tick(at, e.accent, bus);
+      else if (e.kind === "click" && player.clicks) tick(at, false, bus);
+    }
+    if (run.next >= run.events.length && now > run.end) stopPlayer();
+  }, 25);
+  const draw = () => {
+    if (player.run !== run) return;
+    const now = heardTime(c) - run.t0;
+    let note = null, slot = null;
+    while (run.cue < run.events.length && run.events[run.cue].t <= now) {
+      const e = run.events[run.cue++];
+      if (e.kind === "note") note = e.note; else if (e.kind === "slot" || e.kind === "count") slot = e;
+    }
+    if (note) paintNote(run, note);
+    if (slot) paintCount(slot, run);
+    player.raf = requestAnimationFrame(draw);
+  };
+  player.raf = requestAnimationFrame(draw);
+}
+// tempo or feel changed mid-line: re-time the rest from the first bar line not yet queued; during
+// the count-in, start again so the count-in is at the new setting
+function retime() {
+  const run = player.run;
+  if (!run) return;
+  const at = run.events.findIndex((e, i) => i >= run.next && e.kind === "slot" && e.slot === 0);
+  if (at < 0) return;                                      // the last bar is already queued
+  const bar = run.events[at];
+  if (bar.bar === 0) { startPlayer(); return; }
+  const fresh = schedule(run.path.perf, player.bpm, player.swing, true);
+  const from = fresh.events.find(e => e.kind === "slot" && e.slot === 0 && e.bar === bar.bar), shift = bar.t - from.t;
+  run.events = run.events.slice(0, at).concat(fresh.events.filter(e => e.t >= from.t).map(e => Object.assign({}, e, { t: e.t + shift })));
+  run.cue = Math.min(run.cue, at);
+  run.end = run.t0 + fresh.end + shift + .25;
+}
+// concept 3 turns cards mid-line: hold the diagram's height and never let the card shrink, so the
+// Play bar and Prev/Next stay where the hand reaches for them
+function holdLayout(card) {
+  const run = player.run;
+  if (!run) return;
+  const svg = card.querySelector("svg[data-geom]");
+  if (svg && run.svgH) svg.style.height = run.svgH + "px";
+  run.cardH = Math.max(run.cardH, card.offsetHeight);
+  card.style.minHeight = run.cardH + "px";
+}
+// light the note on the card's diagram; concept 3 turns to the card of the placement the hand is in
+function paintNote(run, n) {
+  const c = CONCEPTS[state.concept];
+  if (c.n === 3 && state.i !== run.path.first + n.pos) { state.i = run.path.first + n.pos; show(true); }
+  const svg = document.querySelector("#card svg[data-geom]");
+  if (!svg) return;
+  const d = svg.dataset, row = d.geom === "strings" ? d.strings.split(",").map(Number).indexOf(n.string) : n.string - 1;
+  const x = +d.padl + (n.fret - (d.geom === "shape" ? +d.minf : 0) + .5) * +d.cw, y = +d.padt + row * +d.ch;
+  let g = svg.querySelector(".now");
+  if (!g) {
+    g = document.createElementNS(SVGNS, "g"); g.setAttribute("class", "now");
+    const ring = document.createElementNS(SVGNS, "circle"), lab = document.createElementNS(SVGNS, "text");
+    [["r", 17], ["fill", "var(--brass)"], ["fill-opacity", .3], ["stroke", "var(--brass)"], ["stroke-width", 2.5]].forEach(([k, v]) => ring.setAttribute(k, v));
+    [["x", 15], ["y", -13], ["font-family", "var(--mono)"], ["font-size", 14], ["font-weight", 700], ["fill", "var(--brass)"]].forEach(([k, v]) => lab.setAttribute(k, v));
+    g.append(ring, lab); svg.appendChild(g);
+  }
+  g.setAttribute("transform", `translate(${x} ${y})`);
+  // fingers only where they're the lesson: the shifts in concept 3, every note on one string in concept 6
+  g.lastChild.textContent = (c.n === 3 || c.n === 6) && n.finger != null ? String(n.finger) : "";
+  // on a phone concept 6's lane is 19 px tall: the finger again, large, in the Play bar (0 = open, as p. 71 prints it)
+  if (c.n === 6 && n.finger != null) document.getElementById("fingerNum").textContent = n.finger;
+}
+// the count strip: this bar's eighths (or the count-in's four beats), the current one lit
+function paintCount(e, run) {
+  const el = document.getElementById("count");
+  if (!el) return;
+  if (!e) { el.innerHTML = ""; el.dataset.bar = ""; return; }
+  const unit = run ? run.path.perf.unit : 8, id = e.kind === "count" ? "in" : String(e.bar);
+  if (el.dataset.bar !== id) {
+    el.dataset.bar = id;
+    const labels = e.kind === "count" ? ["1", "2", "3", "4"] : Array.from({ length: e.len }, (_, i) => unit === 8 ? (i % 2 ? "&" : String(i / 2 + 1)) : String(i + 1));
+    const meter = e.kind === "slot" && e.len !== unit ? ` · ${unit === 8 ? e.len / 2 : e.len}/4` : "";
+    el.innerHTML = `<span class="lab">${e.kind === "count" ? "count-in" : `bar ${e.bar + 1}${meter}`}</span>` + labels.map(l => `<span class="c${l === "&" ? " and" : ""}">${l}</span>`).join("");
+  }
+  const k = e.kind === "count" ? e.beat - 1 : e.slot;
+  el.querySelectorAll(".c").forEach((cell, i) => cell.classList.toggle("on", i === k));
+}
+const setBpm = v => { player.bpm = Math.max(40, Math.min(240, v)); document.getElementById("bpm").textContent = player.bpm; retime(); };
+document.getElementById("play").addEventListener("click", () => player.run ? stopPlayer() : startPlayer());
+document.getElementById("slower").addEventListener("click", () => setBpm(player.bpm - 4));
+document.getElementById("faster").addEventListener("click", () => setBpm(player.bpm + 4));
+[["straight", false], ["swing", true]].forEach(([id, sw]) => document.getElementById(id).addEventListener("click", () => {
+  const changed = player.swing !== sw; player.swing = sw;
+  document.getElementById("straight").setAttribute("aria-pressed", String(!sw));
+  document.getElementById("swing").setAttribute("aria-pressed", String(sw));
+  if (changed) retime();
+}));
+// a mouse or touch click leaves focus on its button, where Space would click it again: drop that
+// focus so Space plays (keyboard activations have detail 0 and keep theirs)
+document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("button"); if (b && b.id !== "play" && e.detail > 0) b.blur(); });
+document.getElementById("clicks").addEventListener("click", e => { player.clicks = !player.clicks; e.currentTarget.setAttribute("aria-pressed", String(player.clicks)); });
+
 document.addEventListener("keydown", e => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
   if (e.key === "ArrowRight") document.getElementById("next").click();
   if (e.key === "ArrowLeft") document.getElementById("prev").click();
   if (e.key === "Home") { state.i = 0; show(); }
+  if (e.key === " " && e.target.tagName !== "BUTTON" && !document.getElementById("player").hidden) { e.preventDefault(); document.getElementById("play").click(); }
 });
 rebuild(true);
 </script>

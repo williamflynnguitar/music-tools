@@ -1,10 +1,13 @@
-// node check.js — headless checks for the Scale Practice note path engine.
+// node check.js — headless checks for the Scale Practice note path engine and player timeline.
 // Loads the deck's own script from index.html (data, placements, concepts, engine) and:
 //  1. replays the printed examples note for note: p. 65–66 concept 1 (six keys, Easy and
 //     Intermediate), p. 67 concept 2 (hold C through six keys), p. 68 concept 3 (F, three
 //     pairs, bar lengths), p. 71 concept 6 (C, six strings, fingers), with William's misprint
-//     corrections; plus his concept 6 picks for strings p. 71 can't settle
+//     corrections; plus his concept 6 picks for strings p. 71 can't settle, and the concept 2
+//     Easy fallback pinned where p. 67's cycle decides it
 //  2. sweeps every scale × key × fingering (× variant):
+//     - every concept builds its cards on every tier; every card that should play gets exactly its
+//       own line (compared with a direct call to the engine)
 //     - concept 1 Easy/Intermediate move by scale step
 //     - Advanced tiers (concepts 1 and 2) follow an independent statement of William's turn rule
 //       note for note, keep every 2- and 4-note group on the beat, repeat nothing across a turn,
@@ -14,12 +17,16 @@
 //       nothing mid-line, and shows fingers on both notes of every shift (none in bebop scales)
 //     - concept 6 finds a fingering on every string; its run and shift counts are pinned, so a
 //       ranking change fails
-// Differences William hasn't ruled on go in KNOWN and are reported, not failed.
+//  3. checks the player's audio timeline against hand-worked times: count-in, straight and swung
+//     eighths and their lengths, clicks on 2 and 4 of every bar (a 3/4 bar has only beat 2),
+//     quarter-note lines, the final note's length
+// Differences William hasn't ruled on go in KNOWN and are reported, not failed. The UI half of
+// the player (audio nodes, highlight, controls) isn't loaded here.
 const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const main = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ---------- state + ui ---------- */")[0];
 const state = { scale: "major", key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0, variants: {} };
-const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, stringFingers, midiOf };")(state);
+const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, stringFingers, midiOf, cardPerformance, schedule };")(state);
 
 const tok = n => `${n.string}:${n.fret}`;
 const flat = perf => perf.bars.flatMap(b => b.notes);
@@ -92,6 +99,12 @@ withVariant(P6_3RD, () => {
     compare(`c2 Easy C→${k} ${sh}`, E.perfDescending(p, "Easy", ring), book, { bars });
   });
 });
+// where no fingering holds the note as a dot, the card takes the cycle's fingering for that key if its
+// window holds the note: dorian C card 3 (Bb) holds C as Middle 6's 9th
+state.scale = "dorian"; state.key = "C"; state.tier = "Easy";
+{ const c3 = E.CONCEPTS[1].steps()[2];
+  if (c3 && E.basePos(c3.p.id) === "M6") pass++; else { fail++; console.log(`FAIL   c2 Easy dorian C card 3 shows ${c3 && c3.p.id}; expected M6, the cycle's fingering whose window holds the C`); } }
+state.scale = "major"; state.key = "F";
 
 /* ---- p. 68, concept 3: F major, the three printed up/down pairs ---- */
 const C3 = "6:1 6:3 6:5 5:1 5:3 5:5 4:2 4:3 | 4:5 3:2 3:3 3:5 2:3 2:5 2:6 1:3 | 1:5 1:6 1:8 1:6 1:5 2:8 2:6 2:5 | 3:7 3:5 4:8 4:7 4:5 5:7 | " +
@@ -155,7 +168,8 @@ function ruleWalk(turns, digits) {
     const dir = a < b ? 1 : -1; let played = false;
     for (let s = a; dir > 0 ? s + span <= b : s - span >= b; s += dir) {
       const g = digits.map(d => s + dir * (d - 1));
-      if ((before && s === a) || (t === last && g[g.length - 1] === b)) { if (t === last && g[g.length - 1] === b) break; continue; }
+      if (before && s === a) continue;
+      if (t === last && g[g.length - 1] === b) break;
       if (!played && out.length && out[out.length - 1] === g[0]) continue;
       out.push(...g); played = true;
     }
@@ -188,7 +202,15 @@ function advancedChecks(label, ns, L, turns, digits, key) {
   }
   return out;
 }
-let paths = 0, advLines = 0, c2Lines = 0, zigzags = 0; const sweep = [];
+// what a card must play, straight from the engine (cardPerformance has to agree)
+function expectedLine(n, cards, i, tier, key) {
+  const card = cards[i];
+  if (n === 1) return { perf: E.perfPosition(card.p, tier), first: i };
+  if (n === 2) return { perf: E.perfDescending(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d))), first: i };
+  if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key), first: i - i % 2 };
+  return { perf: E.perfString(key, card.string), first: i };
+}
+let paths = 0, advLines = 0, c2Lines = 0, zigzags = 0, cardLines = 0, cardSets = 0; const sweep = [];
 const SIX_PINNED = { runs: 288, whole: 222, split: 66, longShift: 42 };   // 2026-09-11, 11 scales; a ranking change moves these
 const six = { runs: 0, whole: 0, split: 0, longShift: 0 };
 for (const sc of Object.keys(E.SCALES)) {
@@ -198,6 +220,21 @@ for (const sc of Object.keys(E.SCALES)) {
   for (const v of variants) withVariant(v, () => {
     for (const key of E.KEYS) {
       state.key = key;
+      // every concept builds its cards on every tier, and the cards that should play get exactly their line
+      for (const C of E.CONCEPTS) for (const tier of C.tiers) {
+        state.tier = tier; cardSets++;
+        let cards; try { cards = C.steps(); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key}: steps() throws ${e.message}`); continue; }
+        const plays = C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy");
+        cards.forEach((card, i) => {
+          let r; try { r = E.cardPerformance(C.n, cards, i, tier, key); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: cardPerformance throws ${e.message}`); return; }
+          if (plays !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
+          if (!r) return;
+          cardLines++;
+          r.perf.flags.forEach(f => sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${f}`));
+          if (JSON.stringify(r) !== JSON.stringify(expectedLine(C.n, cards, i, tier, key))) sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: plays something other than its own line`);
+        });
+      }
+      state.tier = "Easy";
       for (const id of E.SCALES[sc].cycle) {
         for (const tier of ["Easy", "Intermediate"]) {
           const ns = flat(E.perfPosition(E.place(id, key), tier)); paths++;
@@ -250,9 +287,40 @@ for (const sc of Object.keys(E.SCALES)) {
   });
 }
 Object.keys(SIX_PINNED).forEach(k => { if (six[k] !== SIX_PINNED[k]) sweep.push(`c6 count "${k}" is ${six[k]}, pinned at ${SIX_PINNED[k]}: the fingering ranking changed`); });
+
+/* ---- the player's audio timeline, against hand-worked times (120 BPM: a beat is 0.5 s) ---- */
+let timing = 0;
+{
+  const perf = { unit: 8, bars: [
+    { len: 8, notes: Array.from({ length: 8 }, (_, i) => ({ midi: 60 + i, dur: 1 })) },
+    { len: 6, notes: Array.from({ length: 5 }, (_, i) => ({ midi: 70 + i, dur: i === 4 ? 2 : 1 })) },   // a 3/4 bar, last note a quarter
+    { len: 8, notes: [{ midi: 60, dur: 8 }] },                                                          // the final note rings a whole bar
+  ] };
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  const expect = (label, got, want) => { if (got.length === want.length && got.every((t, i) => near(t, want[i]))) timing++; else sweep.push(`timeline ${label}: got ${got.map(t => +t.toFixed(3))}, want ${want.map(t => +t.toFixed(3))}`); };
+  const st = E.schedule(perf, 120, false, true), of = (s, k) => s.events.filter(e => e.kind === k);
+  expect("count-in: four quarter clicks", of(st, "count").map(e => e.t), [0, .5, 1, 1.5]);
+  expect("count-in accents beat 1 only", of(st, "count").map(e => e.accent ? 1 : 0), [1, 0, 0, 0]);
+  expect("straight eighths from beat 1 of bar 1", of(st, "note").map(e => e.t), [2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5, 5.5]);
+  expect("straight eighths last an eighth", of(st, "note").slice(0, 3).map(e => e.dur), [.25, .25, .25]);
+  expect("clicks on 2 and 4 of every bar (the 3/4 bar has only 2)", of(st, "click").map(e => e.t), [2.5, 3.5, 4.5, 6, 7]);
+  expect("note lengths: quarter at the end of the 3/4 bar, whole note to finish", of(st, "note").slice(-2).map(e => e.dur), [.5, 2]);
+  expect("one slot per eighth", [of(st, "slot").length], [22]);
+  expect("end of the line", [st.end], [7.5]);
+  const sw = E.schedule(perf, 120, true, false);
+  expect("swing: long-short 2:1 inside each beat", of(sw, "note").slice(0, 4).map(e => e.t), [2, 2 + 1 / 3, 2.5, 2.5 + 1 / 3]);
+  expect("swing: long eighths last 2/3 of a beat, short ones 1/3", of(sw, "note").slice(0, 2).map(e => e.dur), [1 / 3, 1 / 6]);
+  expect("swing keeps beats where straight has them", of(sw, "note").filter((e, i) => i % 2 === 0 && i < 8).map(e => e.t), [2, 2.5, 3, 3.5]);
+  expect("clicks off: no clicks, count-in stays", [of(sw, "click").length, of(sw, "count").length], [0, 4]);
+  const q = E.schedule({ unit: 4, bars: [{ len: 4, notes: [1, 2, 3, 4].map(m => ({ midi: m, dur: 1 })) }] }, 60, true, true);
+  expect("quarter-note lines (concept 6) ignore swing", of(q, "note").map(e => e.t), [4, 5, 6, 7]);
+  expect("quarter-note lines: notes a beat long", of(q, "note").map(e => e.dur), [1, 1, 1, 1]);
+  expect("quarter-note lines: count-in of four beats, clicks on 2 and 4", of(q, "count").map(e => e.t).concat(of(q, "click").map(e => e.t)), [0, 1, 2, 3, 5, 7]);
+}
+
 sweep.forEach(m => console.log("FAIL   " + m));
 fail += sweep.length;
 console.log(`\nprinted examples and picks: ${pass} match, ${known} known differences, ${fail - sweep.length} failed`);
-console.log(`sweeps: ${paths} concept 1 paths, ${advLines} Advanced lines, ${c2Lines} concept 2 lines above Easy, ${zigzags} zigzags, every string — ${sweep.length} failed`);
+console.log(`sweeps: ${cardSets} card sets (${cardLines} cards with a line), ${paths} concept 1 paths, ${advLines} Advanced lines, ${c2Lines} concept 2 lines above Easy, ${zigzags} zigzags, every string, ${timing} timeline checks — ${sweep.length} failed`);
 console.log(`concept 6: ${six.runs} strings with a chromatic run (every run in one position on ${six.whole}, a run split on ${six.split}); ${six.longShift} strings still shift more than 5 frets`);
 process.exit(fail ? 1 : 0);
