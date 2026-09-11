@@ -52,7 +52,8 @@ borrowing notes only where it makes sense, and heavy out-of-shape movement gets 
 shift rules for 3 and 6 are proposed here for his confirmation.
 Round 2 (same day): Middle 6 turns around on the 9th ("I almost always use that note as the
 turnaround note in the shape"), in every scale the step above its 1st-string root; the index
-reach is "an acceptable rule"; p. 71's ascending 4th-string F is a misprint for 2. Concept 3
+reach is "an acceptable rule"; p. 71's ascending 4th-string F is a misprint for 2, and p. 66's
+descending E on the 5th string, 7fr (C Index 6) is a misprint for the 6th string, 12fr. Concept 3
 must stay "one continuous exercise in eighth notes instead of a pause on a held note": the
 engine's hold-to-the-beat at the joins is rejected, and its replacement is under review.
 
@@ -82,17 +83,15 @@ engine's hold-to-the-beat at the joins is rejected, and its replacement is under
   (1–2 half step, 1–3 whole step, 1–4 augmented 2nd). An odd count puts three in one
   position; not the first if avoidable; fewest 1–2 pairs, then 1–3–4 over 1–2–4. This
   reproduces all six strings on p. 71.
-- **Printed examples**: 22 of 24 match note for note (p. 71's string-4 fixture reads 2, per
-  William). Known differences (`KNOWN` in check.js): C I6 descends through E on the 5th
-  string, 7fr (asked, no ruling yet); p. 68 bar 4 drops F to keep 3/4 in continuous eighths,
-  where the engine still holds E (join rule under review).
+- **Printed examples**: 23 of 24 match note for note (the p. 66 and p. 71 fixtures carry
+  William's misprint corrections). Known difference (`KNOWN` in check.js): p. 68 bar 4 drops
+  F to keep 3/4 in continuous eighths, where the engine still holds E (join rule under review).
 - **Deck issues found, not fixed**: concept 2 Easy picks placements that hold the ringed
   note as a *dot*, so Bb and Eb get I6/I5 where p. 67 cycles through M6/M5 (the note is
   in-window there). Every printed P6 example uses "B on 3rd string", not the deck's default.
 
 ## Open questions for William
 Whether the zigzag in concept 3 should start at the very lowest position or the lowest with a root on the 6th/5th string; the computed below-root fingers.
-Engine (proof 1 sent 2026-09-11; William asked to *see* the rest): the C I6 5th-string E;
-concept 3 joins without held notes (and the 2/4, 1/4 cut bars); interval/pattern turnarounds
+Engine (proof 1 sent 2026-09-11; William asked to *see* the rest): concept 3 joins without held notes (and the 2/4, 1/4 cut bars); interval/pattern turnarounds
 that push pairs off the beat, and bare-eighth endings; whether concept 2 above Easy returns
 to the root. He also asked what exactly the concept 6 rule confirmation means.

@@ -19,11 +19,9 @@ const withVariant = (v, f) => { const s = state.variants; state.variants = v; tr
 const P6_3RD = { "major:P6": "B on 3rd string" };   // every printed P6 example uses this variant
 
 const KNOWN = {
-  "c1 Easy C I6": ["note 31: book has 5:7 (engine skips)", "note 31: engine has 6:12 (book skips)"],
-  "c3 Easy F": ["note 30: engine has 5:8 (book skips)", "bar lengths: engine 8,8,8,8,8,8,8,6,8,8,8,8, book 8,8,8,6,8,8,8,6,8,8,8,8"],
+  "c3 Easy F":["note 30: engine has 5:8 (book skips)", "bar lengths: engine 8,8,8,8,8,8,8,6,8,8,8,8, book 8,8,8,6,8,8,8,6,8,8,8,8"],
 };
 const WHY = {
-  "c1 Easy C I6": "book descends through E on the 5th string, 7fr, outside I6 (asked 2026-09-11, no ruling yet)",
   "c3 Easy F": "p. 68 bar 4 drops F to keep continuous eighths in 3/4; the engine's join rule is under review",
 };
 
@@ -57,7 +55,8 @@ const C1 = [
   ["A", "P5", "5:12 4:9 4:11 4:12 3:9 3:11 2:9 2:10 | 2:12 1:9 1:10 1:12 1:10 1:9 2:12 2:10 | 2:9 3:11 3:9 4:12 4:11 4:9 5:12 (5:11 | 5:9 6:12 6:10 6:9 6:10 6:12 5:9 5:11 | 5:12)"],
   ["D", "M6", "6:10 6:12 5:9 5:10 5:12 4:9 4:11 4:12 | 3:9 3:11 3:12 2:10 2:12 1:9 1:10 1:12 | 1:10 1:9 2:12 2:10 3:12 3:11 3:9 4:12 | 4:11 4:9 5:12 5:10 5:9 6:12 6:10 (6:9 | 6:10)"],
   ["G", "M5", "5:10 5:12 4:9 4:10 4:12 3:9 3:11 3:12 | 2:10 2:12 2:13 1:10 1:12 1:10 2:13 2:12 | 2:10 3:12 3:11 3:9 4:12 4:10 4:9 5:12 | 5:10 (5:9 6:12 6:10 6:8 6:10 6:12 5:9 | 5:10)"],
-  ["C", "I6", "6:8 6:10 6:12 5:8 5:10 5:12 4:9 4:10 | 4:12 3:9 3:10 3:12 2:10 2:12 2:13 1:10 | 1:12 1:10 2:13 2:12 2:10 3:12 3:10 3:9 | 4:12 4:10 4:9 5:12 5:10 5:8 5:7 6:10 | 6:8"],
+  // p. 66 prints bar 4's E on the 5th string, 7fr; William confirmed it's a misprint for 6th string, 12fr (2026-09-11)
+  ["C", "I6", "6:8 6:10 6:12 5:8 5:10 5:12 4:9 4:10 | 4:12 3:9 3:10 3:12 2:10 2:12 2:13 1:10 | 1:12 1:10 2:13 2:12 2:10 3:12 3:10 3:9 | 4:12 4:10 4:9 5:12 5:10 5:8 6:12 6:10 | 6:8"],
   ["F", "I5", "5:8 5:10 5:12 4:8 4:10 4:12 3:9 3:10 | 3:12 2:10 2:11 2:13 1:10 1:12 1:13 1:12 | 1:10 2:13 2:11 2:10 3:12 3:10 3:9 4:12 | 4:10 4:8 5:12 5:10 5:8 (6:12 6:10 6:8 | 6:10 6:12 5:8)"],
 ];
 state.scale = "major"; state.key = "E";
