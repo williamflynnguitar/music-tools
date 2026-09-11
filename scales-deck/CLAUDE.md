@@ -62,6 +62,9 @@ William's rulings, all 2026-09-11:
   "back up to the root") and on concept 6 kept the rule and the app's fingerings, except G
   harmonic minor string 1 (three notes in the first position rather than a 6-fret shift) and
   the bebop chromatic runs (one position, one finger per fret).
+- Round 4: the bebop strings where those two picks collide stay as the engine plays them
+  ("Let's leave for now. If it bugs me we'll fix."); playback defaults to straight eighths; he
+  asked to hear concept 2's Advanced turn before ruling on it (added to the listening proof).
 
 - **Ladder**: one location per pitch. Book dots win; computed in-window notes fill gaps;
   Middle 6's 9th is always on offer, Easy included (`topMidi` turns there);
@@ -69,8 +72,8 @@ William's rulings, all 2026-09-11:
   string allowed). That reach reproduces p. 65's G M5 (C on the 6th string, 8fr) and
   removes every leap the sweeps found in harmonic minor, mixolydian and phrygian dominant.
   Two computed locations for one pitch → the one nearest the previous note.
-- **Rhythm**: continuous eighths in 4/4 (pp. 65–68), quarters for concept 6 (p. 71). Nothing
-  is held mid-line; the final note rings to the end of its bar.
+- **Rhythm**: continuous eighths in 4/4 (pp. 65–68), quarters for concept 6 (p. 71), played
+  straight by default. Nothing is held mid-line; the final note rings to the end of its bar.
 - **Concept 1**: Easy root → top → root. Above Easy: root → top → lowest → root (p. 65's
   parenthesised notes); a note that would repeat across a turn is dropped (`walk`). Advanced
   tiers walk the same path with `[1, interval]` or the pattern digits through `walkTurn`:
@@ -87,10 +90,10 @@ William's rulings, all 2026-09-11:
   Above Easy the line goes on to the lowest reachable note and climbs back to the root. The
   ring's string and fret are pinned only when the line starts on the ring pitch (patterns that
   don't start on 1 begin elsewhere). Advanced tiers turn with `walkTurn` too — our extension of
-  his 2a pick, flagged: it makes concept 2's climb the same as concept 1's for the fingering,
-  often a single leap back to the root, and with 1231 the root lands on an & on 336 of 1,728
-  cards. The climb picks the nearest location per pitch, so on 48 lines (dorian M5, phrygian
-  dominant bebop I5) a pitch sits somewhere else going up than it did coming down.
+  his 2a pick, awaiting his ruling: it makes concept 2's climb the same as concept 1's for the
+  fingering, often a single leap back to the root, and with 1231 the root lands on an & on 336
+  of 1,728 cards. The climb picks the nearest location per pitch, so on 48 lines (dorian M5,
+  phrygian dominant bebop I5) a pitch sits somewhere else going up than it did coming down.
 - **Concept 3**: up placement k from its root to its top, on up to k+1's top, down k+1 to the
   scale step below k+2's root; a last unpaired placement climbs and returns to its root.
   When Middle 6's 9th sits above k+1's top (dorian, the minors, bebops, half-whole), the line
@@ -107,9 +110,13 @@ William's rulings, all 2026-09-11:
   doesn't count); a three-note first position; 1–2 pairs; 1–3–4 over 1–2–4; the lower
   three-note position. If the winner needs a shift over 5 frets (p. 71's longest, index to
   index), the plan whose longest shift is shortest wins instead. Reproduces all six p. 71
-  strings and William's picks.
+  strings and William's picks. In the bebop scales, 288 strings have a chromatic run and every
+  run stays whole on 222; on 66 a whole run would need a one-note position (54) or that and a
+  6-fret shift (12), so the run is split; on 42 phrygian dominant bebop strings the whole run
+  forces a 6-fret shift and is kept. William left these as they are (round 4).
 - **Printed examples**: all 24 match note for note (the p. 66 and p. 71 fixtures carry
-  William's misprint corrections), plus his four concept 6 picks. `KNOWN` in check.js is empty.
+  William's misprint corrections), plus his four concept 6 picks and one unchanged string.
+  `KNOWN` in check.js is empty.
 - **Deck issues found, not fixed**: concept 2 Easy picks placements that hold the ringed
   note as a *dot*, so Bb and Eb get I6/I5 where p. 67 cycles through M6/M5 (the note is
   in-window there). Every printed P6 example uses "B on 3rd string", not the deck's default.
@@ -118,14 +125,8 @@ William's rulings, all 2026-09-11:
 
 ## Open questions for William
 Whether the zigzag in concept 3 should start at the very lowest position or the lowest with a root on the 6th/5th string; the computed below-root fingers.
-Engine, still open after round 3:
-- Concept 6 cases his picks don't settle, all in the bebop scales. 288 strings have a
-  chromatic run; every run stays in one position on 222. On the other 66 a whole run would need
-  a one-note position at the bottom or top of the string (54 strings; e.g. major bebop from
-  fret 1 plays [1 3] [4 5], not [1] [3 4 5]) or that and a 6-fret shift (12), so the engine
-  splits the run. On 42 phrygian dominant bebop strings the whole run forces a 6-fret shift,
-  and the engine keeps the run whole.
-- Straight or swing eighths as the playback default (asked, not yet answered).
-- Concept 2's Advanced tiers using his 2a turn (see Concept 2 above) — flagged for his veto.
+Engine, still open after round 4:
+- Concept 2's Advanced tiers: his 2a turn (`walkTurn`, the engine now) or the plain turn he
+  heard in the 2d proof (`walk`). He asked to hear both; they're in the listening proof.
 - Whether concept 2's climb should reuse the locations the descent used (48 lines differ).
 - 72 Intermediate Middle 6 concept 2 cards start a step above the 9th.
