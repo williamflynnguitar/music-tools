@@ -166,6 +166,9 @@ body.prog-on .progview{display:block}
   .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
   .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
   .sp-sa .sp-cap{color:#a9a597;}
+  @media print{
+    .sp-menu{display:none;}
+  }
   @media (max-width:480px){
     .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
     .sp-sec{display:none;}
@@ -198,6 +201,7 @@ body.prog-on .progview{display:block}
       <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
       <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
       <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+      <a class="sp-item" data-sp="stageplot" href="../stageplot/index.html">Stage plot</a>
     </div>
   </div>
 </div></nav>
