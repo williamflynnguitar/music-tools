@@ -415,6 +415,10 @@ function judge(v, st){
     if(n.deg===q.fifth || (n.deg==='5' && q.fifth==='5')) return;
     if(n.deg==='b3' && st.rs===5 && n.s===2 && (st.q==='m7b5'||st.q==='dim7')) { msgs.push({k:'ok', t:'The Handbook\'s 5R shape for this quality: b3 on the B string. Not strictly a shell, but it\'s the one that lies well.'}); return; }
     if(st.q==='7sus' && n.deg==='3') { msgs.push({k:'warn', t:label+' adds the natural 3 against the suspended 4 — that resolves the sus; usually pick one.'}); return; }
+    /* The mirror of the b3-against-major rule below. It was missing until Sep
+       2026: a natural 3 on the minor family (B +2 from the 5R default, B −2 on
+       6R ø7/°7) passed silently and the quiz served it as a plain -7. */
+    if(n.deg==='3' && q.third==='b3') { msgs.push({k:'bad', t:label+' is a major 3rd against the b3 on the middle strings.'}); return; }
     /* Doubling the 7th is a legitimate voicing (William, Sep 2026 D-review:
        blessed on every reachable cell except m7 from 5R, which stays a
        caution; the °7/Δ7#5 5R reaches were removed from the walk instead). */
