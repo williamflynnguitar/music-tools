@@ -95,3 +95,20 @@ Whether the zigzag in concept 3 should start at the very lowest position or the 
 Engine (proof 1 sent 2026-09-11; William asked to *see* the rest): concept 3 joins without held notes (and the 2/4, 1/4 cut bars); interval/pattern turnarounds
 that push pairs off the beat, and bare-eighth endings; whether concept 2 above Easy returns
 to the root. He also asked what exactly the concept 6 rule confirmation means.
+Round 2 "listening proof" (2026-09-11, a claude.ai artifact with playback) put options to him,
+each verified by re-running against the engine:
+- 2a turnarounds: A engine now (drop only the repeated note; groups drift onto the &);
+  B skip the echo group, recommended (after the last group up, the descent starts one step
+  inside, so every 2- and 4-note group stays on the beat and the root lands on a beat);
+  C top note starts the descent (climb stops a group short; root can still land on an &).
+- 2e/1c joins: A book join, recommended (when the eighths before an ascent are odd, skip the
+  new root just before it; bar before each ascent cut to whole beats, 1/4 bars allowed;
+  reproduces p. 68 and clears KNOWN); B straight 4/4, fingerings start where they land;
+  C always 4/4 on beat 1 by reshaping the descent (rewrites p. 68's joins).
+- 2d: A stop on the lowest note (now); B back up to the root, recommended (one-line change:
+  `walk([ring, easy ? root : 0, root])` in perfDescending; Easy unchanged).
+- Concept 6: yes/no on the rule; Ab major string 1 (no first-position triple vs 1–3–4 wherever
+  it fits); G harmonic minor string 1 (the 6-fret shift, three plans); bebop chromatic runs
+  (1–2, shift, 1–2). Undocumented tie-break still to write up: lower three-note position.
+Side findings: 72 Intermediate Middle 6 concept 2 cards start a step above the 9th; concept 2
+Easy throws for half-whole (line with `posId("P6", "desc")`; flagged as its own task).
