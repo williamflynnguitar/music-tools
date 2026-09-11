@@ -569,11 +569,16 @@ function pickOffsets(ch, rs, rf){
   let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
   const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
   const oes = hasE ? ((ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? [-1,0,1,2] : [-1,0,1,2,3]) : [0];
+  /* Match the symbol's alterations by pitch, not by label: degName calls 8
+     semitones "#5" on a dominant while the symbol asks for b13 (the book
+     prints "b13 / #5"), so a requested b13 never matched and 7alt/7b13
+     silently lost it. Same pairing for b5/#11. */
+  const samePc = (a, b) => DEG[a]%12 === DEG[b]%12;
   for(const ob of obs) for(const oe of oes){
     const v = buildAt(ch.pc, ch.quality, st.struct, rs, rf, {2:ob,1:oe});
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
-    let got = 0; want.forEach(w=>{ if(degs.includes(w)) got++; });
-    let bad = 0; degs.forEach(d=>{ if(EXT.includes(d) && !q.allowed.includes(d) && !(q.altered&&q.altered.includes(d)) && !want.includes(d)) bad++; });
+    let got = 0; want.forEach(w=>{ if(degs.some(d=>samePc(d,w))) got++; });
+    let bad = 0; degs.forEach(d=>{ if(EXT.includes(d) && !q.allowed.includes(d) && !(q.altered&&q.altered.includes(d)) && !want.some(w=>samePc(w,d))) bad++; });
     const score = got*6 - bad*4 - (Math.abs(ob)+Math.abs(oe))*0.1;
     if(score>bs){ bs=score; best={off:{2:ob,1:oe}, extScore:got}; }
   }
