@@ -636,6 +636,32 @@ function walk(turns, digits) {
   if (out[out.length - 1] !== end) out.push(end);
   return out;
 }
+// Advanced tiers (William, 2026-09-11, "skip the echo group"): at a turn, the group that would
+// start on the turning note just played is skipped whole, so every group keeps its place on the
+// beat; on the last leg the group that would land on the root is left out and the root follows
+// alone. A group that would still start on the note just played (typed patterns like 1243) is
+// skipped whole as well, so the groups after it keep their place on the beat.
+function walkTurn(turns, digits) {
+  const hi = Math.max(...digits) - 1, out = [];
+  const dirs = turns.slice(1).map((b, t) => Math.sign(b - turns[t])), lastLeg = dirs.map(d => d !== 0).lastIndexOf(true);
+  let reached = false;                                      // did the leg before play a group?
+  for (let t = 0; t + 1 < turns.length; t++) {
+    const a = turns[t], b = turns[t + 1], dir = dirs[t];
+    if (!dir) continue;
+    let any = false;
+    for (let s = a; dir > 0 ? s + hi <= b : s - hi >= b; s += dir) {
+      const g = digits.map(k => s + dir * (k - 1));
+      if (reached && s === a) continue;                     // the echo group
+      if (t === lastLeg && g[g.length - 1] === b) break;    // the group landing on the root
+      if (!any && out[out.length - 1] === g[0]) continue;   // it would repeat the turning note
+      out.push(...g); any = true;
+    }
+    reached = any;
+  }
+  const end = turns[turns.length - 1];
+  if (out[out.length - 1] !== end) out.push(end);
+  return out;
+}
 
 // lay notes on the grid in 4/4 bars (unit per bar); an index in `downbeats` starts a new bar,
 // cutting the bar before to a whole beat (its last note held to the beat); the final note
@@ -656,29 +682,33 @@ function barsOf(notes, unit, downbeats) {
   return bars;
 }
 const plain = n => ({ string: n.string, fret: n.fret, finger: null, fingerIn: n.finger, midi: midiOf(n), note: n.note, ext: !!n.ext, reach: !!n.reach, pos: 0 });
-const tierDigits = t => t.startsWith("Advanced 1") ? [1, state.interval] : t.startsWith("Advanced 2") ? [...String(state.pattern)].map(Number).filter(n => n >= 1) : [1];
+// a typed pattern with no usable digit ("0", "abc") plays plain steps instead of never ending
+const tierDigits = t => { const d = t.startsWith("Advanced 1") ? [1, state.interval] : t.startsWith("Advanced 2") ? [...String(state.pattern)].map(Number).filter(n => n >= 1) : [1]; return d.length ? d : [1]; };
 
 // concept 1: Easy root → top → root; above Easy the whole window: root → top → lowest → root
-// (p. 65's parenthesised notes); Advanced tiers walk that path with the interval or pattern
+// (p. 65's parenthesised notes); Advanced tiers walk that path with the interval or pattern,
+// turning with walkTurn
 function perfPosition(p, tier) {
   const easy = tier === "Easy", L = ladder(p, !easy), at = m => L.findIndex(r => r.midi === m);
   const turns = easy ? [rootMidi(p), topMidi(p), rootMidi(p)] : [rootMidi(p), topMidi(p), L[0].midi, rootMidi(p)];
-  const notes = located(walk(turns.map(at), tierDigits(tier)).map(i => L[i])).map(plain);
+  const notes = located((tier.startsWith("Advanced") ? walkTurn : walk)(turns.map(at), tierDigits(tier)).map(i => L[i])).map(plain);
   return { unit: 8, bars: barsOf(notes, 8), flags: [] };
 }
 
-// concept 2: from the ringed 1st-string note down — Easy to the lowest root (p. 67),
-// above Easy to the lowest note the hand reaches
+// concept 2: from the ringed 1st-string note down. Easy stops on the lowest root (p. 67); above
+// Easy the line goes on to the lowest note the hand reaches and climbs back to the root (William,
+// 2026-09-11: the move of p. 65's parenthesised notes). Advanced tiers turn with walkTurn.
 function perfDescending(p, tier, ring) {
   const easy = tier === "Easy", L = ladder(p, true), at = m => L.findIndex(r => r.midi === m);
-  const path = walk([at(midiOf(ring)), easy ? at(rootMidi(p)) : 0], tierDigits(tier));
-  const notes = located(path.map(i => L[i]), path.map((i, j) => j === 0 ? ring : null)).map(plain);
+  const path = (tier.startsWith("Advanced") ? walkTurn : walk)([at(midiOf(ring)), easy ? at(rootMidi(p)) : 0, at(rootMidi(p))], tierDigits(tier));
+  const notes = located(path.map(i => L[i]), path.map((i, j) => j === 0 && i === at(midiOf(ring)) ? ring : null)).map(plain);   // pin the ring only when the line starts on it
   return { unit: 8, bars: barsOf(notes, 8), flags: [] };
 }
 
 // concept 3 (p. 68): up placement k from its root to its top, on up into placement k+1 to
-// its top, down k+1 to the step below k+2's root; k+2 starts on a downbeat. Fingers show
-// on both notes of every change of placement.
+// its top, down k+1 to the step below k+2's root; k+2 starts on beat 1. The line never pauses:
+// when the eighths between ascents come out odd, the descent skips the new root (p. 68 bar 4).
+// Fingers show on both notes of every change of placement.
 function perfZigzag(ps, key) {
   const Ls = ps.map(p => ladder(p, true)), notes = [], downbeats = new Set(), flags = [];
   const run = (k, from, to) => {
@@ -703,8 +733,20 @@ function perfZigzag(ps, key) {
     if (topMidi(dn) > topMidi(up)) run(k + 1, topMidi(up), topMidi(dn));
     run(k + 1, Math.max(topMidi(up), topMidi(dn)), next ? scaleStep(key, rootMidi(next), -1) : rootMidi(dn));
   }
-  notes.forEach((n, i) => { if (i && n.pos !== notes[i - 1].pos) { notes[i - 1].finger = notes[i - 1].fingerIn || null; n.finger = n.fingerIn || null; } });
-  return { unit: 8, bars: barsOf(notes, 8, downbeats), flags };
+  // p. 68's join (William, 2026-09-11): …G E | F. Skipping the root that is about to open the next
+  // bar leaves whole beats before the ascent, so barsOf never holds a note; that bar keeps what's
+  // left (3/4, 2/4 or 1/4)
+  const starts = [0, ...[...downbeats].sort((a, b) => a - b)], drop = new Set();
+  for (let j = 0; j + 1 < starts.length; j++) {
+    const b = starts[j + 1];
+    if ((b - starts[j]) % 2 === 0) continue;
+    if (notes[b - 2] && notes[b - 2].midi === notes[b].midi) drop.add(b - 2);
+    else flags.push(`join into ${ps[notes[b].pos].id}: odd count and no root to skip`);
+  }
+  const kept = notes.filter((n, i) => !drop.has(i)), moved = i => i - [...drop].filter(d => d < i).length;
+  // fingers on both notes of a change of placement, or on neither (the bebop scales carry no fingers)
+  kept.forEach((n, i) => { if (i && n.pos !== kept[i - 1].pos && kept[i - 1].fingerIn && n.fingerIn) { kept[i - 1].finger = kept[i - 1].fingerIn; n.finger = n.fingerIn; } });
+  return { unit: 8, bars: barsOf(kept, 8, new Set([...downbeats].map(moved))), flags };
 }
 
 // concept 6 (p. 71): one string, lowest scale note (open if in the scale) to the highest at or
@@ -717,18 +759,47 @@ function perfString(key, string) {
     Object.assign(plain(mkDot(key, string, f, 0)), { finger: f ? fingers.get(f) : 0 }));
   return { unit: 4, bars: barsOf(notes, 4), flags };
 }
-// two notes per hand position (index leads every shift up: 1–2 on a half step, 1–3 on a whole
-// step, 1–4 on an augmented 2nd); an odd count puts three in one position (pinky added), not
-// the first position if avoidable; choose the plan with the fewest 1–2 pairs, then 1–3–4 over 1–2–4
+// concept 6 fingering (p. 71 and William's picks, 2026-09-11): two notes per hand position, the
+// index leading every shift up (1–2 on a half step, 1–3 on a whole step, 1–4 on an augmented 2nd).
+// A chromatic run of three or four notes (the bebop passing tones) goes in one position, one finger
+// per fret. An odd count puts three notes in one position, not the first if avoidable; then the
+// fewest 1–2 pairs, 1–3–4 over 1–2–4, the lower three-note position. If that plan needs a shift
+// longer than p. 71's longest (5 frets), the plan whose longest shift is shortest wins instead
+// (G harmonic minor, 1st string: F♯–G–A in the first position).
 function stringFingers(fr) {
-  const fits = g => g[g.length - 1] - g[0] <= 3;
-  const build = k => { const gs = []; for (let g = 0, i = 0; i < fr.length; g++) { const size = g === k ? 3 : 2; gs.push(fr.slice(i, i + size)); i += size; } return gs; };
-  const plans = fr.length % 2 === 0 ? [{ gs: build(-1), k: -1 }] : Array.from({ length: (fr.length - 1) / 2 }, (_, k) => ({ gs: build(k), k }));
-  const score = p => [p.k === 0 ? 1 : 0, p.gs.filter(g => g.length === 2 && g[1] - g[0] === 1).length, p.gs.some(g => g.length === 3 && g[1] - g[0] === 1) ? 1 : 0, p.k];
-  const cmp = (a, b) => { const x = score(a), y = score(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  const runs = [];                                          // three or more frets in a row
+  for (let i = 0; i < fr.length;) { let j = i; while (j + 1 < fr.length && fr[j + 1] === fr[j] + 1) j++; if (j - i >= 2) runs.push([fr[i], fr[j]]); i = j + 1; }
+  const chromatic = g => g.length >= 3 && g.every((f, j) => !j || f === g[j - 1] + 1);
+  const search = singles => {
+    const out = [], grow = (i, gs) => {
+      if (i === fr.length) { out.push(gs); return; }
+      for (let n = singles ? 1 : 2; n <= 4 && i + n <= fr.length; n++) if (fr[i + n - 1] - fr[i] <= 3) grow(i + n, gs.concat([fr.slice(i, i + n)]));
+    };
+    grow(0, []);
+    return out;
+  };
   const flags = [];
-  let plan = plans.filter(p => p.gs.every(g => g.length > 1 && fits(g))).sort(cmp)[0];
-  if (!plan) { flags.push(`no two/three-note plan fits frets ${fr.join(" ")}`); plan = { gs: fr.map(f => [f]) }; }
+  let plans = search(false);
+  if (!plans.length) { plans = search(true); flags.push(`one-note hand position needed on frets ${fr.join(" ")}`); }
+  const measure = gs => {
+    const group = new Map(); gs.forEach((g, k) => g.forEach(f => group.set(f, k)));
+    const extra = gs.map((g, k) => ({ g, k })).filter(x => x.g.length === 3 && !(chromatic(x.g) && runs.some(([a, b]) => a === x.g[0] && b === x.g[2])));   // a whole run's own position isn't extra
+    return {
+      gs,
+      singles: gs.filter(g => g.length === 1).length,
+      split: runs.filter(([a, b]) => group.get(a) !== group.get(b)).length,
+      extra: extra.length,
+      first: extra.some(x => x.k === 0) ? 1 : 0,
+      pairs: gs.filter(g => g.length === 2 && g[1] - g[0] === 1).length,
+      grip: extra.some(x => x.g[1] - x.g[0] === 1) ? 1 : 0,
+      low: extra.length ? extra[0].k : -1,
+      shift: Math.max(0, ...gs.slice(1).map((g, k) => g[0] - gs[k][0])),
+    };
+  };
+  const rank = order => (a, b) => { for (const c of order) if (a[c] !== b[c]) return a[c] - b[c]; return 0; };
+  const ms = plans.map(measure);
+  let plan = ms.slice().sort(rank(["singles", "split", "extra", "first", "pairs", "grip", "low"]))[0];
+  if (plan.shift > 5) plan = ms.slice().sort(rank(["singles", "split", "extra", "shift", "pairs", "first", "grip", "low"]))[0];
   const fingers = new Map();
   plan.gs.forEach(g => g.forEach(f => fingers.set(f, [1, 2, 3, 4][f - g[0]])));
   return { fingers, flags, groups: plan.gs };
