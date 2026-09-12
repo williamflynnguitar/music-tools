@@ -383,7 +383,7 @@ function nearestFret(s, pc, around){
 }
 
 // name a semitone offset (0-11) above the root, in the extension zone
-function degName(off, qKey){
+function shellDeg(off, qKey){
   const q = QUAL[qKey];
   const minor = q.third==='b3';
   const table = {0:'R',1:'b9',2:'9',3:minor?'b3':'#9',4:'3',5:(q.third==='4')?'4':'11',6:(q.fifth==='b5')?'b5':'#11',7:'5',8:(q.fifth==='#5')?'#5':(q.dom?'#5':'b13'),9:(q.seventh==='6')?'6':'13',10:'b7',11:'7'};
@@ -424,8 +424,8 @@ function buildAt(pc, qKey, structId, rs, rf, off){
     if(s===rs){ deg='R'; f=rf; }
     else if(s===4){ deg = rs===6 ? q.seventh : q.third; f = nearestFret(4,(rootPc+DEG[deg])%12, rf); }
     else if(s===3){ deg = rs===6 ? q.third : q.seventh; f = nearestFret(3,(rootPc+DEG[deg])%12, rf); }
-    else if(s===2){ f = nearestFret(2,(rootPc+DEG[bDef])%12, rf) + off[2]; deg = degName(((OPEN[2]+f)-rootMidi)%12+((OPEN[2]+f)<rootMidi?12:0), qKey); }
-    else if(s===1){ f = nearestFret(1,(rootPc+DEG[eDef])%12, rf) + off[1]; deg = degName(((OPEN[1]+f)-rootMidi)%12+((OPEN[1]+f)<rootMidi?12:0), qKey); }
+    else if(s===2){ f = nearestFret(2,(rootPc+DEG[bDef])%12, rf) + off[2]; deg = shellDeg(((OPEN[2]+f)-rootMidi)%12+((OPEN[2]+f)<rootMidi?12:0), qKey); }
+    else if(s===1){ f = nearestFret(1,(rootPc+DEG[eDef])%12, rf) + off[1]; deg = shellDeg(((OPEN[1]+f)-rootMidi)%12+((OPEN[1]+f)<rootMidi?12:0), qKey); }
     notes.push({s,f,deg,mobile:s===2||s===1,def:s===2?bDef:s===1?eDef:null});
   });
   const rootless = !strings.includes(rs);
@@ -1062,7 +1062,7 @@ function mobTable(v, s, range, cur){
   const defFret = nearestFret(s,(v.rootMidi%12+DEG[def])%12, v.rf);
   let h = '<tr><th>move</th><th>fret</th><th>you get</th></tr>';
   range.forEach(o=>{
-    const f = defFret+o; const off = ((OPEN[s]+f)-v.rootMidi)%12; const d = degName((off+12)%12, st.q);
+    const f = defFret+o; const off = ((OPEN[s]+f)-v.rootMidi)%12; const d = shellDeg((off+12)%12, st.q);
     const ok = d==='R' || d===q.fifth || d===q.third || d===q.seventh || q.allowed.includes(d) || (q.altered && q.altered.includes(d));
     const now = cur && cur.f===f;
     h += `<tr><td>${o>0?'+':''}${o}</td><td>${f}</td><td class="${now?'now':(ok?'':'no')}">${d}</td></tr>`;

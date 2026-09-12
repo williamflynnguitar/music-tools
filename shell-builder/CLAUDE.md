@@ -107,6 +107,13 @@ there is no inversion or string-set state in this app.
   then `symbolAllows`, then hand span — span ≤3 offered, span 4 only from
   `SPAN4_KEEP`, span ≥5 never. `SPAN4_KEEP` is **empty pending William's
   keep/cut on the 23 five-fret cells** (same pattern as triad-voicings).
+- **Name collision hazard.** The shared progressions block carries its own
+  `degName(pc, step, semi)` (a key-transposition helper). Shell Builder's own
+  chord-degree namer is therefore called `shellDeg(off, qKey)`: when the block
+  arrived in Sep 2026 the two collided, the later declaration won, and every
+  B/E-string degree silently became a note letter or "undefined" — which in
+  turn made every `judge()` ruling a no-op. Do not rename `shellDeg` back, and
+  check for this whenever the block is re-synced into another tool.
 - `symbolAllows`: **a plain dominant is open to every extension it can
   reach** — William, Sep 2026: "extensions depend on harmonic context. That's
   what developing a good harmonic concept as a player is all about." An
