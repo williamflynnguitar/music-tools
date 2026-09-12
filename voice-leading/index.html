@@ -179,6 +179,10 @@ body.choose-on .study{display:none}
     <label class="lbl" for="prog">Progression</label>
     <select id="prog"></select>
   </div>
+  <div class="fld" id="progKeyBox" style="display:none">
+    <label class="lbl" for="progKey">Key</label>
+    <select id="progKey"></select>
+  </div>
   <div class="fld">
     <label class="lbl" for="family">Voicings</label>
     <select id="family">
@@ -375,20 +379,128 @@ function voiceLead(bars, family){
 }
 
 /* ---------- progressions (from the Handbook, pp. 87-94) ---------- */
+/* ===== shared progressions — keep this block byte-identical across the
+     carriers (see root CLAUDE.md); edit inversion-drill and run
+     node scripts/progressions-sync.js. Needs only NOTE_PC and NAMES from
+     the host page. ===== */
 function iiVI(keys, minor){ return keys.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:k[1]==='#'?1:0); const n=i=>NAMES[((pc+i)%12+12)%12];
   return minor ? `${n(2)}m7b5 | ${n(7)}7b9 | ${n(0)}m6 | ${n(0)}m6` : `${n(2)}m7 | ${n(7)}7 | ${n(0)}maj7 | ${n(0)}maj7`; }).join(' |\n'); }
 const WS = ['C','Bb','Ab','Gb','E','D','F','Eb','Db','B','A','G'];
 const CYCLE = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
+/* ---------- key-transposable presets ----------
+   Degree tokens read {scale-step:semitones}: the step fixes the letter name
+   and the semitone count the accidental, so bIII comes out Bb in G and Db in
+   Bb rather than A# and C#. KEYS pins the tonic letter for each of the twelve
+   key buttons — pc 6 is read as F#, which keeps its degrees out of double
+   flats. Anything that still lands on a double accidental or on B#/E#/Cb/Fb
+   falls back to the key's plain spelling; a practice chart is no place for
+   Bbb. */
+const LETTERS = ['C','D','E','F','G','A','B'], LPC = [0,2,4,5,7,9,11];
+const SPELL_F = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const SPELL_S = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const KEYS = [{n:'C',l:0},{n:'Db',l:1},{n:'D',l:1},{n:'Eb',l:2},{n:'E',l:2},{n:'F',l:3},
+              {n:'F#',l:3},{n:'G',l:4},{n:'Ab',l:5},{n:'A',l:5},{n:'Bb',l:6},{n:'B',l:6}];
+const keyName = pc => KEYS[pc].n;
+function degName(pc, step, semi){
+  const target = ((pc+semi)%12+12)%12;
+  const li = (KEYS[pc].l+step)%7;
+  let acc = ((target-LPC[li])%12+12)%12; if(acc>6) acc -= 12;
+  const nm = LETTERS[li] + (acc>0 ? '#'.repeat(acc) : 'b'.repeat(-acc));
+  if(Math.abs(acc)>1 || /^(B#|E#|Cb|Fb)$/.test(nm)) return (KEYS[pc].n.indexOf('#')>=0 ? SPELL_S : SPELL_F)[target];
+  return nm;
+}
+const inKey = (pc, tmpl) => tmpl.replace(/\{(\d+):(\d+)\}/g, (_,s,i)=>degName(pc, +s, +i));
+
+/* A `tmpl` preset is transposable: the root buttons become a key selector.
+   `home` is the key it opens in. A `text` preset is fixed. */
+const FOUR = c => [c,c,c,c].join(' | ');
+const RH_A = '{0:0}maj7 {5:9}7b9 | {1:2}m7 {4:7}7 | {2:4}m7 {5:9}7b9 | {1:2}m7 {4:7}7 |\n{4:7}m7 {0:0}7 | {3:5}maj7 {3:6}dim7 | {2:4}m7 {5:9}7b9 | {1:2}m7 {4:7}7';
+const RH_A2 = '{0:0}maj7 {5:9}7b9 | {1:2}m7 {4:7}7 | {2:4}m7 {5:9}7b9 | {1:2}m7 {4:7}7 |\n{4:7}m7 {0:0}7 | {3:5}maj7 {3:6}dim7 | {1:2}m7 {4:7}7 | {0:0}6';
+const RH_B = '{2:4}7 | {2:4}7 | {5:9}7 | {5:9}7 |\n{1:2}7 | {1:2}7 | {4:7}7 | {4:7}7';
 const PROGS = {
   ii51maj:{name:'Major ii-V-I, descending whole steps', text: iiVI(WS,false)},
   ii51min:{name:'Minor ii-V-i, descending whole steps', text: iiVI(WS,true)},
   i6251:{name:'I-vi-ii-V around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(0)}maj7 | ${n(9)}m7 | ${n(2)}m7 | ${n(7)}7`; }).join(' |\n')},
   tonal:{name:'Tonal progressions around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(2)}m7 ${n(7)}7 | ${n(0)}maj7 ${n(5)}maj7 | ${n(11)}m7b5 ${n(4)}7b9 | ${n(9)}m6 ${n(9)}7b9`; }).join(' |\n')},
-  bluesBb:{name:'Blues in Bb', text:'Bb7 | Eb7 | Bb7 | Fm7 Bb7 |\nEb7 | Eb7 | Bb7 | Dm7 G7b9 |\nCm7 | F7 | Bb7 G7b9 | Cm7 F7'},
-  bluesF:{name:'Blues in F', text:'F7 | Bb7 | F7 | Cm7 F7 |\nBb7 | Bb7 | F7 | Am7 D7b9 |\nGm7 | C7 | F7 D7b9 | Gm7 C7'},
-  rhythm:{name:'Rhythm changes, A section', text:'Bbmaj7 G7b9 | Cm7 F7 | Dm7 G7b9 | Cm7 F7 |\nFm7 Bb7 | Ebmaj7 Edim7 | Dm7 G7b9 | Cm7 F7'},
+  turn:{name:'Turnarounds', home:0, meta:'16 bars · four ways out of bar 1', tmpl:
+    '{0:0}maj7 {5:9}m7 | {1:2}m7 {4:7}7 | {0:0}maj7 | {0:0}6 |\n'+
+    '{0:0}maj7 {2:3}7 | {5:8}7 {1:1}7 | {0:0}maj7 | {0:0}6 |\n'+
+    '{0:0}maj7 | {3:5}m7 {6:10}7 | {0:0}maj7 | {0:0}6 |\n'+
+    '{0:0}maj7 | {3:5}maj7 {3:5}m6 | {0:0}maj7 | {0:0}6'},
+  blues:{name:'Blues', home:10, meta:'12 bars', tmpl:
+    '{0:0}7 | {3:5}7 | {0:0}7 | {4:7}m7 {0:0}7 |\n'+
+    '{3:5}7 | {3:5}7 | {0:0}7 | {2:4}m7 {5:9}7b9 |\n'+
+    '{1:2}m7 | {4:7}7 | {0:0}7 {5:9}7b9 | {1:2}m7 {4:7}7'},
+  bluesmin:{name:'Minor blues', home:0, meta:'12 bars', tmpl:
+    '{0:0}m7 | {3:5}m7 | {0:0}m7 | {0:0}m7 |\n'+
+    '{3:5}m7 | {3:5}m7 | {0:0}m7 | {0:0}m7 |\n'+
+    '{1:2}m7b5 | {4:7}7b9 | {0:0}m7 | {1:2}m7b5 {4:7}7b9'},
+  rhythmA:{name:'Rhythm changes, A section', home:10, meta:'8 bars', tmpl: RH_A},
+  rhythm:{name:'Rhythm changes, full chorus', home:10, meta:'32 bars · AABA', tmpl: RH_A+' |\n'+RH_A2+' |\n'+RH_B+' |\n'+RH_A2},
+  coltrane:{name:'Coltrane changes, major-3rds cycle', home:0, meta:'12 bars · the Giant Steps device', tmpl:
+    '{0:0}maj7 {2:3}7 | {5:8}maj7 {6:11}7 | {2:4}maj7 {4:7}7 | {0:0}maj7 |\n'+
+    '{1:2}m7 {2:3}7 | {5:8}maj7 {6:11}7 | {2:4}maj7 {4:7}7 | {0:0}maj7 |\n'+
+    '{5:8}maj7 {6:11}7 | {2:4}maj7 {4:7}7 | {0:0}maj7 | {3:6}m7 {6:11}7'},
+  modal:{name:'Modal vamp', home:2, meta:'32 bars · So What / Impressions form', tmpl:
+    [FOUR('{0:0}m11'), FOUR('{0:0}m11'), FOUR('{0:0}m11'), FOUR('{0:0}m11'),
+     FOUR('{1:1}m11'), FOUR('{1:1}m11'), FOUR('{0:0}m11'), FOUR('{0:0}m11')].join(' |\n')},
   custom:{name:'Type my own…', text:null},
 };
+
+/* Leadsheet tunes. `text` is the chart, bar lines with |, one or more chords
+   per bar; `same` points at another tune whose chart is identical rather than
+   storing it twice. Slash-bass chords keep the chord only (the drill voices
+   its own bass) and a bar that only restates its chord over a moving bass is
+   written once. Bare minor tonics (Autumn Leaves' G-) are entered as m6, the
+   deck's tonic-minor voicing. The five Handbook tunes keep the book's
+   notation; the rest are transcoded from William's iReal Pro library. */
+const TUNES = {
+  attya: {name:'All The Things You Are', by:'Jerome Kern', meta:'Ab · 36 bars', text:'Fm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Dm7b5 G7b9 | Cmaj7 | Cmaj7 |\nCm7 | Fm7 | Bb7 | Ebmaj7 |\nAbmaj7 | Am7b5 D7b9 | Gmaj7 | Gmaj7 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nF#m7b5 | B7b9 | Emaj7 | C7#5 |\nFm7 | Bbm7 | Eb7 | Abmaj7 |\nDbmaj7 | Gb7 | Cm7 | Bdim7 |\nBbm7 | Eb7 | Abmaj7 | Gm7b5 C7b9'},
+  anthropology: {name:'Anthropology', by:'Charlie Parker', meta:'Bb · 32 bars · same changes as Oleo', text:'Bbmaj7 G7 | Cm7 F7 | Dm7 G7 | Cm7 F7 |\nFm7 Bb7 | Eb7 Ab7 | Dm7 G7 | Cm7 F7 |\nBbmaj7 G7 | Cm7 F7 | Dm7 G7 | Cm7 F7 |\nFm7 Bb7 | Eb7 Ab7 | Cm7 F7 | Bb6 |\nD7 | D7 | G7 | G7 |\nC7 | C7 | F7 | F7 |\nBbmaj7 G7 | Cm7 F7 | Dm7 G7 | Cm7 F7 |\nFm7 Bb7 | Eb7 Ab7 | Cm7 F7 | Bb6'},
+  auprivave: {name:'Au Privave', by:'Charlie Parker', meta:'F · 12 bars', text:'F7 | F7 | F7 | Cm7 F7 |\nBb7 | Bb7 | F7 | Am7 D7b9 |\nGm7 | C7 | F7 D7b9 | Gm7 C7'},
+  autumnleaves: {name:'Autumn Leaves', by:'Joseph Kosma', meta:'G- · 32 bars', text:'Cm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | G7b9 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nAm7b5 | D7b9 | Gm6 | Gm6 |\nCm7 | F7 | Bbmaj7 | Ebmaj7 |\nAm7b5 | D7b9 | Gm7 C7 | Fm7 Bb7 |\nEbmaj7 | Am7b5 D7b9 | Gm6 | Gm6'},
+  beatrice: {name:'Beatrice', by:'Sam Rivers', meta:'F · 16 bars', text:'Fmaj7 | Gbmaj7#11 | Fmaj7 | Ebmaj7#11 |\nDm7 | Ebmaj7#11 | Dm7 | Bbm7 |\nAm7 | Bbmaj7 | Em7b5 A7b9 | Dm7 |\nGm7 | Gbmaj7#11 | Fm7 | Gbmaj7#11'},
+  billiesbounce: {name:'Billie\'s Bounce', by:'Charlie Parker', meta:'F · 12 bars · same changes as Now\'s The Time', text:'F7 | Bb7 | F7 | Cm7 F7 |\nBb7 | Bdim7 | F7 | Am7 D7 |\nGm7 | C7 | F7 D7 | Gm7 C7'},
+  bluebossa: {name:'Blue Bossa', by:'Kenny Dorham', meta:'C- · 16 bars', text:'Cm7 | Cm7 | Fm7 | Fm7 |\nDm7b5 | G7#9 | Cm7 | Cm7 |\nEbm7 | Ab7 | Dbmaj7 | Dbmaj7 |\nDm7b5 | G7#9 | Cm7 | Cm7'},
+  bodyandsoul: {name:'Body And Soul', by:'Johnny Green', meta:'Db · 32 bars', text:'Ebm7 Bb7b13 | Ebm7 Ab7 | Dbmaj7 Gb7 | Fm7 Edim7 |\nEbm7 | Cm7b5 F7b9 | Bbm7 Ebm7 Ab7 | Db6 Gb7 Fm7b5 Bb7 |\nEbm7 Bb7b13 | Ebm7 Ab7 | Dbmaj7 Gb7 | Fm7 Edim7 |\nEbm7 | Cm7b5 F7b9 | Bbm7 Ebm7 Ab7 | Db6 Em7 A7 |\nDmaj7 Em7 | Dmaj7 Gm7 C7 | F#m7 Bm7 Em7 A7 | Dmaj7 |\nDm7 G7 | Em7 Ebdim7 | Dm7 G7 | C7 B7 Bb7 |\nEbm7 Bb7b13 | Ebm7 Ab7 | Dbmaj7 Gb7 | Fm7 Edim7 |\nEbm7 | Cm7b5 F7b9 | Bbm7 Ebm7 Ab7 | Db6 Gb7 Fm7b5 Bb7'},
+  cherokee: {name:'Cherokee', by:'Ray Noble', meta:'Bb · 48 bars', text:'Bb6 | Bb6 | Fm7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ab7 | Ab7 |\nBb6 | Bb6 | C7 | C7 |\nCm7 | G7b9 | Cm7 | F7#5 |\nBb6 | Bb6 | Fm7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ab7 | Ab7 |\nBb6 | Bb6 | C7 | C7 |\nCm7 | F7 | Bb6 | Bb6 |\nC#m7 | F#7 | Bmaj7 | Bmaj7 |\nBm7 | E7 | Amaj7 | Amaj7 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nGm7 | C7 | Cm7 | F7#5'},
+  donnalee: {name:'Donna Lee', by:'Charlie Parker', meta:'Ab · 32 bars', text:'Abmaj7 | F7 | Bb7 | Bb7 |\nBbm7 | Eb7 | Abmaj7 | Ebm7 Ab7 |\nDbmaj7 | Gb7 | Abmaj7 | F7 |\nBb7 | Bb7 | Bbm7 | Eb7 |\nAbmaj7 | F7 | Bb7 | Bb7 |\nGm7b5 | C7b9 | Fm6 | C7b9 |\nFm6 | C7b9 | Fm6 | Bdim7 |\nCm7 F7 | Bbm7 Eb7 | Abmaj7 | Bbm7 Eb7'},
+  four: {name:'Four', by:'Miles Davis', meta:'Eb · 32 bars', text:'Ebmaj7 | Ebmaj7 | Ebm7 | Ab7 |\nFm7 | Fm7 | Abm7 | Db7 |\nEbmaj7 | F#m7 B7 | Fm7 | Bb7 |\nEbmaj7 | F#m7 B7 | Fm7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ebm7 | Ab7 |\nFm7 | Fm7 | Abm7 | Db7 |\nEbmaj7 | F#m7 B7 | Fm7 | Bb7 |\nGm7 Gbm7 | Fm7 Bb7 | Ebmaj7 | Ebmaj7'},
+  giantsteps: {name:'Giant Steps', by:'John Coltrane', meta:'Eb · 16 bars', text:'Bmaj7 D7 | Gmaj7 Bb7 | Ebmaj7 | Am7 D7 |\nGmaj7 Bb7 | Ebmaj7 F#7 | Bmaj7 | Fm7 Bb7 |\nEbmaj7 | Am7 D7 | Gmaj7 | C#m7 F#7 |\nBmaj7 | Fm7 Bb7 | Ebmaj7 | C#m7 F#7'},
+  groovinhigh: {name:'Groovin\' High', by:'Dizzy Gillespie', meta:'Eb · 32 bars', text:'Ebmaj7 | Ebmaj7 | Am7 | D7 |\nEbmaj7 | Ebmaj7 | Gm7 | C7 |\nF7 | F7 | Fm7 | Bb7 |\nGm7 | F#m7 | Fm7 | Bb7 |\nEbmaj7 | Ebmaj7 | Am7 | D7 |\nEbmaj7 | Ebmaj7 | Gm7 | C7 |\nF7 | F7 | Fm7 | Bb7 |\nFm7 | Abm7 Db7 | Eb6 | Fm7 Bb7'},
+  missjones: {name:'Have You Met Miss Jones?', by:'Richard Rodgers', meta:'F · 32 bars', text:'Fmaj7 | D7 | Gm7 | C7 |\nAm7 | Dm7 | Gm7 | C7 |\nFmaj7 | D7 | Gm7 | C7 |\nAm7 | Dm7 | Cm7 | F7 |\nBbmaj7 | Abm7 Db7 | Gbmaj7 | Em7 A7 |\nDmaj7 | Abm7 Db7 | Gbmaj7 | Gm7 C7 |\nFmaj7 Bb7 | Am7 D7 | Gm7 | C7 |\nAm7 D7 | Gm7 C7 | F6 | Gm7 C7'},
+  honeysuckle: {name:'Honeysuckle Rose', by:'Fats Waller', meta:'F · 32 bars', text:'Gm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 | Fmaj7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nDm7 | G7 | C7 | C7 |\nGm7 C7 | Gm7 C7 | Gm7 C7 | Gm7 C7 |\nFmaj7 F7 | Bbmaj7 C7 | Fmaj7 Bb7 | Am7 D7'},
+  howhigh: {name:'How High The Moon', by:'Morgan Lewis', meta:'G · 32 bars', text:'Gmaj7 | Gmaj7 | Gm7 | C7 |\nFmaj7 | Fmaj7 | Fm7 | Bb7 |\nEbmaj7 | Am7b5 D7b9 | Gm7 | Am7b5 D7b9 |\nGmaj7 | Em7 | Am7 | D7 |\nGmaj7 | Gmaj7 | Gm7 | C7 |\nFmaj7 | Fmaj7 | Fm7 | Bb7 |\nEbmaj7 | Am7b5 D7b9 | Gmaj7 | Am7 D7 |\nBm7 E7 | Am7 D7 | G6 | Am7 D7'},
+  rhapsody: {name:'I Hear A Rhapsody', by:'Fragos-Baker-Gasparre', meta:'Eb · 32 bars', text:'Cm7 | Fm7 Bb7 | Ebmaj7 Ab7 | Gm7b5 C7b9 |\nFm7 Abm7 | Bm7 Bb7 | Ebmaj7 | Dm7b5 G9#5 |\nCm7 | Fm7 Bb7 | Ebmaj7 Ab7 | Gm7b5 C7b9 |\nFm7 Abm7 | Bm7 Bb7 | Ebmaj7 | Am7b5 D7b9 |\nGm7 | Am7b5 D7b9 | Gm7 | Cm7 F7 |\nBbmaj7 | Fm7 | Dm7b5 G7b9 | G9#5 |\nCm7 | Fm7 Bb7 | Ebmaj7 Ab7 | Gm7b5 C7b9 |\nFm7 Abm7 | Bm7 Bb7 | Ebmaj7 | Dm7b5 G9#5'},
+  iloveyou: {name:'I Love You', by:'Cole Porter', meta:'F · 32 bars', text:'Gm7b5 | C7b9 | Fmaj7 | Fmaj7 |\nGm7 | C7 | Fmaj7 | Fmaj7 |\nGm7b5 | C7b9 | Fmaj7 | Bm7 E7 |\nAmaj7 | Bm7 E7 | Amaj7 | Amaj7 |\nGm7 | C7 | Fmaj7 | Fmaj7 |\nAm7b5 | D7b9 | Gm7 | C7 |\nGm7b5 | C7b9 | Fmaj7 | Am7b5 D7b9 |\nG7 | C7 | F6 | F6'},
+  remembapril: {name:'I\'ll Remember April', by:'Raye-DePaul', meta:'G · 32 bars', text:'Gmaj7 | G6 | Gmaj7 | G6 |\nGm7 | Gm6 | Gm7 | Gm6 |\nAm7b5 | D7b9 | Bm7b5 | E7b9 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nCm7 | F7 | Bbmaj7 | Gm7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nAm7 | D7 | Gmaj7 | Gmaj7 |\nF#m7 | B7 | Emaj7 | Am7 D7'},
+  impressions: {name:'Impressions', by:'John Coltrane', meta:'D- · 32 bars', text:'Dm11 | Dm11 | Dm11 | Dm11 |\nDm11 | Dm11 | Dm11 | Dm11 |\nDm11 | Dm11 | Dm11 | Dm11 |\nDm11 | Dm11 | Dm11 | Dm11 |\nEbm11 | Ebm11 | Ebm11 | Ebm11 |\nEbm11 | Ebm11 | Ebm11 | Ebm11 |\nDm11 | Dm11 | Dm11 | Dm11 |\nDm11 | Dm11 | Dm11 | Dm11'},
+  invitation: {name:'Invitation', by:'Bronislau Kaper', meta:'C- · 48 bars', text:'Cm7 | Cm7 | Cm7 | Cm7 |\nCm7 | F7 | Bb7 | Bb7 |\nEbm7 | Ebm7 | Ebm7 | Ebm7 |\nEbm7 | Ab7 | Db7#11 | Db7#11 |\nC#m7 | F#7 | Bm7 | Bm7 |\nBm7 | E7 | Am7 | Am7 |\nAm7 | D7 | Gm7 | Gm7 |\nEm7b5 | Eb7 | D7 | G7 |\nCm7 | Cm7 | Cm7 | Cm7 |\nCm7 | F7 | Bb7 | Bb7 |\nEbm7 | Ebm7 | B7#11 | B7#11 |\nF7 | Bb7 | Ebmmaj7 | Ebmmaj7'},
+  couldhappen: {name:'It Could Happen To You', by:'Jimmy Van-Heusen', meta:'Eb · 32 bars', text:'Ebmaj7 | Edim7 | Fm7 | F#dim7 |\nEbmaj7 | Abmaj7 | Gm7b5 | C7b9 |\nFm7 | Db7 | Ebmaj7 | Dm7b5 G7b9 |\nCm7 | F7 | F#m7 B7 | Fm7 Bb7 |\nEbmaj7 | Edim7 | Fm7 | F#dim7 |\nEbmaj7 | Abmaj7 | Gm7b5 | C7b9 |\nFm7 | Db7 | Ebmaj7 Ab7 | Gm7b5 C7b9 |\nFm7 | Bb7 | Ebmaj7 Cm7 | Fm7 Bb7'},
+  justfriends: {name:'Just Friends', by:'John Klenner', meta:'G · 32 bars', text:'Cmaj7 | Cmaj7 | Cm7 | F7 |\nGmaj7 | Gmaj7 | Bbm7 | Eb7 |\nAm7 | D7 | F#m7b5 B7b9 | Em7 |\nA7 | A7 | Am7 | D7 G7 |\nCmaj7 | Cmaj7 | Cm7 | F7 |\nGmaj7 | Gmaj7 | Bbm7 | Eb7 |\nAm7 | D7 | F#m7b5 B7b9 | Em7 |\nA7 | Am7 D7 | G6 | Dm7 G7'},
+  ladybird: {name:'Lady Bird', by:'Tadd Dameron', meta:'C · 16 bars', text:'Cmaj7 | Cmaj7 | Fm7 | Bb7 |\nCmaj7 | Cmaj7 | Bbm7 | Eb7 |\nAbmaj7 | Abmaj7 | Am7 | D7 |\nDm7 | G7 | Cmaj7 Eb7 | Abmaj7 Db7'},
+  mrpc: {name:'Mr. P.C.', by:'John Coltrane', meta:'C- · 12 bars', text:'Cm7 | Cm7 | Cm7 | Cm7 |\nFm7 | Fm7 | Cm7 | Cm7 |\nAb7#11 | G7b9 | Cm7 | G7b9'},
+  nowsthetime: {name:'Now\'s The Time', by:'Charlie Parker', meta:'F · 12 bars · same changes as Billie\'s Bounce', same:'billiesbounce'},
+  oleo: {name:'Oleo', by:'Sonny Rollins', meta:'Bb · 32 bars · same changes as Anthropology', same:'anthropology'},
+  gdsC: {name:'On Green Dolphin Street (C)', by:'Bronislau Kaper', meta:'C · 32 bars', text:'Cmaj7 | Cmaj7 | Cm7 | Cm7 |\nD7 | Dbmaj7 | Cmaj7 | A7b9 |\nDm7 | G7 | Cmaj7 | Cmaj7 |\nFm7 | Bb7 | Ebmaj7 | G7 |\nCmaj7 | Cmaj7 | Cm7 | Cm7 |\nD7 | Dbmaj7 | Cmaj7 | A7b9 |\nDm7 | Bm7b5 E7b9 | Am7 | F#m7b5 B7b9 |\nEm7 A7b9 | Dm7 G7 | Cmaj7 | Dm7 G7'},
+  gdsEb: {name:'On Green Dolphin Street (Eb)', by:'Bronislau Kaper', meta:'Eb · 32 bars', text:'Ebmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Bb7 | Ebmaj7 | Ebmaj7 |\nAbm7 | Db7 | Gbmaj7 | Bb7 |\nEbmaj7 | Ebmaj7 | Ebm7 | Ebm7 |\nF7 | Emaj7 | Ebmaj7 | C7b9 |\nFm7 | Dm7b5 G7b9 | Cm7 | Am7b5 D7b9 |\nGm7 C7b9 | Fm7 Bb7 | Ebmaj7 | Fm7 Bb7'},
+  outofnowhere: {name:'Out Of Nowhere', by:'Johnny Green', meta:'G · 32 bars', text:'Gmaj7 | Gmaj7 | Bbm7 | Eb7 |\nGmaj7 | Gmaj7 | Bm7 | E7b9 |\nAm7 | E7b9 | Am7 | Am7 |\nEb7 | Eb7 | Am7 | D7 |\nGmaj7 | Gmaj7 | Bbm7 | Eb7 |\nGmaj7 | Gmaj7 | Bm7 | E7b9 |\nAm7 | E7b9 | Am7 | Cm6 |\nBm7 Bbdim7 | Am7 D7 | G6 | Am7 D7'},
+  softly: {name:'Softly, As In A Morning Sunrise', by:'Sigmund Romberg', meta:'C- · 32 bars', text:'Cm7 | Dm7b5 G7b9 | Cm7 | Dm7b5 G7b9 |\nCm7 | Dm7b5 G7b9 | Cm7 | Dm7b5 G7b9 |\nCm7 | Dm7b5 G7b9 | Cm7 | Dm7b5 G7b9 |\nCm7 | Dm7b5 G7b9 | Cm7 | Fm7 Bb7 |\nEbmaj7 | Ebmaj7 | C7b9 | C7b9 |\nFm7 | F#dim7 | Dm7b5 | G7b9 |\nCm7 | Dm7b5 G7b9 | Cm7 | Dm7b5 G7b9 |\nCm7 | Dm7b5 G7b9 | Cm7 | Dm7b5 G7b9'},
+  solar: {name:'Solar', by:'Miles Davis', meta:'C- · 12 bars', text:'Cmmaj7 | Cmmaj7 | Gm7 | C7 |\nFmaj7 | Fmaj7 | Fm7 | Bb7 |\nEbmaj7 | Ebm7 Ab7 | Dbmaj7 | Dm7b5 G7b9'},
+  someday: {name:'Someday My Prince Will Come', by:'Frank Churchill', meta:'Bb · 32 bars', text:'Bbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nDm7 | C#dim7 | Cm7 | F7 |\nBbmaj7 | D7 | Ebmaj7 | G7 |\nCm7 | G7 | Cm7 | F7 |\nFm7 | Bb7 | Ebmaj7 | Edim7 |\nBbmaj7 | G7 | Cm7 | F7'},
+  stablemates: {name:'Stablemates', by:'Benny Golson', meta:'Db · 36 bars', text:'Em7 A7 | Ebm7 Ab7 | Dbmaj7 | C7#5 |\nAbm7 | Db7 | Gbmaj7 | Gm7b5 C7b9 |\nFm7 | Bb7 | Ebm7 | Ab7 |\nDbmaj7 | Dbmaj7 | Fm7 | Gb7 |\nG7 | C7 | B7 | Bb7 |\nA7 | Ab7 | Em7 A7 | Ebm7 Ab7 |\nDbmaj7 | C7#5 | Abm7 | Db7 |\nGbmaj7 | Gm7b5 C7b9 | Fm7 | Bb7 |\nEbm7 | Ab7 | Dbmaj7 | Dbmaj7'},
+  stella: {name:'Stella By Starlight', by:'Victor Young', meta:'Bb · 32 bars', text:'Em7b5 | A7b9 | Cm7 | F7 |\nFm7 | Bb7 | Ebmaj7 | Ab7 |\nBbmaj7 | Em7b5 A7b9 | Dm7 | Bbm7 Eb7 |\nFmaj7 | Em7b5 A7b9 | Am7b5 | D7b9 |\nG7b13 | G7b13 | Cm7 | Cm7 |\nAb7#11 | Ab7#11 | Bbmaj7 | Bbmaj7 |\nEm7b5 | A7b9 | Dm7b5 | G7b9 |\nCm7b5 | F7b9 | Bbmaj7 | Bbmaj7'},
+  straightnochaser: {name:'Straight No Chaser', by:'Thelonious Monk', meta:'Bb · 12 bars', text:'Bb7 | Eb7 | Bb7 | Bb7 |\nEb7 | Eb7 | Bb7 | Bb7 |\nF7 | F7 | Bb7 | F7'},
+  strasbourg: {name:'Strasbourg/St. Denis', by:'Roy Hargrove', meta:'Bb- · 8 bars', text:'Bbm7 Cm7 | Dbmaj7 F7b9 | Bbm7 Cm7 | Dbmaj7 F7b9 |\nBbm7 Cm7 | Dbmaj7 Eb7 | Abmaj7 | F7b9'},
+  summertime: {name:'Summertime', by:'George Gershwin', meta:'A- · 16 bars', text:'Am7 | Bm7b5 E7b13 | Am7 | Am7 A7b9 |\nDm7 | Dm7 | Bm7b5 | E7b9 |\nAm7 | Bm7b5 E7b13 | Am7 | Dm7 G7b9 |\nCmaj7 | Bm7b5 E7b13 | Am7 | Bm7b5 E7b13'},
+  atrain: {name:'Take the "A" Train', by:'Billy Strayhorn', meta:'C · 32 bars', text:'Cmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Em7 A7 | Dm7 G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Gm7 C7 |\nFmaj7 | Fmaj7 | Fmaj7 | Fmaj7 |\nD7 | D7 | Dm7 | G7 |\nCmaj7 | Cmaj7 | D7#11 | D7#11 |\nDm7 | G7 | Cmaj7 | Dm7 G7'},
+  tenormadness: {name:'Tenor Madness', by:'Sonny Rollins', meta:'Bb · 12 bars', text:'Bb7 | Eb7 | Bb7 | Fm7 Bb7 |\nEb7 | Eb7 | Bb7 | G7b9 |\nCm7 | F7 | Bb7 G7b9 | Cm7 F7'},
+  nogreaterlove: {name:'There Is No Greater Love', by:'Isham Jones', meta:'Bb · 32 bars', text:'Bbmaj7 | Eb7 | Ab7 | G7 |\nC7 | C7 | Cm7 | F7 |\nBbmaj7 | Eb7 | Ab7 | G7 |\nC7 | Cm7 F7 | Bb6 | Bb6 |\nAm7b5 D7b9 | Gm6 | Am7b5 D7b9 | Gm6 |\nAm7b5 D7b9 | Gm7 | C7 | F7 |\nBbmaj7 | Eb7 | Ab7 | G7 |\nC7 | Cm7 F7 | Bb6 | Cm7 F7'},
+  anotheryou: {name:'There Will Never Be Another You', by:'Harry Warren', meta:'Eb · 32 bars', text:'Ebmaj7 | Ebmaj7 | Dm7b5 | G7b9 |\nCm7 | Cm7 | Bbm7 | Eb7 |\nAbmaj7 | Db7#11 | Ebmaj7 | Cm7 |\nF7 | F7 | Fm7 | Bb7 |\nEbmaj7 | Ebmaj7 | Dm7b5 | G7b9 |\nCm7 | Cm7 | Bbm7 | Eb7 |\nAbmaj7 | Db7#11 | Ebmaj7 | Am7b5 D7 |\nEbmaj7 Ab7 | Gm7 C7 | Fm7 Bb7 | Eb6 Bb7'},
+  whatisthis: {name:'What Is This Thing Called Love', by:'Cole Porter', meta:'C · 32 bars', text:'Gm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7 |\nGm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nAb7 | Ab7 | Dm7b5 | G7 |\nGm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7'},};
+Object.values(TUNES).forEach(t => { if(t.same) t.text = TUNES[t.same].text; });
+Object.entries(TUNES).forEach(([k,t]) => { t.tune = true; PROGS['tune_'+k] = t; });
+/* ===== end shared progressions ===== */
 
 /* ---------- notation ----------
    The path is drawn as a chart: one staff system per line, treble_8 clef,
@@ -519,11 +631,14 @@ function perSystem(nBars, maxPer, widthPx){
 }
 
 /* ---------- state ---------- */
-const st={mode:'show', prog:'ii51maj', family:'d2top', voiced:[], flat:[], revealed:0};
+const st={mode:'show', prog:'ii51maj', pc:0, family:'d2top', voiced:[], flat:[], revealed:0};
 const el=id=>document.getElementById(id);
 
-function currentBars(){ const p=PROGS[st.prog]; return parseInput(p.text===null? el('custom').value : p.text); }
+function progText(p){ return p.text===null ? el('custom').value : (p.tmpl ? inKey(st.pc, p.tmpl) : p.text); }
+function currentBars(){ return parseInput(progText(PROGS[st.prog])); }
 function rebuild(){
+  const pr=PROGS[st.prog];
+  el('progKeyBox').style.display = pr.tmpl ? '' : 'none'; el('progKey').value = st.pc;
   st.voiced = voiceLead(currentBars(), st.family);
   st.flat = []; st.voiced.forEach((bar,bi)=>bar.forEach((it,ci)=>st.flat.push({...it, bi, ci, perBar:bar.length})));
   st.revealed = st.mode==='reveal'?0:st.flat.length;
@@ -548,7 +663,10 @@ function reveal(n){ st.revealed=Math.max(0,Math.min(st.flat.length,n)); renderCh
 const ch={i:0, score:0, asked:0, done:false};
 function startChoose(){ ch.i=0; ch.score=0; ch.asked=0; askChoose(); }
 function askChoose(){
-  const p=PROGS[st.prog]; el('cTitle').textContent=(p.text===null?'Your progression':p.name);
+  const p=PROGS[st.prog];
+  el('cTitle').textContent = p.text===null ? 'Your progression' : (p.name + (p.tmpl ? ' in '+keyName(st.pc) : ''));
+  el('cSub').textContent = ((p.text===null?'':(p.by?p.by+' · ':'')+(p.meta?p.meta+'. ':''))
+    + 'Pick the voicing that moves the least from the last chord. Top-note motion counts most, then how far the hand travels.');
   if(ch.i>=st.flat.length){ el('sofar').innerHTML=''; el('cands').innerHTML='<p class="sub">End of the progression. '+ch.score+' of '+ch.asked+' nearest.</p>'; el('score').textContent=''; return; }
   const item=st.flat[ch.i]; const prev = ch.i? st.flat[ch.i-1].v : null;
   // so far: the last few chords of the path on one staff, then the chord in question
@@ -728,8 +846,15 @@ function setMode(m){
 }
 (function init(){
   document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS);
-  el('prog').innerHTML=Object.entries(PROGS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('');
-  el('prog').addEventListener('change',e=>{ st.prog=e.target.value; el('customBox').style.display= st.prog==='custom'?'':'none'; rebuild(); });
+  const progOpts = ks => ks.map(k=>`<option value="${k}">${PROGS[k].name}</option>`).join('');
+  const progKeys = Object.keys(PROGS);
+  el('prog').innerHTML = '<optgroup label="Progressions">'+progOpts(progKeys.filter(k=>!PROGS[k].tune && k!=='custom'))+'</optgroup>'
+    + '<optgroup label="Tunes">'+progOpts(progKeys.filter(k=>PROGS[k].tune))+'</optgroup>' + progOpts(['custom']);
+  el('progKey').innerHTML = KEYS.map((k,i)=>`<option value="${i}">${k.n}</option>`).join('');
+  el('prog').addEventListener('change',e=>{ st.prog=e.target.value; const p=PROGS[st.prog];
+    if(p.tmpl) st.pc=p.home;                       // a transposable preset opens in its home key
+    el('customBox').style.display= st.prog==='custom'?'':'none'; rebuild(); });
+  el('progKey').addEventListener('change',e=>{ st.pc=+e.target.value; rebuild(); });
   el('custom').addEventListener('input', rebuild);
   el('family').addEventListener('change',e=>{ st.family=e.target.value; rebuild(); });
   el('labels').addEventListener('change',()=>{ if(st.mode==='choose') askChoose(); else renderChart(); });

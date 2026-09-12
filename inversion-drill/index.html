@@ -498,6 +498,10 @@ function parseInput(text){
 }
 function label(tok){ const q=QUAL[tok.quality]; return tok.rootName+q.sym+(tok.ext.length ? tok.ext.join('') : ''); }
 
+/* ===== shared progressions — keep this block byte-identical across the
+     carriers (see root CLAUDE.md); edit inversion-drill and run
+     node scripts/progressions-sync.js. Needs only NOTE_PC and NAMES from
+     the host page. ===== */
 function iiVI(keys, minor){ return keys.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:k[1]==='#'?1:0); const n=i=>NAMES[((pc+i)%12+12)%12];
   return minor ? `${n(2)}m7b5 | ${n(7)}7b9 | ${n(0)}m6 | ${n(0)}m6` : `${n(2)}m7 | ${n(7)}7 | ${n(0)}maj7 | ${n(0)}maj7`; }).join(' |\n'); }
 const WS = ['C','Bb','Ab','Gb','E','D','F','Eb','Db','B','A','G'];
@@ -511,6 +515,8 @@ const CYCLE = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
    falls back to the key's plain spelling; a practice chart is no place for
    Bbb. */
 const LETTERS = ['C','D','E','F','G','A','B'], LPC = [0,2,4,5,7,9,11];
+const SPELL_F = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const SPELL_S = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const KEYS = [{n:'C',l:0},{n:'Db',l:1},{n:'D',l:1},{n:'Eb',l:2},{n:'E',l:2},{n:'F',l:3},
               {n:'F#',l:3},{n:'G',l:4},{n:'Ab',l:5},{n:'A',l:5},{n:'Bb',l:6},{n:'B',l:6}];
 const keyName = pc => KEYS[pc].n;
@@ -519,7 +525,7 @@ function degName(pc, step, semi){
   const li = (KEYS[pc].l+step)%7;
   let acc = ((target-LPC[li])%12+12)%12; if(acc>6) acc -= 12;
   const nm = LETTERS[li] + (acc>0 ? '#'.repeat(acc) : 'b'.repeat(-acc));
-  if(Math.abs(acc)>1 || /^(B#|E#|Cb|Fb)$/.test(nm)) return (KEYS[pc].n.indexOf('#')>=0 ? SHARP : ROOTS)[target];
+  if(Math.abs(acc)>1 || /^(B#|E#|Cb|Fb)$/.test(nm)) return (KEYS[pc].n.indexOf('#')>=0 ? SPELL_S : SPELL_F)[target];
   return nm;
 }
 const inKey = (pc, tmpl) => tmpl.replace(/\{(\d+):(\d+)\}/g, (_,s,i)=>degName(pc, +s, +i));
@@ -613,6 +619,7 @@ const TUNES = {
   whatisthis: {name:'What Is This Thing Called Love', by:'Cole Porter', meta:'C · 32 bars', text:'Gm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7 |\nGm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7 |\nCm7 | F7 | Bbmaj7 | Bbmaj7 |\nAb7 | Ab7 | Dm7b5 | G7 |\nGm7b5 | C7b9 | Fm6 | Fm6 |\nDm7b5 | G7#5 | Cmaj7 | Cmaj7'},};
 Object.values(TUNES).forEach(t => { if(t.same) t.text = TUNES[t.same].text; });
 Object.entries(TUNES).forEach(([k,t]) => { t.tune = true; PROGS['tune_'+k] = t; });
+/* ===== end shared progressions ===== */
 function progText(p){ return p.text === null ? el('custom').value : (p.tmpl ? inKey(st.pc, p.tmpl) : p.text); }
 
 
