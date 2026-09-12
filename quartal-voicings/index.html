@@ -331,10 +331,10 @@
    Extracted and run by check.js and notation/pipeline/gen-quartal.js. */
 
 const OPEN = [null,64,59,55,50,45,40];                 // MIDI of open string 1..6
-const NOTES = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];   // chromatic, workbook flats
-const PC = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
-const KEYS = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];    // cycle of 4ths
-const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const NOTES = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chromatic, workbook flats but F# (D18)
+const PC = {C:0,Db:1,D:2,Eb:3,E:4,F:5,"F#":6,G:7,Ab:8,A:9,Bb:10,B:11};
+const KEYS = ['C','F','Bb','Eb','Ab','Db','F#','B','E','A','D','G'];    // cycle of 4ths
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],"F#":["F#","G#","A#","B","C#","D#","E#"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
 const MAJ = [0,2,4,5,7,9,11];
 const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const ACCV = {'':0,'#':1,'##':2,'b':-1,'bb':-2};
@@ -499,7 +499,7 @@ function label(bass, pcs){
   return '—';
 }
 /* Ex. 5/10/11 table: one shape, bass descending chromatically from E */
-const BASS_ORDER = Array.from({length: 12}, (_, k) => ((4 - k) % 12 + 12) % 12);   // E Eb D Db C B Bb A Ab G Gb F
+const BASS_ORDER = Array.from({length: 12}, (_, k) => ((4 - k) % 12 + 12) % 12);   // E Eb D Db C B Bb A Ab G F# F
 function symTable(pcs){ return BASS_ORDER.map(b => ({ bass: b, name: NOTES[b], sym: label(b, pcs) })); }
 
 /* degree names: dual (Appendix B style) and contextual (§6.3 / reading lines) */
@@ -789,9 +789,9 @@ const FIX_APPA = [
  ['Bb','sw4',[4,3,2,1],0,'Eb A D F 1–2–3–1 · F Bb Eb G 3–3–4–3 · G C F A 5–5–6–5 · A D G Bb 7–7–8–6 · Bb Eb A C 8–8–10–8 · C F Bb D 10–10–11–10 · D G C Eb 12–12–13–11 · Eb A D F 13–14–15–13'],
 ];
 const FIX_SYMS = [
- [[9,2,7],  ['Em11','EbΔ7(♯11)','D7sus','Db7alt.','C6/9','Bm7(♭6)','BbΔ13','A7sus','AbΔ7(♭9♭5)','GΔ9','Gb7alt.','F6/9']],
- [[0,5,11], ['E7(♭9♭13)','EbΔ7(♯5)','Dm13','Db—','Cm(Δ11)','B7(♭9♭5)','Bb—','Am9(♭6)','AbΔ13(♯9)','G7sus','GbΔ7(♭5sus4)','FΔ7(♯11)']],
- [[5,11,4], ['E7(♭9)','Eb—','Dm6/9','Db7(♯9)','CΔ7(sus4)','Bø11','Bb7(♭9♯11)','Am9(♭6)','Ab°7(♭13)','G13','Gb—','FΔ7(♯11)']],
+ [[9,2,7],  ['Em11','EbΔ7(♯11)','D7sus','Db7alt.','C6/9','Bm7(♭6)','BbΔ13','A7sus','AbΔ7(♭9♭5)','GΔ9','F#7alt.','F6/9']],
+ [[0,5,11], ['E7(♭9♭13)','EbΔ7(♯5)','Dm13','Db—','Cm(Δ11)','B7(♭9♭5)','Bb—','Am9(♭6)','AbΔ13(♯9)','G7sus','F#Δ7(♭5sus4)','FΔ7(♯11)']],
+ [[5,11,4], ['E7(♭9)','Eb—','Dm6/9','Db7(♯9)','CΔ7(sus4)','Bø11','Bb7(♭9♯11)','Am9(♭6)','Ab°7(♭13)','G13','F#—','FΔ7(♯11)']],
 ];
 const FIX_GP63 = [    // §6.3, cells compared as sets (the spec orders two cells differently)
  ['m11',      ['♭3'],        ['11'],        ['♭7']],
@@ -1034,6 +1034,7 @@ function staffNotes(strings, frets, names){
   return strings.map((s, i) => ({ s, f: frets[i], name: names[i], midi: OPEN[s] + frets[i] }));
 }
 function bassStaff(ch){ return { s: ch.bass.s, f: ch.bass.f, name: ch.bass.name, midi: OPEN[ch.bass.s] + ch.bass.f }; }
+const keyTag = k => k.replace('#', 's');          // cell files use s for sharp (F# → Fs)
 function cellDiv(src, chords, note){
   return `<div class="ly" data-src="notation/${src}.svg" data-chords='${JSON.stringify(chords).replace(/'/g, '&#39;')}'></div>` +
          (note ? `<p class="lynote">${note}</p>` : '');
@@ -1122,7 +1123,7 @@ function cardHTML(card, i, opts){
   let mid = `<div class="names">${card.names.map(disp).join(' · ')}${card.oct ? '<span class="oct">8va</span>' : ''}</div>`;
   if (opts.modeDeg) mid += `<div class="mdeg"><b>${opts.modeDeg}</b><span>${disp(card.names[card.names.length - 1])} on top</span></div>`;
   const cell = S.notation === 'on'
-    ? cellDiv(`${card.family}-${card.strings.join('')}-i${card.inv}-d${card.d}-p${card.oct ? 1 : 0}-${key}`,
+    ? cellDiv(`${card.family}-${card.strings.join('')}-i${card.inv}-d${card.d}-p${card.oct ? 1 : 0}-${keyTag(key)}`,
               [{ notes: staffNotes(card.strings, card.frets, card.names) }])
     : '';
   return `<div class="${cls.join(' ')}" data-i="${i}">
@@ -1319,7 +1320,7 @@ function renderProg(){
   el('progCards').querySelectorAll('.card').forEach(c => c.addEventListener('click', () => {
     unlock(); const ch = P.chords[+c.dataset.i]; if (ch) strumChord(ch.strings, ch.frets, 0, 0, S.bass ? ch.bass : null); }));
   if (S.notation === 'on' && !P.custom && P.matchesCell) {
-    el('progLy').innerHTML = ''; el('progLy').dataset.src = `notation/prog-${p.id}-${key}.svg`;
+    el('progLy').innerHTML = ''; el('progLy').dataset.src = `notation/prog-${p.id}-${keyTag(key)}.svg`;
     el('progLy').dataset.chords = JSON.stringify(P.chords.map(ch => ({ sym: ch.sym, notes: staffNotes(ch.strings, ch.frets, ch.notes), bass: bassStaff(ch) })));
     el('progLyNote').textContent = 'staff + TAB engraved with LilyPond · bass in parentheses, as the workbook prints it';
     hydrateNotation(el('progLy').parentElement);

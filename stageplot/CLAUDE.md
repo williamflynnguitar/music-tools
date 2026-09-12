@@ -153,6 +153,61 @@ instrument, add a row; nothing else in the file enumerates instruments.
 `ROLE_MATCH` turns free text into a role id ("Sam — bass trombone"), most
 specific pattern first. It is used by bulk name entry and the v1 migration.
 
+## Mic packages and the amplification profile
+
+**Amplification is a choice, not an assumption.** v1 miked everything it could:
+place a kit, get seven channels. That inflated the count, made the console
+warnings meaningless, and put things on the tech's list nobody was going to
+patch. Worse, a source missing from the input list was ambiguous — acoustic by
+decision, or forgotten?
+
+A role offers **packages** (`PKG_SETS`, chosen per role by `pkgs`), a position
+holds one in `pos.pkg`, and its inputs are generated from it. Sets: `kit`
+(none / kick / kick+OH / kick+snare+OH / +hat / full close-mic), `amp`
+(none / amp mic / DI / DI+mic), `keys` (none / mono / stereo), `horn`
+(none / individual mic), `voice`, `pickup` (none / DI / mic / both), `simple`,
+`section`, `line`. A shared **section** mic is still a row-level thing —
+`plot.sections` — because it covers a group, not a position.
+
+`PROFILES` sets everything at once, and `role.pkgDefaults` says what each role
+does under each:
+
+| | acoustic-leaning | light reinforcement | fully miked |
+|---|---|---|---|
+| drums | not miked | kick + overheads | full close-mic |
+| horns | acoustic | individual mics, rows folded to section mics | individual mics |
+| guitar amp | not miked | not miked | amp mic |
+| bass | DI | DI | DI + amp mic |
+| keys | mono DI | stereo DI | stereo DI |
+| voice | mic | mic | mic |
+
+Templates start on the profile that suits them: jazz combo and solo/duo
+acoustic-leaning, big band light, rock and vocals fully miked. A jazz combo
+therefore opens at **2 channels** — keys and bass DI — which is what a combo in
+a room this size actually needs.
+
+**A hand-picked package is never restyled.** `setPackage(…, manual)` sets
+`pos.pkgOverride`, and `applyProfile()` skips those unless it is called with
+`all` (which is what plot creation and "follow the profile again" do). The
+Positions tab says how many are set by hand.
+
+**Not miked is printed, not implied.** `notMiked()` lists every position with
+nothing reaching the console — as "Drums (acoustic)", "Sax section" when a
+whole row is silent — under the input list, and each carries a ⊘ on the
+diagram. A fully-miked plot prints no such section. A position covered by its
+row's section mics is not unmiked.
+
+**The channel meter now means something**, so it can argue back:
+`reductions()` returns only the cuts available on this stage — "Sax section on
+2 shared mics −3", "Drums to kick, snare + overheads −3", "Keys to a mono DI
+−1" — sorted by what they save, and the warning banner offers the top three as
+one-click buttons.
+
+Reading an older file: `inferPackage()` matches a position's inputs against its
+role's packages, so a v1 kit with its seven channels lands on `close` rather
+than a broken state. v1 plots are marked `ampProfile: "full"`, which is what
+they were.
+
 ## Channel ordering
 
 Auto-assigned in this order, and this is the rule to keep: **drums, bass,
@@ -233,11 +288,17 @@ Same instrumentation always yields the same layout; `check.js` asserts it.
 
 ## Monitor mixes
 
-**Hand-assigned mixes are never rewritten.** Any edit to a wedge — ticking an
-assignee, typing a request, adding or deleting one, dragging it — sets
-`plot.wedgesTouched`, and from then on `layoutWedges()` leaves the mixes alone
-even as positions are added and removed. A migrated v1 plot starts touched,
-since its mixes were assigned by hand. Re-layout (force) clears it.
+**Mixes are dealt once.** `layoutWedges()` builds them when the plot is
+created and when the re-layout button runs, and never again on its own.
+Adding an instrument later does not conjure a wedge or redeal the existing
+ones: the new position simply has no mix, and says so in the Positions tab
+and in the "No wedge assigned" line on the printed page. A blank plot stays
+at zero wedges no matter how many instruments go into it — the first
+version of this fix still dealt mixes when a plot had none, which meant
+building a band from blank grew a wedge on the first instrument. That
+line is the feature — who shares a wedge is the director's call, not the
+engine's. Wedges nobody has dragged still follow the players they serve, so
+the drum wedge moves when the rhythm arrangement flips.
 
 `monitorGroups()` builds groups in priority order — voices, drums, bass,
 guitar, keys, sax row, trombones, trumpets, strings, other — then merges the
@@ -348,6 +409,13 @@ New in v2:
    is the audience's *right*; low chairs nearest the rhythm section.
 3. **Upright bass implies the house bass rig** — change the role's `backline`
    if uprights usually go straight to a DI at Somewhere Works.
+4. **The profile defaults are my reading, not gospel** (`pkgDefaults` in each
+   role). The ones most worth arguing with: keys drops to a mono DI under
+   acoustic-leaning; a guitar amp stays unmiked under light reinforcement; a
+   bass gets DI + amp mic under fully miked. One line each.
+5. Fully miked, the 17-piece big band totals **25** channels — still inside a
+   32-channel console. The reduction suggestions were verified against a plot
+   that does exceed it (that band plus six voices, 31 channels).
 ## Checks
 
 `node check.js` — 195 assertions: the role library, every template (builds,

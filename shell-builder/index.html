@@ -325,7 +325,7 @@ body.prog-on .progview{display:block}
 <script>
 /* ---------- engine (shared with Box Buddy) ---------- */
 const OPEN = [null,64,59,55,50,45,40];
-const ROOTS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const ROOTS = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chord roots: F#, not Gb
 const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,bb7:9,b7:10,'7':11};
 const QUAL = {
   maj7 :{name:'Major 7',        sym:'Δ7',   third:'3', seventh:'7',  fifth:'5',  allowed:['9','#11','13']},
@@ -512,8 +512,8 @@ function label(tok){ const q=QUAL[tok.quality]; return tok.rootName+q.sym+(tok.e
      the host page. ===== */
 function iiVI(keys, minor){ return keys.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:k[1]==='#'?1:0); const n=i=>NAMES[((pc+i)%12+12)%12];
   return minor ? `${n(2)}m7b5 | ${n(7)}7b9 | ${n(0)}m6 | ${n(0)}m6` : `${n(2)}m7 | ${n(7)}7 | ${n(0)}maj7 | ${n(0)}maj7`; }).join(' |\n'); }
-const WS = ['C','Bb','Ab','Gb','E','D','F','Eb','Db','B','A','G'];
-const CYCLE = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
+const WS = ['C','Bb','Ab','F#','E','D','F','Eb','Db','B','A','G'];
+const CYCLE = ['C','F','Bb','Eb','Ab','Db','F#','B','E','A','D','G'];
 /* ---------- key-transposable presets ----------
    Degree tokens read {scale-step:semitones}: the step fixes the letter name
    and the semitone count the accidental, so bIII comes out Bb in G and Db in
@@ -547,8 +547,8 @@ const RH_B = '{2:4}7 | {2:4}7 | {5:9}7 | {5:9}7 |\n{1:2}7 | {1:2}7 | {4:7}7 | {4
 const PROGS = {
   ii51maj:{name:'Major ii-V-I, descending whole steps', text: iiVI(WS,false)},
   ii51min:{name:'Minor ii-V-i, descending whole steps', text: iiVI(WS,true)},
-  i6251:{name:'I-vi-ii-V around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(0)}maj7 | ${n(9)}m7 | ${n(2)}m7 | ${n(7)}7`; }).join(' |\n')},
-  tonal:{name:'Tonal progressions around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(2)}m7 ${n(7)}7 | ${n(0)}maj7 ${n(5)}maj7 | ${n(11)}m7b5 ${n(4)}7b9 | ${n(9)}m6 ${n(9)}7b9`; }).join(' |\n')},
+  i6251:{name:'I-vi-ii-V around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:k[1]==='#'?1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(0)}maj7 | ${n(9)}m7 | ${n(2)}m7 | ${n(7)}7`; }).join(' |\n')},
+  tonal:{name:'Tonal progressions around the cycle', text: CYCLE.map(k=>{ const pc=NOTE_PC[k[0]]+(k[1]==='b'?-1:k[1]==='#'?1:0); const n=i=>NAMES[((pc+i)%12+12)%12]; return `${n(2)}m7 ${n(7)}7 | ${n(0)}maj7 ${n(5)}maj7 | ${n(11)}m7b5 ${n(4)}7b9 | ${n(9)}m6 ${n(9)}7b9`; }).join(' |\n')},
   turn:{name:'Turnarounds', home:0, meta:'16 bars · four ways out of bar 1', tmpl:
     '{0:0}maj7 {5:9}m7 | {1:2}m7 {4:7}7 | {0:0}maj7 | {0:0}6 |\n'+
     '{0:0}maj7 {2:3}7 | {5:8}7 {1:1}7 | {0:0}maj7 | {0:0}6 |\n'+
