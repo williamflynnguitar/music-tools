@@ -730,8 +730,11 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
   const sIdx = struct==null ? st.struct : struct;   // per-chord edits pass their own
   const want = (ch.ext||[]).filter(e=>EXT.includes(e));
   const hasB = [1,3,4].includes(sIdx), hasE = sIdx===4;
-  if(!want.length || !hasB) return {off:{2:0,1:0}, extScore:0};
   const q = QUAL[ch.quality];
+  /* A chord with nothing to place keeps the default offsets — except a plain
+     dominant heading into a minor chord, which still has a sixth to choose
+     (William, 2026-09-12: extend the b13 default to plain dominants too). */
+  if(!hasB || (!want.length && !(intoMinor && q && q.dom))) return {off:{2:0,1:0}, extScore:0};
   const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
   const oes = hasE ? ((ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? [-1,0,1,2] : [-1,0,1,2,3]) : [0];
   /* Match the symbol's alterations by pitch, not by label: degName calls 8
@@ -767,7 +770,15 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
   for(const c of cands){
     let score = c.got*6 - c.bad*4 - (Math.abs(c.ob)+Math.abs(c.oe))*0.1;
     if(standIn !== null && c.sounds(standIn)) score += 3;
-    if(intoMinor && q.dom && !pinsSixth && c.sounds(9)) score -= 1;
+    if(intoMinor && q.dom && !pinsSixth){
+      score -= c.sounds(9) ? 1 : 0;                       // decline the target's major third
+      /* On a plain dominant there is no alteration to place, so the b13 has to
+         be chosen outright rather than merely left standing — otherwise the
+         choice falls to a 0.1 tiebreak between the b13 and a doubled b7. An
+         altered dominant keeps the older behaviour exactly: the natural 13 is
+         declined, but nothing displaces a natural 5 it already sounds. */
+      if(!want.length && c.sounds(8)) score += 0.5;
+    }
     if(score>bs){ bs=score; best={off:{2:c.ob,1:c.oe}, extScore:c.got}; }
   }
   return best;
@@ -807,8 +818,17 @@ function progVoiceLead(bars){
   bars.forEach(bar => bar.forEach(c => { if(QUAL[c.quality]) flat.push(c); }));
   const nextOf = new Map();
   flat.forEach((c,i) => { if(flat[i+1]) nextOf.set(c, flat[i+1]); });
+  /* A minor chord merely coming next is not a minor resolution. The b13 is
+     the target's minor third, so it only earns its place when the dominant
+     actually resolves — root down a perfect fifth. Of the 298 dominant/minor
+     pairs in the library only 169 are that; the rest are same-root modal
+     shifts (rhythm changes' G7 to Gm7, 33 of them) or deceptive moves, and in
+     G7 to Em7 — 24 more — the natural 13 of the G7 *is* Em7's root, so
+     declining it would be a plain downgrade. Take the "A" Train's D7#11 into
+     Dm7 is the same trap: same root, and D13#11 is the sound of those bars. */
   const headingMinor = c => { const n = nextOf.get(c);
-    return !!(n && QUAL[n.quality] && QUAL[n.quality].third === 'b3'); };
+    return !!(n && QUAL[n.quality] && QUAL[n.quality].third === 'b3'
+              && ((n.pc - c.pc) % 12 + 12) % 12 === 5); };
   return bars.map((bar,bi)=>bar.map((ch,si)=>{
     if(!QUAL[ch.quality]) return {ch, v:null, key:null};
     const tm = headingMinor(ch);
