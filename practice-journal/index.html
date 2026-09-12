@@ -1,0 +1,2870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Practice Journal</title>
+<!-- Link preview -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="William Flynn Guitar">
+<meta property="og:title" content="Practice Journal">
+<meta property="og:description" content="Log what you practiced, and look back at it before a lesson.">
+<meta property="og:url" content="https://williamflynnguitar.github.io/music-tools/practice-journal/">
+<meta property="og:image" content="https://williamflynnguitar.github.io/music-tools/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="William Flynn playing archtop guitar">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Log what you practiced, and look back at it before a lesson.">
+<style>
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --bone:#e8e1d1; --bone-dim:#b4aa96; --brass:#c9a24a; --edge:#3a7285;
+  --amber:#d8a640; --red:#d4715f; --good:#7fb28a;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.45}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:1px}
+[hidden]{display:none!important}
+a{color:var(--brass)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- shell ---------- */
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 72px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 0 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+@media (max-width:640px){.wrap{padding:0 14px 72px}.top{padding:14px 0 0;gap:12px}}
+
+.modes{display:flex;border:1px solid var(--edge);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:7px 14px;cursor:pointer;color:var(--bone-dim);white-space:nowrap}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+@media (max-width:640px){.modes{width:100%}.modes button{flex:1;padding:11px 2px;font-size:14px;min-height:44px}}
+
+.view{display:none;padding-top:16px}
+body[data-view=log] #viewLog,
+body[data-view=history] #viewHistory,
+body[data-view=summary] #viewSummary,
+body[data-view=settings] #viewSettings{display:block}
+
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ---------- buttons ---------- */
+.btn{background:transparent;border:1px solid var(--edge);border-radius:4px;padding:6px 12px;font-size:14px}
+.btn:hover{border-color:var(--brass)}
+.btn.on{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.sm{padding:5px 10px;font-size:12px;font-family:var(--mono)}
+.btn.primary{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.btn.primary:hover{filter:brightness(1.08);border-color:var(--brass)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:rgba(212,113,95,.14);border-color:var(--red)}
+.btn.big{min-height:44px;padding:11px 20px;font-size:16px}
+.btn.block{display:block;width:100%}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- warn bar ---------- */
+.warnbar{display:flex;flex-direction:column;gap:0;margin:10px 0 0}
+.warn{display:flex;align-items:baseline;gap:10px;padding:8px 12px;font-size:14px;border:1px solid var(--line);border-radius:4px;margin-bottom:6px;flex-wrap:wrap}
+.warn.amber{background:rgba(216,166,64,.13);color:#f0d79a;border-color:rgba(216,166,64,.4)}
+.warn.red{background:rgba(212,113,95,.15);color:#f3b8ac;border-color:rgba(212,113,95,.45)}
+.warn span{flex:1;min-width:220px}
+.warn .btn{border-color:currentColor;font-size:13px;padding:4px 10px}
+
+/* ---------- fields ---------- */
+.fld{margin-bottom:12px}
+.fld label,.fld .lbl{display:block;font-size:12px;color:var(--bone-dim);margin-bottom:3px}
+.fld input[type=text],.fld input[type=date],.fld input[type=number],.fld select,.fld textarea{width:100%;background:var(--ink);border:1px solid var(--edge);border-radius:3px;padding:6px 8px;color:var(--bone);font-size:14px}
+.fld textarea{min-height:60px;resize:vertical}
+.fld.big label,.fld.big .lbl{font-size:13px;margin-bottom:5px}
+.fld.big input,.fld.big select,.fld.big textarea{min-height:44px;padding:10px 12px;font-size:16px}
+.fld.big textarea{min-height:104px;line-height:1.5}
+.chk{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--bone);padding:6px 0;cursor:pointer}
+.chk input{accent-color:var(--brass);margin-top:3px;width:18px;height:18px;flex:none}
+.chk small{display:block;color:var(--bone-dim);font-size:12.5px;font-family:var(--mono);margin-top:2px}
+.note{font-size:13px;color:var(--bone-dim);line-height:1.5;margin:6px 0}
+.hint{font-size:13px;color:var(--bone-dim);margin:6px 0 0}
+.hint.bad{color:var(--red)}
+.empty{color:var(--bone-dim);font-size:14px;padding:36px 4px;text-align:center;line-height:1.6}
+.empty b{display:block;color:var(--bone);font-weight:400;font-size:16px;margin-bottom:6px}
+
+.panel{border:1px solid var(--line);border-radius:5px;padding:14px 16px;margin-bottom:14px;background:rgba(18,54,64,.35)}
+.panel h3{font-size:13px;font-weight:400;color:var(--bone-dim);margin:16px 0 8px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.panel h3:first-child{margin-top:0}
+
+/* ---------- chips ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--edge);border-radius:3px;padding:3px 6px 3px 8px;font-family:var(--mono);font-size:13px;background:var(--ink)}
+.chip.on{border-color:var(--brass);color:var(--brass)}
+.chip .x{background:none;border:0;padding:0 6px;font-family:inherit;font-size:15px;color:var(--bone-dim);line-height:1;min-width:34px;min-height:34px}
+.chip .x:hover{color:var(--red)}
+button.chip{min-height:34px;cursor:pointer}
+button.chip:hover{border-color:var(--brass)}
+button.chip[aria-pressed=true]{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+
+/* ---------- tables / totals ---------- */
+table.prev{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+table.prev th{text-align:left;font-family:var(--mono);font-size:11px;color:var(--bone-dim);font-weight:400;border-bottom:1px solid var(--line);padding:4px 0}
+table.prev td{padding:5px 0;border-bottom:1px solid rgba(42,84,97,.4)}
+table.prev td.lbl,table.prev th.lbl{font-family:var(--mono);font-size:12.5px}
+table.prev td.num,table.prev th.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;padding-left:10px}
+table.prev td.unset{color:var(--bone-dim)}
+.totals{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--bone-dim);border:1px solid var(--line);border-radius:4px;padding:10px 12px;margin-bottom:14px}
+.totals b{color:var(--bone);font-weight:400;font-size:16px;font-variant-numeric:tabular-nums;display:block;margin-top:2px}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--petrol-2);border:1px solid var(--brass);border-radius:4px;padding:9px 16px;font-size:14px;z-index:950;max-width:calc(100vw - 32px);text-align:center}
+
+/* ---------- log form ---------- */
+.gate{border:1px solid var(--brass);border-radius:5px;padding:18px 18px 20px;background:rgba(18,54,64,.5);margin-bottom:16px}
+.gate .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--brass);margin:0 0 6px}
+.gate h2{font-size:20px;font-weight:400;margin:0 0 8px}
+.gate p{font-size:14.5px;color:var(--bone-dim);line-height:1.55;margin:0 0 14px;max-width:56ch}
+.gate .cta{display:inline-block;min-height:44px;padding:11px 18px;border:1px solid var(--brass);border-radius:4px;color:var(--brass);text-decoration:none;font-size:15px}
+.gate .cta:hover{background:var(--brass);color:var(--ink)}
+.gate .fine{font-size:13px;margin:12px 0 0}
+
+.lblrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.dow{font-family:var(--mono);font-size:12px;color:var(--bone-dim);letter-spacing:.06em}
+.dur{display:flex;flex-direction:column;gap:8px}
+.dur .chips button{flex:1;min-height:44px;justify-content:center;font-size:15px}
+.num{position:relative}
+.num input{padding-right:52px!important}
+.num .unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:13px;color:var(--bone-dim);pointer-events:none}
+.other{margin-top:8px}
+.sugg{margin-top:8px}
+.sugg button{min-height:44px}
+.sugg .ct{color:var(--bone-dim);font-size:11px;margin-left:2px}
+.tags{margin-bottom:8px}
+.tags:empty{display:none}
+.tags .chip{min-height:44px}
+.flash{border-color:var(--brass)!important;color:var(--brass)!important}
+/* The .rc cells are <label>s, so they must out-specify .fld label{display:block} above. */
+.rate{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.rate input{position:absolute;opacity:0;width:1px;height:1px}
+.fld .rate .rc{display:flex;align-items:center;justify-content:center;min-height:48px;margin:0;border:1px solid var(--edge);border-radius:3px;font-family:var(--mono);font-size:17px;color:var(--bone);cursor:pointer;font-variant-numeric:tabular-nums}
+.fld .rate .rc:hover{border-color:var(--brass)}
+.rate input:checked+.rc{background:var(--brass);color:var(--ink);border-color:var(--brass)}
+.rate input:focus-visible+.rc{outline:2px solid var(--brass);outline-offset:1px}
+.addfields{margin:4px 0 14px}
+.editing{border:1px solid var(--brass);border-left-width:3px;border-radius:4px;padding:9px 12px;margin:0 0 14px;font-size:14px;color:var(--brass);background:rgba(201,162,74,.08)}
+.savebar{position:sticky;bottom:0;background:var(--ink);padding:10px 0 12px;margin-top:6px;border-top:1px solid var(--line);z-index:5}
+.savebar .row{display:flex;gap:8px}
+.savebar .row .btn.primary{flex:1;min-height:52px;font-size:17px}
+.savebar .row .btn:not(.primary){min-height:52px}
+.status{font-size:13.5px;color:var(--good);margin:0 0 8px;min-height:1.2em;font-family:var(--mono)}
+.status:empty{display:none}
+#f-error{margin:0 0 8px}
+@media (min-width:641px){.savebar{position:static;border-top:0;padding-top:4px}.savebar .row .btn.primary{flex:0 0 auto;min-height:44px;padding:11px 28px;font-size:16px}.savebar .row .btn:not(.primary){min-height:44px}.dur{flex-direction:row;align-items:center}.dur .chips{flex:1}.dur .chips button{min-height:38px;flex:0 0 auto;padding:6px 14px}.dur .num{width:150px;flex:none}.fld.big textarea{min-height:120px}}
+
+/* ---------- history ---------- */
+.h-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.h-count{font-family:var(--mono);font-size:12px;color:var(--bone-dim);flex:1;min-width:160px}
+.h-filters{border:1px solid var(--line);border-radius:5px;padding:12px 14px 4px;margin-bottom:14px}
+.h-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.h-grid .wide{grid-column:1/-1}
+@media (min-width:721px){.h-grid{grid-template-columns:repeat(3,1fr)}.h-grid .wide{grid-column:auto}}
+.h-active{margin:2px 0 10px}
+.h-group{margin-bottom:14px}
+.h-hd{position:sticky;top:0;z-index:2;display:flex;align-items:baseline;gap:10px;background:var(--ink);padding:6px 0 5px;border-bottom:1px solid var(--line);margin-bottom:6px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim)}
+.h-hd .tot{margin-left:auto;color:var(--bone);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0}
+.h-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.h-sum{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--petrol);border:1px solid transparent;border-radius:4px;padding:11px 12px;font-size:14px;line-height:1.3;min-height:44px}
+.h-sum:hover{background:var(--petrol-2);border-color:var(--brass)}
+.h-dur{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap;flex:none;min-width:62px}
+.h-cat{font-family:var(--mono);font-size:11.5px;color:var(--bone-dim);white-space:nowrap;flex:none;max-width:32%;overflow:hidden;text-overflow:ellipsis}
+.h-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-none{color:var(--bone-dim)}
+.h-meta{margin-left:auto;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);flex:none}
+.h-tool{display:none}
+@media (min-width:721px){.h-tool{display:inline}}
+.h-car{width:9px;height:9px;border-right:1.5px solid var(--bone-dim);border-bottom:1.5px solid var(--bone-dim);transform:rotate(45deg) translate(-2px,-2px)}
+.h-sum[aria-expanded=true] .h-car{transform:rotate(225deg) translate(-3px,-3px)}
+.h-body{border:1px solid var(--line);border-top:0;border-radius:0 0 4px 4px;padding:12px 12px 10px;margin-top:-3px;background:rgba(18,54,64,.3)}
+.h-dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0 0 10px;font-size:13.5px}
+.h-dl dt{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim);padding-top:2px}
+.h-dl dd{margin:0}
+.h-notes{white-space:pre-wrap;margin:0 0 10px;line-height:1.5;font-size:14.5px}
+.h-stamp{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin:0 0 10px}
+li.deleted .h-sum{opacity:.55;border-style:dashed;border-color:var(--line)}
+.h-more{margin-top:14px;text-align:center}
+
+/* ---------- summary ---------- */
+.s-win{margin-bottom:10px}
+.s-range{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--bone-dim);margin:0 0 14px}
+.s-tables{display:grid;gap:18px}
+@media (min-width:721px){.s-tables{grid-template-columns:1fr 1fr;gap:26px}}
+.s-note{margin-top:8px}
+
+/* ---------- export signpost at the foot of History ---------- */
+.exfoot{margin-top:22px}
+.exfoot .meta{margin-top:10px}
+
+/* ---------- settings ---------- */
+.cfg-cats{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:5px}
+.cfg-cats li{display:flex;align-items:center;gap:8px;background:var(--petrol);border-radius:4px;padding:5px 6px 5px 10px}
+.cfg-cats input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:3px;padding:7px 6px;color:var(--bone);font-family:var(--mono);font-size:14px}
+.cfg-cats input:hover{border-color:var(--edge)}
+.cfg-cats .btn{min-height:38px}
+.about{line-height:1.6;font-size:15px;color:var(--bone-dim);max-width:62ch;margin:0 0 12px}
+.meta{display:flex;gap:18px;font-family:var(--mono);font-size:12px;color:var(--bone-dim);flex-wrap:wrap}
+.meta b{display:block;color:var(--bone);font-weight:400;font-size:14px;font-variant-numeric:tabular-nums;margin-top:2px}
+.exrow{display:grid;gap:10px}
+@media (min-width:641px){.exrow{grid-template-columns:repeat(3,1fr)}}
+.exbtn{text-align:left;line-height:1.3;padding:12px 14px;min-height:auto}
+.exbtn b{display:block;font-weight:400;font-size:15px;margin-bottom:3px}
+.exbtn span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--bone-dim)}
+.exout{width:100%;background:var(--ink);border:1px solid var(--edge);border-radius:4px;padding:8px 10px;color:var(--bone);font-family:var(--mono);font-size:12px;line-height:1.5;resize:vertical;min-height:110px;margin-top:10px}
+.imprev{border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-top:12px}
+.imprev h4{font-size:15px;font-weight:400;margin:0 0 8px}
+.imprev ul{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.imprev .n{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--bone);min-width:3ch;display:inline-block}
+.dellist{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:5px;max-height:280px;overflow:auto}
+.dellist li{display:flex;align-items:center;gap:8px;background:var(--petrol);border-radius:4px;padding:7px 9px;font-size:13.5px}
+.dellist .d{font-family:var(--mono);font-size:12px;color:var(--bone-dim);white-space:nowrap}
+.dellist .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.confirm{border:1px solid var(--red);border-radius:4px;padding:12px 14px;margin-top:10px;background:rgba(212,113,95,.08)}
+.confirm p{margin:0 0 12px;font-size:14px;line-height:1.5}
+
+/* framed, or the browser won't let us write: remove every mutating control outright
+   rather than leaving a dead form on screen (brief section 7). */
+body.pj-framed [data-mutates],
+body.pj-nowrite [data-mutates],
+body.pj-corrupt [data-mutates]{display:none!important}
+/* Import is the way BACK from an unreadable file, so corrupt does not hide it. */
+body.pj-framed [data-import],
+body.pj-nowrite [data-import]{display:none!important}
+
+/* Settings, export and import are phone surfaces too, not a desktop panel reflowed. */
+@media (max-width:520px){
+  .h-grid{grid-template-columns:1fr}
+  .exout{font-size:16px}
+  .cfg-cats input,#cfg-cat-new{font-size:16px}
+  .cfg-cats .btn,.btnrow .btn{min-height:44px}
+  .imprev .btnrow .btn{flex:1 1 140px}
+  .exbtn{min-height:56px}
+}
+
+@media print{
+  .warnbar,.savebar,.modes,.h-filters,.h-head{display:none!important}
+  html,body{background:#fff;color:#000}
+  .panel{border-color:#999;background:none}
+}
+</style>
+</head>
+<body data-view="log">
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media print{
+    .sp-menu{display:none;}
+  }
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+      <a class="sp-item" data-sp="practice-journal" href="../practice-journal/index.html">Practice journal</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+
+<div class="wrap">
+
+<div class="top">
+  <h1 class="wordmark">Practice <em>Journal</em></h1>
+  <div class="modes" role="group" aria-label="View">
+    <button type="button" data-view-btn="log" aria-pressed="true">Log</button>
+    <button type="button" data-view-btn="history" aria-pressed="false">History</button>
+    <button type="button" data-view-btn="summary" aria-pressed="false">Summary</button>
+    <button type="button" data-view-btn="settings" aria-pressed="false">Settings</button>
+  </div>
+</div>
+
+<div class="warnbar" id="warns" aria-live="polite"></div>
+
+<!-- ============================== LOG ============================== -->
+<section class="view" id="viewLog" aria-labelledby="logHead">
+  <h2 id="logHead" class="sr">Log a session</h2>
+
+  <div class="gate" id="gate" hidden>
+    <p class="eyebrow">Practice Journal</p>
+    <h2 id="gateTitle">Open this in its own tab</h2>
+    <p id="gateBody"></p>
+    <a class="cta" id="gateLink" target="_blank" rel="noopener noreferrer">Open Practice Journal in a new tab</a>
+    <p class="fine" id="gateFine">Bookmark that tab. Log your sessions there and the entries stay on your device.</p>
+  </div>
+
+  <form id="logForm" data-mutates novalidate autocomplete="off">
+
+    <p class="editing" id="f-editing" hidden></p>
+
+    <p class="note" id="f-firstrun" hidden>Log a session and it shows up in History. Add or remove fields any time in settings.</p>
+
+    <div class="fld big">
+      <div class="lblrow">
+        <label class="lbl" for="f-date">Date</label>
+        <span class="dow" id="f-date-dow" aria-hidden="true"></span>
+      </div>
+      <input type="date" id="f-date" required min="2000-01-01" autocomplete="off">
+    </div>
+
+    <div class="fld big">
+      <label class="lbl" for="f-duration">How long</label>
+      <div class="dur">
+        <div class="chips" role="group" aria-label="Common durations">
+          <button type="button" class="chip" data-dur="15" aria-pressed="false">15</button>
+          <button type="button" class="chip" data-dur="30" aria-pressed="false">30</button>
+          <button type="button" class="chip" data-dur="45" aria-pressed="false">45</button>
+          <button type="button" class="chip" data-dur="60" aria-pressed="false">60</button>
+          <button type="button" class="chip" data-dur="90" aria-pressed="false">90</button>
+        </div>
+        <div class="num">
+          <input type="number" id="f-duration" inputmode="numeric" min="1" max="1440" step="1"
+                 required enterkeyhint="done" autocomplete="off" aria-describedby="f-duration-unit">
+          <span class="unit" id="f-duration-unit">min</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fld big" data-field="tempo" hidden>
+      <label class="lbl" for="f-tempo">Tempo</label>
+      <div class="num">
+        <input type="number" id="f-tempo" inputmode="numeric" min="20" max="400" step="1"
+               enterkeyhint="next" autocomplete="off" aria-describedby="f-tempo-unit">
+        <span class="unit" id="f-tempo-unit">bpm</span>
+      </div>
+    </div>
+
+    <div class="fld big" data-field="tool" hidden>
+      <label class="lbl" for="f-tool">Tool</label>
+      <select id="f-tool" autocomplete="off"></select>
+      <input type="text" id="f-tool-other" class="other" hidden maxlength="120"
+             placeholder="What you used" aria-label="Other tool or exercise"
+             autocomplete="off" autocapitalize="sentences" autocorrect="off" enterkeyhint="next">
+    </div>
+
+    <div class="fld big" data-field="tune" hidden>
+      <label class="lbl" for="f-tune">Tune</label>
+      <input type="text" id="f-tune" list="tunes" maxlength="200" autocomplete="off"
+             autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="next">
+      <datalist id="tunes"></datalist>
+    </div>
+
+    <div class="fld big" data-field="key" hidden>
+      <label class="lbl" for="f-key">Key</label>
+      <select id="f-key" autocomplete="off"></select>
+    </div>
+
+    <div class="fld big" data-field="category" hidden>
+      <label class="lbl" for="f-category">Category</label>
+      <select id="f-category" autocomplete="off"></select>
+      <p class="hint" id="f-cat-empty" hidden>No categories yet. <button type="button" class="btn sm" id="f-cat-add">add one</button></p>
+    </div>
+
+    <div class="fld big" data-field="tags" hidden>
+      <label class="lbl" for="f-tag-input">Tags</label>
+      <div class="chips tags" id="f-tags"></div>
+      <input type="text" id="f-tag-input" maxlength="40" placeholder="comping, slow"
+             autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+             enterkeyhint="done" aria-describedby="f-tag-help">
+      <div class="chips sugg" id="f-tag-sugg" role="group" aria-label="Suggested tags" hidden></div>
+      <p class="hint" id="f-tag-help">Comma or return adds a tag.</p>
+    </div>
+
+    <div class="fld big" data-field="focus" hidden>
+      <label class="lbl" for="f-focus">Focus</label>
+      <input type="text" id="f-focus" maxlength="200" placeholder="What you set out to do"
+             autocomplete="off" autocapitalize="sentences" enterkeyhint="next">
+    </div>
+
+    <div class="fld big" data-field="rating" hidden>
+      <div class="lblrow">
+        <span class="lbl" id="f-rating-lbl">How it went</span>
+        <button type="button" class="btn sm" id="f-rating-clear" hidden>clear</button>
+      </div>
+      <div class="rate" role="radiogroup" aria-labelledby="f-rating-lbl">
+        <input type="radio" name="f-rating" id="f-rating-1" value="1" aria-label="1 out of 5"><label class="rc" for="f-rating-1">1</label>
+        <input type="radio" name="f-rating" id="f-rating-2" value="2" aria-label="2 out of 5"><label class="rc" for="f-rating-2">2</label>
+        <input type="radio" name="f-rating" id="f-rating-3" value="3" aria-label="3 out of 5"><label class="rc" for="f-rating-3">3</label>
+        <input type="radio" name="f-rating" id="f-rating-4" value="4" aria-label="4 out of 5"><label class="rc" for="f-rating-4">4</label>
+        <input type="radio" name="f-rating" id="f-rating-5" value="5" aria-label="5 out of 5"><label class="rc" for="f-rating-5">5</label>
+      </div>
+    </div>
+
+    <p class="addfields" id="f-addfields"><button type="button" class="btn sm" id="f-addfields-btn">+ add fields</button></p>
+
+    <div class="fld big">
+      <label class="lbl" for="f-notes">What happened</label>
+      <textarea id="f-notes" rows="4" enterkeyhint="enter" autocapitalize="sentences" spellcheck="true"
+                placeholder="What you worked on, what got better, what to pick up next time."></textarea>
+    </div>
+
+    <div class="savebar">
+      <p class="hint bad" id="f-error" role="alert" hidden></p>
+      <p class="status" id="f-status" role="status" aria-live="polite"></p>
+      <div class="row">
+        <button type="submit" class="btn primary big" id="f-save">Save this session</button>
+        <button type="button" class="btn big" id="f-cancel" hidden>Cancel</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<!-- ============================== HISTORY ============================== -->
+<section class="view" id="viewHistory" aria-labelledby="histHead">
+  <h2 id="histHead" class="sr">History</h2>
+
+  <div class="h-head">
+    <p class="h-count" id="h-count" role="status" aria-live="polite"></p>
+    <button type="button" class="btn sm" id="h-toggle" aria-expanded="false" aria-controls="h-filters">filters</button>
+    <button type="button" class="btn sm" id="h-clear" hidden>clear filters</button>
+  </div>
+
+  <div class="h-filters" id="h-filters" hidden>
+    <div class="h-grid">
+      <div class="fld"><label for="h-from">From</label><input type="date" id="h-from"></div>
+      <div class="fld"><label for="h-to">To</label><input type="date" id="h-to"></div>
+      <div class="fld"><label for="h-cat">Category</label><select id="h-cat"></select></div>
+      <div class="fld"><label for="h-tag">Tag</label><select id="h-tag"></select></div>
+      <div class="fld"><label for="h-tool">Tool</label><select id="h-tool"></select></div>
+      <div class="fld"><label for="h-tune">Tune</label><input type="text" id="h-tune" list="tunes" placeholder="Any tune" autocomplete="off" autocapitalize="words" spellcheck="false"></div>
+    </div>
+    <p class="hint bad" id="h-range-warn" hidden>That range runs backwards &mdash; the &ldquo;from&rdquo; date is after the &ldquo;to&rdquo; date.</p>
+  </div>
+
+  <div id="h-out"></div>
+
+  <div class="panel exfoot" id="h-export">
+    <h3>Take it with you</h3>
+    <p class="note">These entries live in this browser and nowhere else. Export a copy to move them to another device, to hand in, or to keep them when you clear your browsing data.</p>
+    <div class="btnrow">
+      <button type="button" class="btn" data-ex="json">JSON backup</button>
+      <button type="button" class="btn" data-ex="csv">CSV</button>
+      <button type="button" class="btn" data-ex="text">Plain text</button>
+    </div>
+    <p class="meta"><span>last backup <b id="h-backup">never</b></span></p>
+  </div>
+</section>
+
+<!-- ============================== SUMMARY ============================== -->
+<section class="view" id="viewSummary" aria-labelledby="sumHead">
+  <h2 id="sumHead" class="sr">Summary</h2>
+
+  <div class="modes s-win" id="s-win" role="group" aria-label="Summary window">
+    <button type="button" data-win="week" aria-pressed="true">7 days</button>
+    <button type="button" data-win="month" aria-pressed="false">30 days</button>
+    <button type="button" data-win="all" aria-pressed="false">All time</button>
+  </div>
+  <p class="s-range" id="s-range"></p>
+
+  <div class="totals" id="s-totals" role="status" aria-live="polite" aria-atomic="true">
+    <span>total <b id="s-total">0 min</b></span>
+    <span>sessions <b id="s-count">0</b></span>
+    <span>average <b id="s-avg">0 min</b></span>
+    <span>days <b id="s-days">0 of 7</b></span>
+  </div>
+
+  <div id="s-empty" class="empty" hidden></div>
+
+  <div class="s-tables" id="s-tables">
+    <div class="panel">
+      <h3>Time by category</h3>
+      <table class="prev" id="s-cat-tbl">
+        <thead><tr><th class="lbl">Category</th><th class="num">Time</th><th class="num">Sessions</th></tr></thead>
+        <tbody id="s-cat"></tbody>
+      </table>
+      <p class="note s-note" id="s-cat-note" hidden></p>
+    </div>
+    <div class="panel">
+      <h3>Time by tool</h3>
+      <table class="prev" id="s-tool-tbl">
+        <thead><tr><th class="lbl">Tool</th><th class="num">Time</th><th class="num">Sessions</th></tr></thead>
+        <tbody id="s-tool"></tbody>
+      </table>
+      <p class="note s-note" id="s-tool-note" hidden></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SETTINGS ============================== -->
+<section class="view" id="viewSettings" aria-labelledby="setHead">
+  <h2 id="setHead" class="sr">Settings</h2>
+
+  <div class="panel">
+    <h3>Back it up</h3>
+    <p class="note">JSON is the backup &mdash; it holds everything and imports straight back in. CSV is for a spreadsheet. Text is for pasting into an assignment or an email.</p>
+    <div class="exrow">
+      <button type="button" class="btn exbtn" id="ex-json"><b>JSON backup</b><span>everything, re-importable</span></button>
+      <button type="button" class="btn exbtn" id="ex-csv"><b>CSV</b><span>one row per session</span></button>
+      <button type="button" class="btn exbtn" id="ex-text"><b>Plain text</b><span>a range, ready to paste</span></button>
+    </div>
+    <div class="h-grid" style="margin-top:12px">
+      <div class="fld"><label for="ex-from">Text export from</label><input type="date" id="ex-from"></div>
+      <div class="fld"><label for="ex-to">to</label><input type="date" id="ex-to"></div>
+    </div>
+    <p class="note" id="ex-msg" hidden></p>
+    <label class="sr" for="ex-out">Export output, for copying</label>
+    <textarea class="exout" id="ex-out" readonly hidden spellcheck="false"></textarea>
+    <div class="btnrow" id="ex-outrow" hidden style="margin-top:8px">
+      <button type="button" class="btn sm" id="ex-copy">copy to clipboard</button>
+      <button type="button" class="btn sm" id="ex-hide">hide</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Bring a backup in</h3>
+    <p class="note">Merges by entry, keeping whichever copy is newer. Nothing is written until you confirm.</p>
+    <div class="btnrow">
+      <label class="btn sm" for="im-file" style="display:inline-block" data-import>choose a .json file
+        <input type="file" id="im-file" accept="application/json,.json" class="sr"></label>
+      <button type="button" class="btn sm" id="im-paste-toggle" data-import>or paste it</button>
+    </div>
+    <label class="sr" for="im-text">Paste backup JSON</label>
+    <textarea class="exout" id="im-text" hidden placeholder="Paste the contents of a .json backup here." spellcheck="false"></textarea>
+    <div class="btnrow" id="im-checkrow" hidden data-import style="margin-top:8px">
+      <button type="button" class="btn sm" id="im-check">check it</button>
+    </div>
+    <div id="im-preview"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Fields</h3>
+    <p class="note">Date, how long and what happened are always there. Turn on only what you'll actually fill in.</p>
+    <div id="cfg-fields"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Categories</h3>
+    <p class="note">Your own words. Renaming one here doesn't change sessions already logged under the old name.</p>
+    <ul class="cfg-cats" id="cfg-cats"></ul>
+    <div class="btnrow">
+      <input type="text" id="cfg-cat-new" maxlength="40" placeholder="Add a category" aria-label="New category name" autocomplete="off" style="flex:1;min-width:140px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:9px 10px;color:var(--bone);font-family:var(--mono);font-size:14px">
+      <button type="button" class="btn" id="cfg-cat-add" data-mutates>Add</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Defaults</h3>
+    <div class="h-grid">
+      <div class="fld">
+        <label for="cfg-duration">Duration a new session starts at</label>
+        <div class="num"><input type="number" id="cfg-duration" inputmode="numeric" min="1" max="1440" step="1" data-mutates><span class="unit">min</span></div>
+      </div>
+      <div class="fld">
+        <label for="cfg-view">Open on</label>
+        <select id="cfg-view" data-mutates>
+          <option value="log">Log</option>
+          <option value="history">History</option>
+          <option value="summary">Summary</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Deleted entries</h3>
+    <p class="note">Deleted sessions stay here, out of your log and out of your totals, until you clear them.</p>
+    <ul class="dellist" id="del-list"></ul>
+    <div class="btnrow"><button type="button" class="btn danger" id="purge-btn" data-mutates hidden></button></div>
+    <div class="confirm" id="purge-confirm" hidden>
+      <p id="purge-confirm-text"></p>
+      <div class="btnrow">
+        <button type="button" class="btn danger" id="purge-yes">Delete permanently</button>
+        <button type="button" class="btn" id="purge-no">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Where this lives</h3>
+    <p class="about">Everything you log here is stored in this browser, on this device, and nowhere else. There's no account and no server &mdash; which is why it opens instantly in a practice room with no wifi, and why nothing you write here is visible to me or to anyone else. The trade is real, so here it is plainly: clearing your browsing data, using private browsing, or switching to another browser or another phone means these entries are gone, and I can't get them back for you. Export a backup now and then. The JSON file is the whole journal and it imports straight back in &mdash; once a month, or any time before you clear something out, is plenty.</p>
+    <div class="meta">
+      <span>last backup <b id="meta-backup">never</b></span>
+      <span>entries <b id="meta-entries">0</b></span>
+      <span>deleted <b id="meta-deleted">0</b></span>
+      <span>storage <b id="meta-storage">&mdash;</b></span>
+    </div>
+  </div>
+
+</section>
+
+</div>
+<script>
+"use strict";
+/* Practice Journal — see practice-journal/CLAUDE.md.
+   NOTE: this tool uses localStorage. That is a deliberate, brief-mandated exception
+   to the root CLAUDE.md no-browser-storage rule. Do not "correct" it. Every write
+   goes through store.persist(); localStorage.setItem appears exactly twice. */
+
+/* ===================== small helpers ===================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const MON  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOWL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DOWS = ["sun","mon","tue","wed","thu","fri","sat"];
+
+/** 0 -> "0 min", 45 -> "45 min", 60 -> "1h 00m", 325 -> "5h 25m" */
+function fmtDur(min){
+  const m = Math.max(0, Math.round(Number(min) || 0));
+  if (m < 60) return m + " min";
+  return Math.floor(m / 60) + "h " + String(m % 60).padStart(2, "0") + "m";
+}
+/** Long form for the plain-text export: "45 min" / "1 hr" / "8 hr 25 min" */
+function fmtDurLong(min){
+  const m = Math.max(0, Math.round(Number(min) || 0));
+  if (m < 60) return m + " min";
+  const h = Math.floor(m / 60), r = m % 60;
+  return r ? h + " hr " + r + " min" : h + " hr";
+}
+function fmtInt(n){ return String(Math.max(0, Math.round(Number(n) || 0))); }
+function plural(n, one, many){ return n === 1 ? one : many; }
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2600);
+}
+
+/* ===================== store ===================== */
+const store = (function(){
+
+  const NS        = "jgth:practice-journal:";
+  const K_ENTRIES = NS + "entries:v1";
+  const K_CONFIG  = NS + "config:v1";
+  const K_PROBE   = NS + "probe";
+  const SCHEMA_VERSION = 1;
+
+  const FIELD_IDS = ["tempo","tool","tune","key","category","tags","focus","rating"];
+  const SPINE_IDS = ["date","duration","notes"];
+  const FIELD_LABELS = {
+    tempo:"Tempo", tool:"Tool", tune:"Tune", key:"Key",
+    category:"Category", tags:"Tags", focus:"Focus", rating:"Rating"
+  };
+  const FIELD_NOTES = {
+    tempo:"bpm you worked at", tool:"which tool or exercise", tune:"what you played",
+    key:"what key", category:"your own list", tags:"your own words, several per session",
+    focus:"what you set out to do", rating:"1 to 5, how it went"
+  };
+  const TOOLS = [
+    { id:"two-and-four",     label:"Two-and-Four" },
+    { id:"fretboard",        label:"Fretboard" },
+    { id:"scales-deck",      label:"Scale Practice" },
+    { id:"arpeggios-deck",   label:"Arpeggios Deck" },
+    { id:"shell-builder",    label:"Shell Voicing Builder" },
+    { id:"inversion-drill",  label:"Inversion Drill" },
+    { id:"voice-leading",    label:"Voice-Leading Trainer" },
+    { id:"comping-rhythms",  label:"Charleston" },
+    { id:"box-buddy",        label:"Box Buddy" },
+    { id:"triad-voicings",   label:"Triad Voicings" },
+    { id:"line-ladder",      label:"Line Ladder" },
+    { id:"quartal-voicings", label:"Quartal Voicings" }
+  ];
+  const KEYS_12 = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+  const ENHARMONIC = { "C#":"Db","D#":"Eb","F#":"Gb","G#":"Ab","A#":"Bb",
+                       "B#":"C","E#":"F","Cb":"B","Fb":"E" };
+
+  const DEFAULT_CONFIG = {
+    schemaVersion: 1,
+    kind: "practice-journal.config",
+    enabledFields: ["tool","category","tempo"],
+    categories: ["technique","repertoire","transcription","reading","improvisation"],
+    defaultDurationMinutes: 30,
+    defaultView: "log"
+  };
+
+  const QUOTA_LIMIT_BYTES = 5 * 1024 * 1024;
+  const QUOTA_WARN = 0.80, QUOTA_CRIT = 0.92;
+
+  /* ---------- time & dates ---------- */
+  function nowISO(){ return new Date().toISOString(); }
+  function dateToISO(d){
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function todayISO(){ return dateToISO(new Date()); }
+  function isoToDate(s){
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s == null ? "" : s));
+    if (!m) return null;
+    const y = +m[1], mo = +m[2], da = +m[3];
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+    const d = new Date(y, mo - 1, da);
+    return (d.getFullYear() === y && d.getMonth() === mo - 1 && d.getDate() === da) ? d : null;
+  }
+  function isValidISODate(s){ return isoToDate(s) !== null; }
+  function shiftISO(iso, days){
+    const d = isoToDate(iso); if (!d) return null;
+    d.setDate(d.getDate() + days);
+    return dateToISO(d);
+  }
+  /** Whole days from a to b. EXCLUSIVE: same day -> 0. Callers wanting an
+      inclusive span add 1. DST-safe: both ends are normalized to local noon. */
+  function daysBetweenISO(a, b){
+    const da = isoToDate(a), db = isoToDate(b);
+    if (!da || !db) return 0;
+    da.setHours(12,0,0,0); db.setHours(12,0,0,0);
+    return Math.round((db - da) / 86400000);
+  }
+  function windowStartISO(kind, todayIso){
+    if (kind === "week")  return shiftISO(todayIso, -6);
+    if (kind === "month") return shiftISO(todayIso, -29);
+    return null;
+  }
+  /** ISO instant -> ms; unparsable -> 0. Handles "…Z" vs "….000Z" vs "+00:00". */
+  function tms(s){ const t = Date.parse(s); return t === t ? t : 0; }
+
+  /* ---------- uuid ---------- */
+  const HEX = [];
+  for (let i = 0; i < 256; i++) HEX[i] = (i + 0x100).toString(16).slice(1);
+  function bytesToUuid(b){
+    return HEX[b[0]]+HEX[b[1]]+HEX[b[2]]+HEX[b[3]]+"-"+HEX[b[4]]+HEX[b[5]]+"-"+
+           HEX[b[6]]+HEX[b[7]]+"-"+HEX[b[8]]+HEX[b[9]]+"-"+
+           HEX[b[10]]+HEX[b[11]]+HEX[b[12]]+HEX[b[13]]+HEX[b[14]]+HEX[b[15]];
+  }
+  /* crypto.randomUUID is secure-context only and file:// is not a secure context,
+     which the suite requires. getRandomValues is not gated, so it is the real fallback. */
+  function uuid(){
+    try { if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID(); }
+    catch (e) {}
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function"){
+        const b = new Uint8Array(16); crypto.getRandomValues(b);
+        b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+        return bytesToUuid(b);
+      }
+    } catch (e) {}
+    const b = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) b[i] = (Math.random() * 256) | 0;
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    return bytesToUuid(b);
+  }
+
+  /* A content-derived, v4-shaped id, so a record that arrives without one keeps the
+     same id on every import and the merge stays idempotent. */
+  function stableId(raw){
+    const src = JSON.stringify([raw && raw.date, raw && raw.durationMinutes,
+                                raw && raw.notes, raw && raw.createdAt, raw && raw.fields]);
+    let h1 = 0x811c9dc5, h2 = 0x01000193, h3 = 0xdeadbeef, h4 = 0x41c6ce57;
+    for (let i = 0; i < src.length; i++){
+      const c = src.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+      h2 = Math.imul(h2 + c, 2654435761) >>> 0;
+      h3 = Math.imul(h3 ^ (c + i), 2246822519) >>> 0;
+      h4 = Math.imul(h4 + c * (i + 1), 3266489917) >>> 0;
+    }
+    const b = new Uint8Array(16);
+    [h1, h2, h3, h4].forEach((h, j) => {
+      b[j*4] = (h >>> 24) & 255; b[j*4+1] = (h >>> 16) & 255;
+      b[j*4+2] = (h >>> 8) & 255; b[j*4+3] = h & 255;
+    });
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    return bytesToUuid(b);
+  }
+
+  /* ---------- normalizers ---------- */
+  const isPlain = v => v !== null && typeof v === "object" && !Array.isArray(v);
+  const KNOWN_ENTRY = ["id","schemaVersion","createdAt","updatedAt","deletedAt","date","durationMinutes","notes","fields"];
+  const KNOWN_FIELDS = FIELD_IDS.slice();
+
+  function clampStr(v, max){ return String(v).trim().replace(/\s+/g, " ").slice(0, max); }
+  function parsable(s){ return typeof s === "string" && !isNaN(Date.parse(s)); }
+
+  function canonTool(v){
+    const s = clampStr(v, 120); if (!s) return null;
+    const low = s.toLowerCase();
+    for (const t of TOOLS) if (t.id.toLowerCase() === low || t.label.toLowerCase() === low) return t.id;
+    return s;
+  }
+  /* Canonicalize only when the whole string is a key name; otherwise keep the
+     foreign value verbatim rather than mangling it. */
+  function canonKey(v){
+    const s = clampStr(v, 12); if (!s) return null;
+    const m = /^([A-Ga-g])\s*([#♯b♭]?)$/.exec(s);
+    if (m){
+      let out = m[1].toUpperCase() + (m[2] === "♯" ? "#" : m[2] === "♭" ? "b" : m[2]);
+      if (ENHARMONIC[out]) out = ENHARMONIC[out];
+      if (KEYS_12.indexOf(out) !== -1) return out;
+    }
+    return s;
+  }
+
+  function normalizeEntry(raw, opts){
+    if (!isPlain(raw)) return null;
+    const o = opts || {};
+    const now = o.now || nowISO();
+    const out = {};
+    for (const k in raw) if (KNOWN_ENTRY.indexOf(k) === -1) out[k] = raw[k];   // keep unknown keys
+
+    out.id = (typeof raw.id === "string" && raw.id.trim()) ? raw.id.trim().slice(0, 128) : uuid();
+    const sv = Math.trunc(Number(raw.schemaVersion));
+    out.schemaVersion = (sv === sv && sv >= 1) ? sv : 1;
+    out.createdAt = parsable(raw.createdAt) ? raw.createdAt : now;
+    out.updatedAt = parsable(raw.updatedAt) ? raw.updatedAt : out.createdAt;
+    if (tms(out.updatedAt) < tms(out.createdAt)) out.updatedAt = out.createdAt;
+    out.deletedAt = parsable(raw.deletedAt) ? raw.deletedAt : null;
+
+    if (isValidISODate(raw.date)) out.date = raw.date;
+    else {
+      const c = new Date(out.createdAt);
+      out.date = isNaN(c.getTime()) ? (o.defaultDate || todayISO()) : dateToISO(c);
+    }
+
+    let d = Math.round(Number(raw.durationMinutes));
+    if (d !== d) d = 0;
+    out.durationMinutes = Math.min(1440, Math.max(0, d));
+    out.notes = raw.notes == null ? "" : String(raw.notes);
+
+    const rf = isPlain(raw.fields) ? raw.fields : {};
+    const f = {};
+    for (const k in rf) if (KNOWN_FIELDS.indexOf(k) === -1) f[k] = rf[k];       // keep unknown sub-keys
+
+    let tempo = Math.round(Number(rf.tempo));
+    f.tempo = (tempo === tempo && tempo >= 20 && tempo <= 400) ? tempo : null;
+    f.tool = rf.tool == null ? null : canonTool(rf.tool);
+    f.tune = rf.tune == null ? null : (clampStr(rf.tune, 200) || null);
+    f.key  = rf.key  == null ? null : (canonKey(rf.key) || null);
+    f.category = rf.category == null ? null : (clampStr(rf.category, 200) || null);
+    const tags = [];
+    if (Array.isArray(rf.tags)){
+      for (const t of rf.tags){
+        const s = String(t == null ? "" : t).trim().replace(/\s+/g," ").toLowerCase().slice(0, 40);
+        if (s && tags.indexOf(s) === -1 && tags.length < 32) tags.push(s);
+      }
+    }
+    f.tags = tags;
+    f.focus = rf.focus == null ? null : (clampStr(rf.focus, 200) || null);
+    let r = Math.round(Number(rf.rating));
+    f.rating = (r === r && r >= 1 && r <= 5) ? r : null;
+    out.fields = f;
+    return out;
+  }
+
+  function normalizeConfig(raw){
+    const src = isPlain(raw) ? raw : {};
+    const out = {};
+    const known = ["schemaVersion","kind","enabledFields","categories","defaultDurationMinutes","defaultView"];
+    for (const k in src) if (known.indexOf(k) === -1) out[k] = src[k];
+
+    const sv = Math.trunc(Number(src.schemaVersion));
+    out.schemaVersion = (sv === sv && sv >= 1) ? sv : 1;
+    out.kind = "practice-journal.config";
+
+    if (Array.isArray(src.enabledFields)){
+      const ef = [];
+      for (const f of src.enabledFields)
+        if (FIELD_IDS.indexOf(f) !== -1 && ef.indexOf(f) === -1 && ef.length < 8) ef.push(f);
+      out.enabledFields = ef;                                  // an empty array is legal
+    } else out.enabledFields = DEFAULT_CONFIG.enabledFields.slice();
+
+    if (Array.isArray(src.categories)){
+      const cs = [], seen = {};
+      for (const c of src.categories){
+        const s = clampStr(c, 40);
+        if (!s) continue;
+        const low = s.toLowerCase();
+        if (seen[low]) continue;
+        seen[low] = 1; cs.push(s);
+        if (cs.length >= 40) break;
+      }
+      out.categories = cs.length ? cs : DEFAULT_CONFIG.categories.slice();
+    } else out.categories = DEFAULT_CONFIG.categories.slice();
+
+    let dd = Math.round(Number(src.defaultDurationMinutes));
+    out.defaultDurationMinutes = (dd === dd) ? Math.min(1440, Math.max(1, dd)) : 30;
+    out.defaultView = (["log","history","summary"].indexOf(src.defaultView) !== -1) ? src.defaultView : "log";
+    return out;
+  }
+
+  function emptyEnvelope(){
+    return { schemaVersion:SCHEMA_VERSION, kind:"practice-journal.entries",
+             deviceId:uuid(), updatedAt:nowISO(), lastExportedAt:null, entries:[] };
+  }
+
+  function dedupeById(list){
+    const byId = Object.create(null);
+    for (const e of list){
+      const prev = byId[e.id];
+      if (!prev) { byId[e.id] = e; continue; }
+      const a = tms(e.updatedAt), b = tms(prev.updatedAt);
+      if (a > b || (a === b && tms(e.createdAt) > tms(prev.createdAt))) byId[e.id] = e;
+    }
+    const out = [], seen = Object.create(null);
+    for (const e of list){ const w = byId[e.id]; if (!seen[e.id]){ seen[e.id] = 1; out.push(w); } }
+    return out;
+  }
+
+  function normalizeEnvelope(raw){
+    if (!isPlain(raw)) return emptyEnvelope();
+    const out = {};
+    const known = ["schemaVersion","kind","deviceId","updatedAt","lastExportedAt","entries"];
+    for (const k in raw) if (known.indexOf(k) === -1) out[k] = raw[k];
+    const sv = Math.trunc(Number(raw.schemaVersion));
+    out.schemaVersion = (sv === sv && sv >= 1) ? sv : SCHEMA_VERSION;
+    out.kind = "practice-journal.entries";
+    out.deviceId = (typeof raw.deviceId === "string" && raw.deviceId.trim()) ? raw.deviceId.trim().slice(0,128) : uuid();
+    out.updatedAt = parsable(raw.updatedAt) ? raw.updatedAt : nowISO();
+    out.lastExportedAt = parsable(raw.lastExportedAt) ? raw.lastExportedAt : null;
+    const list = [];
+    if (Array.isArray(raw.entries)) for (const r of raw.entries){ const e = normalizeEntry(r); if (e) list.push(e); }
+    out.entries = dedupeById(list);
+    return out;
+  }
+
+  /* ---------- health ---------- */
+  let E = null, C = null, health = null, corruptRawStr = null;
+  const _unsaved = new Map();
+  const _dismissed = new Set();
+  let _onChange = null;
+  let _otherBytes = 0;
+  const _ourBytes = {};
+  _ourBytes[K_ENTRIES] = 0; _ourBytes[K_CONFIG] = 0;
+
+  function isQuotaError(e){
+    if (!e) return false;
+    return e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+           e.code === 22 || e.code === 1014;
+  }
+
+  function detectHealth(){
+    const h = { framed:false, storage:"ok", data:"ok", canRead:true, canWrite:true, error:null };
+    try { h.framed = (window.self !== window.top); } catch (e) { h.framed = true; }
+
+    let ls = null;
+    try {
+      ls = window.localStorage;
+      if (!ls || typeof ls.setItem !== "function" || typeof ls.getItem !== "function") h.storage = "missing";
+    } catch (e) { h.storage = "missing"; h.error = e; }
+    if (h.storage === "missing"){ h.canRead = false; h.canWrite = false; return h; }
+
+    let existing = 0;
+    try { existing = ls.length; } catch (e) { existing = 0; }
+    try {
+      ls.setItem(K_PROBE, "1");
+      if (ls.getItem(K_PROBE) !== "1") throw new Error("probe readback mismatch");
+    } catch (e) {
+      h.error = e;
+      h.storage = (isQuotaError(e) && existing > 0) ? "full" : "blocked";
+      h.canWrite = false;
+    } finally {
+      try { ls.removeItem(K_PROBE); } catch (e) {}
+    }
+    if (h.storage === "full") h.canWrite = true;
+    return h;
+  }
+
+  function remeasure(){
+    _otherBytes = 0;
+    try {
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i); if (k == null) continue;
+        const v = localStorage.getItem(k) || "";
+        const n = (k.length + v.length) * 2;
+        if (k.indexOf(NS) === 0) _ourBytes[k] = n;
+        else _otherBytes += n;
+      }
+    } catch (e) {}
+  }
+
+  function estimateUsage(){
+    const ours = (_ourBytes[K_ENTRIES] || 0) + (_ourBytes[K_CONFIG] || 0);
+    const total = ours + _otherBytes;
+    const ratio = total / QUOTA_LIMIT_BYTES;
+    return { ours:ours, other:_otherBytes, total:total, limit:QUOTA_LIMIT_BYTES, ratio:ratio,
+             pct: Math.round(ratio * 100), entries: E ? E.entries.length : 0,
+             level: ratio >= QUOTA_CRIT ? "critical" : ratio >= QUOTA_WARN ? "warn" : "ok" };
+  }
+
+  /* ---------- the two writers ---------- */
+  function persist(key, value){
+    if (!health.canWrite)
+      return { ok:false, reason: health.storage === "missing" ? "missing" : "blocked",
+               error: health.error, bytes:0, prev:null };
+    let json;
+    try { json = JSON.stringify(value); }
+    catch (err){ return { ok:false, reason:"serialize", error:err, bytes:0, prev:null }; }
+
+    let prev = null;
+    try { prev = localStorage.getItem(key); } catch (e) {}
+
+    try {
+      localStorage.setItem(key, json);                                  // WRITE 1 of 2
+    } catch (err){
+      if (isQuotaError(err)){ health.storage = "full"; health.error = err; }
+      else { health.storage = "blocked"; health.canWrite = false; health.error = err; }
+      return { ok:false, reason: isQuotaError(err) ? "quota" : "blocked", error:err, bytes: json.length*2, prev:prev };
+    }
+
+    if (key === K_ENTRIES){
+      let back = null;
+      try { back = localStorage.getItem(key); } catch (e) {}
+      if (back === null || back.length !== json.length){
+        restoreRaw(key, prev);      // callers roll back in memory; keep disk in step
+        return { ok:false, reason:"verify", error:null, bytes: json.length*2, prev:prev };
+      }
+    }
+
+    _ourBytes[key] = (key.length + json.length) * 2;
+    if (health.storage === "full") health.storage = "ok";
+    return { ok:true, reason:null, error:null, bytes: json.length*2, prev:prev };
+  }
+
+  function restoreRaw(key, str){
+    try { if (str === null) localStorage.removeItem(key); else localStorage.setItem(key, str); }  // WRITE 2 of 2
+    catch (e) { health.error = e; }
+  }
+
+  function readDiskEnvelope(){
+    if (!health.canRead) return null;
+    let raw = null;
+    try { raw = localStorage.getItem(K_ENTRIES); } catch (e) { return null; }
+    if (!raw) return null;
+    try { return normalizeEnvelope(JSON.parse(raw)); } catch (e) { return null; }
+  }
+
+  /* Two tabs on one device is the ordinary case — the framed page tells students to
+     open a second one. persist() writes the whole envelope, so a stale tab would
+     otherwise erase everything the other one logged. Merge before every mutation:
+     same id -> later updatedAt wins; ids only on disk are taken; ids only in memory
+     are kept. Called at the START of each mutator, so the mutation then applies to
+     the merged state and its own fresh updatedAt wins. */
+  function syncFromDisk(){
+    if (health.data === "corrupt") return false;
+    const disk = readDiskEnvelope();
+    if (!disk) return false;
+    const mine = Object.create(null);
+    E.entries.forEach((e, i) => { mine[e.id] = i; });
+    let changed = false;
+    disk.entries.forEach(d => {
+      const i = mine[d.id];
+      if (i === undefined){ E.entries.push(d); changed = true; }
+      else if (tms(d.updatedAt) > tms(E.entries[i].updatedAt)){ E.entries[i] = d; changed = true; }
+    });
+    if (disk.lastExportedAt && tms(disk.lastExportedAt) > tms(E.lastExportedAt))
+      { E.lastExportedAt = disk.lastExportedAt; changed = true; }
+    if (disk.schemaVersion > E.schemaVersion){ E.schemaVersion = disk.schemaVersion; changed = true; }
+    return changed;
+  }
+
+  function saveEntries(){
+    E.updatedAt = nowISO();
+    const r = persist(K_ENTRIES, E);
+    if (r.ok && _unsaved.size){ _unsaved.clear(); }
+    notifyChange();
+    return r;
+  }
+  function notifyChange(){ if (_onChange) { try { _onChange(); } catch (e) {} } }
+
+  /* ---------- reads ---------- */
+  function matches(e, f){
+    if (!f.includeDeleted && e.deletedAt !== null) return false;
+    if (f.from && e.date < f.from) return false;
+    if (f.to   && e.date > f.to)   return false;
+    const fl = e.fields || {};
+    if (f.category && fl.category !== f.category) return false;
+    if (f.tool && fl.tool !== f.tool) return false;
+    if (f.tag){
+      const t = String(f.tag).toLowerCase();
+      if (!Array.isArray(fl.tags) || fl.tags.indexOf(t) === -1) return false;
+    }
+    if (f.tune){
+      const q = String(f.tune).toLowerCase();
+      if (!fl.tune || String(fl.tune).toLowerCase().indexOf(q) === -1) return false;
+    }
+    if (f.text){
+      const q = String(f.text).toLowerCase();
+      const hay = [e.notes, fl.focus, fl.tune].map(x => String(x || "").toLowerCase()).join("\n");
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+  function cmpEntries(a, b){
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    const ta = tms(a.createdAt), tb = tms(b.createdAt);
+    if (ta !== tb) return tb - ta;
+    return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
+  }
+  function listEntries(filter){
+    const f = filter || {};
+    if (!E) return [];
+    return E.entries.filter(e => matches(e, f)).sort(cmpEntries);
+  }
+  function getEntry(id){
+    if (!E) return null;
+    for (const e of E.entries) if (e.id === id) return e;
+    return null;
+  }
+
+  function rank(values){
+    const counts = Object.create(null);
+    for (const v of values) counts[v] = (counts[v] || 0) + 1;
+    return Object.keys(counts).sort((a, b) => counts[b] - counts[a] || (a < b ? -1 : a > b ? 1 : 0));
+  }
+  function allTags(){
+    const all = [];
+    for (const e of E.entries) if (e.deletedAt === null && Array.isArray(e.fields.tags)) all.push.apply(all, e.fields.tags);
+    return rank(all);
+  }
+  function allTunes(){
+    const all = [];
+    for (const e of E.entries) if (e.deletedAt === null && e.fields.tune) all.push(e.fields.tune);
+    return rank(all);
+  }
+
+  /* ---------- writes ---------- */
+  function saveEntry(partial){
+    syncFromDisk();
+    const existing = (partial && partial.id) ? getEntry(partial.id) : null;
+    const now = nowISO();
+    let rec, idx = -1;
+    if (existing){
+      idx = E.entries.indexOf(existing);
+      const merged = {};
+      for (const k in existing) merged[k] = existing[k];
+      for (const k in partial) if (k !== "fields") merged[k] = partial[k];
+      const mf = {};
+      for (const k in (existing.fields || {})) mf[k] = existing.fields[k];
+      for (const k in (partial.fields || {})) mf[k] = partial.fields[k];
+      merged.fields = mf;
+      merged.createdAt = existing.createdAt;
+      merged.updatedAt = now;
+      rec = normalizeEntry(merged, { now: now });
+      rec.updatedAt = now;
+    } else {
+      const seed = {};
+      for (const k in partial) seed[k] = partial[k];
+      seed.id = (partial && partial.id) || uuid();
+      seed.createdAt = now; seed.updatedAt = now; seed.deletedAt = null;
+      rec = normalizeEntry(seed, { now: now });
+    }
+    const before = idx >= 0 ? E.entries[idx] : null;
+    if (idx >= 0) E.entries[idx] = rec; else E.entries.push(rec);
+
+    const r = saveEntries();
+    if (!r.ok){
+      if (r.reason === "quota" || r.reason === "verify"){
+        _unsaved.set(rec.id, rec);                       // keep it on screen; do NOT roll back
+      } else if (idx >= 0){ E.entries[idx] = before; }
+      else { E.entries.pop(); }
+      notifyChange();        // AFTER _unsaved, so the recovery buttons actually render
+      return { ok:false, entry: rec, reason: r.reason, error: r.error };
+    }
+    return { ok:true, entry: rec, reason:null, error:null };
+  }
+
+  function setDeleted(id, value){
+    syncFromDisk();
+    const e = getEntry(id);
+    if (!e) return { ok:false, entry:null, reason:"missing" };
+    const prevDel = e.deletedAt, prevUpd = e.updatedAt;
+    e.deletedAt = value; e.updatedAt = nowISO();
+    const r = saveEntries();
+    if (!r.ok){ e.deletedAt = prevDel; e.updatedAt = prevUpd; return { ok:false, entry:e, reason:r.reason }; }
+    return { ok:true, entry:e, reason:null };
+  }
+  function softDelete(id){ return setDeleted(id, nowISO()); }
+  function restore(id){ return setDeleted(id, null); }
+
+  function deletedCount(){ return E ? E.entries.filter(e => e.deletedAt !== null).length : 0; }
+
+  function purgeDeleted(){
+    syncFromDisk();
+    const snapshot = E.entries.slice();
+    const kept = E.entries.filter(e => e.deletedAt === null);
+    const n = snapshot.length - kept.length;
+    if (!n) return { ok:true, count:0, reason:null };
+    E.entries = kept;
+    const r = saveEntries();
+    if (!r.ok){ E.entries = snapshot; return { ok:false, count:0, reason:r.reason }; }
+    remeasure();
+    return { ok:true, count:n, reason:null };
+  }
+
+  function loadConfig(){ return C; }
+  function saveConfig(partial){
+    const before = C;
+    const merged = {};
+    for (const k in C) merged[k] = C[k];
+    for (const k in partial) merged[k] = partial[k];
+    C = normalizeConfig(merged);
+    const r = persist(K_CONFIG, C);
+    if (!r.ok){ C = before; notifyChange(); return { ok:false, config:C, reason:r.reason }; }
+    notifyChange();
+    return { ok:true, config:C, reason:null };
+  }
+
+  function markExported(){
+    syncFromDisk();
+    E.lastExportedAt = nowISO();
+    const r = persist(K_ENTRIES, E);
+    notifyChange();
+    return { ok: r.ok };
+  }
+
+  function exportBundle(){
+    return {
+      kind: "practice-journal.backup",
+      schemaVersion: Math.max(SCHEMA_VERSION, E.schemaVersion || 1),
+      exportedAt: nowISO(),
+      device: { id: E.deviceId },
+      counts: { entries: E.entries.length, deleted: deletedCount() },
+      config: C,
+      entries: E.entries.slice()
+    };
+  }
+
+  /* ---------- import ---------- */
+  function importMerge(local, incoming){
+    const byId = Object.create(null);
+    for (const e of local) byId[e.id] = e;
+    const add = [], update = [], skip = [];
+    let willDelete = 0, addTombstones = 0;
+    for (const inc of incoming){
+      const loc = byId[inc.id];
+      if (!loc){ add.push(inc); if (inc.deletedAt !== null) addTombstones++; continue; }
+      if (tms(inc.updatedAt) > tms(loc.updatedAt)){
+        update.push(inc);
+        if (inc.deletedAt !== null && loc.deletedAt === null) willDelete++;
+      } else skip.push(inc);
+    }
+    return { add:add, update:update, skip:skip, willDelete:willDelete, addTombstones:addTombstones };
+  }
+
+  function previewImport(text, sourceName){
+    const out = { ok:false, error:null, code:null, source: sourceName || "pasted text",
+                  exportedAt:null, foreignDevice:false, futureSchema:null,
+                  add:0, update:0, skip:0, willDelete:0, addTombstones:0,
+                  dropped:0, repaired:0, duplicates:0, idless:0,
+                  configIncluded:false, configDiff:null, plan:null };
+
+    let s = String(text == null ? "" : text);
+    if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
+    s = s.trim();
+    if (!s){ out.code = "empty"; out.error = "There's nothing to check yet. Choose a .json file, or paste the contents of one into the box."; return out; }
+
+    let raw;
+    try { raw = JSON.parse(s); }
+    catch (err){
+      out.code = s.charAt(0) === "<" ? "html" : "not-json";
+      out.error = s.charAt(0) === "<"
+        ? "That looks like a saved web page, not a backup file. Export a fresh backup and try that one."
+        : "That file isn't readable as JSON. The parser said: " + String(err.message).slice(0, 80);
+      return out;
+    }
+
+    let rawEntries = null, rawConfig = null, sniffed = false;
+    if (isPlain(raw) && raw.kind === "practice-journal.backup"){ rawEntries = raw.entries; rawConfig = raw.config; sniffed = true; }
+    else if (isPlain(raw) && raw.kind === "practice-journal.entries"){ rawEntries = raw.entries; sniffed = true; }
+    else if (isPlain(raw) && raw.kind === "practice-journal.config"){ rawEntries = []; rawConfig = raw; sniffed = true; }
+    else if (isPlain(raw) && Array.isArray(raw.entries)){ rawEntries = raw.entries; if (isPlain(raw.config)) rawConfig = raw.config; }
+    else if (Array.isArray(raw)){ rawEntries = raw; }
+    else {
+      out.code = "not-ours";
+      out.error = 'That’s valid JSON, but it isn’t a Practice Journal backup — there are no entries in it. A backup from this tool starts with "kind": "practice-journal.backup".';
+      return out;
+    }
+    if (!Array.isArray(rawEntries)) rawEntries = [];
+
+    const normed = [];
+    let plausible = 0;
+    for (let r of rawEntries){
+      if (isPlain(r) && !(typeof r.id === "string" && r.id.trim())){
+        const copy = {}; for (const k in r) copy[k] = r[k];
+        copy.id = stableId(r); out.idless++; r = copy;      // same id every import
+      }
+      const e = normalizeEntry(r);
+      if (!e){ out.dropped++; continue; }
+      if (isPlain(r) && ("date" in r || "durationMinutes" in r || "fields" in r || "notes" in r)) plausible++;
+      if (!isPlain(r) || !(typeof r.id === "string" && r.id.trim()) || !isValidISODate(r.date) ||
+          !parsable(r.createdAt) || !parsable(r.updatedAt)) out.repaired++;
+      normed.push(e);
+    }
+    if (!sniffed && plausible === 0){
+      out.code = "not-ours";
+      out.error = 'That’s valid JSON, but it isn’t a Practice Journal backup — there are no entries in it. A backup from this tool starts with "kind": "practice-journal.backup".';
+      return out;
+    }
+
+    const deduped = dedupeById(normed);
+    out.duplicates = normed.length - deduped.length;
+
+    const sv = Math.trunc(Number(isPlain(raw) ? raw.schemaVersion : NaN));
+    if (sv === sv && sv > SCHEMA_VERSION) out.futureSchema = sv;
+    if (isPlain(raw) && parsable(raw.exportedAt)) out.exportedAt = raw.exportedAt;
+    if (isPlain(raw) && isPlain(raw.device) && typeof raw.device.id === "string")
+      out.foreignDevice = raw.device.id !== E.deviceId;
+
+    const m = importMerge(E.entries, deduped);
+    out.add = m.add.length; out.update = m.update.length; out.skip = m.skip.length;
+    out.willDelete = m.willDelete; out.addTombstones = m.addTombstones;
+
+    let cfg = null, diff = null;
+    if (isPlain(rawConfig)){
+      cfg = normalizeConfig(rawConfig);
+      out.configIncluded = true;
+      diff = { addCategories: cfg.categories.filter(c => C.categories.indexOf(c) === -1),
+               addFields: cfg.enabledFields.filter(f => C.enabledFields.indexOf(f) === -1) };
+      out.configDiff = diff;
+    }
+    out.plan = { add:m.add, update:m.update, skip:m.skip, config:cfg, applyConfig:false };
+    out.ok = true;
+    return out;
+  }
+
+  function applyImport(plan){
+    if (!plan) return { ok:false, added:0, updated:0, skipped:0, reason:"empty" };
+    if (!health.canWrite) return { ok:false, added:0, updated:0, skipped:0, reason: health.storage };
+
+    syncFromDisk();
+    const snapEntries = E.entries.slice();
+
+    /* The plan was classified when the student pressed "check it". They may have edited
+       an entry since. Re-classify against the store as it is NOW, so a stale preview can
+       never overwrite a newer local edit. */
+    const incoming = plan.add.concat(plan.update, plan.skip);
+    const m = importMerge(E.entries, incoming);
+
+    const byId = Object.create(null);
+    E.entries.forEach((e, i) => { byId[e.id] = i; });
+    for (const inc of m.update){ const i = byId[inc.id]; if (i !== undefined) E.entries[i] = inc; }
+    for (const inc of m.add) E.entries.push(inc);
+    const snapUpdatedAt = E.updatedAt;
+    E.updatedAt = nowISO();
+
+    const r1 = persist(K_ENTRIES, E);
+    if (!r1.ok){ E.entries = snapEntries; E.updatedAt = snapUpdatedAt; notifyChange();
+                 return { ok:false, added:0, updated:0, skipped:0, reason:r1.reason }; }
+
+    if (plan.applyConfig && plan.config){
+      const merged = {};
+      for (const k in C) merged[k] = C[k];
+      // additive only: never drop a category or turn a field off from someone else's backup
+      merged.categories = C.categories.concat(plan.config.categories.filter(c => C.categories.indexOf(c) === -1));
+      merged.enabledFields = C.enabledFields.concat(plan.config.enabledFields.filter(f => C.enabledFields.indexOf(f) === -1));
+      const next = normalizeConfig(merged);
+      const before = C; C = next;
+      const r2 = persist(K_CONFIG, C);
+      if (!r2.ok){
+        C = before;
+        restoreRaw(K_ENTRIES, r1.prev);                 // known to have fitted a moment ago
+        const back = readDiskEnvelope();
+        const rolledBack = !back || back.entries.length === snapEntries.length;
+        E.entries = snapEntries; E.updatedAt = snapUpdatedAt;
+        notifyChange();
+        return { ok:false, added:0, updated:0, skipped:0, reason: rolledBack ? r2.reason : "partial" };
+      }
+    }
+    remeasure(); notifyChange();
+    return { ok:true, added:m.add.length, updated:m.update.length, skipped:m.skip.length, reason:null };
+  }
+
+  /* ---------- state & notices ---------- */
+  function state(){
+    if (!health) return "ok";
+    if (health.framed) return "framed";
+    if (health.storage === "missing") return "missing";
+    if (health.storage === "blocked") return "blocked";
+    if (health.data === "corrupt") return "corrupt";
+    if (health.storage === "full") return "full";
+    return "ok";
+  }
+
+  const NOTICE_TEXT = {
+    framed: "This page is inside another site, and browsers often throw away anything it saves. Open it in its own tab and your entries stay put.",
+    missing: "Entries can't be saved in this browser — it isn't giving this page anywhere to store data, usually because site data is blocked. The log form is off so nothing you type disappears without warning.",
+    blocked: "Entries can't be saved in this browsing mode. This looks like private browsing: the browser refuses to store anything and throws it away when you close the window. Open the tool in a normal window and it'll work.",
+    corrupt: "This journal's saved file couldn't be read. Nothing has been overwritten and writing is off until you decide. Download it and send it to me, or start fresh.",
+    full: "This device's storage is full. New sessions can't be saved. Export a backup, then clear deleted entries to make room.",
+    unsaved: "Not saved. That session is on this screen but not on your device — if you close this tab it's gone."
+  };
+
+  function notices(){
+    const out = [], st = state();
+    if (st === "framed")  out.push({ code:"framed",  level:"red", text:NOTICE_TEXT.framed,  action:"open-new-tab", actionLabel:"Open in a new tab" });
+    if (st === "missing") out.push({ code:"missing", level:"red", text:NOTICE_TEXT.missing, action:"settings", actionLabel:"Read more" });
+    if (st === "blocked") out.push({ code:"blocked", level:"red", text:NOTICE_TEXT.blocked, action:"settings", actionLabel:"Read more" });
+    if (st === "corrupt"){
+      out.push({ code:"corrupt", level:"red", text:NOTICE_TEXT.corrupt, action:"download-raw", actionLabel:"Download the file" });
+      out.push({ code:"corrupt-next", level:"amber",
+                 text:"Bring in a backup from Settings to carry on from it, or start fresh with an empty journal. Either one replaces the unreadable file, so download that first.",
+                 action:"start-fresh", actionLabel:"Start fresh" });
+    }
+    if (health.storage === "full") out.push({ code:"full", level:"red", text:NOTICE_TEXT.full, action:"export-json", actionLabel:"Export a backup" });
+    if (_unsaved.size) out.push({ code:"unsaved", level:"red", text:NOTICE_TEXT.unsaved, action:"retry-save", actionLabel:"Try again" });
+    if (health.canWrite && health.storage !== "full" && !_dismissed.has("quota")){
+      const u = estimateUsage();
+      if (u.level !== "ok")
+        out.push({ code:"quota", level: u.level === "critical" ? "red" : "amber",
+                   text:"Storage on this device is about " + u.pct + "% full. Export a backup before it fills up.",
+                   action:"export-json", actionLabel:"Export a backup", dismissible: u.level !== "critical" });
+    }
+    if (E && E.schemaVersion > SCHEMA_VERSION && !_dismissed.has("schema-future"))
+      out.push({ code:"schema-future", level:"amber",
+                 text:"This journal was saved by a newer version of the tool. Anything it doesn't recognise is being kept, but may not show up here.",
+                 action:null, dismissible:true });
+    return out;
+  }
+
+  function init(){
+    health = detectHealth();
+    let rawE = null, rawC = null;
+    if (health.canRead){
+      try { rawE = localStorage.getItem(K_ENTRIES); } catch (e) {}
+      try { rawC = localStorage.getItem(K_CONFIG); } catch (e) {}
+    }
+    if (rawE){
+      try { E = normalizeEnvelope(JSON.parse(rawE)); }
+      catch (err){
+        /* Do NOT clear canWrite: import and "start fresh" are the only ways back, and
+           both must write. The unreadable bytes are protected instead by hiding every
+           automatic write path (log form, edit, delete) behind body.pj-corrupt, so
+           nothing overwrites them until the student chooses to. */
+        health.data = "corrupt"; corruptRawStr = rawE; E = emptyEnvelope();
+      }
+    } else E = emptyEnvelope();
+
+    if (rawC){ try { C = normalizeConfig(JSON.parse(rawC)); } catch (err){ C = normalizeConfig(null); } }
+    else C = normalizeConfig(null);
+
+    remeasure();
+
+    try {
+      window.addEventListener("storage", function(ev){
+        if (!ev || !ev.key) return;                        // ev.key is null on clear()
+        if (ev.key === K_ENTRIES){ syncFromDisk(); notifyChange(); }
+        else if (ev.key === K_CONFIG){
+          try { C = normalizeConfig(JSON.parse(ev.newValue || "null")); } catch (e) {}
+          notifyChange();
+        }
+      });
+    } catch (e) {}
+
+    return { state: state(), entries: E.entries, config: C };
+  }
+
+  return {
+    init:init, state:state, stateDetail:() => health, onChange:fn => { _onChange = fn; },
+    notices:notices, dismissNotice:code => { _dismissed.add(code); notifyChange(); },
+    corruptRaw:() => corruptRawStr,
+    startFresh:function(){
+      E = emptyEnvelope(); corruptRawStr = null;
+      health.data = "ok"; health.canWrite = health.storage !== "missing" && health.storage !== "blocked";
+      const r = persist(K_ENTRIES, E); remeasure(); notifyChange();
+      return { ok:r.ok };
+    },
+    listEntries:listEntries, getEntry:getEntry, saveEntry:saveEntry,
+    softDelete:softDelete, restore:restore, purgeDeleted:purgeDeleted, deletedCount:deletedCount,
+    allTags:allTags, allTunes:allTunes,
+    unsavedEntries:() => Array.from(_unsaved.values()), clearUnsaved:() => _unsaved.clear(),
+    retryUnsaved:function(){ const r = saveEntries(); return { ok:r.ok, reason:r.reason }; },
+    loadConfig:loadConfig, saveConfig:saveConfig,
+    exportBundle:exportBundle, previewImport:previewImport, applyImport:applyImport, importMerge:importMerge,
+    markExported:markExported, lastExported:() => E.lastExportedAt, deviceId:() => E.deviceId,
+    estimateUsage:estimateUsage, remeasure:remeasure, syncFromDisk:syncFromDisk, stableId:stableId,
+    uuid:uuid, nowISO:nowISO, todayISO:todayISO, dateToISO:dateToISO, isoToDate:isoToDate,
+    isValidISODate:isValidISODate, shiftISO:shiftISO, daysBetweenISO:daysBetweenISO,
+    windowStartISO:windowStartISO, tms:tms,
+    normalizeEntry:normalizeEntry, normalizeConfig:normalizeConfig, normalizeEnvelope:normalizeEnvelope,
+    KEYS:{ entries:K_ENTRIES, config:K_CONFIG },
+    SCHEMA_VERSION:SCHEMA_VERSION, FIELD_IDS:FIELD_IDS, SPINE_IDS:SPINE_IDS,
+    FIELD_LABELS:FIELD_LABELS, FIELD_NOTES:FIELD_NOTES,
+    TOOLS:TOOLS, KEYS_12:KEYS_12, DEFAULT_CONFIG:DEFAULT_CONFIG
+  };
+})();
+
+function toolLabel(v){
+  if (!v) return "";
+  for (const t of store.TOOLS) if (t.id === v) return t.label;
+  return v;
+}
+
+/* ===================== app state ===================== */
+const S = {
+  view: "log",
+  log: { editingId: null, tags: [], rating: null, errorEl: null },
+  h: { open: false, from:"", to:"", cat:"", tag:"", tool:"", tune:"", expanded: {}, limit: 200 },
+  s: { win: "week" },
+  im: { preview: null, source: "" }
+};
+
+/* ===================== view switching ===================== */
+function setView(v){
+  S.view = v;
+  document.body.setAttribute("data-view", v);
+  document.querySelectorAll("[data-view-btn]").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.viewBtn === v)));
+  renderWarns();
+  if (v === "history") renderHistory();
+  if (v === "summary") renderSummary();
+  if (v === "settings") renderSettings();
+}
+
+/* ===================== warn bar ===================== */
+function renderWarns(){
+  /* The Log view already carries the full framed explanation as a card, so the bar
+     would be saying it twice. It still shows on the other views, where the card isn't. */
+  const list = store.notices().filter(n => !(n.code === "framed" && S.view === "log"));
+  const box = $("warns");
+  box.innerHTML = "";
+  list.forEach(n => {
+    const row = document.createElement("div");
+    row.className = "warn " + (n.level === "red" ? "red" : "amber");
+    row.dataset.code = n.code;
+    const sp = document.createElement("span"); sp.textContent = n.text; row.appendChild(sp);
+    if (n.action){
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn"; b.dataset.act = n.action;
+      b.textContent = n.actionLabel || "Fix";
+      row.appendChild(b);
+    }
+    if (n.dismissible){
+      const d = document.createElement("button");
+      d.type = "button"; d.className = "btn"; d.dataset.act = "dismiss"; d.dataset.code = n.code;
+      d.textContent = "Not now";
+      row.appendChild(d);
+    }
+    box.appendChild(row);
+  });
+}
+
+$("warns").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act;
+  if (act === "dismiss") store.dismissNotice(b.dataset.code);
+  else if (act === "open-new-tab") window.open(location.href, "_blank", "noopener");
+  else if (act === "settings") setView("settings");
+  else if (act === "export-json") { setView("settings"); doExport("json"); }
+  else if (act === "retry-save"){
+    const r = store.retryUnsaved();
+    toast(r.ok ? "Saved." : "Still not saving. Export a backup while you can.");
+    render();
+  } else if (act === "start-fresh"){
+    if (b.dataset.armed === "1"){
+      const r = store.startFresh();
+      toast(r.ok ? "Started fresh." : "Couldn't write \u2014 nothing changed.");
+      location.reload();
+    } else {
+      b.dataset.armed = "1"; b.textContent = "Really start fresh? The old file is replaced";
+      setTimeout(() => { if (b.isConnected){ b.dataset.armed = ""; b.textContent = "Start fresh"; } }, 6000);
+    }
+  } else if (act === "download-raw"){
+    download("practice-journal-unreadable-" + store.todayISO() + ".txt", store.corruptRaw() || "", "text/plain;charset=utf-8");
+  }
+});
+
+/* ===================== LOG ===================== */
+function enabled(f){ return store.loadConfig().enabledFields.indexOf(f) !== -1; }
+
+function renderLogOptions(){
+  const C = store.loadConfig();
+
+  const tool = $("f-tool"), keep = tool.value;
+  tool.innerHTML = "";
+  tool.appendChild(new Option("Not set", ""));
+  store.TOOLS.forEach(t => tool.appendChild(new Option(t.label, t.id)));
+  tool.appendChild(new Option("Other\u2026", "__other"));
+  tool.value = keep;
+
+  const key = $("f-key"), keepK = key.value;
+  key.innerHTML = "";
+  key.appendChild(new Option("Not set", ""));
+  store.KEYS_12.forEach(k => key.appendChild(new Option(k, k)));
+  key.value = keepK;
+
+  const cat = $("f-category"), keepC = cat.value;
+  cat.innerHTML = "";
+  cat.appendChild(new Option("Not set", ""));
+  C.categories.forEach(c => cat.appendChild(new Option(c, c)));
+  if (keepC && C.categories.indexOf(keepC) === -1)
+    cat.appendChild(new Option(keepC + " (not in your list)", keepC));
+  cat.value = keepC;
+  $("f-cat-empty").hidden = C.categories.length > 0;
+
+  const dl = $("tunes");
+  dl.innerHTML = "";
+  store.allTunes().slice(0, 50).forEach(t => { const o = document.createElement("option"); o.value = t; dl.appendChild(o); });
+}
+
+function updateDow(){
+  const v = $("f-date").value, out = $("f-date-dow");
+  if (!store.isValidISODate(v)){ out.textContent = ""; return; }
+  const t = store.todayISO();
+  if (v === t) out.textContent = "today";
+  else if (v === store.shiftISO(t, -1)) out.textContent = "yesterday";
+  else out.textContent = DOWS[store.isoToDate(v).getDay()];
+}
+
+function syncDurChips(){
+  const n = Number($("f-duration").value);
+  document.querySelectorAll("[data-dur]").forEach(b =>
+    b.setAttribute("aria-pressed", String(Number(b.dataset.dur) === n)));
+}
+
+const normTag = s => String(s == null ? "" : s).trim().replace(/\s+/g, " ").toLowerCase().slice(0, 40);
+
+function renderTags(){
+  const box = $("f-tags");
+  box.innerHTML = "";
+  S.log.tags.forEach(t => {
+    const chip = document.createElement("span");
+    chip.className = "chip"; chip.dataset.tag = t;
+    const nm = document.createElement("span"); nm.textContent = t; chip.appendChild(nm);
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "x"; x.dataset.tagRemove = t;
+    x.setAttribute("aria-label", "Remove tag " + t); x.innerHTML = "&times;";
+    chip.appendChild(x);
+    box.appendChild(chip);
+  });
+}
+function tagSuggestions(prefix){
+  const pool = store.allTags().filter(t => S.log.tags.indexOf(t) === -1);
+  const p = normTag(prefix);
+  if (!p) return pool.slice(0, 6);
+  const starts = pool.filter(t => t.indexOf(p) === 0);
+  const rest = pool.filter(t => t.indexOf(p) !== 0 && t.indexOf(p) > -1);
+  return starts.concat(rest).slice(0, 6);
+}
+function renderTagSugg(show){
+  const box = $("f-tag-sugg");
+  const list = tagSuggestions($("f-tag-input").value);
+  box.innerHTML = "";
+  if (!show || !list.length){ box.hidden = true; return; }
+  list.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.sugg = t; b.tabIndex = -1; b.textContent = t;
+    box.appendChild(b);
+  });
+  box.hidden = false;
+}
+function commitTag(raw){
+  const t = normTag(raw);
+  if (!t) return false;
+  if (S.log.tags.indexOf(t) !== -1){
+    const chip = $("f-tags").querySelector('[data-tag="' + t.replace(/["\\]/g, "\\$&") + '"]');
+    if (chip){ chip.classList.remove("flash"); void chip.offsetWidth; chip.classList.add("flash");
+               setTimeout(() => chip.classList.remove("flash"), 400); }
+    return false;
+  }
+  if (S.log.tags.length >= 32){ setLogError("That's 32 tags \u2014 the limit.", null); return false; }
+  S.log.tags.push(t); renderTags(); return true;
+}
+/** keepTail: commit everything before the last comma and leave the rest being typed. */
+function commitTagBuffer(keepTail){
+  const inp = $("f-tag-input");
+  const parts = inp.value.split(",");
+  const tail = keepTail ? parts.pop() : "";
+  parts.forEach(commitTag);
+  inp.value = keepTail ? tail : "";
+  renderTagSugg(document.activeElement === inp);
+}
+
+function setRating(v){
+  S.log.rating = v;
+  document.querySelectorAll('input[name=f-rating]').forEach(r => { r.checked = (v !== null && Number(r.value) === v); });
+  $("f-rating-clear").hidden = (v === null);
+}
+
+function setLogError(msg, el){
+  const e = $("f-error");
+  e.textContent = msg; e.hidden = false;
+  $("f-status").textContent = "";
+  if (el){
+    el.setAttribute("aria-invalid", "true");
+    S.log.errorEl = el;
+    try { el.focus(); el.scrollIntoView({ block: "center" }); } catch (x) {}
+  }
+}
+function clearLogError(){
+  const e = $("f-error");
+  e.hidden = true; e.textContent = "";
+  if (S.log.errorEl){ S.log.errorEl.removeAttribute("aria-invalid"); S.log.errorEl = null; }
+}
+function setLogStatus(msg){ $("f-status").textContent = msg; }
+
+/** carry: keep the "frame" fields (date, tool, tune, key, category) for the next block */
+function renderLogForm(entry, opts){
+  const C = store.loadConfig();
+  const o = opts || {};
+  S.log.editingId = entry ? entry.id : null;
+
+  store.FIELD_IDS.forEach(f => {
+    const box = document.querySelector('[data-field="' + f + '"]');
+    if (box) box.hidden = !enabled(f) && !(entry && hasValue(entry, f));
+  });
+  $("f-addfields").hidden = C.enabledFields.length >= store.FIELD_IDS.length;
+  const eb = $("f-editing");
+  eb.hidden = !entry;
+  if (entry) eb.textContent = "Editing the session logged on " + entry.date +
+    ". Saving replaces it \u2014 Cancel leaves it alone.";
+  $("f-firstrun").hidden = store.listEntries().length > 0 || !!entry;
+
+  if (entry){
+    const f = entry.fields || {};
+    $("f-date").value = entry.date;
+    $("f-duration").value = String(entry.durationMinutes);
+    $("f-notes").value = entry.notes || "";
+    $("f-tempo").value = f.tempo == null ? "" : String(f.tempo);
+    $("f-tune").value = f.tune || "";
+    $("f-focus").value = f.focus || "";
+    S.log.tags = Array.isArray(f.tags) ? f.tags.slice() : [];
+    setRating(f.rating == null ? null : f.rating);
+    renderLogOptions();
+    const known = store.TOOLS.some(t => t.id === f.tool);
+    if (f.tool && !known){ $("f-tool").value = "__other"; $("f-tool-other").hidden = false; $("f-tool-other").value = f.tool; }
+    else { $("f-tool").value = f.tool || ""; $("f-tool-other").hidden = true; $("f-tool-other").value = ""; }
+    const cat = $("f-category");
+    if (f.category && C.categories.indexOf(f.category) === -1){
+      cat.appendChild(new Option(f.category + " (not in your list)", f.category));
+    }
+    cat.value = f.category || "";
+    $("f-key").value = f.key || "";
+    $("f-save").textContent = "Save changes";
+    $("f-cancel").hidden = false;
+  } else {
+    if (!o.carry){
+      $("f-date").value = store.todayISO();
+      $("f-tool").value = ""; $("f-tool-other").hidden = true; $("f-tool-other").value = "";
+      $("f-tune").value = ""; $("f-key").value = ""; $("f-category").value = "";
+    }
+    $("f-duration").value = String(C.defaultDurationMinutes);
+    $("f-tempo").value = "";
+    $("f-focus").value = "";
+    $("f-notes").value = "";
+    S.log.tags = [];
+    setRating(null);
+    $("f-save").textContent = "Save this session";
+    $("f-cancel").hidden = true;
+    if (!o.carry) renderLogOptions();
+  }
+  $("f-date").max = store.todayISO();
+  renderTags(); renderTagSugg(false); syncDurChips(); updateDow(); clearLogError();
+}
+function hasValue(entry, f){
+  const v = (entry.fields || {})[f];
+  return Array.isArray(v) ? v.length > 0 : (v !== null && v !== undefined && v !== "");
+}
+
+function validateLog(){
+  if (!store.isValidISODate($("f-date").value)) return { ok:false, msg:"Pick a date.", el:$("f-date") };
+  const d = Math.round(Number($("f-duration").value));
+  if (!($("f-duration").value !== "" && d === d && d >= 1))
+    return { ok:false, msg:"Enter how long you practiced, in minutes.", el:$("f-duration") };
+  if (d > 1440) return { ok:false, msg:"That's more than a day. Check the minutes.", el:$("f-duration") };
+  const tv = $("f-tempo").value;
+  if (tv !== ""){
+    const t = Math.round(Number(tv));
+    if (!(t === t && t >= 20 && t <= 400))
+      return { ok:false, msg:"Tempo should be a number between 20 and 400.", el:$("f-tempo") };
+  }
+  return { ok:true };
+}
+
+function collectLogEntry(){
+  const f = {};
+  const tv = $("f-tempo").value;
+  f.tempo = tv === "" ? null : Math.round(Number(tv));
+  f.tool = ($("f-tool").value === "__other") ? ($("f-tool-other").value.trim() || null) : ($("f-tool").value || null);
+  f.tune = $("f-tune").value.trim() || null;
+  f.key = $("f-key").value || null;
+  f.category = $("f-category").value || null;
+  f.tags = S.log.tags.slice();
+  f.focus = $("f-focus").value.trim() || null;
+  f.rating = S.log.rating;
+  const p = {
+    date: $("f-date").value,
+    durationMinutes: Math.round(Number($("f-duration").value)),
+    notes: $("f-notes").value,
+    fields: f
+  };
+  if (S.log.editingId) p.id = S.log.editingId;
+  return p;
+}
+
+const SAVE_FAIL = {
+  quota: "Not saved \u2014 this device is out of space. The session is still on this screen. Export a backup, then try again.",
+  blocked: "Not saved \u2014 this browser isn't letting the page store anything. Open the tool in a normal window.",
+  missing: "Not saved \u2014 this browser isn't letting the page store anything. Open the tool in a normal window."
+};
+
+function onLogSubmit(e){
+  e.preventDefault();
+  commitTagBuffer();
+  const v = validateLog();
+  if (!v.ok){ setLogError(v.msg, v.el); return; }
+  clearLogError();
+  const wasEdit = !!S.log.editingId;
+  const res = store.saveEntry(collectLogEntry());
+  if (!res.ok){
+    setLogError(SAVE_FAIL[res.reason] || "Not saved \u2014 the write didn't go through. Try again.", null);
+    render();
+    return;
+  }
+  if (wasEdit){
+    renderLogForm(null);
+    setView("history");
+    let btn = null;
+    try { btn = document.querySelector('li[data-entry-id="' + res.entry.id.replace(/["\\]/g, "\\$&") + '"] [data-expand]'); }
+    catch (x) { btn = null; }
+    if (btn) btn.focus(); else { const b = document.querySelector('[data-view-btn="history"]'); if (b) b.focus(); }
+    toast("Changes saved.");
+  } else {
+    renderLogForm(null, { carry: true });
+    setLogStatus(res.entry.date === store.todayISO()
+      ? "Saved. " + res.entry.durationMinutes + " min logged for today."
+      : "Saved. " + res.entry.durationMinutes + " min logged for " + res.entry.date + ".");
+    if (window.matchMedia && window.matchMedia("(hover: none)").matches){
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    } else $("f-notes").focus();
+  }
+  renderLogOptions();
+  render();
+}
+
+/* ===================== HISTORY ===================== */
+function summaryLine(e){
+  const f = e.fields || {};
+  if (f.tune) return f.tune;
+  if (f.focus) return f.focus;
+  const n = String(e.notes || "").split(/\r?\n/)[0].trim();
+  return n || null;
+}
+function fmtDay(iso){
+  const d = store.isoToDate(iso);
+  if (!d) return iso;
+  return DOWS[d.getDay()].toUpperCase() + " " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear();
+}
+function activeFilterCount(){
+  const h = S.h;
+  return ["from","to","cat","tag","tool","tune"].filter(k => h[k]).length;
+}
+const validISO = v => store.isValidISODate(v) ? v : "";
+function readFilters(){
+  S.h.from = validISO($("h-from").value); S.h.to = validISO($("h-to").value);
+  S.h.cat = $("h-cat").value; S.h.tag = $("h-tag").value;
+  S.h.tool = $("h-tool").value; S.h.tune = $("h-tune").value.trim();
+}
+function filterObj(){
+  const h = S.h, f = { includeDeleted:false };
+  if (h.from) f.from = h.from;
+  if (h.to) f.to = h.to;
+  if (h.cat) f.category = h.cat;
+  if (h.tag) f.tag = h.tag;
+  if (h.tool) f.tool = h.tool;
+  if (h.tune) f.tune = h.tune;
+  return f;
+}
+function rebuildHistoryFilters(){
+  const C = store.loadConfig();
+  const live = store.listEntries();
+
+  const cats = C.categories.slice();
+  const extra = [];
+  live.forEach(e => { const c = e.fields.category; if (c && cats.indexOf(c) === -1 && extra.indexOf(c) === -1) extra.push(c); });
+  extra.sort();
+  fillSelect($("h-cat"), "All categories", cats.map(c => [c, c]).concat(extra.map(c => [c, c + " (retired)"])), S.h.cat);
+
+  fillSelect($("h-tag"), "All tags", store.allTags().map(t => [t, t]), S.h.tag);
+
+  const used = [];
+  live.forEach(e => { const t = e.fields.tool; if (t && used.indexOf(t) === -1) used.push(t); });
+  const known = store.TOOLS.filter(t => used.indexOf(t.id) !== -1).map(t => [t.id, t.label]);
+  const free = used.filter(u => !store.TOOLS.some(t => t.id === u)).sort().map(u => [u, u]);
+  fillSelect($("h-tool"), "All tools", known.concat(free), S.h.tool);
+}
+function fillSelect(sel, allLabel, pairs, current){
+  sel.innerHTML = "";
+  sel.appendChild(new Option(allLabel, ""));
+  pairs.forEach(p => sel.appendChild(new Option(p[1], p[0])));
+  sel.value = pairs.some(p => p[0] === current) ? current : "";
+  if (sel.value !== current){ S.h[sel.id.slice(2)] = sel.value; }
+}
+
+function renderHistory(){
+  rebuildHistoryFilters();
+  const backwards = !!(S.h.from && S.h.to && S.h.from > S.h.to);
+  $("h-range-warn").hidden = !backwards;
+  const rows = backwards ? [] : store.listEntries(filterObj());
+  const n = activeFilterCount();
+  $("h-clear").hidden = n === 0;
+  $("h-toggle").textContent = n ? "filters (" + n + ")" : "filters";
+
+  const total = rows.reduce((a, e) => a + e.durationMinutes, 0);
+  $("h-count").textContent = rows.length
+    ? rows.length + " " + plural(rows.length, "session", "sessions") + " \u00b7 " + fmtDur(total) + (n ? " \u00b7 filtered" : "")
+    : "";
+
+  const out = $("h-out");
+  out.innerHTML = "";
+
+  if (!rows.length){
+    const box = document.createElement("div");
+    box.className = "empty";
+    const all = store.listEntries().length;
+    if (backwards) box.innerHTML = "<b>Nothing in that range.</b>The \u201cfrom\u201d date is after the \u201cto\u201d date.";
+    else if (n) box.innerHTML = "<b>Nothing matches those filters.</b>Clear one and try again.";
+    else if (all === 0 && store.state() === "framed")
+      box.innerHTML = "<b>Nothing here.</b>Inside another site this page usually can't see entries you saved in a normal tab \u2014 that's the frame, not lost data. Open it in its own tab to check.";
+    else box.innerHTML = "<b>No sessions logged yet.</b>Log one and it shows up here.";
+    out.appendChild(box);
+    renderDeletedInHistory(out);
+    renderBackupLine();
+    return;
+  }
+
+  const capped = rows.slice(0, S.h.limit);
+  let cur = null, list = null;
+  capped.forEach(e => {
+    if (e.date !== cur){
+      cur = e.date;
+      const g = document.createElement("div"); g.className = "h-group";
+      const hd = document.createElement("div"); hd.className = "h-hd";
+      const dayTotal = capped.filter(x => x.date === cur).reduce((a, x) => a + x.durationMinutes, 0);
+      hd.innerHTML = '<span>' + esc(fmtDay(e.date)) + '</span><span class="tot">' + esc(fmtDur(dayTotal)) + '</span>';
+      g.appendChild(hd);
+      list = document.createElement("ul"); list.className = "h-list";
+      g.appendChild(list); out.appendChild(g);
+    }
+    list.appendChild(historyRow(e));
+  });
+
+  if (rows.length > capped.length){
+    const more = document.createElement("div");
+    more.className = "h-more";
+    more.innerHTML = '<button type="button" class="btn sm" id="h-more">show ' +
+      Math.min(200, rows.length - capped.length) + ' more of ' + rows.length + '</button>';
+    out.appendChild(more);
+    $("h-more").addEventListener("click", () => { S.h.limit += 200; renderHistory(); });
+  }
+  renderDeletedInHistory(out);
+  renderBackupLine();
+}
+
+function renderBackupLine(){
+  const le = store.lastExported();
+  $("h-backup").textContent = le ? store.dateToISO(new Date(le)) : "never";
+}
+
+function renderDeletedInHistory(out){
+  const del = store.listEntries({ includeDeleted:true }).filter(e => e.deletedAt !== null);
+  const recent = del.filter(e => S.h.expanded["restore:" + e.id]);
+  if (!recent.length) return;
+  const g = document.createElement("div"); g.className = "h-group";
+  const hd = document.createElement("div"); hd.className = "h-hd";
+  hd.innerHTML = "<span>Just deleted</span>";
+  g.appendChild(hd);
+  const ul = document.createElement("ul"); ul.className = "h-list";
+  recent.forEach(e => {
+    const li = document.createElement("li");
+    li.className = "deleted"; li.dataset.entryId = e.id;
+    li.innerHTML = '<div class="h-sum" style="cursor:default"><span class="h-dur">' + esc(fmtDur(e.durationMinutes)) +
+      '</span><span class="h-text">' + esc(summaryLine(e) || e.date) + '</span>' +
+      '<span class="h-meta"><button type="button" class="btn sm" data-restore="' + esc(e.id) + '">restore</button></span></div>';
+    ul.appendChild(li);
+  });
+  g.appendChild(ul); out.appendChild(g);
+}
+
+function historyRow(e){
+  const li = document.createElement("li");
+  li.dataset.entryId = e.id;
+  const open = !!S.h.expanded[e.id];
+  const f = e.fields || {};
+  const sum = summaryLine(e);
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "h-sum";
+  btn.id = "h-sum-" + e.id;
+  btn.setAttribute("data-expand", ""); btn.dataset.id = e.id;
+  btn.setAttribute("aria-expanded", String(open));
+  btn.setAttribute("aria-controls", "h-body-" + e.id);
+  btn.innerHTML =
+    '<span class="h-dur">' + esc(fmtDur(e.durationMinutes)) + '</span>' +
+    '<span class="h-cat">' + (f.category ? esc(f.category) : "\u2014") + '</span>' +
+    '<span class="h-text">' + (sum ? esc(sum) : '<span class="h-none">\u2014</span>') + '</span>' +
+    '<span class="h-meta">' +
+      '<span class="h-tool">' + esc(toolLabel(f.tool)) + '</span>' +
+      '<span class="h-rate">' + (f.rating ? esc(f.rating + "/5") : "") + '</span>' +
+      '<span class="h-car" aria-hidden="true"></span>' +
+    '</span>';
+  li.appendChild(btn);
+
+  const body = document.createElement("div");
+  body.className = "h-body"; body.id = "h-body-" + e.id;
+  body.setAttribute("role", "region"); body.setAttribute("aria-labelledby", btn.id);
+  body.hidden = !open;
+  if (open) fillBody(body, e);
+  li.appendChild(body);
+  return li;
+}
+
+function fillBody(body, e){
+  const f = e.fields || {};
+  const rows = [];
+  if (f.tune) rows.push(["Tune", esc(f.tune) + (f.key ? " (" + esc(f.key) + ")" : "")]);
+  else if (f.key) rows.push(["Key", esc(f.key)]);
+  if (f.tempo != null) rows.push(["Tempo", esc(f.tempo) + " bpm"]);
+  if (f.tool) rows.push(["Tool", esc(toolLabel(f.tool))]);
+  if (f.category) rows.push(["Category", esc(f.category)]);
+  if (f.focus) rows.push(["Focus", esc(f.focus)]);
+  if (f.tags && f.tags.length) rows.push(["Tags", f.tags.map(esc).join(", ")]);
+  if (f.rating != null) rows.push(["How it went", esc(f.rating) + " of 5"]);
+
+  let html = "";
+  if (rows.length) html += '<dl class="h-dl">' + rows.map(r => "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>").join("") + "</dl>";
+  if (e.notes) html += '<p class="h-notes">' + esc(e.notes) + "</p>";
+  const cr = new Date(e.createdAt), up = new Date(e.updatedAt);
+  html += '<p class="h-stamp">logged ' + esc(store.dateToISO(cr)) +
+          (store.tms(e.updatedAt) - store.tms(e.createdAt) > 1000 ? " \u00b7 edited " + esc(store.dateToISO(up)) : "") + "</p>";
+  html += '<div class="btnrow" data-mutates>' +
+          '<button type="button" class="btn sm" data-edit="' + esc(e.id) + '">edit</button>' +
+          '<button type="button" class="btn sm danger" data-del="' + esc(e.id) + '">delete</button></div>';
+  body.innerHTML = html;
+}
+
+$("h-out").addEventListener("click", e => {
+  const exp = e.target.closest("[data-expand]");
+  if (exp){
+    const id = exp.dataset.id;
+    const open = !S.h.expanded[id];
+    S.h.expanded[id] = open;
+    exp.setAttribute("aria-expanded", String(open));
+    const body = $("h-body-" + id);
+    if (open){ fillBody(body, store.getEntry(id)); body.hidden = false; }
+    else { body.hidden = true; body.innerHTML = ""; }
+    return;
+  }
+  const ed = e.target.closest("[data-edit]");
+  if (ed){
+    const entry = store.getEntry(ed.dataset.edit);
+    if (entry){ setView("log"); renderLogForm(entry); window.scrollTo(0, 0); $("f-duration").focus(); }
+    return;
+  }
+  const del = e.target.closest("[data-del]");
+  if (del){
+    if (del.dataset.armed === "1"){
+      const id = del.dataset.del;
+      const r = store.softDelete(id);
+      if (!r.ok){ toast("Couldn't save that change."); return; }
+      delete S.h.expanded[id];
+      S.h.expanded["restore:" + id] = true;
+      render();
+      toast("Deleted. Restore it from the list below, or from Settings.");
+    } else {
+      del.dataset.armed = "1"; del.textContent = "really delete?";
+      setTimeout(() => { if (del.isConnected){ del.dataset.armed = ""; del.textContent = "delete"; } }, 5000);
+    }
+    return;
+  }
+  const res = e.target.closest("[data-restore]");
+  if (res){
+    const id = res.dataset.restore;
+    const r = store.restore(id);
+    if (!r.ok){ toast("Couldn't save that change."); return; }
+    delete S.h.expanded["restore:" + id];
+    render(); toast("Restored.");
+  }
+});
+
+/* ===================== SUMMARY ===================== */
+function agg(win, todayIso){
+  const w = (win === "week" || win === "month") ? win : "all";
+  const today = todayIso || store.todayISO();
+  const from = store.windowStartISO(w, today);
+  const to = (w === "all") ? null : today;
+  const daysInWindow = w === "week" ? 7 : w === "month" ? 30 : null;
+
+  const entries = store.listEntries({ from: from, to: to });
+  let totalMinutes = 0, covFrom = null, covTo = null, categoryUsed = false, toolUsed = false;
+  const days = Object.create(null), cat = Object.create(null), tool = Object.create(null);
+
+  entries.forEach(e => {
+    totalMinutes += e.durationMinutes;
+    days[e.date] = 1;
+    if (covFrom === null || e.date < covFrom) covFrom = e.date;
+    if (covTo === null || e.date > covTo) covTo = e.date;
+    const f = e.fields || {};
+    const ck = f.category ? "v:" + f.category : "u:";
+    if (f.category) categoryUsed = true;
+    (cat[ck] || (cat[ck] = { minutes:0, count:0, raw: f.category || null })).minutes += e.durationMinutes;
+    cat[ck].count++;
+    const tk = f.tool ? "v:" + f.tool : "u:";
+    if (f.tool) toolUsed = true;
+    (tool[tk] || (tool[tk] = { minutes:0, count:0, raw: f.tool || null })).minutes += e.durationMinutes;
+    tool[tk].count++;
+  });
+
+  function rows(map, labeller){
+    const out = Object.keys(map).map(k => ({
+      key: map[k].raw === null ? "__unset" : map[k].raw,
+      label: map[k].raw === null ? "not recorded" : labeller(map[k].raw),
+      minutes: map[k].minutes, count: map[k].count, unset: map[k].raw === null
+    }));
+    out.sort((a, b) => {
+      if (a.unset !== b.unset) return a.unset ? 1 : -1;
+      if (a.minutes !== b.minutes) return b.minutes - a.minutes;
+      if (a.count !== b.count) return b.count - a.count;
+      return a.label < b.label ? -1 : a.label > b.label ? 1 : 0;
+    });
+    return out;
+  }
+
+  return {
+    win:w, from:from, to:to, daysInWindow:daysInWindow, covFrom:covFrom, covTo:covTo,
+    totalMinutes:totalMinutes, count:entries.length,
+    avgMinutes: entries.length ? Math.round(totalMinutes / entries.length) : 0,
+    daysWithEntry: Object.keys(days).length,
+    byCategory: rows(cat, c => c), byTool: rows(tool, toolLabel),
+    categoryUsed:categoryUsed, toolUsed:toolUsed
+  };
+}
+
+function fmtRange(a, b){
+  const da = store.isoToDate(a), db = store.isoToDate(b);
+  if (!da || !db) return "";
+  const right = db.getDate() + " " + MON[db.getMonth()] + " " + db.getFullYear();
+  if (a === b) return right;
+  let left;
+  if (da.getFullYear() !== db.getFullYear()) left = da.getDate() + " " + MON[da.getMonth()] + " " + da.getFullYear();
+  else if (da.getMonth() !== db.getMonth()) left = da.getDate() + " " + MON[da.getMonth()];
+  else left = String(da.getDate());
+  return left + " \u2013 " + right;
+}
+
+function renderSummary(){
+  const C = store.loadConfig();
+  const s = agg(S.s.win);
+  document.querySelectorAll("[data-win]").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.win === S.s.win)));
+
+  $("s-total").textContent = fmtDur(s.totalMinutes);
+  $("s-count").textContent = fmtInt(s.count);
+  $("s-avg").textContent = fmtDur(s.avgMinutes);
+  $("s-days").textContent = s.daysInWindow ? s.daysWithEntry + " of " + s.daysInWindow : fmtInt(s.daysWithEntry);
+
+  const range = $("s-range");
+  if (!s.count){ range.hidden = true; }
+  else {
+    range.hidden = false;
+    range.textContent = (s.win === "all") ? fmtRange(s.covFrom, s.covTo) : fmtRange(s.from, s.to);
+  }
+
+  const empty = $("s-empty");
+  const totalEver = store.listEntries().length;
+  if (!s.count){
+    empty.hidden = false;
+    $("s-tables").hidden = true;
+    $("s-totals").hidden = true;
+    empty.innerHTML = totalEver
+      ? "<b>Nothing logged in this window.</b>There are " + totalEver + " " + plural(totalEver, "session", "sessions") + " in the log. Try All time."
+      : "<b>No sessions logged yet.</b>The Summary fills in once you've logged something.";
+    return;
+  }
+  empty.hidden = true; $("s-tables").hidden = false; $("s-totals").hidden = false;
+
+  fillAggTable($("s-cat"), $("s-cat-note"), $("s-cat-tbl"), s.byCategory, s.categoryUsed, enabled("category"), "category", "Category");
+  fillAggTable($("s-tool"), $("s-tool-note"), $("s-tool-tbl"), s.byTool, s.toolUsed, enabled("tool"), "tool", "Tool");
+}
+
+function fillAggTable(tbody, note, table, rows, used, isEnabled, word, Word){
+  tbody.innerHTML = "";
+  if (isEnabled && !used){
+    table.hidden = true; note.hidden = false;
+    note.textContent = "You haven't put a " + word + " on any session in this window.";
+    return;
+  }
+  if (!isEnabled && !used){
+    table.hidden = true; note.hidden = false;
+    note.textContent = "You're not tracking " + word + ". Turn it on in settings and sessions you log after that break down here.";
+    return;
+  }
+  table.hidden = false;
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.dataset.bucket = r.key;
+    tr.innerHTML = '<td class="lbl' + (r.unset ? " unset" : "") + '">' + esc(r.label) + '</td>' +
+                   '<td class="num">' + esc(fmtDur(r.minutes)) + '</td>' +
+                   '<td class="num">' + esc(fmtInt(r.count)) + '</td>';
+    tbody.appendChild(tr);
+  });
+  if (!isEnabled && used){
+    note.hidden = false;
+    note.textContent = Word + " isn't one of the fields you're tracking any more. These are the sessions you logged while it was on.";
+  } else note.hidden = true;
+}
+
+$("s-win").addEventListener("click", e => {
+  const b = e.target.closest("[data-win]"); if (!b) return;
+  S.s.win = b.dataset.win; renderSummary();
+});
+
+/* ===================== EXPORT ===================== */
+const FNAME_STEM = "practice-journal";
+
+function download(name, text, type){
+  const a = document.createElement("a"),
+        url = URL.createObjectURL(new Blob([text], { type: type }));
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+}
+
+/* --- JSON --- */
+function buildJSON(){ return JSON.stringify(store.exportBundle(), null, 2); }
+
+/* --- CSV (RFC 4180, CRLF, BOM for Excel) --- */
+const CSV_EOL = "\r\n";
+const CSV_BOM = "﻿";
+const CSV_HEADERS = {
+  date:"Date", duration:"Duration (min)", notes:"Notes",
+  tempo:"Tempo (BPM)", tool:"Tool", tune:"Tune", key:"Key",
+  category:"Category", tags:"Tags", focus:"Focus", rating:"Rating (1-5)"
+};
+function csvCell(v){
+  let s = (v === null || v === undefined) ? "" : String(v);
+  s = s.replace(/\r\n|\r|\n/g, CSV_EOL);
+  const needs = /[",\r\n]/.test(s) || /^[=+\-@\t]/.test(s) || s !== s.trim();
+  return needs ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function csvValue(e, col){
+  const f = e.fields || {};
+  switch (col){
+    case "date": return e.date;
+    case "duration": return e.durationMinutes;
+    case "notes": return e.notes;
+    case "tempo": return f.tempo;
+    case "tool": return f.tool ? toolLabel(f.tool) : "";
+    case "tune": return f.tune;
+    case "key": return f.key;
+    case "category": return f.category;
+    case "tags": return (f.tags && f.tags.length) ? f.tags.join("; ") : "";
+    case "focus": return f.focus;
+    case "rating": return f.rating;
+  }
+  return "";
+}
+function buildCSV(){
+  const C = store.loadConfig();
+  const cols = ["date","duration","notes"].concat(store.FIELD_IDS.filter(f => C.enabledFields.indexOf(f) !== -1));
+  const rows = store.listEntries().slice().sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 :
+    (store.tms(a.createdAt) - store.tms(b.createdAt)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  let out = CSV_BOM + cols.map(c => csvCell(CSV_HEADERS[c])).join(",") + CSV_EOL;
+  rows.forEach(e => { out += cols.map(c => csvCell(csvValue(e, c))).join(",") + CSV_EOL; });
+  return out;
+}
+
+/* --- plain text --- */
+function fmtLongDate(iso){
+  const d = store.isoToDate(iso); if (!d) return iso;
+  return DOWL[d.getDay()] + ", " + MONL[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+}
+function fmtShortDate(iso){
+  const d = store.isoToDate(iso); if (!d) return iso;
+  return MONL[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+}
+function plainRange(range){
+  if (range.from && range.to) return fmtShortDate(range.from) + " to " + fmtShortDate(range.to);
+  if (range.from) return fmtShortDate(range.from) + " onward";
+  if (range.to) return "Everything through " + fmtShortDate(range.to);
+  return "All sessions";
+}
+function plainFilename(range){
+  const today = store.todayISO();
+  if (range.from && range.to) return FNAME_STEM + "-" + range.from + "-to-" + range.to + ".txt";
+  if (range.from) return FNAME_STEM + "-from-" + range.from + ".txt";
+  if (range.to) return FNAME_STEM + "-through-" + range.to + ".txt";
+  return FNAME_STEM + "-all-" + today + ".txt";
+}
+function buildPlain(range){
+  const f = { includeDeleted:false };
+  if (range.from) f.from = range.from;
+  if (range.to) f.to = range.to;
+  const rows = store.listEntries(f).slice().reverse();      // listEntries is newest-first
+
+  const L = [];
+  L.push("PRACTICE LOG");
+  L.push(plainRange(range));
+  L.push("");
+
+  if (!rows.length){
+    L.push("No sessions logged in this range.");
+    return L.join("\n") + "\n";
+  }
+
+  const total = rows.reduce((a, e) => a + e.durationMinutes, 0);
+  const avg = Math.round(total / rows.length);
+  const dates = {};
+  rows.forEach(e => { dates[e.date] = 1; });
+  const dayCount = Object.keys(dates).length;
+  const spanFrom = range.from || rows[0].date;
+  const spanTo = range.to || rows[rows.length - 1].date;
+  const spanDays = store.daysBetweenISO(spanFrom, spanTo) + 1;
+
+  L.push("SUMMARY");
+  L.push(rows.length + " " + plural(rows.length, "session", "sessions") + ", " +
+         fmtDurLong(total) + " total, " + fmtDurLong(avg) + " average.");
+  L.push("Practiced on " + dayCount + " of the " + spanDays + " " + plural(spanDays, "day", "days") + " in this range.");
+
+  const cats = {};
+  rows.forEach(e => { const c = e.fields.category; if (c) cats[c] = (cats[c] || 0) + e.durationMinutes; });
+  const catKeys = Object.keys(cats).sort((a, b) => cats[b] - cats[a] || (a < b ? -1 : 1));
+  if (catKeys.length) L.push("By category: " + catKeys.map(c => c + " " + fmtDurLong(cats[c])).join(", ") + ".");
+  L.push("");
+  L.push("SESSIONS");
+  L.push("");
+
+  rows.forEach(e => {
+    const fl = e.fields || {};
+    let head = fmtLongDate(e.date) + " - " + fmtDurLong(e.durationMinutes);
+    if (fl.category) head += " - " + fl.category;
+    L.push(head);
+
+    const bits = [];
+    if (fl.tune) bits.push("Tune: " + fl.tune + (fl.key ? " (" + fl.key + ")" : "") + ".");
+    else if (fl.key) bits.push("Key: " + fl.key + ".");
+    if (fl.tempo != null) bits.push("Tempo: " + fl.tempo + " BPM.");
+    if (fl.tool) bits.push("Tool: " + toolLabel(fl.tool) + ".");
+    if (bits.length) L.push(bits.join(" "));
+
+    if (fl.focus) L.push("Focus: " + fl.focus);
+    if (fl.tags && fl.tags.length) L.push("Tags: " + fl.tags.join(", "));
+    if (fl.rating != null) L.push("Rating: " + fl.rating + " of 5");
+
+    const notes = String(e.notes || "").replace(/\r\n|\r/g, "\n").replace(/\n{2,}/g, "\n").trim();
+    if (notes) L.push(notes);
+    L.push("");
+  });
+
+  return L.join("\n").replace(/\n+$/, "\n");
+}
+
+function exportRange(){
+  const f = $("ex-from").value, t = $("ex-to").value;
+  return { from: store.isValidISODate(f) ? f : null, to: store.isValidISODate(t) ? t : null };
+}
+
+function showExportText(text){
+  const out = $("ex-out");
+  out.value = text; out.hidden = false;
+  $("ex-outrow").hidden = false;
+  out.scrollIntoView({ block: "nearest" });
+}
+
+function doExport(kind){
+  /* In the corrupt state the in-memory store is EMPTY. Exporting it would hand the
+     student a valid-looking backup of nothing, right before offering "start fresh". */
+  if (store.state() === "corrupt"){
+    const msg = $("ex-msg");
+    msg.hidden = false;
+    msg.textContent = "This journal's saved file couldn't be read, so there is nothing here to export but the file itself \u2014 an export now would be an empty file that looks like a backup. The unreadable file is in the box below, and the bar at the top will download it.";
+    showExportText(store.corruptRaw() || "");
+    return;
+  }
+  let name, text, type;
+  if (kind === "json"){ name = FNAME_STEM + "-" + store.todayISO() + ".json"; text = buildJSON(); type = "application/json"; }
+  else if (kind === "csv"){ name = FNAME_STEM + "-" + store.todayISO() + ".csv"; text = buildCSV(); type = "text/csv;charset=utf-8"; }
+  else { const r = exportRange(); name = plainFilename(r); text = buildPlain(r); type = "text/plain;charset=utf-8"; }
+
+  try { download(name, text, type); } catch (e) {}
+  if (kind === "json") { store.markExported(); renderWarns(); }
+  showExportText(text);
+  const msg = $("ex-msg");
+  msg.hidden = false;
+  msg.textContent = "Saved as " + name + ". If nothing downloaded — some in-app browsers block it — the file is in the box below; copy it and paste it somewhere safe.";
+  renderSettingsMeta();
+}
+
+/* ===================== IMPORT ===================== */
+function renderImportPreview(){
+  const box = $("im-preview");
+  const p = S.im.preview;
+  box.innerHTML = "";
+  if (!p) return;
+
+  const d = document.createElement("div");
+  d.className = "imprev";
+  if (!p.ok){
+    d.innerHTML = '<h4>Can’t use that file</h4><p class="note">' + esc(p.error) + "</p>";
+    box.appendChild(d); return;
+  }
+
+  let html = "<h4>Ready to import</h4>";
+  html += '<p class="note">From ' + esc(p.source) +
+          (p.exportedAt ? ", backed up " + esc(fmtShortDate(store.dateToISO(new Date(p.exportedAt)))) : "") +
+          (p.foreignDevice ? " on another device" : "") + ".</p>";
+  html += "<ul>";
+  html += '<li><span class="n">' + p.add + "</span> " + plural(p.add, "entry", "entries") + " added</li>";
+  html += '<li><span class="n">' + p.update + "</span> " + plural(p.update, "entry", "entries") + " updated</li>";
+  html += '<li><span class="n">' + p.skip + "</span> " + plural(p.skip, "entry", "entries") + " skipped (your copy is the same or newer)</li>";
+  html += "</ul>";
+  if (p.addTombstones) html += '<p class="note">' + p.addTombstones + " of the added " + plural(p.addTombstones, "entry is", "entries are") +
+    " already deleted. They come in deleted — out of your log and out of your totals — and you can restore or clear them below.</p>";
+  if (p.willDelete) html += '<p class="note">' + p.willDelete + " " + plural(p.willDelete, "entry", "entries") +
+    " will be deleted, because " + plural(p.willDelete, "it was", "they were") + " deleted on the other device after this copy was made.</p>";
+  if (p.idless) html += '<p class="note">' + p.idless + " " + plural(p.idless, "entry", "entries") +
+    " in that file had no id, so " + plural(p.idless, "it was", "they were") +
+    " matched on content instead. Importing the same file twice won't duplicate " + plural(p.idless, "it", "them") + ".</p>";
+  if (p.dropped) html += '<p class="note">' + p.dropped + " " + plural(p.dropped, "item", "items") + " in that file weren't entries and were ignored.</p>";
+  if (p.duplicates) html += '<p class="note">' + p.duplicates + " " + plural(p.duplicates, "entry", "entries") + " appeared twice in that file; the newer copy was used.</p>";
+  if (p.futureSchema) html += '<p class="note">This backup was made by a newer version of the journal (format ' + p.futureSchema +
+    "; this page reads format " + store.SCHEMA_VERSION + "). It will import, and anything this version doesn't recognise is kept as-is.</p>";
+
+  if (p.configIncluded){
+    const dc = p.configDiff || { addCategories:[], addFields:[] };
+    const parts = [];
+    if (dc.addCategories.length) parts.push("adds " + dc.addCategories.length + " " + plural(dc.addCategories.length, "category", "categories") + " you don't have (" + dc.addCategories.join(", ") + ")");
+    if (dc.addFields.length) parts.push("turns on " + dc.addFields.length + " extra " + plural(dc.addFields.length, "field", "fields") + " (" + dc.addFields.map(f => store.FIELD_LABELS[f]).join(", ") + ")");
+    html += '<label class="chk"><input type="checkbox" id="im-config"><span>Also bring in that backup’s settings<small>' +
+      (parts.length ? esc(parts.join(", ")) + ". Nothing is removed and nothing is turned off." : "No change — its settings match yours.") +
+      "</small></span></label>";
+  }
+  html += '<p class="note">Nothing has been saved yet.</p>';
+  const moving = p.add + p.update;
+  const label = moving ? "Import " + moving + " " + plural(moving, "entry", "entries")
+                       : (p.configIncluded ? "Bring in the settings" : "Nothing new to bring in");
+  html += '<div class="btnrow"><button type="button" class="btn primary" id="im-confirm" data-import' +
+          (moving || p.configIncluded ? "" : " disabled") + ">" + label +
+          '</button><button type="button" class="btn" id="im-cancel">Cancel</button></div>';
+  d.innerHTML = html;
+  box.appendChild(d);
+
+  $("im-cancel").addEventListener("click", () => { S.im.preview = null; renderImportPreview(); });
+  $("im-confirm").addEventListener("click", () => {
+    const plan = p.plan;
+    const cb = $("im-config");
+    plan.applyConfig = !!(cb && cb.checked);
+    const r = store.applyImport(plan);
+    S.im.preview = null; renderImportPreview();
+    $("im-text").value = ""; $("im-file").value = "";
+    if (!r.ok){ toast("Nothing was imported — the write didn't go through."); render(); return; }
+    toast(r.added + " added, " + r.updated + " updated.");
+    renderLogOptions(); render();
+  });
+}
+
+function checkImport(text, source){
+  S.im.preview = store.previewImport(text, source);
+  renderImportPreview();
+  $("im-preview").scrollIntoView({ block: "nearest" });
+}
+
+/* ===================== SETTINGS ===================== */
+function renderSettings(){
+  const C = store.loadConfig();
+
+  const fb = $("cfg-fields");
+  fb.innerHTML = "";
+  store.FIELD_IDS.forEach(f => {
+    const l = document.createElement("label");
+    l.className = "chk";
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = C.enabledFields.indexOf(f) !== -1;
+    cb.setAttribute("data-field-toggle", f); cb.setAttribute("data-mutates", "");
+    const sp = document.createElement("span");
+    sp.innerHTML = esc(store.FIELD_LABELS[f]) + "<small>" + esc(store.FIELD_NOTES[f]) + "</small>";
+    l.appendChild(cb); l.appendChild(sp);
+    fb.appendChild(l);
+  });
+
+  const cl = $("cfg-cats");
+  cl.innerHTML = "";
+  C.categories.forEach((c, i) => {
+    const li = document.createElement("li");
+    const inp = document.createElement("input");
+    inp.type = "text"; inp.value = c; inp.maxLength = 40;
+    inp.setAttribute("data-cat", String(i));
+    inp.setAttribute("aria-label", "Category name");
+    inp.setAttribute("data-mutates", "");
+    const rm = document.createElement("button");
+    rm.type = "button"; rm.className = "btn sm"; rm.dataset.catRemove = String(i);
+    rm.setAttribute("data-mutates", ""); rm.textContent = "remove";
+    li.appendChild(inp); li.appendChild(rm);
+    cl.appendChild(li);
+  });
+
+  $("cfg-duration").value = String(C.defaultDurationMinutes);
+  $("cfg-view").value = C.defaultView;
+
+  const del = store.listEntries({ includeDeleted:true }).filter(e => e.deletedAt !== null);
+  const dl = $("del-list");
+  dl.innerHTML = "";
+  if (!del.length){
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="t" style="color:var(--bone-dim)">Nothing deleted.</span>';
+    dl.appendChild(li);
+  }
+  del.forEach(e => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="d">' + esc(e.date) + " · " + esc(fmtDur(e.durationMinutes)) + '</span>' +
+                   '<span class="t">' + esc((summaryLine(e) || "").slice(0, 60)) + '</span>' +
+                   '<button type="button" class="btn sm" data-restore-set="' + esc(e.id) + '">restore</button>';
+    dl.appendChild(li);
+  });
+  const pb = $("purge-btn");
+  pb.hidden = del.length === 0;
+  pb.textContent = "Delete " + del.length + " " + plural(del.length, "entry", "entries") + " permanently";
+  $("purge-confirm").hidden = true;
+  $("purge-confirm-text").textContent = "Permanently delete " + del.length + " " + plural(del.length, "entry", "entries") +
+    "? This takes " + plural(del.length, "it", "them") + " off this device for good. " + plural(del.length, "It isn't", "They aren't") +
+    " in a trash can and " + plural(del.length, "it isn't", "they aren't") + " on a server — an export you made before now is the only copy.";
+
+  if (!$("ex-from").value && !$("ex-to").value){
+    const all = store.listEntries();
+    if (all.length){
+      $("ex-to").value = store.todayISO();
+      $("ex-from").value = store.shiftISO(store.todayISO(), -29);
+    }
+  }
+  renderSettingsMeta();
+}
+
+function renderSettingsMeta(){
+  const u = store.estimateUsage();
+  const le = store.lastExported();
+  $("meta-backup").textContent = le ? store.dateToISO(new Date(le)) : "never";
+  $("meta-entries").textContent = fmtInt(store.listEntries().length);
+  $("meta-deleted").textContent = fmtInt(store.deletedCount());
+  $("meta-storage").textContent = (u.ours / 1024 < 1000)
+    ? Math.max(1, Math.round(u.ours / 1024)) + " KB"
+    : (u.ours / 1048576).toFixed(1) + " MB";
+}
+
+function saveCategories(list){
+  const r = store.saveConfig({ categories: list });
+  if (!r.ok){ toast("Couldn't save that change."); }
+  renderLogOptions(); renderSettings(); renderHistory();
+}
+
+/* ===================== global render ===================== */
+function render(){
+  renderWarns();
+  if (S.view === "history") renderHistory();
+  if (S.view === "summary") renderSummary();
+  if (S.view === "settings") renderSettings();
+  else renderSettingsMeta();
+}
+
+/* ===================== wiring ===================== */
+document.querySelectorAll("[data-view-btn]").forEach(b =>
+  b.addEventListener("click", () => setView(b.dataset.viewBtn)));
+
+$("logForm").addEventListener("submit", onLogSubmit);
+$("f-cancel").addEventListener("click", () => { renderLogForm(null); toast("Edit cancelled."); setView("history"); });
+$("f-date").addEventListener("input", () => { updateDow(); clearLogError(); });
+$("f-duration").addEventListener("input", () => { syncDurChips(); clearLogError(); });
+document.querySelectorAll("[data-dur]").forEach(b => b.addEventListener("click", () => {
+  $("f-duration").value = b.dataset.dur; syncDurChips(); clearLogError();
+}));
+$("f-tempo").addEventListener("input", clearLogError);
+$("f-tool").addEventListener("change", () => {
+  const other = $("f-tool").value === "__other";
+  $("f-tool-other").hidden = !other;
+  if (other) $("f-tool-other").focus(); else $("f-tool-other").value = "";
+});
+$("f-cat-add").addEventListener("click", () => {
+  setView("settings");
+  const n = $("cfg-cat-new");
+  n.focus(); n.scrollIntoView({ block:"center" });
+});
+$("f-rating-clear").addEventListener("click", () => { setRating(null); });
+document.querySelectorAll('input[name=f-rating]').forEach(r =>
+  r.addEventListener("change", () => setRating(Number(r.value))));
+
+$("f-tags").addEventListener("click", e => {
+  const x = e.target.closest("[data-tag-remove]"); if (!x) return;
+  const t = x.dataset.tagRemove;
+  S.log.tags = S.log.tags.filter(v => v !== t);
+  renderTags(); renderTagSugg(document.activeElement === $("f-tag-input"));
+});
+$("f-tag-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === ","){ e.preventDefault(); commitTagBuffer(); return; }
+  if (e.key === "Backspace" && e.target.value === "" && e.target.selectionStart === 0 && S.log.tags.length){
+    S.log.tags.pop(); renderTags(); renderTagSugg(true);
+  }
+  if (e.key === "Escape"){ renderTagSugg(false); }
+});
+$("f-tag-input").addEventListener("input", e => {
+  if (e.target.value.indexOf(",") > -1) commitTagBuffer(true);
+  else renderTagSugg(true);
+});
+$("f-tag-input").addEventListener("focus", () => renderTagSugg(true));
+$("f-tag-input").addEventListener("blur", () => { commitTagBuffer(); setTimeout(() => renderTagSugg(false), 120); });
+$("f-tag-sugg").addEventListener("pointerdown", e => {
+  const b = e.target.closest("[data-sugg]"); if (!b) return;
+  e.preventDefault();
+  commitTag(b.dataset.sugg);
+  $("f-tag-input").value = "";
+  renderTagSugg(true);
+  $("f-tag-input").focus();
+});
+$("f-addfields-btn").addEventListener("click", () => {
+  setView("settings");
+  const el = $("cfg-fields");
+  el.scrollIntoView({ block:"center" });
+  const first = el.querySelector("input"); if (first) first.focus();
+});
+
+/* enterkeyhint promises */
+[["f-tempo","next"],["f-tune","next"],["f-focus","next"],["f-tool-other","next"],["f-duration","done"]].forEach(p => {
+  $(p[0]).addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (p[1] === "done") e.target.blur();
+    else {
+      const all = Array.prototype.filter.call($("logForm").querySelectorAll("input, select, textarea, button"),
+        n => !n.disabled && n.offsetParent !== null && n.tabIndex !== -1);
+      const i = all.indexOf(e.target);
+      if (i > -1 && all[i + 1]) all[i + 1].focus();
+    }
+  });
+});
+
+/* history filters */
+$("h-toggle").addEventListener("click", () => {
+  S.h.open = !S.h.open;
+  $("h-filters").hidden = !S.h.open;
+  $("h-toggle").setAttribute("aria-expanded", String(S.h.open));
+});
+$("h-clear").addEventListener("click", () => {
+  ["h-from","h-to","h-cat","h-tag","h-tool","h-tune"].forEach(id => { $(id).value = ""; });
+  readFilters(); renderHistory();
+});
+["h-from","h-to","h-cat","h-tag","h-tool"].forEach(id =>
+  $(id).addEventListener("change", () => { readFilters(); S.h.limit = 200; renderHistory(); }));
+let tuneTimer = null;
+$("h-tune").addEventListener("input", () => {
+  clearTimeout(tuneTimer);
+  tuneTimer = setTimeout(() => { readFilters(); S.h.limit = 200; renderHistory(); }, 200);
+});
+
+/* settings */
+$("cfg-fields").addEventListener("change", e => {
+  const cb = e.target.closest("[data-field-toggle]"); if (!cb) return;
+  const C = store.loadConfig();
+  const f = cb.dataset.fieldToggle;
+  const next = cb.checked ? C.enabledFields.concat([f]) : C.enabledFields.filter(x => x !== f);
+  const r = store.saveConfig({ enabledFields: next });
+  if (!r.ok){ toast("Couldn't save that change."); renderSettings(); return; }
+  if (!S.log.editingId) renderLogForm(null, { carry: true }); else renderLogForm(store.getEntry(S.log.editingId));
+  renderSummary();
+});
+$("cfg-cats").addEventListener("change", e => {
+  const inp = e.target.closest("[data-cat]"); if (!inp) return;
+  const C = store.loadConfig();
+  const i = Number(inp.dataset.cat);
+  const list = C.categories.slice();
+  const v = inp.value.trim();
+  if (!v){ inp.value = list[i]; return; }
+  list[i] = v;
+  saveCategories(list);
+});
+$("cfg-cats").addEventListener("click", e => {
+  const rm = e.target.closest("[data-cat-remove]"); if (!rm) return;
+  const C = store.loadConfig();
+  const i = Number(rm.dataset.catRemove);
+  const name = C.categories[i];
+  const used = store.listEntries().filter(x => x.fields.category === name).length;
+  if (used && rm.dataset.armed !== "1"){
+    rm.dataset.armed = "1";
+    rm.textContent = "remove? " + used + " " + plural(used, "session keeps", "sessions keep") + " the label";
+    setTimeout(() => { if (rm.isConnected){ rm.dataset.armed = ""; rm.textContent = "remove"; } }, 6000);
+    return;
+  }
+  saveCategories(C.categories.filter((c, j) => j !== i));
+});
+$("cfg-cat-add").addEventListener("click", () => {
+  const n = $("cfg-cat-new"), v = n.value.trim();
+  if (!v) { n.focus(); return; }
+  const C = store.loadConfig();
+  if (C.categories.some(c => c.toLowerCase() === v.toLowerCase())){ toast("You already have that one."); n.value = ""; return; }
+  n.value = "";
+  saveCategories(C.categories.concat([v]));
+});
+$("cfg-cat-new").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); $("cfg-cat-add").click(); } });
+$("cfg-duration").addEventListener("change", e => {
+  const v = Math.round(Number(e.target.value));
+  if (!(v === v && v >= 1 && v <= 1440)){ e.target.value = String(store.loadConfig().defaultDurationMinutes); toast("Needs a number between 1 and 1440."); return; }
+  store.saveConfig({ defaultDurationMinutes: v });
+});
+$("cfg-view").addEventListener("change", e => { store.saveConfig({ defaultView: e.target.value }); });
+
+$("del-list").addEventListener("click", e => {
+  const b = e.target.closest("[data-restore-set]"); if (!b) return;
+  const r = store.restore(b.dataset.restoreSet);
+  if (!r.ok){ toast("Couldn't save that change."); return; }
+  toast("Restored."); renderSettings(); renderWarns();
+});
+$("purge-btn").addEventListener("click", () => { $("purge-confirm").hidden = false; $("purge-yes").focus(); });
+$("purge-no").addEventListener("click", () => { $("purge-confirm").hidden = true; $("purge-btn").focus(); });
+$("purge-yes").addEventListener("click", () => {
+  const r = store.purgeDeleted();
+  if (!r.ok){ toast("Couldn't clear those — nothing was deleted."); return; }
+  toast(r.count + " " + plural(r.count, "entry", "entries") + " deleted permanently.");
+  renderSettings(); renderWarns();
+});
+
+/* export / import */
+/* The brief asks for export to be surfaced, not buried in settings: History carries
+   the same three actions and hands off to the export panel, where the copy-out
+   fallback lives for phones whose browser swallows the download. */
+$("h-export").addEventListener("click", e => {
+  const b = e.target.closest("[data-ex]"); if (!b) return;
+  setView("settings");
+  doExport(b.dataset.ex);
+});
+$("ex-json").addEventListener("click", () => doExport("json"));
+$("ex-csv").addEventListener("click", () => doExport("csv"));
+$("ex-text").addEventListener("click", () => doExport("text"));
+$("ex-hide").addEventListener("click", () => { $("ex-out").hidden = true; $("ex-outrow").hidden = true; $("ex-msg").hidden = true; });
+$("ex-copy").addEventListener("click", () => {
+  const ta = $("ex-out");
+  ta.hidden = false; ta.select();
+  let ok = false;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(() => toast("Copied."), () => toast("Select the text and copy it."));
+    return;
+  }
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  toast(ok ? "Copied." : "Select the text and copy it.");
+});
+$("im-paste-toggle").addEventListener("click", () => {
+  const t = $("im-text");
+  t.hidden = !t.hidden; $("im-checkrow").hidden = t.hidden;
+  if (!t.hidden) t.focus();
+});
+$("im-check").addEventListener("click", () => checkImport($("im-text").value, "pasted text"));
+$("im-file").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => checkImport(String(r.result), f.name);
+  r.onerror = () => {
+    S.im.preview = { ok:false, error:"Couldn't read that file. If it's on iCloud or Google Drive, it may not have finished downloading to the phone yet." };
+    renderImportPreview();
+  };
+  r.readAsText(f);
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("purge-confirm").hidden){ $("purge-confirm").hidden = true; $("purge-btn").focus(); }
+});
+
+/* ===================== init ===================== */
+(function init(){
+  const boot = store.init();
+  const st = store.state();
+  const nowrite = (st === "missing" || st === "blocked");
+  const corrupt = (st === "corrupt");
+
+  document.body.classList.toggle("pj-framed", st === "framed");
+  document.body.classList.toggle("pj-nowrite", nowrite);
+  document.body.classList.toggle("pj-corrupt", corrupt);
+
+  if (st === "framed" || nowrite || corrupt){
+    $("gate").hidden = false;
+    if (st === "framed"){
+      $("gateTitle").textContent = "Open this in its own tab";
+      $("gateBody").textContent = "Right now this page is running inside another site. Browsers keep storage separate inside a frame, and often throw it away when the tab closes — so a session logged here might not be here next week. The log form is off until you're in a normal tab.";
+      $("gateLink").href = location.href;
+      $("gateLink").hidden = false;
+      $("gateFine").textContent = "Bookmark that tab. Log your sessions there and the entries stay on your device.";
+    } else if (corrupt){
+      $("gateTitle").textContent = "This journal's saved file couldn't be read";
+      $("gateBody").textContent = "Nothing has been overwritten — the file is still on your device exactly as it was, and logging is off so a new session can't write over it. Download it from the bar above and send it to me. When you're ready, bring in a backup from Settings, or start fresh.";
+      $("gateLink").hidden = true;
+      $("gateFine").textContent = "Import is still open in Settings. That is the way back.";
+    } else {
+      $("gateTitle").textContent = "Nothing can be saved in this browser";
+      $("gateBody").textContent = "This browser isn't letting the page store anything — usually private browsing, or site data blocked for this site. The log form is off rather than letting you type a session that would quietly vanish. Open the tool in a normal window and it'll work.";
+      $("gateLink").hidden = true;
+      $("gateFine").textContent = "You can still read anything already logged, and export it.";
+    }
+  }
+
+  /* Fires on our own writes and on another tab's (via the storage event), so a
+     second tab's session shows up here without a reload. */
+  store.onChange(() => {
+    renderWarns();
+    if (S.view === "history") renderHistory();
+    else if (S.view === "summary") renderSummary();
+    else renderSettingsMeta();
+  });
+
+  renderLogOptions();
+  renderLogForm(null);
+  renderWarns();
+
+  const want = boot.config.defaultView;
+  setView(["log","history","summary"].indexOf(want) !== -1 ? want : "log");
+
+  window.__pj = {
+    store: store, agg: agg, S: S, render: render, setView: setView,
+    buildJSON: buildJSON, buildCSV: buildCSV, buildPlain: buildPlain,
+    csvCell: csvCell, importMerge: store.importMerge,
+    fmtDur: fmtDur, fmtDurLong: fmtDurLong, fmtRange: fmtRange,
+    renderLogForm: renderLogForm, renderHistory: renderHistory, renderSummary: renderSummary,
+    renderSettings: renderSettings, checkImport: checkImport
+  };
+})();
+</script>
+</body>
+</html>

@@ -28,6 +28,8 @@ Stand-alone:
   save on your device
 - **composition-assignments/** — prompt cards and seed-material tools for
   composition students
+- **practice-journal/** — log what you practiced and look back over the week
+  before a lesson; entries save on the student's device
 - **stageplot/** — stage plots for the jazz ensembles at Somewhere Works:
   layout, monitors, inputs and house gear on a page for the sound tech
 - **box-buddy/** — chord-box handouts for band directors

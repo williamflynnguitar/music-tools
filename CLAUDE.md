@@ -36,6 +36,12 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   Briefs in `briefs/`. Deliberately unlisted from the landing page and the
   spine, like Box Buddy. Not a practice tool — the deliverable is a printed
   page for the sound tech, so print is the primary surface
+- `practice-journal/` — **built** (Sep 2026). Practice log for students: log a
+  session on a phone, filter the history, summarise the week before a lesson.
+  Brief in `briefs/`. **The sanctioned exception to the no-storage rule** — it
+  keeps entries in `localStorage` under `jgth:practice-journal:*`, because a
+  journal that forgets is not a journal. `practice-journal/check.js` guards that
+  every write goes through one chokepoint and that calendar dates stay local
 - `chartwright/` — chord-chart editor (lyrics with chords over syllables).
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its
@@ -53,7 +59,10 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
   step, no bundler, no npm dependencies, no framework. A tool must work when
   opened as a local file with no server.
 - **No browser storage APIs** (`localStorage`, `sessionStorage`, IndexedDB).
-  They fail in some embedded preview contexts. Keep state in memory.
+  They fail in some embedded preview contexts. Keep state in memory. Two tools
+  are documented exceptions and must not be "corrected" by a later audit:
+  Chartwright (historical, pending a rework) and Practice Journal (storage is
+  the point of it — see `practice-journal/CLAUDE.md` and its `check.js`).
 - **External libraries only from a CDN**, and only when there is no reasonable
   alternative. Default to writing it by hand.
 - Each tool lives in its own lowercase-hyphenated folder with `index.html` as
