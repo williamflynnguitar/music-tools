@@ -374,7 +374,8 @@ function shellCandidates(chord, style, log){
 /* ---- drop-2 on strings 4-3-2-1 ---- */
 function drop2Candidates(chord, log){
   const q = QUAL[chord.quality];
-  let degs = ['R', q.third, q.fifth, q.seventh];
+  const PLAIN = ['R', q.third, q.fifth, q.seventh];
+  let degs = PLAIN.slice();
   const nine = chord.ext.find(e=>NINE_FAM.includes(e) && q.allowed.includes(e));
   const five = chord.ext.find(e=>FIVE_FAM.includes(e) && q.allowed.includes(e));
   if(nine) degs[0] = nine;      // rootless drop-2: 9 replaces root
@@ -400,7 +401,14 @@ function drop2Candidates(chord, log){
       const span = Math.max(...fs)-Math.min(...fs);
       if(span > 4 || Math.min(...fs) < 1) continue;
       const anchor = fs.reduce((a,b)=>a+b)/4;
-      out.push({notes, alt:null, anchor, span, tag: INV[inv]+' · top '+degs[order[3]]});
+      /* name the inversion by the note that actually ends up in the bass, not by
+         the close voicing we rotated: drop-2 moves the 2nd-from-top voice down an
+         octave, so the bass is order[0], not inv. An inversion number only means
+         anything if the bass is a plain chord tone — where an extension has taken
+         that voice (9 for R, #11 for 5) the tag says what is in the bass instead. */
+      const bassDeg = degs[order[0]];
+      const name = bassDeg===PLAIN[order[0]] ? INV[order[0]] : bassDeg+' in bass';
+      out.push({notes, alt:null, anchor, span, tag: name+' · top '+degs[order[3]]});
     }
   }
   return out;

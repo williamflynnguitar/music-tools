@@ -330,7 +330,8 @@ function shellCandidates(chord, rootless){
 /* drop voicings (Inversion Drill engine) */
 function dropCandidates(chord, setKey){
   const set=SETS[setKey], q=QUAL[chord.quality];
-  let degs=['R',q.third,q.fifth,q.seventh];
+  const PLAIN=['R',q.third,q.fifth,q.seventh];
+  let degs=PLAIN.slice();
   const nine=chord.ext.find(e=>NINE_FAM.includes(e)&&q.allowed.includes(e)); if(nine) degs[0]=nine;
   const five=chord.ext.find(e=>FIVE_FAM.includes(e)&&q.allowed.includes(e)); if(five) degs[2]=five;
   const out=[];
@@ -344,8 +345,12 @@ function dropCandidates(chord, setKey){
       set.strings.slice(1).forEach((s,j)=>{ let p=prev+1; while(p%12!==pcs[j+1]) p++; const fr=p-OPEN[s]; if(fr<1||fr>17) ok=false; notes.push({s,f:fr,deg:degs[order[j+1]]}); prev=p; });
       if(!ok) continue; const fs=notes.map(n=>n.f); if(Math.max(...fs)-Math.min(...fs)>5) continue;
       // name the voicing by its bass note (order[0] is the bass note's slot: 0 root, 1 third, 2 fifth, 3 seventh),
-      // not by the close-position voicing it was dropped from
-      out.push({notes, tag:INV[order[0]], pos:fs.reduce((a,b)=>a+b)/4, inv:order[0]});
+      // not by the close-position voicing it was dropped from. An inversion number
+      // only means anything if the bass is a plain chord tone — where an extension
+      // has taken that voice (9 for R, #11 for 5) the tag says what is in the bass.
+      const bassDeg = degs[order[0]];
+      const tag = bassDeg===PLAIN[order[0]] ? INV[order[0]] : bassDeg+' in bass';
+      out.push({notes, tag, pos:fs.reduce((a,b)=>a+b)/4, inv:order[0]});
     }
   }
   return out;
@@ -421,7 +426,7 @@ const SLOT = 6, CLEF = 4.5;      // one chord's width, and the clef margin, in s
 const MONO = "Menlo,Consolas,monospace";
 const use = (id,x,y)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(0.004,-0.004)"/>`;
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-const shortTag = v => v.tag.replace('root pos','root').replace(' inv','');
+const shortTag = v => v.tag.replace('root pos','root').replace(' inv','').replace(' in bass',' bass');
 const fretOf = v => Math.min(...v.notes.map(n=>n.f).filter(f=>f>0));
 function motionOf(v, prevV, ch){
   const t=topNote(v,ch); if(!prevV) return 'top '+t.name;

@@ -279,10 +279,17 @@ const SETS = [
 ];
 const INV = ['root position','1st inversion','2nd inversion','3rd inversion'];
 
-/* realize inversion `inv` of chord (pc, quality) on a string set; returns list of positions up the neck */
+/* realize inversion `inv` of chord (pc, quality) on a string set; returns list of positions up the neck.
+   `inv` names the voicing by its actual bass note (0 = root position, 1 = 3rd in
+   the bass, ...), the convention every other tool here uses. Dropping a voice
+   moves a different note to the bottom, so the close voicing we rotate to has to
+   be shifted back: drop-2 puts the close voicing's 2nd-from-top note in the bass,
+   drop-3 its 3rd-from-top. Without this the "root position" drop-2 came out with
+   the 5th in the bass — a 2nd inversion wearing the wrong label (Sep 2026). */
 function realize(pc, qKey, set, inv){
   const tones = QUAL[qKey].tones;
-  const rot = [0,1,2,3].map(i=>(i+inv)%4);                 // close voicing bottom→top
+  const src = set.kind==='drop2' ? (inv+2)%4 : (inv+3)%4;  // close voicing that drops to this bass note
+  const rot = [0,1,2,3].map(i=>(i+src)%4);                 // close voicing bottom→top
   const order = set.kind==='drop2' ? [rot[2],rot[0],rot[1],rot[3]] : [rot[1],rot[0],rot[2],rot[3]];
   const pcs = order.map(i=>(pc+DEG[tones[i]])%12);
   const out = [];
