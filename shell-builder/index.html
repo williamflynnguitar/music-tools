@@ -390,6 +390,11 @@ function shellDeg(off, qKey){
   return table[off];
 }
 const EXT = ['b9','9','#9','11','#11','b5','b13','#5','13'];
+/* EXT split the way players talk about it: these are the altered tensions, and
+   what is left (9, 11, #11, 13) are the natural ones. #11 counts as natural
+   here because it is diatonic to the lydian dominant a substitution is built
+   on, and the dominant's own `allowed` list already carries it. */
+const ALT_ONLY = ['b9','#9','b5','#5','b13'];
 
 function nameChord(root, qKey, degs){
   const q = QUAL[qKey];
@@ -726,7 +731,8 @@ function strum(notes){
 /* offsets that voice the symbol's alterations on the mobile strings, when the
    structure has them and the move is legal; extScore = requested extensions
    actually sounding */
-function pickOffsets(ch, rs, rf, struct, intoMinor){
+function pickOffsets(ch, rs, rf, struct, ctx){
+  const intoMinor = !!(ctx && ctx.intoMinor), isSub = !!(ctx && ctx.isSub);
   const sIdx = struct==null ? st.struct : struct;   // per-chord edits pass their own
   const want = (ch.ext||[]).filter(e=>EXT.includes(e));
   const hasB = [1,3,4].includes(sIdx), hasE = sIdx===4;
@@ -734,7 +740,7 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
   /* A chord with nothing to place keeps the default offsets — except a plain
      dominant heading into a minor chord, which still has a sixth to choose
      (William, 2026-09-12: extend the b13 default to plain dominants too). */
-  if(!hasB || (!want.length && !(intoMinor && q && q.dom))) return {off:{2:0,1:0}, extScore:0};
+  if(!hasB || (!want.length && !(q && q.dom && (intoMinor || isSub)))) return {off:{2:0,1:0}, extScore:0};
   const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
   const oes = hasE ? ((ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? [-1,0,1,2] : [-1,0,1,2,3]) : [0];
   /* Match the symbol's alterations by pitch, not by label: degName calls 8
@@ -748,7 +754,7 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
     let got = 0; want.forEach(w=>{ if(degs.some(d=>samePc(d,w))) got++; });
     let bad = 0; degs.forEach(d=>{ if(EXT.includes(d) && !q.allowed.includes(d) && !(q.altered&&q.altered.includes(d)) && !want.some(w=>samePc(w,d))) bad++; });
-    cands.push({ob, oe, got, bad, sounds: pc => degs.some(d => DEG[d]%12 === pc)});
+    cands.push({ob, oe, got, bad, degs, sounds: pc => degs.some(d => DEG[d]%12 === pc)});
   }
   const reach = pc => cands.some(c => c.sounds(pc));
   const wants = pc => want.some(w => DEG[w]%12 === pc);
@@ -770,7 +776,10 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
   for(const c of cands){
     let score = c.got*6 - c.bad*4 - (Math.abs(c.ob)+Math.abs(c.oe))*0.1;
     if(standIn !== null && c.sounds(standIn)) score += 3;
-    if(intoMinor && q.dom && !pinsSixth){
+    /* A substitution is never also a resolution to minor — one moves down a
+       semitone, the other down a fifth — but if both ever read true the sub
+       wins, because a bII7 is a lydian dominant and not a V of that minor. */
+    if(intoMinor && !isSub && q.dom && !pinsSixth){
       score -= c.sounds(9) ? 1 : 0;                       // decline the target's major third
       /* On a plain dominant there is no alteration to place, so the b13 has to
          be chosen outright rather than merely left standing — otherwise the
@@ -779,6 +788,17 @@ function pickOffsets(ch, rs, rf, struct, intoMinor){
          declined, but nothing displaces a natural 5 it already sounds. */
       if(!want.length && c.sounds(8)) score += 0.5;
     }
+    /* A tritone substitution is a lydian dominant, and the tensions of the
+       chord it replaces come back as its own NATURAL extensions: the b9 of the
+       original is this chord's 5th, its #9 the 13th, its b13 the 9th. So a sub
+       takes only from the quality's allowed list — 9, #11, 13 — and never an
+       altered one (William, 2026-09-12: "tritone subs should never use altered
+       extensions. Always natural extensions."). All 29 subs in the library
+       already came out natural, but by way of the default offsets rather than
+       by rule, so nothing held it for a per-chord edit or a new tune. A written
+       alteration still wins: a chart spelling Db7b9 has decided for itself. */
+    if(isSub && q.dom) score -= c.degs.filter(d =>
+      ALT_ONLY.includes(d) && !want.some(w => samePc(w, d))).length * 2;
     if(score>bs){ bs=score; best={off:{2:c.ob,1:c.oe}, extScore:c.got}; }
   }
   return best;
@@ -829,14 +849,18 @@ function progVoiceLead(bars){
   const headingMinor = c => { const n = nextOf.get(c);
     return !!(n && QUAL[n.quality] && QUAL[n.quality].third === 'b3'
               && ((n.pc - c.pc) % 12 + 12) % 12 === 5); };
+  /* bII7: a root resolving down a semitone is standing in for the V a tritone
+     away, so it is read as a substitution wherever it lands. */
+  const subbing = c => { const n = nextOf.get(c);
+    return !!(n && ((n.pc - c.pc) % 12 + 12) % 12 === 11); };
   return bars.map((bar,bi)=>bar.map((ch,si)=>{
     if(!QUAL[ch.quality]) return {ch, v:null, key:null};
-    const tm = headingMinor(ch);
+    const hctx = { intoMinor: headingMinor(ch), isSub: subbing(ch) };
     let best = null, bc = 1e9;
     for(const rs of [6,5]){
       const base = ((ch.pc-OPEN[rs])%12+12)%12;
       for(let rf=(base===0?12:base); rf<=15; rf+=12){
-        const p = pickOffsets(ch, rs, rf, null, tm);
+        const p = pickOffsets(ch, rs, rf, null, hctx);
         const cost = (prev===null ? Math.abs(rf-7)*0.3 : Math.abs(rf-prev)) - p.extScore*5;
         if(cost<bc){ bc=cost; best={rs, rf, off:p.off}; }
       }
@@ -850,7 +874,7 @@ function progVoiceLead(bars){
     /* an explicit B/E choice pins the voicing; a structure or position change
        re-picks the offsets for what the student just chose */
     let off = ed && ed.off ? ed.off
-            : (ed && (ed.rs!=null || ed.struct!=null)) ? pickOffsets(ch, rs, rf, struct, tm).off
+            : (ed && (ed.rs!=null || ed.struct!=null)) ? pickOffsets(ch, rs, rf, struct, hctx).off
             : best.off;
     if(ed && !ed.off) off = snapToOffered(ch, struct, rs, rf, off);
     const v = buildAt(ch.pc, ch.quality, struct, rs, rf, off);

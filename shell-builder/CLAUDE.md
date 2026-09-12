@@ -183,9 +183,26 @@ there is no inversion or string-set state in this app.
   throws away a common tone. Take the "A" Train's `D7#11` into `Dm7` is the
   same trap, and `D13#11` is the sound of those bars. A first pass keyed on the
   target's quality alone changed 24 tunes; keyed on the resolution it changes 7.
-  **Still open:** the tritone substitution, `bII7` into `i`, is a genuine minor
-  resolution this interval test does not catch — 13 in the library, mostly Body
-  And Soul's `Gb7` into `Fm7`.
+  The tritone substitution is deliberately not caught by that test — see below.
+- **A tritone substitution takes only natural extensions (RULED 2026-09-12,
+  "tritone subs should never use altered extensions. Always natural
+  extensions").** A `bII7` is a lydian dominant, and the tensions of the chord
+  it stands in for come back as its own natural ones: the b9 of the original is
+  the sub's 5th, its #9 the sub's 13th, its b13 the sub's 9th. So a sub draws
+  only from the dominant's `allowed` list — 9, #11, 13 — and never from
+  `ALT_ONLY` (b9, #9, b5, #5, b13). `#11` counts as natural here because it is
+  diatonic to that lydian dominant, which is also why the dominant's own
+  `allowed` list already carries it.
+  Detection is root motion down a semitone, whatever the target's quality.
+  All 29 subs in the library already came out natural, so the rule changed
+  nothing — it was emergent from the default offsets rather than stated, and
+  nothing held it for a per-chord edit or a new tune. **A written alteration
+  still wins:** a chart spelling `Db7b9` has decided for itself, and no tune in
+  the library does. If both this and the minor-resolution rule ever read true
+  the sub wins, since a `bII7` is not a V of that minor; they cannot both fire
+  from the same progression (one is a semitone down, the other a fifth) but the
+  precedence keeps the degenerate case — a doubled b7 and no extension at
+  all — from being reachable.
 - The generator can still voice something the picker wouldn't offer — a plain
   `pickOffsets` puts a natural 13 under a 7b9 — so the sounding note is always
   shown, tagged "as generated", and the E row stays live rather than dimming
