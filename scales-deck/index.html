@@ -630,7 +630,7 @@ const CONCEPTS = [
      const upper = p => { const rs = SH()[p.id].rootString === 6 ? 4 : 3; const r = p.dots.find(d => d.string === rs && d.root); return d => d.string > rs || (d.string === rs && r && d.fret < r.fret); };
      const via = { "Easy": 0, "Easy 2": 1, "Intermediate 1": 2, "Intermediate 2": 3, "Advanced 1": 0, "Advanced 2": 0 }[state.tier];
      const saved = state.tier; state.tier = ["Easy","Easy","Easy","Easy"][via]; const base = CONCEPTS[via].steps(); state.tier = saved;
-     return base.map(s => Object.assign({}, s, { opts: { ext: false, dim: upper(s.p), ring: s.opts.ring }, sub: s.sub.replace(/Step/, "1-octave · step"),
+     return base.map(s => Object.assign({}, s, { via, opts: { ext: false, dim: upper(s.p), ring: s.opts.ring }, sub: s.sub.replace(/Step/, "1-octave · step"),
        instr: `Play only the upper octave: start on the ${SH()[s.p.id].rootString === 6 ? "4th" : "3rd"} string root and go up. ` + (saved.startsWith("Advanced") ? tierText(saved) : "") })); } },
  { n: 6, name: "Horizontal scales on a single string", tiers: ["Easy","Intermediate / Advanced"],
    steps() { return [1,2,3,4,5,6].map((s, i) => ({ svg: svgStrings(state.key, [s]), string: s, key: state.key, shape: `string ${s}`, sub: `String ${s} of 6 · lowest ${state.key} major note first`,
@@ -642,7 +642,7 @@ const CONCEPTS = [
      return pairs.map((pr, i) => {
        const [hi, lo] = pr, lows = scaleOnString(state.key, lo, 0, NECK_TOP), highs = scaleOnString(state.key, hi, 0, NECK_TOP), links = [];
        for (const a of lows) { const td = (a.degree + iv - 1) % SCALE().steps.length; const b = highs.filter(h => h.degree === td && Math.abs(h.fret - a.fret) <= 4).sort((p, q) => Math.abs(p.fret - a.fret) - Math.abs(q.fret - a.fret))[0]; if (b) links.push([a, b]); }
-       return { svg: svgStrings(state.key, [hi, lo], links), key: state.key, shape: `strings ${hi}/${lo}`, sub: `Pair ${i+1} of ${pairs.length} · diatonic ${TXT.int(iv)}`,
+       return { links, pair: [hi, lo], adjacent: gap === 1, iv, svg: svgStrings(state.key, [hi, lo], links), key: state.key, shape: `strings ${hi}/${lo}`, sub: `Pair ${i+1} of ${pairs.length} · diatonic ${TXT.int(iv)}`,
          instr: state.tier === "Easy" ? `Start with the lowest 3rd on this pair and play every diatonic 3rd up the neck.` : state.tier === "Intermediate" ? `Play every diatonic ${TXT.int(iv)} on this pair. See each interval as the skeleton of a triad or 7th chord.` : state.tier === "Advanced 1" ? `Play these ${TXT.int(iv)} melodically rather than harmonically.` : `Fill in the intervals with the pattern ${state.pattern} across the pair.` }; }); } },
  { n: 8, name: "Full range scales", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
@@ -947,6 +947,106 @@ function perfSegovia(f, key, shift) {
     plain(mkDot(key, d.string, d.fret + (shift || 0), d.finger)), { finger: d.finger }));
   return { unit: 8, bars: barsOf(notes, 8), flags: [] };
 }
+/* concept 4 (p. 69): concept 1's shape, anchored on the card's ringed degree instead of on the
+   root. Easy ASCENDS ONLY and lets the last note ring -- the book adds the descent at
+   Intermediate ("Additionally, practice descending through the scales"), and p. 69's printed
+   example ends on a whole note. Above Easy it turns at the top and runs to the bottom of the
+   shape before coming home to the ringed note, which is concept 1's above-Easy path with the
+   ring where the root would be. */
+function perfDegree(p, tier, ring, withExt) {
+  /* the ladder has to match what the CARD draws, not what the tier would normally allow:
+     concept 4's computed modal fingerings set ext false even above Easy, and deriving the
+     ladder from the tier instead put an undrawn index-reach note into 1251 lines */
+  const easy = tier === "Easy";
+  /* and the ladder's own "Middle 6's 9th is always on offer" rung is not drawn on concept 4's
+     computed windows either, so the ladder is trimmed to what is actually on the card */
+  const drawn = new Set(p.dots.concat(p.extended).map(d => d.string + ":" + d.fret));
+  const L = ladder(p, !!withExt).filter(r => r.locs.some(l => drawn.has(l.string + ":" + l.fret)));
+  const at = m => L.findIndex(r => r.midi === m);
+  const start = at(midiOf(ring));
+  if (start < 0) return null;
+  const turns = easy ? [start, L.length - 1] : [start, L.length - 1, 0, start];
+  const path = (tier.startsWith("Advanced") ? walkTurn : walk)(turns, tierDigits(tier));
+  const notes = located(path.map(i => L[i]), path.map((i, j) => j === 0 ? ring : null), true).map(plain);
+  return { unit: 8, bars: barsOf(notes, 8), flags: [] };
+}
+/* concept 5 (p. 70): "Play through your scales in the same manner as #1, but ONLY playing
+   through the second octave (or partial-octave) of each shape. Thus, you will begin each scale
+   on the 4th or 3rd string, rather than the 6th or 5th string." So it is the borrowed card's
+   own line with its bottom half cut away, and the floor is that 4th/3rd-string root -- the
+   same note the card's `dim` greys below, so what sounds is exactly what stays bright.
+   `via` says which concept's card was borrowed: 0 = concept 1 (up and back), 1 = concept 2
+   (descending from the ring), 3 = concept 4 (from the ringed degree). via 2 is concept 3's
+   zigzag, which travels up the neck rather than staying in one position; it returns null, so
+   the Play bar hides on Intermediate 1. */
+function perfOctave(p, tier, via, ring, dim) {
+  if (via === 2 || !dim) return null;
+  /* The upper octave is defined by the card's OWN dim predicate rather than by a pitch floor.
+     The Pinky shapes have no root on the 4th/3rd string at all, and `upper()` falls back to
+     "everything on that string" there, so a midi floor and the greying would have disagreed on
+     4 of every 12 Easy cards. Filtering the ladder by what stays bright makes the played set
+     and the bright set the same thing by construction. */
+  const drawn = new Set(p.dots.concat(p.extended).map(d => d.string + ":" + d.fret));
+  const bright = l => drawn.has(l.string + ":" + l.fret) && !dim(l);
+  const L = ladder(p, false).filter(r => r.locs.some(bright));
+  if (L.length < 2) return null;
+  const at = m => L.findIndex(r => r.midi === m);
+  const top = L.length - 1;
+  let turns, pinRing = false;
+  if (via === 1 || via === 3) {
+    /* concept 2 rings the top note and concept 4 the degree it starts from, but concept 4's
+       ring is on the 6th string, an octave under this floor -- so take the same degree where
+       it reappears inside the octave that is left */
+    if (!ring) return null;
+    let startAt = at(midiOf(ring));
+    if (startAt < 0) startAt = L.findIndex(r => ((r.midi - midiOf(ring)) % 12 + 12) % 12 === 0);
+    if (startAt < 0) return null;
+    pinRing = startAt === at(midiOf(ring));
+    turns = via === 1 ? [startAt, 0] : [startAt, top];
+  } else {
+    turns = [0, top, 0];                                   // concept 1's shape: up and back
+  }
+  const path = (tier.startsWith("Advanced") ? walkTurn : walk)(turns, tierDigits(tier));
+  const rungs = path.map(i => L[i]).map(r => Object.assign({}, r, { locs: r.locs.filter(bright) }));
+  const notes = located(rungs, pinRing ? path.map((i, j) => j === 0 ? ring : null) : null, true).map(plain);
+  return notes.length > 1 ? { unit: 8, bars: barsOf(notes, 8), flags: [] } : null;
+}
+/* concept 7 (p. 64): the card's own `links` ARE the line -- there is no placement here and so
+   no ladder to walk, just a run of concrete drawn dots up the neck. The book opens "we are
+   playing the same scale on two strings simultaneously", so Easy and Intermediate strike each
+   interval as a DOUBLE STOP: one attack, the upper voice carried on the note's `with`.
+   Advanced 1 is the book's "rather than playing the intervals harmonically, play them
+   melodically" -- the same intervals, broken low-then-high.
+   The two move at the same rate, which is the point of the pairing: a harmonic interval is a
+   quarter note and a broken one is two eighths, so an interval still goes by every beat
+   whichever way you play it. That pace is mine, not the book's -- it says nothing about
+   rhythm here.
+   Advanced 2 is "filling in the intervals", so it plays every scale tone between the two,
+   and only on adjacent pairs, which is where the book asks for it. The whole thing ascends
+   and stops at the top: "Proceed up the neck". */
+function perfIntervals(card, tier, key) {
+  const links = card.links;
+  if (!links || !links.length) return null;
+  const mk = d => plain(mkDot(key, d.string, d.fret, null));
+  if (tier === "Easy" || tier === "Intermediate") {
+    const notes = links.map(([a, b]) => Object.assign(mk(a), { with: mk(b) }));
+    return { unit: 4, bars: barsOf(notes, 4), flags: [] };
+  }
+  if (tier === "Advanced 1") {
+    const notes = [];
+    links.forEach(([a, b]) => { notes.push(mk(a), mk(b)); });
+    return { unit: 8, bars: barsOf(notes, 8), flags: [] };
+  }
+  if (!card.adjacent) return null;                 // "across adjacent strings"
+  const [hi, lo] = card.pair, notes = [];
+  links.forEach(([a, b]) => {
+    const lowM = midiOf(a), hiM = midiOf(b), step = [];
+    for (const d of scaleOnString(key, lo, 0, NECK_TOP)) { const m = midiOf(d); if (m >= lowM && m <= hiM) step.push([m, d]); }
+    for (const d of scaleOnString(key, hi, 0, NECK_TOP)) { const m = midiOf(d); if (m > lowM && m <= hiM && !step.some(x => x[0] === m)) step.push([m, d]); }
+    step.sort((x, y) => x[0] - y[0]).forEach(([, d]) => notes.push(mk(d)));
+  });
+  return notes.length > 1 ? { unit: 8, bars: barsOf(notes, 8), flags: [] } : null;
+}
 function perfString(key, string) {
   const frets = [];
   for (let f = 0; f <= 15; f++) if (inKey(key, OPEN_MIDI[string] + f)) frets.push(f);
@@ -1010,6 +1110,16 @@ function cardPerformance(n, cards, i, tier, key) {
   if (n === 2 && card.p && card.opts && card.opts.ring) {
     const ring = card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d));
     return ring ? { perf: perfDescending(card.p, tier, ring), first: i } : null;
+  }
+  if (n === 7) { const perf = perfIntervals(card, tier, key); return perf ? { perf, first: i } : null; }
+  if (n === 5 && card.p) {
+    const ring = card.opts && card.opts.ring ? card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)) : null;
+    const perf = perfOctave(card.p, tier, card.via, ring, card.opts && card.opts.dim);
+    return perf ? { perf, first: i } : null;
+  }
+  if (n === 4 && card.p && card.opts && card.opts.ring) {
+    const ring = card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d));
+    return ring ? { perf: perfDegree(card.p, tier, ring, card.opts.ext), first: i } : null;
   }
   if (n === 3 && tier === "Easy" && card.p) { const first = i - i % 2; return { perf: perfZigzag(cards.slice(first).map(c => c.p), key), first }; }
   if (n === 6 && tier === "Easy" && card.string) return { perf: perfString(key, card.string), first: i };
@@ -1200,7 +1310,8 @@ function startPlayer() {
     const now = c.currentTime;
     while (run.next < run.events.length && run.t0 + run.events[run.next].t < now + .12) {
       const e = run.events[run.next++], at = run.t0 + e.t;
-      if (e.kind === "note") pluck(e.note.midi, at, e.dur * .95, bus);
+      if (e.kind === "note") { pluck(e.note.midi, at, e.dur * .95, bus);
+        if (e.note.with) pluck(e.note.with.midi, at, e.dur * .95, bus); }   // concept 7's double stops
       else if (e.kind === "count") tick(at, e.accent, bus);
       else if (e.kind === "click" && player.clicks) tick(at, false, bus);
     }

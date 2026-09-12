@@ -262,7 +262,38 @@ be questions at all, and the counts in the old list were wrong.
   line plays is in the exercise by definition. **564 card-sets** were affected (the old note
   said 329 cards); now 0.
 
+## Concepts 4, 5 and 7 (Sep 2026)
+Built from the handbook's own words on p. 63-64, which settle most of what the earlier
+specification round had guessed at. **25 of the 32 concept/tier combinations now play, up
+from 10.**
+- **Concept 4, `perfDegree`** — concept 1's shape anchored on the card's ringed degree instead
+  of the root. **Easy ascends only**, because the book adds the descent at Intermediate
+  ("Additionally, practice descending through the scales") and p. 69's printed example ends on
+  a whole note. Above Easy it turns at the top, runs to the bottom and comes home to the ring.
+  Two things the ladder had to learn: it follows the CARD's `ext`, not the tier's, because the
+  computed modal fingerings set `ext` false even above Easy (1251 lines were playing an undrawn
+  index-reach note); and it is trimmed to notes the card actually draws, because the "Middle
+  6's 9th is always on offer" rung is not drawn on a computed window (12 more).
+- **Concept 5, `perfOctave`** — the borrowed card's own line with its bottom half cut away.
+  The upper octave is defined by **the card's own `dim` predicate**, not by a pitch floor: the
+  Pinky shapes have no root on the 4th/3rd string at all, so a floor and the greying disagreed
+  on 4 of every 12 Easy cards. Filtering the ladder by what stays bright makes played and
+  bright the same set by construction. `via` says which concept was borrowed; concept 4's ring
+  sits an octave below the floor, so its degree is picked up where it reappears inside the
+  octave. `via === 2` (concept 3's zigzag) returns null — it travels up the neck, and the
+  player only follows the hand between cards for concept 3 itself.
+- **Concept 7, `perfIntervals`** — the card's `links` ARE the line; no placement, so no ladder.
+  **Easy and Intermediate are double stops**, one attack with the upper voice on the note's
+  `with`, because the book opens "we are playing the same scale on two strings
+  simultaneously". Advanced 1 is its "rather than playing the intervals harmonically, play them
+  melodically" — the same intervals, broken. Advanced 2 fills the interval in with every scale
+  tone between, on adjacent pairs only. `pluck` gained one line to sound `note.with`.
+  **The pace is mine, not the book's, which says nothing about rhythm here:** a harmonic
+  interval is a quarter and a broken one is two eighths, so an interval goes by every beat
+  either way.
+
 ## Open questions for William
-None outstanding on the engine. What is left is not a question but work: concepts 4, 5 and 7
-have no lines (and nor do concept 3 or 6 above Easy), which is 22 of the 32 concept/tier
-combinations.
+None on the engine. What is left is work, not rulings — 7 combinations are still silent, and
+two of those are text by design (concept 8's Intermediate and Advanced 2 have nothing to
+transcribe). The five that could be built: concept 3's Intermediate, Advanced 1 and Advanced 2;
+concept 5's Intermediate 1; and concept 6's Intermediate / Advanced.

@@ -26,7 +26,7 @@ const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const main = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ---------- state + ui ---------- */")[0];
 const state = { scale: "major", key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0, variants: {} };
-const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, perfSegovia, SEGOVIA, SEG_MOVABLE, segShift, segSpan, stringFingers, midiOf, cardPerformance, schedule, OPEN_MIDI_CHECK: OPEN_MIDI, PC_CHECK: PC };")(state);
+const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, perfDegree, perfOctave, perfIntervals, perfSegovia, SEGOVIA, SEG_MOVABLE, segShift, segSpan, stringFingers, midiOf, cardPerformance, schedule, OPEN_MIDI_CHECK: OPEN_MIDI, PC_CHECK: PC };")(state);
 
 const tok = n => `${n.string}:${n.fret}`;
 const flat = perf => perf.bars.flatMap(b => b.notes);
@@ -203,11 +203,27 @@ function advancedChecks(label, ns, L, turns, digits, key) {
   return out;
 }
 // what a card must play, straight from the engine (cardPerformance has to agree)
+/* A one-octave window cannot hold an interval wider than the notes it has: an Advanced tier
+   asks for groups of [1, interval], and where the octave has fewer rungs than that no group
+   fits and the card rightly has no line. Counted here from the card itself -- its drawn dots
+   less the ones its own dim greys out -- rather than by asking the engine, so this is an
+   independent expectation and not a restatement of perfOctave. */
+/* Whether a wide interval fits inside a one-octave window is NOT a function of the rung count:
+   at 8 rungs an 8th plays on some cards and not on others, because walkTurn's leg lengths and
+   skipped echo groups decide it. Any predicate here accurate enough to assert would just be
+   perfOctave written twice, which tests nothing -- so concept 5's Advanced tiers return null,
+   meaning "do not assert either way". The line itself is still checked whenever there is one,
+   and cardLines below counts the coverage, so a change that silenced a swathe of cards would
+   still show up as a moved number. */
+const ASSERT_EITHER = null;
 function expectedLine(n, cards, i, tier, key) {
   const card = cards[i];
   if (n === 1) return { perf: E.perfPosition(card.p, tier), first: i };
   if (n === 2) return { perf: E.perfDescending(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d))), first: i };
   if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key), first: i - i % 2 };
+  if (n === 4) return { perf: E.perfDegree(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)), card.opts.ext), first: i };
+  if (n === 5) return { perf: E.perfOctave(card.p, tier, card.via, card.opts.ring ? card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)) : null, card.opts.dim), first: i };
+  if (n === 7) return { perf: E.perfIntervals(card, tier, key), first: i };
   if (n === 8) return { perf: E.perfSegovia(card.segovia, card.segKey, card.shift), first: i };
   return { perf: E.perfString(key, card.string), first: i };
 }
@@ -228,11 +244,17 @@ for (const sc of Object.keys(E.SCALES)) {
         /* concept 8 carries a line only on the cards holding a transcribed fingering — its
            Intermediate and Advanced 2 tiers are still text — so whether a card should play is
            a question about the card, not about the concept */
-        const plays = card => C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy")
+        const plays = card => (C.n === 5 && tier.startsWith("Advanced") && card.via !== 2) ? ASSERT_EITHER
+          : C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy")
+          || C.n === 4                                     // every degree card carries a line
+          || (C.n === 5 && card.via !== 2 && !tier.startsWith("Advanced"))  // via 2 is the zigzag
+          || (C.n === 7 && card.links.length                          // no drawn links, nothing to play
+              && (tier !== "Advanced 2" || card.adjacent))             // filling in is adjacent only
           || (C.n === 8 && !!card.segovia);
         cards.forEach((card, i) => {
           let r; try { r = E.cardPerformance(C.n, cards, i, tier, key); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: cardPerformance throws ${e.message}`); return; }
-          if (plays(card) !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
+          const want = plays(card);
+          if (want !== null && want !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
           if (!r) return;
           cardLines++;
           r.perf.flags.forEach(f => sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${f}`));
