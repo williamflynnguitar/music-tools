@@ -1,9 +1,8 @@
 # Music tools
 
 Small, self-contained browser tools for jazz guitar practice and teaching, by
-William Flynn. Each tool is a single HTML file with no dependencies, no build
-step and no account — open it and play. Built for students on a phone in a
-practice room.
+William Flynn. Each tool is a single HTML file with no setup required, made
+to open on a phone in the practice room.
 
 **Live:** https://williamflynnguitar.github.io/music-tools/
 
