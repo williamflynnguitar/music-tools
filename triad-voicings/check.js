@@ -218,7 +218,7 @@ for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) {
   names.forEach((n, i) => ok(E.pcOf(n) === (pc + E.TRI[q].iv[i]) % 12, `spelling ${E.ROOTS[pc]}${q}: ${n}`));
 }
 // key study: every key x tonality x set builds 8 chords in range
-for (const key of ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"])
+for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
   for (const sk of ['major', 'harm']) for (const set of Object.keys(E.CSETS)) {
     const hs = E.harmonizations(key, sk, set);
     ok(hs.some(h => h.playable), `keyRun ${key}/${sk}/${set}: no playable harmonization`);

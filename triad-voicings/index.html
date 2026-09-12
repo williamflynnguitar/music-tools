@@ -155,6 +155,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
     <div class="sp-sa">
       <div class="sp-cap">Stand-alone</div>
       <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="enclosures" href="../enclosures/index.html">Enclosures</a>
       <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
       <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
       <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
@@ -290,11 +291,11 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
 <script>
 /* ---------- engine (pitch-based, as box-buddy / inversion-drill) ---------- */
 const OPEN = [null,64,59,55,50,45,40];
-const ROOTS = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const ROOTS = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chord roots: F#, not Gb
 const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-const KEYS = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"];
-const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const KEYS = ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"];
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],"F#":["F#","G#","A#","B","C#","D#","E#"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
 const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a,c)=>a+(c==='#'?1:-1),0)) % 12 + 12) % 12;
 const TRI = {
   maj:{name:'Major',      sym:'',  iv:[0,4,7], degs:['R','3','5']},
@@ -440,7 +441,10 @@ function diatonicTriads(tonicPc, scaleKey){
 }
 function keySpell(keyName, scaleKey){          // 7 note names of the scale
   if(scaleKey==='major') return SPELL[keyName];
-  const rel = KEYS.find(k=>pcOf(k)===(pcOf(keyName)+3)%12);
+  // the relative major. Pitch class 6 has two names in SPELL: a flat key borrows Gb's
+  // spelling (Eb minor stays Eb F Gb Ab Bb Cb D), F# borrows its own sharps.
+  const relPc = (pcOf(keyName)+3)%12;
+  const rel = relPc===6 ? (keyName.includes('b') ? 'Gb' : 'F#') : KEYS.find(k=>pcOf(k)===relPc);
   const i0 = SPELL[rel].findIndex(n=>pcOf(n)===pcOf(keyName));
   const names = SPELL[rel].map((_,j)=>SPELL[rel][(i0+j)%7]);
   names[6] = names[6].endsWith('b') ? names[6].slice(0,-1) : names[6]+'#';

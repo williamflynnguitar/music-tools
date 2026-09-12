@@ -12,6 +12,17 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
 - `line-ladder/` — stand-alone improvisation line generator, instrument-neutral
   (concept registry + smoothing ladder; handbook cited per concept only)
+- `enclosures/` — **built** (Sep 2026). Enclosure vocabulary, from William's
+  own Enclosures 101 / Access Points / workbook PDFs rather than the handbook.
+  Rule-driven: a pattern catalogue over the approach tones `S S2 L l U u T2`,
+  keyed by goal-note type, generates every enclosure in any key. The catalogue
+  was derived from the source notation and round-trips against all 85 printed
+  enclosures; the two scale exercises regenerate their sources note for note.
+  Sections 7–9 are William's composed lines, transcribed from the vector PDFs,
+  with a Concert/B♭/E♭ part selector — transposition is computed, so the three
+  engraved parts are not needed. No key signature in those sections, matching
+  the workbook, which writes everything with accidentals.
+  Live SVG engraver adapted from line-ladder — no pre-rendered notation
 - `shell-builder/` — Shell Voicings 101 (pp. 45–51): build and mobilize shells,
   name the result, comp through changes
 - `inversion-drill/` — drop-2/drop-3 inversions (pp. 52–59, key study p. 82),
@@ -68,7 +79,13 @@ scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
 (line-ladder no longer carries it — the rebuilt engine is pitch-only and keeps
 just the spelling recipes.)
 Keep the copies byte-identical — `SHAPES` and `MAJOR` are aliases into
-`SCALES.major` for older code. Factoring the renderer and data into a shared
+`SCALES.major` for older code.
+
+Pitch class 6 is **F#, never Gb**, in every root or key ring a student picks from
+(Sep 2026), and in the engraved cell names (`…-Fs.svg`). The flat spelling tables
+still hold Gb, because it is still the 4th of Db and the b3 of Eb minor: where a
+tool derives a parent key from a pitch class, a flat key borrows Gb's spelling and
+F# borrows its own sharps. Factoring the renderer and data into a shared
 file is the next structural change; the "no build step" rule can be kept with
 a concatenation script or by inlining at commit time.
 
@@ -111,6 +128,15 @@ plausible. Bar and phrase structure should be explicit in the code. When a
 design choice affects what a student learns, say so rather than picking
 silently — e.g. distributing silent bars evenly through a phrase trains
 something different from one long silent block.
+
+Inversions are named by the note actually in the bass — root position has the
+root lowest, 1st inversion the 3rd, and so on — never by the close voicing a
+drop voicing was derived from. Drop-2 moves the 2nd-from-top voice down an
+octave and drop-3 the 3rd-from-top, so the rotation has to be shifted back
+before the name is applied (inversion-drill shipped the unshifted name until
+Sep 2026, calling a 5-in-the-bass drop-2 "root position"). Where an extension
+has taken the bass voice (9 for R, #11 for 5) there is no inversion to name:
+say what is in the bass instead.
 
 Assume jazz defaults unless told otherwise: swing feel, backbeat on 2 and 4,
 8-bar phrases with 12 available for blues.
