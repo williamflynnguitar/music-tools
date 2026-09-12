@@ -726,13 +726,12 @@ function strum(notes){
 /* offsets that voice the symbol's alterations on the mobile strings, when the
    structure has them and the move is legal; extScore = requested extensions
    actually sounding */
-function pickOffsets(ch, rs, rf, struct){
+function pickOffsets(ch, rs, rf, struct, intoMinor){
   const sIdx = struct==null ? st.struct : struct;   // per-chord edits pass their own
   const want = (ch.ext||[]).filter(e=>EXT.includes(e));
   const hasB = [1,3,4].includes(sIdx), hasE = sIdx===4;
   if(!want.length || !hasB) return {off:{2:0,1:0}, extScore:0};
   const q = QUAL[ch.quality];
-  let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
   const obs = (rs===6 && q.dom) ? [-4,-3,-2,-1,0,1,2] : [-2,-1,0,1,2];   // 13-default window, see move()
   const oes = hasE ? ((ch.quality==='dim7'||ch.quality==='maj7s5') && rs===5 ? [-1,0,1,2] : [-1,0,1,2,3]) : [0];
   /* Match the symbol's alterations by pitch, not by label: degName calls 8
@@ -740,13 +739,36 @@ function pickOffsets(ch, rs, rf, struct){
      prints "b13 / #5"), so a requested b13 never matched and 7alt/7b13
      silently lost it. Same pairing for b5/#11. */
   const samePc = (a, b) => DEG[a]%12 === DEG[b]%12;
+  const cands = [];
   for(const ob of obs) for(const oe of oes){
     const v = buildAt(ch.pc, ch.quality, sIdx, rs, rf, {2:ob,1:oe});
     const degs = v.notes.filter(n=>n.mobile).map(n=>n.deg);
     let got = 0; want.forEach(w=>{ if(degs.some(d=>samePc(d,w))) got++; });
     let bad = 0; degs.forEach(d=>{ if(EXT.includes(d) && !q.allowed.includes(d) && !(q.altered&&q.altered.includes(d)) && !want.some(w=>samePc(w,d))) bad++; });
-    const score = got*6 - bad*4 - (Math.abs(ob)+Math.abs(oe))*0.1;
-    if(score>bs){ bs=score; best={off:{2:ob,1:oe}, extScore:got}; }
+    cands.push({ob, oe, got, bad, sounds: pc => degs.some(d => DEG[d]%12 === pc)});
+  }
+  const reach = pc => cands.some(c => c.sounds(pc));
+  const wants = pc => want.some(w => DEG[w]%12 === pc);
+  /* "b13 for b9" (William, 2026-09-12) — the same pairing subLabel already
+     prints in the picker, now binding on the generator. A 6R B string cannot
+     reach the b9, so the b13 stands in for it; a 5R B string cannot reach the
+     b13, so the b9 does. Until this, an unreachable alteration scored nothing
+     on every candidate and the winner fell out of 0.1 of fret travel, which
+     left 22 chords in the library sounding no alteration at all — a chart
+     reading G7b9 voiced and named "G13". */
+  const standIn = wants(1) && !reach(1) ? 8 : wants(8) && !reach(8) ? 1 : null;
+  /* Into a minor chord the sixth degree defaults to the b13, which is the
+     target's own minor third; the natural 13 is that target's MAJOR third and
+     belongs to a major resolution (William, 2026-09-12: "default to b13 on
+     minor ii-V"). This only declines the natural 13 — it never pushes a
+     natural 5 aside — and a symbol that names its own sixth still wins. */
+  const pinsSixth = wants(8) || wants(9);
+  let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
+  for(const c of cands){
+    let score = c.got*6 - c.bad*4 - (Math.abs(c.ob)+Math.abs(c.oe))*0.1;
+    if(standIn !== null && c.sounds(standIn)) score += 3;
+    if(intoMinor && q.dom && !pinsSixth && c.sounds(9)) score -= 1;
+    if(score>bs){ bs=score; best={off:{2:c.ob,1:c.oe}, extScore:c.got}; }
   }
   return best;
 }
@@ -777,13 +799,24 @@ function edits(){
 function progVoiceLead(bars){
   const E = edits();
   let prev = null;
+  /* Where each chord is heading, so a dominant resolving to a minor chord can
+     take the b13 rather than the natural 13. The target is read from the next
+     sounding chord, not from the ii before it: the b13 earns its place by
+     being the target's minor third, so it is the target that decides. */
+  const flat = [];
+  bars.forEach(bar => bar.forEach(c => { if(QUAL[c.quality]) flat.push(c); }));
+  const nextOf = new Map();
+  flat.forEach((c,i) => { if(flat[i+1]) nextOf.set(c, flat[i+1]); });
+  const headingMinor = c => { const n = nextOf.get(c);
+    return !!(n && QUAL[n.quality] && QUAL[n.quality].third === 'b3'); };
   return bars.map((bar,bi)=>bar.map((ch,si)=>{
     if(!QUAL[ch.quality]) return {ch, v:null, key:null};
+    const tm = headingMinor(ch);
     let best = null, bc = 1e9;
     for(const rs of [6,5]){
       const base = ((ch.pc-OPEN[rs])%12+12)%12;
       for(let rf=(base===0?12:base); rf<=15; rf+=12){
-        const p = pickOffsets(ch, rs, rf);
+        const p = pickOffsets(ch, rs, rf, null, tm);
         const cost = (prev===null ? Math.abs(rf-7)*0.3 : Math.abs(rf-prev)) - p.extScore*5;
         if(cost<bc){ bc=cost; best={rs, rf, off:p.off}; }
       }
@@ -797,7 +830,7 @@ function progVoiceLead(bars){
     /* an explicit B/E choice pins the voicing; a structure or position change
        re-picks the offsets for what the student just chose */
     let off = ed && ed.off ? ed.off
-            : (ed && (ed.rs!=null || ed.struct!=null)) ? pickOffsets(ch, rs, rf, struct).off
+            : (ed && (ed.rs!=null || ed.struct!=null)) ? pickOffsets(ch, rs, rf, struct, tm).off
             : best.off;
     if(ed && !ed.off) off = snapToOffered(ch, struct, rs, rf, off);
     const v = buildAt(ch.pc, ch.quality, struct, rs, rf, off);

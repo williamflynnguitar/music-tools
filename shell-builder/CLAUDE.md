@@ -146,6 +146,33 @@ there is no inversion or string-set state in this app.
   structure has a B string but no E string, a 6R B string can't reach b9 so
   b13 stands in ("b13 for b9"), and a 5R B string can't reach b13 so b9 does.
   The chart keeps the written symbol.
+- **A written alteration must sound, or its stand-in must (RULED 2026-09-12,
+  "b13 for b9").** `pickOffsets` used only to *reward* a requested alteration,
+  so where one was unreachable every candidate scored zero and the winner fell
+  out of 0.1 of fret travel. 22 chords in the library sounded no alteration at
+  all: a chart reading `G7b9` was voiced `R b7 3 13` and named **"G13"**, while
+  the picker beside it printed `subLabel`'s "b13 for b9". The generator now
+  takes that same stand-in — the b13 for an unreachable b9 at 6R, the b9 for an
+  unreachable b13 at 5R — so those 17 `7b9` chords now sound and name the b13.
+  Five cases remain with no stand-in and are **open**: three `G9#5` in I Hear A
+  Rhapsody (which loses its #5 in one bar and its natural 9 in another) and two
+  `Ab7#11` in Stella. Those pairings were never ruled on.
+- **Into a minor chord the sixth defaults to the b13 (RULED 2026-09-12,
+  "default to b13 on minor ii-V").** `pickOffsets` takes an `intoMinor` flag
+  that `progVoiceLead` derives from the *next sounding chord*, not from the ii
+  before it — the b13 earns its place by being the target's own minor third,
+  and the natural 13 is that target's major third, so the target decides. The
+  rule only declines a natural 13; it never pushes a natural 5 aside, and a
+  symbol naming its own sixth (`13b9`, `7b13`) still wins. Scope: it applies
+  only to dominants that already carry an alteration, because a **plain**
+  dominant is open to everything by the earlier ruling. At the default
+  structure the two rulings coincide, so the visible effect is the stand-in;
+  the b13 rule does independent work on the 6R 4-note-rootless shape, where the
+  B string is free to take either sixth (`D13b9` into major, `D7#5b9` into
+  minor).
+  **Still open:** a *plain* `G7` resolving to `Cm7` keeps its natural 13,
+  because the plain-dominant ruling says the player decides. That is the same
+  semitone against the target's minor third.
 - The generator can still voice something the picker wouldn't offer — a plain
   `pickOffsets` puts a natural 13 under a 7b9 — so the sounding note is always
   shown, tagged "as generated", and the E row stays live rather than dimming
