@@ -70,6 +70,14 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .panel h3{font-size:13px;font-weight:400;color:var(--bone-dim);margin:14px 0 6px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .panel h3:first-child{margin-top:0}
 .plist{display:flex;flex-direction:column;gap:5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.seg2 button{text-align:left;line-height:1.25;padding:7px 9px}
+.seg2 button span{display:block;font-size:11px;color:var(--bone-dim);font-family:var(--mono)}
+.seg2 button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
+.seg2 button[aria-pressed=true] span{color:var(--bone-dim)}
+.prow .btn.x{color:var(--bone-dim);padding:3px 7px}
+.prow .btn.x:hover{color:var(--red);border-color:var(--red)}
 .pitem{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--petrol);border:1px solid transparent;border-radius:4px;padding:7px 9px;font-size:13.5px;line-height:1.25}
 .pitem:hover{background:var(--petrol-2);border-color:var(--brass)}
 .pitem .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
@@ -502,25 +510,15 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
 
 /* ---- instrumentation templates: shapes, not rosters --------------- */
 const TEMPLATES = [
-  { id:"combo-small", name:"Jazz combo (small)", note:"a horn or two over rhythm",
+  { id:"combo", name:"Jazz combo", note:"a horn or two over rhythm — add or drop players once you're in",
     parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"combo-large", name:"Jazz combo (large) / little big band", note:"front line of four or five",
-    parts:[["alto",1],["tenor",1],["bari",1],["trumpet",2],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
     parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"rock", name:"Rock / pop band", note:"lead vocal, gtr, bass, keys, drums",
+  { id:"rock", name:"Rock / pop band", note:"lead vocal, gtr, keys, bass, drums",
     parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"vocalpop", name:"Vocal-forward pop group", note:"three voices over a rhythm section",
+  { id:"vocals", name:"Vocals + rhythm section", note:"three voices over a rhythm section",
     parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"funk", name:"Funk / soul band", note:"rhythm section plus a horn line",
-    parts:[["voice",1],["alto",1],["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"duo", name:"Singer-songwriter duo / trio", note:"voice, acoustic, upright",
-    parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1],["upright",1]] },
-  { id:"horns-rhythm", name:"Horn section + rhythm", note:"four horns, four rhythm",
-    parts:[["alto",1],["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"vocal-jazz", name:"Vocal jazz ensemble + rhythm", note:"four voices, piano trio",
-    parts:[["voice",4],["keys",1],["bass",1],["drums",1]] },
-  { id:"solo", name:"Solo act", note:"one voice, one instrument",
+  { id:"duo", name:"Solo / duo", note:"voice doubling acoustic, plus an upright if there are two of you",
     parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1]] },
 ];
 
@@ -547,9 +545,17 @@ const LAYOUT = {
   bigBandY: .28, bigBandBackY: .90, bigBandColumn: .36, hornsForBigBand: 8,
   edge: 16,                    // inches kept clear of the deck edge when packing a row
   comfySpacing: 46, minSpacing: 26,
-  rhythm: {                    // standard shape, [fx, fy] per role, extras stagger
+  /* Standard shape, [fx, fy] per role. Two arrangements, because combos
+     argue about this one: the kit upstage centre with the bass out at the
+     stage-left edge (the default), or the two swapped. fx 0 is the
+     stage-left edge, which is the RIGHT of the page — see Coordinates. */
+  rhythm: {                    // drums centre, bass to the side
     drums:[.50,.80], bass:[.13,.63], upright:[.13,.63], guitar:[.87,.63],
     keys:[.74,.40], organ:[.26,.40], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],
+  },
+  rhythmSwapped: {             // bass centre, drums to the side
+    drums:[.15,.74], bass:[.52,.62], upright:[.52,.62], guitar:[.87,.63],
+    keys:[.74,.40], organ:[.26,.40], perc:[.40,.86], dj:[.74,.80], playback:[.62,.90],
   },
   rhythmBig: {                 // big-band shape: the stage-left column
     drums:[.149,.757], bass:[.330,.500], upright:[.330,.500], guitar:[.330,.160],
@@ -601,7 +607,7 @@ function autoLayout(plot, opt){
   });
 
   // rhythm section
-  const slots = big ? LAYOUT.rhythmBig : LAYOUT.rhythm;
+  const slots = big ? LAYOUT.rhythmBig : (plot.rhythmPlan === "bass-centre" ? LAYOUT.rhythmSwapped : LAYOUT.rhythm);
   const used = {};
   for (const p of rhythm){
     const r = roleOf(plot, p), slot = slots[r.id] || slots.playback || [.5, .8];
@@ -702,6 +708,7 @@ function monitorGroups(plot){
   return groups;
 }
 function layoutWedges(plot, force){
+  if (plot.wedgesTouched && !force) return;     // hand-assigned mixes are not ours to rewrite
   const D = deckIn(plot), groups = monitorGroups(plot);
   const keep = plot.wedges.filter(w => w.moved && !force);
   const fresh = [];
@@ -740,7 +747,7 @@ function blankPlot(deck, name){
   return { schemaVersion:2, id:nextIdE("plot"), name:name || "New plot", templateId:"",
     director:"", date:"", showName:"", notes:"", printNames:true,
     deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
-    positions:[], items:[], wedges:[], songs:[], customRoles:[],
+    positions:[], items:[], wedges:[], songs:[], customRoles:[], rhythmPlan:"drums-centre",
     sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } },
     channelOrder:null };
 }
@@ -1155,6 +1162,7 @@ function migrateV1(p){
   }
   out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true,
     assignees:[...new Set((w.assignees || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))], request:w.request || "" }));
+  out.wedgesTouched = true;                     // v1 plots had their mixes assigned by hand
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
   syncWedgeIds(out);
@@ -1167,6 +1175,7 @@ function migratePlot(p){
   p.songs = p.songs || []; p.customRoles = p.customRoles || [];
   p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
   p.printNames = p.printNames !== false;
+  p.rhythmPlan = p.rhythmPlan === "bass-centre" ? "bass-centre" : "drums-centre";
   p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
   for (const pos of p.positions){ pos.names = pos.names || []; pos.doubles = pos.doubles || []; pos.inputs = pos.inputs || []; pos.rot = pos.rot || 0; }
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; it.inputs = it.inputs || []; }
@@ -1494,6 +1503,7 @@ function addHouse(ref){
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
       p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true, assignees:[], request:"" });
+      p.wedgesTouched = true;
       S.sel = p.wedges[p.wedges.length - 1].id; return;
     }
     const spot = freeSpot(p, p.items.length);
@@ -1522,22 +1532,39 @@ function renderPanel(p){
   const labels = positionLabels(p), H = [];
 
   if (S.tab === "positions"){
+    const hasDrums = p.positions.some(x => roleOf(p, x).id === "drums");
+    const hasBass = p.positions.some(x => ["bass","upright"].includes(roleOf(p, x).id));
+    const horns = p.positions.filter(x => ["sax","brass"].includes(roleOf(p, x).family)).length;
     H.push('<label class="chk"><input type="checkbox" id="cPrintNames"' + (p.printNames !== false ? " checked" : "") + '> Print names</label>');
     H.push('<div class="insprow" style="margin:8px 0"><button class="btn sm" id="bInstr">Instrumentation…</button>' +
       '<button class="btn sm" id="bBulk">Paste names…</button></div>');
-    H.push("<h3>Positions</h3><div class='plist'>");
+
+    if (hasDrums && hasBass && horns < LAYOUT.hornsForBigBand){
+      H.push('<h3>Rhythm section</h3><div class="seg2">' +
+        '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums centre<span>bass to the side</span></button>' +
+        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass centre<span>drums to the side</span></button></div>' +
+        '<p class="note">“The side” is stage left — the performer\'s left, which prints on the right-hand side of the page. Anything you have dragged stays put.</p>');
+    }
+
+    H.push("<h3>Add a position</h3><div class='chips'>");
+    for (const id of ["voice","guitar","bass","drums","keys","alto","tenor","trumpet","trombone"])
+      H.push('<button class="btn sm" data-quickadd="' + id + '">+ ' + esc(roleDef(p, id).label) + '</button>');
+    H.push('</div><div class="insprow" style="margin-top:6px"><select id="newRole" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
+      roleOptions(p, "voice") + '</select><button class="btn sm" id="bAddPos">+ add</button>' +
+      '<button class="btn sm" id="bCustomRole">custom…</button></div>');
+
+    H.push("<h3>On stage — " + p.positions.length + "</h3><div class='plist'>");
+    if (!p.positions.length) H.push('<p class="note">Nobody yet. Add positions above, or start from a shape with New.</p>');
     for (const pos of p.positions){
       const w = p.wedges.find(w => w.assignees.includes(pos.id));
       H.push('<div class="prow" style="align-items:flex-start"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
         '<span class="role">' + esc(labels[pos.id].role.label) + '</span><br>' +
         '<input type="text" data-pname="' + pos.id + '" placeholder="name (optional)" style="width:100%;margin-top:3px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 6px;font-size:13px"></span>' +
         '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
-        '<button class="btn sm" data-psel="' + pos.id + '">edit</button></div>');
+        '<button class="btn sm" data-psel="' + pos.id + '" title="select on the canvas">edit</button>' +
+        '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>');
     }
-    H.push('</div><div class="insprow" style="margin-top:10px"><select id="newRole" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
-      roleOptions(p, "voice") + '</select><button class="btn sm" id="bAddPos">+ add</button></div>' +
-      '<button class="btn sm" id="bCustomRole" style="margin-top:6px">custom role…</button>' +
-      '<p class="note">Names are optional everywhere. Positions carry the channels; a plot with no names at all still prints completely.</p>');
+    H.push('</div><p class="note">Names are optional everywhere. Positions carry the channels; a plot with no names at all still prints completely.</p>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
@@ -1611,6 +1638,24 @@ function renderPanel(p){
   el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
   el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
   el.querySelectorAll("[data-psel]").forEach(b => b.onclick = () => { S.sel = b.dataset.psel; render(); });
+  el.querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => commit(() => {
+    const q = plot();
+    removePosition(q, b.dataset.pdel);
+    if (S.sel === b.dataset.pdel) S.sel = null;
+    autoLayout(q, { force:false });                       // the row closes up around the gap
+  }));
+  el.querySelectorAll("[data-quickadd]").forEach(b => b.onclick = () => commit(() => {
+    const q = plot(), pos = addPosition(q, b.dataset.quickadd);
+    autoLayout(q, { force:false });
+    S.sel = pos.id;
+  }));
+  el.querySelectorAll("[data-rhythm]").forEach(b => b.onclick = () => commit(() => {
+    const q = plot();
+    q.rhythmPlan = b.dataset.rhythm;
+    for (const pos of q.positions) if (["drums","bass","upright","perc"].includes(roleOf(q, pos).id)) pos.moved = false;
+    for (const it of q.items) if ((it.ownerPositionIds || []).some(id => { const o = q.positions.find(x => x.id === id); return o && ["bass","upright"].includes(roleOf(q, o).id); })) it.moved = false;
+    autoLayout(q, { force:false });
+  }));
   el.querySelectorAll("[data-pname]").forEach(i => {
     const pos = p.positions.find(x => x.id === i.dataset.pname);
     bindText(i, () => posNames(pos).join(" / "), v => pos.names = v.split(/\s*[\/,]\s*/).map(s => s.trim()).filter(Boolean));
@@ -1621,14 +1666,15 @@ function renderPanel(p){
     S.sel = p.items[p.items.length - 1].id;
   }));
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
-  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); syncWedgeIds(p); }));
+  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); p.wedgesTouched = true; syncWedgeIds(p); }));
   el.querySelectorAll("[data-wassign]").forEach(c => c.onchange = () => commit(() => {
     const w = p.wedges.find(w => w.id === c.dataset.wassign);
     if (c.checked){ for (const o of p.wedges) o.assignees = o.assignees.filter(id => id !== c.value); w.assignees.push(c.value); }
     else w.assignees = w.assignees.filter(id => id !== c.value);
+    p.wedgesTouched = true;
     syncWedgeIds(p);
   }));
-  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => w.request = v); });
+  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => { w.request = v; p.wedgesTouched = true; }); });
   el.querySelectorAll("[data-sec]").forEach(c => c.onchange = () => commit(() => { plot().sections[c.dataset.sec].on = c.checked; }));
   el.querySelectorAll("[data-up],[data-down]").forEach(b => b.onclick = () => commit(() => {
     const p2 = plot(), keys = inputUnits(p2).map(u => u.key), k = b.dataset.up || b.dataset.down, i = keys.indexOf(k);

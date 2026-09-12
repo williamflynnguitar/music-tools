@@ -83,6 +83,56 @@ for (const t of E.TEMPLATES){
      t.name + " lays out deterministically");
 }
 
+/* ---- 2b. the two rhythm arrangements, and adding or dropping a player ---- */
+{
+  eq(E.TEMPLATES.length, 5, "five templates — counts are editable on the main page now");
+  for (const t of E.TEMPLATES){
+    const p = T(t.id);
+    p.rhythmPlan = "bass-centre";
+    E.autoLayout(p, { force:true });
+    const hits = collisions(p);
+    ok(hits.hard.length === 0, t.name + " with bass centre has no two things in one place:\n        " + hits.hard.join("\n        "));
+    ok(p.positions.concat(p.items, p.wedges).every(o => !E.offDeck(o, p)), t.name + " with bass centre stays on the deck");
+  }
+  const combo = T("combo");
+  const drums = combo.positions.find(x => x.roleId === "drums"), bass = combo.positions.find(x => x.roleId === "bass");
+  const centreish = o => Math.abs(o.x - E.deckIn(combo).w / 2) < E.deckIn(combo).w * .2;
+  ok(centreish(drums) && !centreish(bass), "default: the kit is centre, the bass is out to the side");
+  combo.rhythmPlan = "bass-centre"; E.autoLayout(combo, { force:true });
+  const d2 = combo.positions.find(x => x.roleId === "drums"), b2 = combo.positions.find(x => x.roleId === "bass");
+  ok(centreish(b2) && !centreish(d2), "swapped: the bass is centre, the kit is out to the side");
+  ok(b2.x > E.deckIn(combo).w / 2 - 40 && d2.x < E.deckIn(combo).w / 3, "…and the kit took the stage-left side (" + Math.round(d2.x) + "″ from the stage-left edge)");
+
+  // add a vocalist, then drop them again — what the buttons on the main page do
+  const q = T("combo"), before = chOf(q), n = q.positions.length;
+  const added = E.addPosition(q, "voice");
+  E.autoLayout(q, { force:false });
+  eq(q.positions.length, n + 1, "adding a vocalist adds a position");
+  eq(chOf(q), before + 1, "…and one channel");
+  ok(!E.offDeck(added, q) && collisions(q).hard.length === 0, "…placed clear of everyone else");
+  ok(q.wedges.some(w => w.assignees.includes(added.id)), "…and lands on a mix");
+  q.positions = q.positions.filter(x => x.id !== added.id);
+  for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== added.id);
+  E.autoLayout(q, { force:false });
+  eq(chOf(q), before, "dropping them again puts the channel count back");
+  ok(collisions(q).hard.length === 0, "…and the row closes up cleanly");
+}
+
+/* ---- 2c. hand-assigned mixes survive a re-layout ---- */
+{
+  const p = T("rock");
+  const voice = p.positions.find(x => x.roleId === "voice"), drums = p.positions.find(x => x.roleId === "drums");
+  const mix = p.wedges[0];
+  mix.assignees = [voice.id, drums.id];
+  mix.request = "vocal and kick";
+  p.wedgesTouched = true;
+  E.addPosition(p, "alto");
+  E.autoLayout(p, { force:false });
+  const still = p.wedges.find(w => w.id === mix.id);
+  eq(still.request, "vocal and kick", "a typed monitor request is not rewritten when the band changes");
+  eq(JSON.stringify(still.assignees.slice().sort()), JSON.stringify([voice.id, drums.id].sort()), "…nor are hand-picked assignees");
+}
+
 /* ---- 3. big band: usable with no names at all ---- */
 {
   const p = T("bigband");
@@ -124,7 +174,7 @@ for (const t of E.TEMPLATES){
 
 /* ---- 5. channel ordering ---- */
 {
-  const p = T("combo-large");
+  const p = E.makeFromParts([["bari",1],["tenor",1],["alto",1],["trombone",1],["trumpet",2],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Little big band");
   const order = ["drums","bass","guitar","keys","horn","strings","vocals","other"];
   const idx = E.inputUnits(p).map(u => order.indexOf(u.grp));
   ok(idx.every((v, i) => i === 0 || v >= idx[i - 1]), "drums, bass, guitars, keys, horns, strings, vocals");
@@ -152,7 +202,7 @@ for (const t of E.TEMPLATES){
 
 /* ---- 7. bulk name entry ---- */
 {
-  const p = T("horns-rhythm");
+  const p = E.makeFromParts([["alto",1],["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Horns + rhythm");
   const rows = E.parseNameList("Sam Ortiz — keys\nDana Bell — guitar\nChris Aoki — bass\nJo Fischer — drums\nMax Iverson — tenor\nPat Okonkwo, trumpet\nRené Duval (trombone)\nAvery Stone", p);
   eq(rows.length, 8, "eight lines parsed");
   eq(rows.find(r => r.name === "Sam Ortiz").label, "Keys", "“Name — instrument” aims at the right position");
@@ -292,10 +342,10 @@ for (const t of E.TEMPLATES){
 
 /* ---- 15. save -> load round trip ---- */
 {
-  const p = T("funk");
+  const p = T("rock");
   const text = JSON.stringify(p, null, 1);
   eq(JSON.stringify(E.migratePlot(JSON.parse(text)), null, 1), text, "a saved v2 plot reloads byte-identical");
-  ok(/^SW-plot-funk-soul-band-\d{4}-\d\d-\d\d\.json$/.test(E.plotFileName(p)), "file name: " + E.plotFileName(p));
+  ok(/^SW-plot-rock-pop-band-\d{4}-\d\d-\d\d\.json$/.test(E.plotFileName(p)), "file name: " + E.plotFileName(p));
 }
 
 /* ---- 16. no browser storage, no network, no rosters in the code ---- */

@@ -148,6 +148,11 @@ trombones, horn section, trumpets. Within a group, position order.
 
 ## Templates
 
+Five shapes, deliberately few: the main page can add and drop positions in one
+click, so a template only needs to get you into the right ballpark. Anything
+more specific (a little big band, a funk horn line, a vocal jazz group) is the
+instrumentation form or three clicks of the quick-add chips.
+
 `TEMPLATES` is a list of instrumentation **shapes**, not rosters:
 
 ```js
@@ -179,6 +184,12 @@ block above `LAYOUT` and are meant to be argued with:
   horns** the band is treated as a big band: the rhythm section moves into a
   stage-left column (`LAYOUT.rhythmBig`) and the horn rows take the rest of
   the deck at full depth.
+- `plot.rhythmPlan` picks between two standard arrangements, because combos
+  argue about this one: `"drums-centre"` (the default — kit upstage centre,
+  bass out at the stage-left edge) and `"bass-centre"` (the two swapped,
+  `LAYOUT.rhythmSwapped`). The toggle is on the Positions tab and only shows
+  for a band that has both and isn't a big band. Flipping it unpins the
+  rhythm players so they move, and leaves everything else alone.
 - Amps sit behind their player, keyboards in front of theirs.
 - Wedges land downstage of the group they serve; a group parked upstage would
   otherwise put its wedge inside the row in front, so those go outboard at the
@@ -196,6 +207,12 @@ block above `LAYOUT` and are meant to be argued with:
 Same instrumentation always yields the same layout; `check.js` asserts it.
 
 ## Monitor mixes
+
+**Hand-assigned mixes are never rewritten.** Any edit to a wedge — ticking an
+assignee, typing a request, adding or deleting one, dragging it — sets
+`plot.wedgesTouched`, and from then on `layoutWedges()` leaves the mixes alone
+even as positions are added and removed. A migrated v1 plot starts touched,
+since its mixes were assigned by hand. Re-layout (force) clears it.
 
 `monitorGroups()` builds groups in priority order — voices, drums, bass,
 guitar, keys, sax row, trombones, trumpets, strings, other — then merges the
