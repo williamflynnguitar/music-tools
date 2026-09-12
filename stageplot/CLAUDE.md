@@ -235,9 +235,12 @@ Same instrumentation always yields the same layout; `check.js` asserts it.
 
 **Mixes are dealt once.** `layoutWedges()` builds them when the plot is
 created and when the re-layout button runs, and never again on its own.
-Adding an instrument later does not conjure a sixth wedge or redeal the
-existing five: the new position simply has no mix, and says so in the
-Positions tab and in the "No wedge assigned" line on the printed page. That
+Adding an instrument later does not conjure a wedge or redeal the existing
+ones: the new position simply has no mix, and says so in the Positions tab
+and in the "No wedge assigned" line on the printed page. A blank plot stays
+at zero wedges no matter how many instruments go into it — the first
+version of this fix still dealt mixes when a plot had none, which meant
+building a band from blank grew a wedge on the first instrument. That
 line is the feature — who shares a wedge is the director's call, not the
 engine's. Wedges nobody has dragged still follow the players they serve, so
 the drum wedge moves when the rhythm arrangement flips.

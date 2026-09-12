@@ -118,6 +118,14 @@ for (const t of E.TEMPLATES){
   ok(E.monitorTable(q).unassigned.some(x => /Vox|Voice/.test(x)), "…and says so under the monitors table");
   E.autoLayout(q, { force:true });
   ok(q.wedges.some(w => w.assignees.includes(added.id)), "re-layout deals the mixes again, including the new position");
+
+  // a blank plot has no mixes, and building a band in it must not invent any
+  const blank = E.blankPlot();
+  for (const r of ["guitar","bass","drums"]){ E.addPosition(blank, r); E.autoLayout(blank, { force:false }); }
+  eq(blank.wedges.length, 0, "a blank plot stays at zero wedges however many instruments you add");
+  eq(E.monitorTable(blank).unassigned.length, 3, "…and all three read as having no mix");
+  E.autoLayout(blank, { force:true });
+  eq(blank.wedges.length, 3, "…until re-layout deals them");
   q.positions = q.positions.filter(x => x.id !== added.id);
   for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== added.id);
   E.autoLayout(q, { force:false });

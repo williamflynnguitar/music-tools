@@ -731,12 +731,14 @@ function wedgeSpot(plot, list){
 }
 /* Mixes are built once, when the plot is created, and by the re-layout
    button. They are never built again behind the director's back: adding an
-   instrument later does NOT conjure a sixth wedge or redeal the existing
-   five — the new position simply has no mix, and says so in the Positions
-   tab and in the "No wedge assigned" line on the page, which is the point.
-   Wedges that nobody has dragged still follow the players they serve. */
+   instrument later does NOT conjure a wedge or redeal the existing ones —
+   the new position simply has no mix, and says so in the Positions tab and
+   in the "No wedge assigned" line on the page, which is the point. That
+   holds for a blank plot too: no wedges until you ask for them, from the
+   Wedges tab or by re-laying out. Wedges nobody has dragged still follow
+   the players they serve. */
 function layoutWedges(plot, force){
-  if (plot.wedges.length && !force){
+  if (!force){                                  // only creation and re-layout deal mixes
     for (const w of plot.wedges){
       if (w.moved) continue;
       const list = w.assignees.map(id => plot.positions.find(p => p.id === id)).filter(Boolean);
