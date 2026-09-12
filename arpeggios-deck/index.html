@@ -614,13 +614,36 @@ const TONAL = {
   melodic:  { name: "melodic minor",  steps: [0,2,3,5,7,9,11] },
 };
 const LETTERS = ["C","D","E","F","G","A","B"], LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+/* No note is ever written with a double accidental (William, 2026-09-12). A °7 or + chord run
+   out from its root letter asks for one — D♭°7 is strictly D♭ F♭ A♭♭ C♭♭, F♯+ is F♯ A♯ C× —
+   so a letter needing two accidentals gives way to the plain name of the same pitch, on the
+   side it was heading: D♭ F♭ G B♭, F♯ A♯ D. */
+const FLAT_NAME  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const SHARP_NAME = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 function spell(letter, pc) {                         // letter + accidental for a pitch class
   let diff = ((pc - LPC[letter]) % 12 + 12) % 12; if (diff > 6) diff -= 12;
-  return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
+  if (Math.abs(diff) > 1) return (diff > 0 ? SHARP_NAME : FLAT_NAME)[((pc % 12) + 12) % 12];
+  return letter + (diff > 0 ? "#" : diff < 0 ? "b" : "");
 }
+/* A tonic whose scale cannot be spelled one-letter-per-degree without a double is written from
+   the side that can: D♭ harmonic minor would want B♭♭ for its ♭6, so it is spelled as C♯ minor.
+   Otherwise a whole scale, and the chord names built off it, would go enharmonic a note at a
+   time. The key ring still reads D♭ — same convention as Line Ladder and Triad Voicings. */
+const scaleFrom = (tonic, ton) => {
+  const li = LETTERS.indexOf(tonic[0]), pc = PC[tonic] != null ? PC[tonic] : LPC[tonic[0]] + (tonic[1] === "#" ? 1 : tonic[1] === "b" ? -1 : 0);
+  return TONAL[ton].steps.map((st, i) => {
+    const letter = LETTERS[(li + i) % 7];
+    let d = (((pc + st) % 12 - LPC[letter]) % 12 + 12) % 12; if (d > 6) d -= 12;
+    return letter + (d > 0 ? "#".repeat(d) : "b".repeat(-d));
+  });
+};
+const pcOfName = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a, c) => a + (c === "#" ? 1 : -1), 0)) % 12 + 12) % 12;
+const single = n => n.length > 2 ? (n[1] === "#" ? SHARP_NAME : FLAT_NAME)[pcOfName(n)] : n;
 function scaleSpelled(key, ton) {                   // note names of a scale, one per letter
-  const li = LETTERS.indexOf(key[0]);
-  return TONAL[ton].steps.map((st, i) => spell(LETTERS[(li + i) % 7], (PC[key] + st) % 12));
+  const names = scaleFrom(key, ton);
+  if (!names.some(n => n.length > 2)) return names;
+  const pc = PC[key], other = scaleFrom(FLAT_NAME[pc] === key ? SHARP_NAME[pc] : FLAT_NAME[pc], ton);
+  return other.some(n => n.length > 2) ? names.map(single) : other;
 }
 function diatonic(key, ton, size = state.size) {     // the seven diatonic chords of a tonality, triads or 7ths
   const steps = TONAL[ton].steps, names = scaleSpelled(key, ton);

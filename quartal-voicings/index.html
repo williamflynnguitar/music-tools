@@ -522,12 +522,19 @@ function nameDeg(off, sym){
 /* spell a chord tone from its degree against the symbol root (workbook style:
    ♯9 takes the practical ♭3 letter — D7alt. is spelled B♭ E♭ F, not E♯) */
 const DEG_LETTER = {'1':0,'♭9':1,'9':1,'♯9':2,'♭3':2,'3':2,'11':3,'♯11':3,'♭5':4,'5':4,'♯5':4,'♭13':5,'13':5,'6':5,'♭7':6,'Δ7':6};
+/* No note is ever written with a double accidental (William, 2026-09-12). The alt. dominants
+   in the flat keys run off the end of the alphabet — A♭7alt.'s ♭9 and ♭5 are strictly B♭♭ and
+   E♭♭ — so a degree needing two accidentals gives way to the plain name of the same pitch, on
+   the side it was heading: A♭7alt. is spelled C♭ F♭ A, not C♭ F♭ B♭♭. */
+const FLAT_NAME  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const SHARP_NAME = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 function spellDeg(pc, rootName, sym){
   const off = ((pc - notePc(rootName)) % 12 + 12) % 12;
   const li = 'CDEFGAB'.indexOf(rootName[0]) , lo = DEG_LETTER[nameDeg(off, sym)];
   const letter = 'CDEFGAB'[(li + lo) % 7];
   let acc = ((pc - LPC[letter]) % 12 + 12) % 12; if (acc > 6) acc -= 12;
-  return letter + (acc > 0 ? '#'.repeat(acc) : 'b'.repeat(-acc));
+  if (Math.abs(acc) > 1) return (acc > 0 ? SHARP_NAME : FLAT_NAME)[((pc % 12) + 12) % 12];
+  return letter + (acc > 0 ? '#' : acc < 0 ? 'b' : '');
 }
 
 /* ---------- guideposts: "to sound like X, the top note must be Y" ---------- */

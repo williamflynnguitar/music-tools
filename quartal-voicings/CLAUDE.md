@@ -94,3 +94,13 @@ order; scores in memory only).
   the Box Buddy handout format — closes the loop with the student request
   that started this.
 - Post-drill results charts (shared deferred item with Two-and-Four).
+
+## Spelling
+
+`spellDeg` gives a chord tone the letter its degree asks for. In the flat keys
+the alt. dominants run off the end of the alphabet — A♭7alt.'s ♭9 and ♭5 are
+strictly B♭♭ and E♭♭ — and **no note is written with a double accidental**
+(William, 2026-09-12), so a degree needing two gives way to the plain name of
+the same pitch, on the side it was heading: A♭7alt. is C♭ F♭ A. That touched
+15 (preset, key) pairs, all in D♭ and A♭, and their notation cells were
+re-rendered.
