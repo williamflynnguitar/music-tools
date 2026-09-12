@@ -112,7 +112,9 @@ descending. 287 notes: #1 is 29 and two octaves, the rest 43 and three.
   `unlockAudio` inside the Play tap resumes from any non-running state ("interrupted" after a
   call or alarm), starts a silent buffer, and loops a silent `<audio>` so the ringer switch
   doesn't mute Web Audio on Safari before 17; a Screen Wake Lock while playing; and
-  `visibilitychange` resumes the context and re-takes the lock. Not yet tried on an iPhone.
+  `visibilitychange` resumes the context and re-takes the lock. **Confirmed playing on a real
+  iPhone, 2026-09-12.** He reported it plays; the ringer-switch, lock-screen and
+  call-interruption paths have not been separately exercised.
 - The highlight and count strip read `heardTime()`: the audio clock less the output latency
   (from `getOutputTimestamp` when it agrees with `currentTime` within 0.5 s), so a Bluetooth
   speaker doesn't put the ring ahead of the note. Nothing visual drives timing.
@@ -228,14 +230,39 @@ William's rulings, all 2026-09-11:
   tempo and feel changes taking effect at the next bar line; Play only where the engine has a
   line; and the concept 2 Easy fallback with its 7 knock-on cards and concept 5 Easy 2.
 
+## The last five, decided (2026-09-12, mine on his say-so)
+He asked me to decide these rather than rule on them, so each is flagged as my call and each
+was settled against the engine rather than from the notes — two of the five turned out not to
+be questions at all, and the counts in the old list were wrong.
+
+- **The concept 3 zigzag start: no change, and the question was moot.** All six shapes in the
+  cycle root on the 6th or 5th string, so "the very lowest position" and "the lowest with a
+  root on the 6th/5th string" name the *same card* — verified across all 132 scale x key
+  combinations, 0 disagreements. F major's first card reproduces p. 68 note for note
+  (`6:1 6:3 6:5 5:1 5:3 5:5 4:2 4:3`).
+- **The computed below-root finger stays 1.** It is the rule's own definition: the note is in
+  the ladder *because* the index can reach a fret below the lowest dot, so the index is what
+  plays it. It shows only in concept 3, where fingers are the lesson, and a reach is exactly
+  what a finger number should tell you — how to get the note without moving the hand.
+- **Concept 2's climb now reuses the locations the descent used (CHANGED).** `located` takes a
+  `reuse` flag; concepts 1 and 2 pass it, concept 3 must not, since its whole subject is the
+  same pitches in the next position up. Without it a line could return to a pitch five frets
+  from where it just played it — Eb Middle 5 played midi 49 at 5:4 on the way down and 6:9 on
+  the way back — a shift the exercise never asked for. **144 lines** carried a split (the old
+  note said 48); now 0, and all 31 printed examples still match, so the book is compatible.
+- **The 72 Middle 6 cards starting above the 9th: no change, not a bug.** They start on the
+  shape's highest 1st-string note, which is what concept 2's own instruction asks for
+  ("from the highest note on the 1st string to the lowest note on the 6th"). His "Middle 6
+  turns on the 9th" ruling is about concept 1's *turnaround*, a different moment.
+- **Concept 3 Easy no longer dims (CHANGED).** Concept 1 Easy dims below the lowest root
+  because its instruction is "from the lowest root up". Concept 3's says the opposite —
+  "continue scalar motion to the bottom of the next one up" — and the zigzag goes there: on
+  the first card of C major it played **eight** notes on the 6th string that were drawn greyed
+  out, with the playback highlight lighting dots the card presented as optional. A note the
+  line plays is in the exercise by definition. **564 card-sets** were affected (the old note
+  said 329 cards); now 0.
+
 ## Open questions for William
-Still genuinely open — these are questions where no pick was made, so round 5 did not settle
-them:
-- Whether the zigzag in concept 3 should start at the very lowest position, or the lowest with
-  a root on the 6th/5th string.
-- The computed below-root fingers.
-- Whether concept 2's climb should reuse the locations the descent used (48 lines differ).
-- 72 Intermediate Middle 6 concept 2 cards start a step above the 9th.
-- Concept 3 Easy lights a note the card draws dimmed on 329 cards: the step below the next
-  ascent's root sits below the descending card's lowest root, which Easy dims. Should the
-  played note draw normally?
+None outstanding on the engine. What is left is not a question but work: concepts 4, 5 and 7
+have no lines (and nor do concept 3 or 6 above Easy), which is 22 of the 32 concept/tier
+combinations.

@@ -590,7 +590,14 @@ const CONCEPTS = [
      return ps.map((p0, i) => { const vid = variant(p0.id, i % 2 ? "desc" : "asc");
        const p = vid === p0.id ? p0 : placeAt(vid, state.key, p0.rootFret);
        return { p, key: state.key, shape: p.id, sub: `Step ${i+1} of ${ps.length} · ${i % 2 ? "descend" : "ascend"} this position`,
-       opts: { ext: !easy, dim: easy ? belowLowestRoot(p) : () => false },
+       /* No dim on Easy here, unlike concept 1. Concept 1 Easy says "from the lowest root up",
+          so everything under that root is outside the exercise and greys out. Concept 3 Easy
+          says the opposite in its own instruction -- "continue scalar motion to the bottom of
+          the next one up" -- and the zigzag does go there: on the very first card of C major
+          it plays eight notes on the 6th string that belowLowestRoot was greying out. A note
+          the line plays is in the exercise by definition, and the playback highlight was
+          lighting dots drawn as if they were optional. */
+       opts: { ext: !easy, dim: () => false },
        instr: easy ? (i % 2 ? `Play down through this position from its highest note. Then continue scalar motion to the bottom of the next one up.` : `Play up from the root to the highest note of this position. Then keep climbing until you reach the top of the next position.`) : state.tier === "Intermediate" ? `Explore the whole shape, including notes below the root, before zigzagging on.` : tierText(state.tier) }; }); } },
  { n: 4, name: "Beginning on each scale degree", tiers: ["Easy","Intermediate","Advanced 1","Advanced 2"],
    steps() {
@@ -778,11 +785,21 @@ function ladder(p, withExt) {
   return [...by].sort((a, b) => a[0] - b[0]).map(([midi, locs]) => ({ midi, locs: locs.some(x => !x.ext) ? locs.filter(x => !x.ext) : locs }));
 }
 // pick one location per note: the one nearest the previous note (string, then fret)
-function located(rungs, pin) {
+/* `reuse` is for a line that stays in one position and passes through a pitch more than once
+   (concepts 1 and 2, which turn and come back). Nearest-to-previous is the right rule while a
+   line is travelling new ground, but when it returns to a pitch it has already played, the
+   place it used is where the hand is already shaped; picking the nearest again can put the
+   same note five frets away mid-line, a shift the exercise never asked for. Concept 3 must
+   NOT reuse: its whole subject is those same pitches in the next position up the neck. */
+function located(rungs, pin, reuse) {
   let prev = null;
+  const used = new Map();
   return rungs.map((r, i) => {
     const locs = pin && pin[i] ? [pin[i]] : r.locs;
-    const d = prev ? locs.slice().sort((a, b) => Math.abs(a.string - prev.string) - Math.abs(b.string - prev.string) || Math.abs(a.fret - prev.fret) - Math.abs(b.fret - prev.fret))[0] : locs[0];
+    const before = reuse && used.get(r.midi);
+    const seen = before && locs.find(l => l.string === before.string && l.fret === before.fret);
+    const d = seen || (prev ? locs.slice().sort((a, b) => Math.abs(a.string - prev.string) - Math.abs(b.string - prev.string) || Math.abs(a.fret - prev.fret) - Math.abs(b.fret - prev.fret))[0] : locs[0]);
+    used.set(r.midi, d);
     return (prev = d);
   });
 }
@@ -861,7 +878,7 @@ const tierDigits = t => { const d = t.startsWith("Advanced 1") ? [1, state.inter
 function perfPosition(p, tier) {
   const easy = tier === "Easy", L = ladder(p, !easy), at = m => L.findIndex(r => r.midi === m);
   const turns = easy ? [rootMidi(p), topMidi(p), rootMidi(p)] : [rootMidi(p), topMidi(p), L[0].midi, rootMidi(p)];
-  const notes = located((tier.startsWith("Advanced") ? walkTurn : walk)(turns.map(at), tierDigits(tier)).map(i => L[i])).map(plain);
+  const notes = located((tier.startsWith("Advanced") ? walkTurn : walk)(turns.map(at), tierDigits(tier)).map(i => L[i]), null, true).map(plain);
   return { unit: 8, bars: barsOf(notes, 8), flags: [] };
 }
 
@@ -871,7 +888,7 @@ function perfPosition(p, tier) {
 function perfDescending(p, tier, ring) {
   const easy = tier === "Easy", L = ladder(p, true), at = m => L.findIndex(r => r.midi === m);
   const path = (tier.startsWith("Advanced") ? walkTurn : walk)([at(midiOf(ring)), easy ? at(rootMidi(p)) : 0, at(rootMidi(p))], tierDigits(tier));
-  const notes = located(path.map(i => L[i]), path.map((i, j) => j === 0 && i === at(midiOf(ring)) ? ring : null)).map(plain);   // pin the ring only when the line starts on it
+  const notes = located(path.map(i => L[i]), path.map((i, j) => j === 0 && i === at(midiOf(ring)) ? ring : null), true).map(plain);   // pin the ring only when the line starts on it
   return { unit: 8, bars: barsOf(notes, 8), flags: [] };
 }
 
