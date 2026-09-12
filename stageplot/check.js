@@ -105,12 +105,19 @@ for (const t of E.TEMPLATES){
 
   // add a vocalist, then drop them again — what the buttons on the main page do
   const q = T("combo"), before = chOf(q), n = q.positions.length;
+  const mixesBefore = q.wedges.length;
+  const assignedBefore = JSON.stringify(q.wedges.map(w => w.assignees.slice().sort()));
   const added = E.addPosition(q, "voice");
   E.autoLayout(q, { force:false });
   eq(q.positions.length, n + 1, "adding a vocalist adds a position");
   eq(chOf(q), before + 1, "…and one channel");
   ok(!E.offDeck(added, q) && collisions(q).hard.length === 0, "…placed clear of everyone else");
-  ok(q.wedges.some(w => w.assignees.includes(added.id)), "…and lands on a mix");
+  eq(q.wedges.length, mixesBefore, "…and no wedge appears on its own");
+  eq(JSON.stringify(q.wedges.map(w => w.assignees.slice().sort())), assignedBefore, "…nor is anyone else's mix redealt");
+  ok(!q.wedges.some(w => w.assignees.includes(added.id)), "…the new position has no mix until someone gives it one");
+  ok(E.monitorTable(q).unassigned.some(x => /Vox|Voice/.test(x)), "…and says so under the monitors table");
+  E.autoLayout(q, { force:true });
+  ok(q.wedges.some(w => w.assignees.includes(added.id)), "re-layout deals the mixes again, including the new position");
   q.positions = q.positions.filter(x => x.id !== added.id);
   for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== added.id);
   E.autoLayout(q, { force:false });

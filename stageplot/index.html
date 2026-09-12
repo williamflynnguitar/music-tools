@@ -710,30 +710,50 @@ function monitorGroups(plot){
   }
   return groups;
 }
+/* Where a wedge sits: downstage of the people it serves. A group parked
+   upstage would otherwise put its wedge inside the row in front of it, so
+   that one goes outboard, at the end of its own row. */
+function wedgeSpot(plot, list){
+  const D = deckIn(plot);
+  const xs = list.map(p => p.x), ys = list.map(p => p.y);
+  const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
+  const cy = ys.reduce((a, b) => a + b, 0) / ys.length, minY = Math.min.apply(null, ys);
+  let x = clampIn(cx, 14, D.w - 14), y = clampIn(minY - LAYOUT.wedgeGap, 10, D.d - 10), rot = 0;
+  if (cy > D.d * .40){
+    const away = cx >= D.w / 2 ? 1 : -1;                   // step away from the middle of the deck
+    const out = clampIn(away > 0 ? Math.max.apply(null, xs) + 26 : Math.min.apply(null, xs) - 26, 14, D.w - 14);
+    const inside = out > Math.min.apply(null, xs) && out < Math.max.apply(null, xs);
+    x = inside ? clampIn(away > 0 ? Math.min.apply(null, xs) - 26 : Math.max.apply(null, xs) + 26, 14, D.w - 14) : out;
+    y = clampIn(cy, 14, D.d - 14);
+    rot = x > cx ? 270 : 90;
+  }
+  return { x, y, rot };
+}
+/* Mixes are built once, when the plot is created, and by the re-layout
+   button. They are never built again behind the director's back: adding an
+   instrument later does NOT conjure a sixth wedge or redeal the existing
+   five — the new position simply has no mix, and says so in the Positions
+   tab and in the "No wedge assigned" line on the page, which is the point.
+   Wedges that nobody has dragged still follow the players they serve. */
 function layoutWedges(plot, force){
-  if (plot.wedgesTouched && !force) return;     // hand-assigned mixes are not ours to rewrite
-  const D = deckIn(plot), groups = monitorGroups(plot);
+  if (plot.wedges.length && !force){
+    for (const w of plot.wedges){
+      if (w.moved) continue;
+      const list = w.assignees.map(id => plot.positions.find(p => p.id === id)).filter(Boolean);
+      if (!list.length) continue;
+      Object.assign(w, wedgeSpot(plot, list));
+    }
+    syncWedgeIds(plot);
+    return;
+  }
+  const groups = monitorGroups(plot);
   const keep = plot.wedges.filter(w => w.moved && !force);
   const fresh = [];
   groups.forEach((g, i) => {
-    const xs = g.list.map(p => p.x), ys = g.list.map(p => p.y);
-    const cx = xs.reduce((a, b) => a + b, 0) / xs.length;
-    const cy = ys.reduce((a, b) => a + b, 0) / ys.length, minY = Math.min.apply(null, ys);
     const existing = plot.wedges[i];
-    // a downstage group gets its wedge in front; a row parked upstage would
-    // put its wedge inside the row ahead of it, so that one goes outboard
-    let x = clampIn(cx, 14, D.w - 14), y = clampIn(minY - LAYOUT.wedgeGap, 10, D.d - 10), rot = 0;
-    if (cy > D.d * .40){
-      const away = cx >= D.w / 2 ? 1 : -1;                 // step away from the middle of the deck
-      const out = clampIn(away > 0 ? Math.max.apply(null, xs) + 26 : Math.min.apply(null, xs) - 26, 14, D.w - 14);
-      const inside = out > Math.min.apply(null, xs) && out < Math.max.apply(null, xs);
-      x = inside ? clampIn(away > 0 ? Math.min.apply(null, xs) - 26 : Math.max.apply(null, xs) + 26, 14, D.w - 14) : out;
-      y = clampIn(cy, 14, D.d - 14);
-      rot = x > cx ? 270 : 90;
-    }
-    if (existing && existing.moved && !force){ fresh.push(existing); }
-    else fresh.push({ id:(existing && existing.id) || nextIdE("w"), number:i + 1, moved:false,
-      x, y, rot, assignees:g.list.map(p => p.id), request:(existing && existing.request) || "" });
+    if (existing && existing.moved && !force){ fresh.push(existing); return; }
+    fresh.push(Object.assign({ id:(existing && existing.id) || nextIdE("w"), number:i + 1, moved:false,
+      assignees:g.list.map(p => p.id), request:(existing && existing.request) || "" }, wedgeSpot(plot, g.list)));
   });
   for (const w of keep) if (!fresh.includes(w)) fresh.push(w);
   fresh.forEach((w, i) => { w.number = i + 1; });
@@ -1165,7 +1185,6 @@ function migrateV1(p){
   }
   out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true,
     assignees:[...new Set((w.assignees || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))], request:w.request || "" }));
-  out.wedgesTouched = true;                     // v1 plots had their mixes assigned by hand
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
   syncWedgeIds(out);
@@ -1531,7 +1550,6 @@ function addHouse(ref){
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
       p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true, assignees:[], request:"" });
-      p.wedgesTouched = true;
       S.sel = p.wedges[p.wedges.length - 1].id; return;
     }
     const spot = freeSpot(p, p.items.length);
@@ -1694,15 +1712,14 @@ function renderPanel(p){
     S.sel = p.items[p.items.length - 1].id;
   }));
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
-  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); p.wedgesTouched = true; syncWedgeIds(p); }));
+  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); syncWedgeIds(p); }));
   el.querySelectorAll("[data-wassign]").forEach(c => c.onchange = () => commit(() => {
     const w = p.wedges.find(w => w.id === c.dataset.wassign);
     if (c.checked){ for (const o of p.wedges) o.assignees = o.assignees.filter(id => id !== c.value); w.assignees.push(c.value); }
     else w.assignees = w.assignees.filter(id => id !== c.value);
-    p.wedgesTouched = true;
     syncWedgeIds(p);
   }));
-  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => { w.request = v; p.wedgesTouched = true; }); });
+  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => w.request = v); });
   el.querySelectorAll("[data-sec]").forEach(c => c.onchange = () => commit(() => { plot().sections[c.dataset.sec].on = c.checked; }));
   el.querySelectorAll("[data-up],[data-down]").forEach(b => b.onclick = () => commit(() => {
     const p2 = plot(), keys = inputUnits(p2).map(u => u.key), k = b.dataset.up || b.dataset.down, i = keys.indexOf(k);

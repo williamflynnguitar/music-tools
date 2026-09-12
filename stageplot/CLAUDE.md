@@ -233,11 +233,14 @@ Same instrumentation always yields the same layout; `check.js` asserts it.
 
 ## Monitor mixes
 
-**Hand-assigned mixes are never rewritten.** Any edit to a wedge — ticking an
-assignee, typing a request, adding or deleting one, dragging it — sets
-`plot.wedgesTouched`, and from then on `layoutWedges()` leaves the mixes alone
-even as positions are added and removed. A migrated v1 plot starts touched,
-since its mixes were assigned by hand. Re-layout (force) clears it.
+**Mixes are dealt once.** `layoutWedges()` builds them when the plot is
+created and when the re-layout button runs, and never again on its own.
+Adding an instrument later does not conjure a sixth wedge or redeal the
+existing five: the new position simply has no mix, and says so in the
+Positions tab and in the "No wedge assigned" line on the printed page. That
+line is the feature — who shares a wedge is the director's call, not the
+engine's. Wedges nobody has dragged still follow the players they serve, so
+the drum wedge moves when the rhythm arrangement flips.
 
 `monitorGroups()` builds groups in priority order — voices, drums, bass,
 guitar, keys, sax row, trombones, trumpets, strings, other — then merges the
