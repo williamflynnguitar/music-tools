@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enclosures</title>
+<!-- Link preview -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="William Flynn Guitar">
+<meta property="og:title" content="Enclosures">
+<meta property="og:description" content="Build enclosures from the rule, in any key.">
+<meta property="og:url" content="https://williamflynnguitar.github.io/music-tools/enclosures/">
+<meta property="og:image" content="https://williamflynnguitar.github.io/music-tools/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="William Flynn playing archtop guitar">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Build enclosures from the rule, in any key.">
+<style>
+:root{
+  --ink:#0a1a20; --petrol:#10303a; --petrol-2:#163f4b; --line:#1e4a58;
+  --bone:#e9e2d2; --bone-dim:#a9a597; --brass:#c9a44c; --warn:#d4715f;
+  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,select,input{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* ---------- masthead ---------- */
+.top{padding:14px 26px 0;max-width:1180px;margin:0 auto}
+.wordmark{font-size:30px;font-weight:400;margin:0;letter-spacing:.01em}
+.wordmark em{font-style:italic;color:var(--brass)}
+.tagline{margin:3px 0 0;color:var(--bone-dim);font-size:14px}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:224px minmax(0,1fr);gap:0 30px;
+  max-width:1180px;margin:0 auto;padding:16px 26px 70px}
+@media (max-width:880px){.shell{grid-template-columns:minmax(0,1fr);gap:0}}
+
+/* ---------- section rail ---------- */
+.rail{align-self:start;position:sticky;top:12px}
+@media (max-width:880px){.rail{position:static}}
+.rail ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.rail li{margin:0}
+.rail a{display:flex;gap:10px;align-items:baseline;padding:7px 12px;color:var(--bone-dim);
+  text-decoration:none;font-size:13.5px;border-left:2px solid transparent;margin-left:-2px}
+.rail a:hover{background:var(--petrol);color:var(--bone)}
+.rail a .n{font-family:var(--mono);font-size:11px;color:var(--line);flex:none;width:14px}
+.rail a[aria-current=page]{color:var(--brass);border-left-color:var(--brass)}
+.rail a[aria-current=page] .n{color:var(--brass)}
+.rail .grp{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--bone-dim);padding:14px 12px 3px}
+.rail .grp:first-child{padding-top:2px}
+@media (max-width:880px){
+  .rail{margin-bottom:10px}
+  .rail ol{display:flex;flex-wrap:wrap;gap:2px;border-left:0;border-bottom:2px solid var(--line);padding-bottom:8px}
+  .rail a{border-left:0;border-bottom:2px solid transparent;margin:0;padding:6px 9px}
+  .rail a[aria-current=page]{border-left-color:transparent;border-bottom-color:var(--brass)}
+  .rail .grp{display:none}
+  .rail a .n{display:none}
+}
+
+/* ---------- section body ---------- */
+.sec{min-width:0}
+.sec h2{font-weight:400;font-size:25px;margin:0 0 2px;letter-spacing:.01em}
+.sec .src{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--brass);margin:0 0 12px}
+.sec p{max-width:66ch;color:var(--bone-dim);margin:0 0 12px}
+.sec p.lead{color:var(--bone)}
+.sec h3{font-weight:400;font-size:17px;margin:26px 0 6px;color:var(--bone)}
+.sec h3:first-of-type{margin-top:18px}
+.nav{display:flex;gap:10px;margin-top:34px;padding-top:16px;border-top:1px solid var(--line)}
+.nav a{font-family:var(--mono);font-size:12px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--bone-dim);text-decoration:none;border:1px solid var(--line);border-radius:4px;padding:8px 14px}
+.nav a:hover{color:var(--bone);border-color:var(--brass)}
+.nav .sp{flex:1}
+
+/* ---------- controls ---------- */
+.ctl{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:flex-end;
+  background:var(--petrol);border:1px solid var(--line);border-radius:8px;padding:13px 16px;margin:0 0 16px}
+.ctl .f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ctl label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)}
+select{background:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;color:var(--bone);min-height:40px}
+.seg{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;border-right:1px solid var(--line);padding:9px 13px;
+  cursor:pointer;color:var(--bone-dim);font-family:var(--mono);font-size:13px;min-width:42px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--petrol-2);color:var(--brass)}
+.seg button:hover{color:var(--bone)}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer;color:var(--bone-dim);min-height:40px}
+.toggle input{accent-color:var(--brass);width:17px;height:17px}
+
+/* ---------- notation ---------- */
+.cell{background:var(--petrol);border:1px solid var(--line);border-radius:8px;padding:10px 12px 8px;margin:0 0 12px}
+.cell .cap{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin:0 0 6px}
+.cell .cap b{font-weight:400;font-size:14px;color:var(--bone)}
+.cell .cap .meta{font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.04em}
+.cell .cap .cite{font-family:var(--mono);font-size:10.5px;color:var(--line);margin-left:auto}
+.stave{overflow-x:auto}
+.stave svg{height:auto;display:block;color:var(--bone);min-width:260px}
+.stave.wide svg{min-width:520px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.grid2 .cell{margin:0}
+
+/* tone legend under a generated cell */
+.toks{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 0;font-family:var(--mono);font-size:11px}
+.toks span{border:1px solid var(--line);border-radius:3px;padding:2px 6px;color:var(--bone-dim)}
+.toks span.gn{border-color:var(--brass);color:var(--brass)}
+
+/* ---------- type table ---------- */
+.types{width:100%;border-collapse:collapse;margin:0 0 14px;font-size:14px}
+.types th,.types td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.types th{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-dim);font-weight:400}
+.types td.t{font-family:var(--mono);color:var(--brass)}
+.types td .ex{font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+
+/* ---------- chord chart (harmonic generalization) ---------- */
+.chart{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;margin:0 0 6px;background:var(--petrol)}
+.chart .bar{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 10px 10px;min-height:74px}
+.chart .bar:nth-child(4n){border-right:0}
+.chart .sym{font-size:19px;letter-spacing:.01em}
+.chart .sym sup{font-size:.62em;vertical-align:.5em}
+.chart .slashes{font-family:var(--mono);color:var(--line);font-size:15px;letter-spacing:.28em;margin-top:6px}
+.chart .bar.area-start{border-left:2px solid var(--brass)}
+.keyareas{display:grid;grid-template-columns:repeat(4,1fr);font-family:var(--mono);font-size:11px;
+  color:var(--brass);letter-spacing:.08em;margin:0 0 16px}
+.keyareas span{padding:0 10px}
+@media (max-width:620px){.chart,.keyareas{grid-template-columns:repeat(2,1fr)}
+  .chart .bar:nth-child(4n){border-right:1px solid var(--line)}
+  .chart .bar:nth-child(2n){border-right:0}}
+
+.note{border-left:2px solid var(--line);padding:2px 0 2px 14px;margin:14px 0;color:var(--bone-dim);font-size:14px;max-width:64ch}
+.note b{color:var(--bone);font-weight:400}
+.hide{display:none}
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media print{
+    .sp-menu{display:none;}
+  }
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+</style>
+<nav class="sp-menu" aria-label="all music tools"><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Music tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="enclosures" href="../enclosures/index.html">Enclosures</a>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+<header class="top">
+  <h1 class="wordmark"><em>Enclosures</em></h1>
+  <p class="tagline">Goal notes, the three types, the five families — built from the rule, in any key.</p>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="sections">
+    <ol id="rail"></ol>
+  </nav>
+  <main class="sec" id="sec" tabindex="-1"></main>
+</div>
+<script>
+/* ==========================================================================
+   enclosure engine
+
+   Everything in sections 2–6 is generated from three inputs — scale context,
+   goal note, family — plus a direction flag. The pattern catalogue below is
+   not invented: every entry was read off the source notation and each one
+   round-trips (see the provenance on each row). Tokens name the approach
+   tones around the goal note:
+
+     L   lower diatonic neighbour      U   upper diatonic neighbour
+     l   half step below the GN        u   half step above the GN
+     S   half step below l             S2  half step below L
+     T2  half step above U
+
+   For a Type A goal note l and L are the same tone; for Type B, u and U are.
+   That collapse is why some patterns are unavailable to some types, and why
+   the source substitutes S where a repeated L would otherwise fall.
+   ========================================================================== */
+const LET = 'CDEFGAB';
+const LPC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+
+const MODES = {
+  ionian:     { steps:[0,2,4,5,7,9,11], label:'major',         quality:'maj7' },
+  aeolian:    { steps:[0,2,3,5,7,8,10], label:'natural minor', quality:'min'  },
+  dorian:     { steps:[0,2,3,5,7,9,10], label:'dorian',        quality:'min7' },
+  mixolydian: { steps:[0,2,4,5,7,9,10], label:'mixolydian',    quality:'dom7' }
+};
+const KEYS = ['C','F','Bb','Eb','Ab','Db','F#','B','E','A','D','G'];  // cycle of 4ths
+/* the scale degree each access point sits on, 0-based */
+const DEGREES = [
+  { deg:0, label:'root', short:'R'  }, { deg:2, label:'3rd',  short:'3'  },
+  { deg:4, label:'5th',  short:'5'  }, { deg:6, label:'7th',  short:'7'  },
+  { deg:1, label:'9th',  short:'9'  }, { deg:3, label:'11th', short:'11' },
+  { deg:5, label:'13th', short:'13' }
+];
+
+const pcOf = n => ((LPC[n.letter] + n.alt) % 12 + 12) % 12;
+const nameOf = n => n.letter + (n.alt > 0 ? '#'.repeat(n.alt) : 'b'.repeat(-n.alt));
+const pretty = n => n.letter + (n.alt > 0 ? '♯'.repeat(n.alt) : '♭'.repeat(-n.alt));
+const parseNote = s => ({ letter:s[0], alt:[...s.slice(1)].reduce((a,c)=>a+(c==='#'?1:c==='b'?-1:0),0) });
+const fold = a => a > 6 ? a - 12 : a < -6 ? a + 12 : a;
+
+/* the same letter as `ref`, respelled to the wanted pitch class */
+function spellAs(ref, want){ return { letter:ref.letter, alt:fold(want - LPC[ref.letter]) }; }
+
+/* the scale as seven spelled notes, one per letter name */
+function scaleOf(tonic, mode){
+  const t = parseNote(tonic), li = LET.indexOf(t.letter), base = pcOf(t);
+  return MODES[mode].steps.map((st,i) => {
+    const letter = LET[(li+i)%7];
+    return { letter, alt: fold((base+st)%12 - LPC[letter]) };
+  });
+}
+
+/* a half step below `n`, spelled without piling accidentals on one letter */
+function halfBelow(n){
+  if (n.alt > 0) return { letter:n.letter, alt:n.alt-1 };
+  const below = LET[(LET.indexOf(n.letter)+6)%7];
+  return { letter:below, alt: fold((pcOf(n)+11)%12 - LPC[below]) };
+}
+const semisUp = (a,b) => ((pcOf(b) - pcOf(a)) % 12 + 12) % 12;
+
+/* the approach tones around scale degree `deg`, and the GN's type */
+function tonesAt(scale, deg){
+  const GN = scale[deg];
+  const L  = scale[(deg+6)%7];
+  const U  = scale[(deg+1)%7];
+  /* l and u keep the letters of the neighbours they replace — that is what
+     makes the 3rd of C minor read Fb above Eb, and F natural above E. */
+  const l  = spellAs(L, (pcOf(GN)+11)%12);
+  const u  = spellAs(U, (pcOf(GN)+1)%12);
+  const S  = halfBelow(l);
+  const S2 = halfBelow(L);
+  const T2 = spellAs(scale[(deg+2)%7], (pcOf(U)+1)%12);
+  const below = semisUp(L, GN), above = semisUp(GN, U);
+  const type = below === 1 ? 'A' : above === 1 ? 'B' : 'C';
+  return { GN, L, U, l, u, S, S2, T2, type, deg,
+           below, above,
+           distinctL: pcOf(L) !== pcOf(l),
+           distinctU: pcOf(U) !== pcOf(u) };
+}
+
+const TYPE_TEXT = {
+  A: { rule:'half step below, whole step above', eg:'root of I△7, 3rd of ii–7' },
+  B: { rule:'whole step below, half step above', eg:'3rd of I△7' },
+  C: { rule:'whole step below, whole step above', eg:'5th of I△7; root or 5th of ii–7' }
+};
+const CATALOGUE = {
+  1: {
+    A: [{t:["l"],src:"101 p.1"},
+         {t:["U"],src:"101 p.1"}],
+    B: [{t:["l"],src:"101 p.1"},
+         {t:["U"],src:"101 p.1"}],
+    C: [{t:["l"],src:"101 p.1"},
+         {t:["U"],src:"101 p.1"}],
+  },
+  2: {
+    A: [{t:["l","U"],src:"workbook"},
+         {t:["U","l"],src:"workbook"}],
+    B: [{t:["l","U"],src:"workbook"},
+         {t:["U","l"],src:"workbook"},
+         {t:["S","U"],src:"Access Points"}],
+    C: [{t:["l","U"],src:"workbook, Access Points"},
+         {t:["U","l"],src:"workbook"}],
+  },
+  3: {
+    A: [{t:["l","U","u"],src:"workbook, 101 p.2"},
+         {t:["U","u","l"],src:"workbook"},
+         {t:["S","l","U"],src:"101 p.2, Access Points"}],
+    B: [{t:["S","l","U"],src:"workbook"},
+         {t:["U","S","l"],src:"workbook, 101 p.2"},
+         {t:["S2","S","U"],src:"Access Points"},
+         {t:["S","U","l"],src:"Access Points"}],
+    C: [{t:["S","l","U"],src:"workbook, 101 p.2"},
+         {t:["l","U","u"],src:"workbook, 101 p.2, Access Points"},
+         {t:["U","S","l"],src:"workbook"},
+         {t:["U","u","l"],src:"workbook"},
+         {t:["l","U","S"],src:"Access Points"}],
+  },
+  4: {
+    A: [{t:["S","l","U","u"],src:"workbook, 101 p.2, Access Points"},
+         {t:["l","U","u","l"],src:"workbook"},
+         {t:["U","u","l","l"],src:"workbook"},
+         {t:["U","u","l","u"],src:"workbook"},
+         {t:["U","l","U","u"],src:"workbook"}],
+    B: [{t:["S","U","S","l"],src:"workbook, 101 p.2"},
+         {t:["U","S","l","U"],src:"workbook"},
+         {t:["S","l","U","l"],src:"workbook"},
+         {t:["S2","S","U","l"],src:"Access Points"}],
+    C: [{t:["S","l","U","u"],src:"workbook, 101 p.2, Access Points"},
+         {t:["U","u","S","l"],src:"workbook"},
+         {t:["l","U","u","l"],src:"workbook"},
+         {t:["U","u","l","l"],src:"workbook"},
+         {t:["U","u","l","u"],src:"workbook"}],
+  },
+  5: {
+    A: [{t:["S","l","U","u","l"],src:"workbook, 101 p.3"},
+         {t:["l","U","u","l","u"],src:"workbook"},
+         {t:["U","u","S","l","u"],src:"workbook"},
+         {t:["U","l","U","u","l"],src:"workbook"}],
+    B: [{t:["S","l","U","l","U"],src:"workbook"},
+         {t:["U","S","l","U","l"],src:"workbook"},
+         {t:["S","l","T2","U","l"],src:"workbook"},
+         {t:["T2","U","S","l","U"],src:"workbook"},
+         {t:["S","l","U","S","l"],src:"101 p.3"}],
+    C: [{t:["S","l","U","u","l"],src:"workbook, 101 p.3"},
+         {t:["U","u","S","l","u"],src:"workbook"},
+         {t:["l","U","u","l","u"],src:"workbook"}],
+  },
+};
+
+const options = (fam, type) => (CATALOGUE[fam] && CATALOGUE[fam][type]) || [];
+
+/* realise a pattern as spelled notes, then the goal note */
+function realise(pat, T, reverse){
+  const toks = reverse ? pat.t.slice().reverse() : pat.t;
+  return toks.map(k => Object.assign({}, T[k], { tok:k }))
+             .concat([ Object.assign({}, T.GN, { tok:'GN', gn:true }) ]);
+}
+
+/* Rhythm. The GN lands on a downbeat and the enclosure fills the eighths
+   before it, so odd families start on an offbeat and even ones on a downbeat
+   with no extra rule — the parity falls out. One cell is one bar: N eighths
+   plus the goal note as a quarter, with a leading eighth rest when N is odd. */
+function cellBars(notes){
+  const n = notes.length - 1, lead = n % 2;      /* odd family -> eighth rest */
+  const beats = (n + lead) / 2 + 1;              /* 2/4, 3/4 or 4/4 */
+  const items = [];
+  let slot = 0;
+  if (lead) { items.push({ rest:true, slot:0, len:1 }); slot = 1; }
+  notes.forEach((nt,i) => {
+    const len = i === notes.length - 1 ? 2 : 1;
+    items.push(Object.assign({}, nt, { slot, len }));
+    slot += len;
+  });
+  return { beats, slots: beats*2, items, lead:!!lead };
+}
+
+/* ii/V overlay: a pitch that is degree d of the ii chord is degree d+4 of V */
+const V_DEGREE = { 0:'5th', 2:'7th', 4:'9th', 6:'11th', 1:'13th', 3:'root', 5:'3rd' };
+</script>
+<script>
+/* ===== engraver: one staff on LilyPond glyph outlines. Units: 1 staff space = 1.
+   Carried over from line-ladder and widened to take a per-bar meter, goal-note
+   marking and the approach-tone labels. ===== */
+const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
+document.addEventListener('DOMContentLoaded', () =>
+  document.body.insertAdjacentHTML('afterbegin', NOTE_DEFS));
+
+const SLOTW = 3.25, LEADIN = 1.7, TAILPAD = 0.7;
+const SIG_SHARP_Y = [0,1.5,-0.5,1,2.5,0.5,2];
+const SIG_FLAT_Y  = [2,0.5,2.5,1,3,1.5,3.5];
+const SHARP_LETTERS = 'FCGDAEB', FLAT_LETTERS = 'BEADGCF';
+const FIFTHS = {C:0,G:1,D:2,A:3,E:4,B:5,'F#':6,'C#':7,F:-1,Bb:-2,Eb:-3,Ab:-4,Db:-5,Gb:-6,Cb:-7};
+const ACCVAL = {'':0,'#':1,'##':2,'b':-1,'bb':-2,'n':0};
+
+function keyAlterMap(fifths){
+  const m = {};
+  if (fifths > 0) for (let i=0;i<fifths;i++)  m[SHARP_LETTERS[i]] = 1;
+  if (fifths < 0) for (let i=0;i<-fifths;i++) m[FLAT_LETTERS[i]]  = -1;
+  return m;
+}
+/* the key signature a mode is written in: its relative major */
+const MODE_REL = { ionian:0, dorian:-2, mixolydian:-1, aeolian:-3 };
+const ENHARM = { Db:'C#', 'C#':'Db', Gb:'F#', 'F#':'Gb', Cb:'B', B:'Cb' };
+const fifthsOf = t => FIFTHS[t] === undefined ? 0 : FIFTHS[t];
+/* Db natural minor wants eight flats and a double flat in the scale; write it
+   as C# minor instead. Every other key and mode on offer stays inside seven. */
+function writtenTonic(tonic, mode){
+  const rel = MODE_REL[mode] || 0;
+  if (Math.abs(fifthsOf(tonic) + rel) <= 7) return tonic;
+  const alt = ENHARM[tonic];
+  return (alt && Math.abs(fifthsOf(alt) + rel) <= 7) ? alt : tonic;
+}
+function writtenFifths(tonic, mode){
+  return fifthsOf(writtenTonic(tonic, mode)) + (MODE_REL[mode] || 0);
+}
+const midiOf = n => 12*(n.oct+1) + LPC[n.letter] + n.alt;
+
+/* bars: [{ slots, meter:[n,d]|null, items:[{slot,len,letter,alt,oct,rest,gn,tok}] }] */
+function engrave(bars, opts){
+  opts = opts || {};
+  const fifths = opts.fifths || 0, alter = keyAlterMap(fifths);
+  const nSig = Math.abs(fifths), sigY = fifths > 0 ? SIG_SHARP_Y : SIG_FLAT_Y;
+  const X0 = 4.4 + nSig*1.15 + (opts.meterEvery || bars.some(b=>b.meter) ? 2.6 : 1.0);
+  const use = (id,x,y,sz) =>
+    '<use href="#'+id+'" transform="translate('+x.toFixed(2)+','+y.toFixed(2)+') scale('+(sz||0.004)+','+(-(sz||0.004))+')"/>';
+
+  let music = '', x = X0, lowest = 4;
+  const tops = [], allDrawn = [], barX = [];
+  const carry = {};
+
+  bars.forEach((bar,bi) => {
+    const w = LEADIN + bar.slots*SLOTW + TAILPAD;
+    barX.push(x);
+    if (bi > 0) music += '<line x1="'+x.toFixed(2)+'" y1="0" x2="'+x.toFixed(2)+'" y2="4" stroke="currentColor" stroke-width="0.13"/>';
+    if (bar.meter){
+      const mx = x + 0.9;
+      music += '<text x="'+mx.toFixed(2)+'" y="2.05" font-family="serif" font-weight="700" font-size="2.6" text-anchor="middle" fill="currentColor">'+bar.meter[0]+'</text>'
+             + '<text x="'+mx.toFixed(2)+'" y="4.05" font-family="serif" font-weight="700" font-size="2.6" text-anchor="middle" fill="currentColor">'+bar.meter[1]+'</text>';
+    }
+    const noteX0 = x + (bar.meter ? 2.5 : 0) + LEADIN;
+    const state = {};
+    const drawn = [];
+    bar.items.forEach(it => {
+      const nx = noteX0 + it.slot*SLOTW;
+      if (it.rest){
+        const ry = nx + 0.2;
+        if (it.len >= 8)      music += '<rect x="'+ry.toFixed(2)+'" y="1" width="1.5" height="0.55" fill="currentColor"/>';
+        else if (it.len >= 4) music += '<rect x="'+ry.toFixed(2)+'" y="1.45" width="1.5" height="0.55" fill="currentColor"/>';
+        else if (it.len >= 2) music += '<path d="M'+(nx+0.35).toFixed(2)+' 0.85 L'+(nx+1.0).toFixed(2)+' 1.7 L'+(nx+0.45).toFixed(2)+' 2.35 L'+(nx+1.05).toFixed(2)+' 3.05" fill="none" stroke="currentColor" stroke-width="0.34"/>'
+                              + '<path d="M'+(nx+1.05).toFixed(2)+' 3.05 q-0.75 -0.35 -0.55 0.45 q0.1 0.4 0.55 0.35" fill="none" stroke="currentColor" stroke-width="0.22"/>';
+        else music += '<path d="M'+(nx+0.75).toFixed(2)+' 1.55 a0.34 0.34 0 1 1 0.28 0.55 q0.35 0.05 0.62 -0.2 l-0.62 1.85 l-0.3 0 l0.55 -1.65 q-0.3 0.15 -0.53 0.1z" fill="currentColor" stroke="currentColor" stroke-width="0.06"/>';
+        return;
+      }
+      const oct = it.oct, idx = oct*7 + LET.indexOf(it.letter);
+      const accTxt = it.alt > 0 ? '#'.repeat(it.alt) : it.alt < 0 ? 'b'.repeat(-it.alt) : '';
+      const d = { it, x:nx, y: 4 - (idx - 30)*0.5,
+                  kind: it.len === 1 ? 'e' : it.len < 4 ? 'q' : it.len < 8 ? 'h' : 'w' };
+      if (d.y + 1.1 > lowest) lowest = d.y + 1.1;
+      const k = it.letter + oct, sig = alter[it.letter] || 0;
+      const cur = (k in state) ? state[k] : sig;
+      const caut = !(k in state) && (k in carry) && carry[k] !== it.alt;
+      d.showAcc = (it.alt !== cur || caut) ? (accTxt || 'n') : '';
+      state[k] = it.alt;
+      drawn.push(d); allDrawn.push(d);
+    });
+    Object.keys(state).forEach(k => {
+      if (state[k] === (alter[k[0]] || 0)) delete carry[k]; else carry[k] = state[k];
+    });
+
+    /* beams: runs of consecutive eighths, broken at the half bar in 4/4 */
+    const brk = bar.slots === 8 ? 4 : 99;
+    const groups = []; let run = [];
+    drawn.forEach(d => {
+      const starts = run.length && (Math.floor(d.it.slot/brk) !== Math.floor(run[run.length-1].it.slot/brk));
+      const adj = run.length && d.it.slot === run[run.length-1].it.slot + run[run.length-1].it.len;
+      if (d.kind === 'e' && adj && !starts) { run.push(d); return; }
+      if (run.length) groups.push(run);
+      run = d.kind === 'e' ? [d] : (groups.push([d]), []);
+    });
+    if (run.length) groups.push(run);
+
+    groups.forEach(grp => {
+      const up = grp.reduce((a,c)=>a+c.y,0)/grp.length > 2;
+      const dir = up ? -1 : 1, sx = c => c.x + (up ? 1.23 : 0.07);
+      grp.forEach(c => c.stemUp = up);
+      if (grp.length === 1){
+        const c = grp[0];
+        if (c.kind === 'w'){ tops.push({x:c.x, top:c.y-0.8}); return; }
+        const tip = c.y + dir*3.5, flag = c.kind === 'e' ? 2.9 : 0.7;
+        if (tip + flag > lowest) lowest = tip + flag;
+        music += '<line x1="'+sx(c).toFixed(2)+'" y1="'+c.y+'" x2="'+sx(c).toFixed(2)+'" y2="'+tip.toFixed(2)+'" stroke="currentColor" stroke-width="0.13"/>';
+        if (c.kind === 'e') music += use(up ? 'flagUp' : 'flagDown', sx(c), tip);
+        tops.push({x:c.x, top: up ? tip-flag : c.y});
+      } else {
+        const f = grp[0], l = grp[grp.length-1];
+        let slope = (l.y-f.y)/(l.x-f.x);
+        slope = Math.max(-0.22, Math.min(0.22, slope));
+        let base = f.y + dir*3.5;
+        grp.forEach(c => { const by = base + slope*(c.x-f.x); const len = (by-c.y)*dir; if (len < 2.8) base += dir*(2.8-len); });
+        const beamY = c => base + slope*(c.x-f.x);
+        grp.forEach(c => {
+          if (beamY(c) + 0.5 > lowest) lowest = beamY(c) + 0.5;
+          music += '<line x1="'+sx(c).toFixed(2)+'" y1="'+c.y.toFixed(2)+'" x2="'+sx(c).toFixed(2)+'" y2="'+beamY(c).toFixed(2)+'" stroke="currentColor" stroke-width="0.13"/>';
+          tops.push({x:c.x, top: up ? beamY(c)-0.5 : c.y});
+        });
+        music += '<line x1="'+sx(f).toFixed(2)+'" y1="'+beamY(f).toFixed(2)+'" x2="'+sx(l).toFixed(2)+'" y2="'+beamY(l).toFixed(2)+'" stroke="currentColor" stroke-width="0.5"/>';
+      }
+    });
+
+    drawn.forEach(c => {
+      for (let ly=5; ly<=c.y; ly++) music += '<line x1="'+(c.x-0.33).toFixed(2)+'" y1="'+ly+'" x2="'+(c.x+1.63).toFixed(2)+'" y2="'+ly+'" stroke="currentColor" stroke-width="0.21"/>';
+      for (let ly=-1; ly>=c.y; ly--) music += '<line x1="'+(c.x-0.33).toFixed(2)+'" y1="'+ly+'" x2="'+(c.x+1.63).toFixed(2)+'" y2="'+ly+'" stroke="currentColor" stroke-width="0.21"/>';
+      const col = c.it.gn ? ' style="color:var(--brass)"' : '';
+      if (c.showAcc){
+        const ax = c.it.gn ? ' style="color:var(--brass)"' : '';
+        if (c.showAcc === '#')       music += '<g'+ax+'>'+use('sharp', c.x-1.45, c.y)+'</g>';
+        else if (c.showAcc === '##') music += '<text x="'+(c.x-1.0).toFixed(2)+'" y="'+(c.y+0.5).toFixed(2)+'" font-family="serif" font-weight="700" font-size="1.5" text-anchor="middle" fill="currentColor">\u{1D12A}</text>';
+        else if (c.showAcc === 'b')  music += '<g'+ax+'>'+use('flat', c.x-1.35, c.y)+'</g>';
+        else if (c.showAcc === 'bb') music += '<g'+ax+'>'+use('flat', c.x-2.2, c.y)+use('flat', c.x-1.25, c.y)+'</g>';
+        else                         music += '<g'+ax+'>'+use('natural', c.x-1.35, c.y)+'</g>';
+        tops.push({x:c.x, top:c.y-1.9});
+      }
+      if (c.it.gn) music += '<ellipse cx="'+(c.x+0.62).toFixed(2)+'" cy="'+c.y.toFixed(2)+'" rx="1.32" ry="1.0" fill="none" stroke="var(--brass)" stroke-width="0.13" opacity="0.75"/>';
+      if (c.kind === 'h' || c.kind === 'w')
+        music += '<ellipse cx="'+(c.x+0.62).toFixed(2)+'" cy="'+c.y.toFixed(2)+'" rx="0.66" ry="0.44" transform="rotate(-21 '+(c.x+0.62).toFixed(2)+' '+c.y.toFixed(2)+')" fill="none" stroke="'+(c.it.gn?'var(--brass)':'currentColor')+'" stroke-width="0.24"/>';
+      else music += '<g'+col+'>'+use('nh', c.x, c.y)+'</g>';
+    });
+    x += w + (bar.meter ? 2.5 : 0);
+  });
+
+  const endX = x;
+  let staff = '';
+  for (let i=0;i<5;i++) staff += '<line x1="0" y1="'+i+'" x2="'+endX.toFixed(2)+'" y2="'+i+'" stroke="currentColor" stroke-width="0.11"/>';
+  staff += use('clef', 0.8, 3);
+  for (let i=0;i<nSig;i++) staff += (fifths > 0 ? use('sharp', 4.5+i*1.15, sigY[i]) : use('flat', 4.5+i*1.15, sigY[i]));
+  music += '<line x1="'+(endX-0.8).toFixed(2)+'" y1="0" x2="'+(endX-0.8).toFixed(2)+'" y2="4" stroke="currentColor" stroke-width="0.13"/>'
+         + '<line x1="'+endX.toFixed(2)+'" y1="0" x2="'+endX.toFixed(2)+'" y2="4" stroke="currentColor" stroke-width="0.45"/>';
+
+  /* chord symbols ride above the highest ink; labels sit below the staff */
+  const chordRow = Math.min(-2.4, ...tops.map(t => t.top - 1.4));
+  (opts.chords || []).forEach(cm => {
+    const cx = barX[cm.bar] + LEADIN + (bars[cm.bar].meter ? 2.5 : 0) + (cm.slot||0)*SLOTW;
+    music += '<text x="'+cx.toFixed(2)+'" y="'+chordRow.toFixed(2)+'" font-family="'+"'Iowan Old Style',Palatino,Georgia,serif"+'" font-size="2.2" fill="var(--brass)">'+chordText(cm.text)+'</text>';
+  });
+  let labelRow = Math.max(6.6, lowest + 1.5), bottom = Math.max(5.6, lowest + 0.4);
+  if (opts.labels){
+    bottom = labelRow + 1.2;
+    allDrawn.forEach(c => {
+      const t = c.it.tok === 'GN' ? 'GN' : c.it.tok;
+      if (!t) return;
+      music += '<text x="'+(c.x+0.6).toFixed(2)+'" y="'+labelRow.toFixed(2)+'" text-anchor="middle" font-family="'+"SF Mono,Menlo,monospace"+'" font-size="1.15" fill="'+(c.it.gn?'var(--brass)':'var(--bone-dim)')+'">'+t+'</text>';
+    });
+  }
+  const top = chordRow - 2.4, vw = endX + 1.4;
+  /* one staff space renders at a fixed size, so a two-beat cell and a
+     four-bar line have the same note size instead of stretching to fit */
+  const px = (opts.space || 15) * vw;
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-0.6 '+top.toFixed(2)+' '+vw.toFixed(2)+' '+(bottom-top).toFixed(2)
+       + '" style="width:'+px.toFixed(0)+'px;max-width:100%" preserveAspectRatio="xMidYMid meet" role="img">'+staff+music+'</svg>';
+}
+
+function chordParts(s){
+  const m = /^([A-G][#b]?)(.*)$/.exec(s);
+  if (!m) return [s, ''];
+  return [ m[1].replace('#','♯').replace('b','♭'),
+           (m[2]||'').replace(/\^/g,'△').replace(/b(?=\d)/g,'♭').replace(/#/g,'♯')
+                     .replace(/o/g,'°').replace(/0/g,'ø') ];
+}
+function chordText(s){                 /* drawn inside an <svg> */
+  const p = chordParts(s);
+  return esc(p[0])+'<tspan font-size="0.68em" dy="-0.8">'+esc(p[1])+'</tspan>';
+}
+function chordHtml(s){                 /* set in flowed HTML */
+  const p = chordParts(s);
+  return esc(p[0])+(p[1] ? '<sup>'+esc(p[1])+'</sup>' : '');
+}
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+</script>
+<script>
+/* ==========================================================================
+   Composed pages. These are William's own lines, transcribed from the
+   Sibelius PDFs (Enclosures 101; Enclosures — Concert). Pitches and
+   accidentals were read from the glyph positions in the vector PDF, so they
+   are exact; durations come from note spacing and every bar was checked to
+   fill its meter. A star marks a goal note as marked in the source.
+   "R" is a rest; "/n" is a length in eighths (default 1).
+   ========================================================================== */
+const COMPOSED = {
+    triadsMaj: [
+      "A#4 B4 D5 Db5 C5* F4 F#4/2",
+      "A4 Ab4 G4* D4 D#4 F4 D#4/2",
+      "E4* A#3 B3 D4 Db4 C4*/3",
+    ],
+    triadsMin: [
+      "A#4 B4 D5 Db5 C5* F4 F#4/2",
+      "Ab4 F#4 G4* D4 F4 Fb4 D4/2",
+      "Eb4* A#3 B3 D4 Db4 C4*/3",
+    ],
+    connectMaj: [
+      "R A#3 B3 D4 C4 D4 D#4 F4",
+      "E4 F4 F#4 A4 G4 A4 B4 D5",
+      "C5/2 R/2 R/4",
+    ],
+    connectMin: [
+      "R A#3 B3 D4 C4 D4 F4 Fb4",
+      "Eb4 F4 F#4 Ab4 G4 Ab4 B4 D5",
+      "C5/2 R/2 R/4",
+    ],
+    everyNote: [
+      "C4* E4 Eb4 C#4 D4* F4 D4 D#4",
+      "E4* G4 Gb4 E4 F4* A4 Ab4 F#4",
+      "G4* B4 Bb4 G#4 A4* C5 A4 A#4",
+      "B4* D5 Db5 B4 C5/4",
+    ],
+    iiVmaj: [
+      "F4 F#4 A4 Ab4 G4* F4 D4 D#4",
+      "E4* D4 Db4 B3 C4* D#4 E4 F#4",
+      "A4 Ab4 G4* A4 B4 D5 Db5 B4",
+      "C5* G4 R/2 R/4",
+    ],
+    iiVmin: [
+      "D5 D#5 F5 D#5 E5* D5 Db5 B4",
+      "C5* G4 G#4 B4 Bb4 G#4 A4* B4",
+      "D5 Db5 C5* Db5 E5 Eb5 Db5 Db5",
+      "C5 A4 R/2 R/4",
+    ],
+    stdA: [
+      "R G4 Bb4 A4 Ab4 Bb4 B4 Db5",
+      "C5 Eb5 R/2 F5 Fb5 Eb5 Db5",
+      "Bb4 B4 C5 Eb5 G5 Bb5 A5 G5",
+      "Ab5 C5 Eb5 G5 R Eb5/3",
+    ],
+    stdB: [
+      "Eb5 E5 F5 E5 Eb5 C5 R/2",
+      "D5 F5 Fb5 D5 Eb5 F5 G5 Ab5",
+      "G5 E5 B4 G4 A4 B4 G4 A4",
+      "A4/4 R/4",
+    ],
+    stdC: [
+      "Ab4 A4 C5 Cb5 Bb4 C5 D#5 Eb5",
+      "D5 Eb5 E5 G5 F5 D5 R/2",
+      "A5 Ab5 G5 Gb5 F5 Eb5 C5 C#5",
+      "D5 C5 Cb5 A4 B4/2 R/2",
+    ],
+    stdD: [
+      "R G#5 A5 C6 Bb5 Ab5 F5 F#5",
+      "G5 Eb5 R/2 R E5 G5 Gb5",
+      "F5 Eb5 C5 C#5 D5 C5 Bb4 F4",
+      "A4 Bb4 R/2 R/4",
+    ],
+};
+
+/* ----- Enclosures 101, closing pages: three ii–V phrases, then the same
+   phrases with their first note enclosed, then the long ii–V. Read from the
+   raster pages of Enclosures_101.pdf pp. 3–4. ----- */
+const VOCAB = {
+  chords3: [ {bar:0,slot:0,text:'D-7'}, {bar:0,slot:4,text:'G7'}, {bar:1,slot:0,text:'C^7'} ],
+  plain: [
+    { name:'Phrase 1', lead:0, bars:['D4 F4 A4 C5 B4 A4 G4 F4','E4/8'] },
+    { name:'Phrase 2', lead:0, bars:['F5 E5 D5 C5 B4 A4 G4 F4','E4/8'] },
+    { name:'Phrase 3', lead:0, bars:['A4 F4 D4 C4 B3 D4 F4 A4','G4/8'] }
+  ],
+  enclosed: [
+    { name:'Phrase 1, first note enclosed', fam:2, gn:'D (root of ii–7, Type C)',
+      lead:2, bars:['E4 C#4','D4* F4 A4 C5 B4 A4 G4 F4','E4/8'] },
+    { name:'Phrase 2, first note enclosed', fam:3, gn:'F (3rd of ii–7, Type A)',
+      lead:3, bars:['R E5 G5 Gb5','F5* E5 D5 C5 B4 A4 G4 F4','E4/8'] },
+    { name:'Phrase 3, first note enclosed', fam:4, gn:'A (5th of ii–7, Type C)',
+      lead:4, bars:['G4 G#4 B4 Bb4','A4* F4 D4 C4 B3 D4 F4 A4','G4/8'] }
+  ],
+  long: { name:'The same phrase as a long ii–V', lead:0,
+    chords:[{bar:0,slot:0,text:'D-7'},{bar:1,slot:0,text:'G7'},{bar:2,slot:0,text:'C^7'}],
+    bars:['G4 G#4 B4 Bb4 A4* F4 D4 C4','B3 D4 F4 A4 G4 F4 D4 D#4','E4*/8'] }
+};
+
+/* ----- Harmonic generalization: "All the Things You Are" mm. 1–16, with the
+   key areas bracketed underneath (Enclosures — Concert, p. 3). ----- */
+const ATTYA = {
+  bars: ['F-7','Bb-7','Eb7','Ab^7','Db^7','G7(b9)','C^7','C^7',
+         'C-7','F-7','Bb7','Eb^7','Ab^7','D7(b9)','G^7','G^7'],
+  areas: [ {from:0,  to:4,  root:'Ab', q:'major'}, {from:5,  to:5,  root:'C', q:'minor'},
+           {from:6,  to:7,  root:'C',  q:'major'}, {from:8,  to:12, root:'Eb', q:'major'},
+           {from:13, to:13, root:'G',  q:'minor'}, {from:14, to:15, root:'G', q:'major'} ]
+};
+
+/* ----- Scale-based practice. Both exercises are written as degree templates
+   so they generate in any key: [scale degree 0-6, chromatic alteration,
+   octave offset], with `g` marking a goal note. Realised in C they reproduce
+   Enclosure_Scale_Exercise.pdf and Descending_Enclosure_Scale_Exercise.pdf
+   note for note. ----- */
+const SCALE_EX = {
+  ascending: {
+    name:'Ascending — enclose every triad tone',
+    note:'Four-, three- and three-note enclosures land the root, 3rd and 5th on downbeats all the way up. The diamond notes in the original are the enclosed triad tones.',
+    lead: [[6,-1,-1],[6,0,-1],[1,0,0],[1,-1,0]],
+    cycle:[[0,0,0,'g'],[1,0,0],[1,1,0],[3,0,0],
+           [2,0,0,'g'],[3,0,0],[3,1,0],[5,0,0],
+           [4,0,0,'g'],[4,1,0],[5,0,0],[6,-1,0],
+           [6,0,0],[1,0,1],[1,-1,1],[6,0,0]],
+    octaves: 2,
+    tail:  [[0,0,2,'g'],[1,0,2],[1,1,2],[3,0,2]],
+    last:  [2,0,2,'g']
+  },
+  descending: {
+    name:'Descending — enclose the 3rd',
+    note:'Down the major bebop scale, with the three-note enclosure [U L l] pushing the 3rd onto the next downbeat. The ♭6 is the bebop passing tone.',
+    lead: [],
+    pre:   [[0,0,2]],
+    cycle:[[6,0,1],[5,0,1],[5,-1,1],[4,0,1],[3,0,1],[1,0,1],[1,1,1],
+           [2,0,1,'g'],[1,0,1],[0,0,1],
+           [6,0,0],[5,0,0],[5,-1,0],[4,0,0],[3,0,0],[1,0,0],[1,1,0],
+           [2,0,0,'g'],[1,0,0]],
+    last:  [0,0,0,'g']
+  }
+};
+</script>
+<script>
+/* ===== shared helpers ===== */
+const el = id => document.getElementById(id);
+const NOTE_RE = /^([A-G])(#{1,2}|b{1,2})?(-?\d)(\*)?(?:\/(\d+))?$/;
+const REST_RE = /^R(?:\/(\d+))?$/;
+
+/* "D4 F#4* Bb3/2 R/4" -> bar object */
+/* Transposing parts. A B-flat instrument sounds a major 2nd below what it
+   reads and an E-flat instrument a major 6th below, so the written part is the
+   concert pitch moved up by that interval and spelled on the letter that many
+   steps away. No key signature is added: the composed pages pass through
+   several keys apiece and are written with accidentals throughout, as the
+   engraved parts are. */
+const PARTS = {
+  c:  { semis:0, degs:0, label:'Concert' },
+  bb: { semis:2, degs:1, label:'B♭'  },
+  eb: { semis:9, degs:5, label:'E♭'  }
+};
+const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+function transposeNote(n, part){
+  const T = PARTS[part] || PARTS.c;
+  if (!T.semis && !T.degs) return n;
+  const m = midiOf(n) + T.semis, pc = ((m % 12) + 12) % 12;
+  let letter = LET[(LET.indexOf(n.letter) + T.degs) % 7];
+  let alt = fold(pc - LPC[letter]);
+  /* moving the letter that many steps keeps the spelling for almost every
+     note, but a few land on a double accidental (A# up a 6th is Fx). Respell
+     those the way the engraver would, keeping the direction of the original. */
+  if (Math.abs(alt) > 1){
+    const pick = (alt > 0 ? SHARP_NAMES : FLAT_NAMES)[pc];
+    letter = pick[0];
+    alt = pick.length > 1 ? (pick[1] === '#' ? 1 : -1) : 0;
+  }
+  return { letter, alt, oct: Math.floor((m - alt) / 12) - 1 };
+}
+function transposeChord(text, part){
+  const T = PARTS[part] || PARTS.c;
+  if (!T.semis && !T.degs) return text;
+  const m = /^([A-G])(#|b)?(.*)$/.exec(text);
+  if (!m) return text;
+  const n = transposeNote({ letter:m[1], alt: m[2]==='#' ? 1 : m[2]==='b' ? -1 : 0, oct:4 }, part);
+  return n.letter + (n.alt>0 ? '#'.repeat(n.alt) : n.alt<0 ? 'b'.repeat(-n.alt) : '') + m[3];
+}
+const xposeItems = (bar, part) => !part || part === 'c' ? bar : Object.assign({}, bar, {
+  items: bar.items.map(i => i.rest ? i : Object.assign({}, i, transposeNote(i, part))) });
+const xposeChords = (chords, part) => !part || part === 'c' ? (chords || [])
+  : (chords || []).map(c => Object.assign({}, c, { text: transposeChord(c.text, part) }));
+
+function parseBar(str, meter){
+  const items = []; let slot = 0;
+  str.trim().split(/\s+/).forEach(tok => {
+    if (!tok) return;
+    let m = REST_RE.exec(tok);
+    if (m){ const len = +(m[1]||1); items.push({rest:true, slot, len}); slot += len; return; }
+    m = NOTE_RE.exec(tok);
+    if (!m) return;
+    const alt = m[2] ? (m[2][0]==='#' ? m[2].length : -m[2].length) : 0;
+    const len = +(m[5]||1);
+    items.push({ letter:m[1], alt, oct:+m[3], gn:!!m[4], slot, len });
+    slot += len;
+  });
+  return { slots: Math.max(slot, 1), items, meter: meter || null };
+}
+function lineSvg(barStrs, opts){
+  opts = opts || {};
+  const bars = barStrs.map((s,i) => xposeItems(parseBar(s, i === 0 ? opts.meter : null), opts.part));
+  return engrave(bars, Object.assign({}, opts, { chords: xposeChords(opts.chords, opts.part) }));
+}
+/* break a long line into systems of `per` bars, keeping chords with their bar */
+function systemsHtml(barStrs, opts, per){
+  opts = opts || {}; per = per || 2;
+  let out = '';
+  for (let i=0; i<barStrs.length; i+=per){
+    const slice = barStrs.slice(i, i+per);
+    const chords = xposeChords((opts.chords || []).filter(c => c.bar >= i && c.bar < i+per)
+                                 .map(c => ({ bar:c.bar-i, slot:c.slot, text:c.text })), opts.part);
+    const bars = slice.map((s,j) => xposeItems(parseBar(s, (i===0 && j===0) ? opts.meter : null), opts.part));
+    out += '<div class="stave">' + engrave(bars, Object.assign({}, opts, { chords })) + '</div>';
+  }
+  return out;
+}
+function cellHtml(title, meta, svg, cite, wide){
+  return cellRaw(title, meta, '<div class="stave'+(wide?' wide':'')+'">'+svg+'</div>', cite);
+}
+function cellRaw(title, meta, inner, cite){
+  return '<div class="cell">'
+       + (title || meta || cite ? '<div class="cap">'
+           + (title ? '<b>'+esc(title)+'</b>' : '')
+           + (meta ? '<span class="meta">'+meta+'</span>' : '')
+           + (cite ? '<span class="cite">'+esc(cite)+'</span>' : '') + '</div>' : '')
+       + inner + '</div>';
+}
+
+/* place a generated enclosure in a comfortable octave around the goal note */
+function voice(notes){
+  let gm = null;
+  const gnIdx = notes.findIndex(n => n.gn);
+  const gn = notes[gnIdx];
+  let oct = 4;
+  const mid = o => 12*(o+1) + LPC[gn.letter] + gn.alt;
+  let best = 4, bestd = 1e9;
+  for (let o=3;o<=5;o++){ const d = Math.abs(mid(o) - 67); if (d < bestd){ bestd = d; best = o; } }
+  gm = mid(best);
+  return notes.map(n => {
+    let bo = best, bd = 1e9;
+    for (let o = best-1; o <= best+1; o++){
+      const d = Math.abs(12*(o+1) + LPC[n.letter] + n.alt - gm);
+      if (d < bd){ bd = d; bo = o; }
+    }
+    return Object.assign({}, n, { oct:bo });
+  });
+}
+
+/* ===== state in the URL hash ===== */
+const DEFAULTS = { key:'C', mode:'ionian', deg:'0', fam:'2', opt:'0', rev:'0', ex:'ascending', ap:'0', part:'c' };
+let S = Object.assign({}, DEFAULTS), CUR = 'start';
+function readHash(){
+  const h = location.hash.replace(/^#/, '');
+  const [id, q] = h.split('?');
+  CUR = SECTIONS.some(s => s.id === id) ? id : 'start';
+  S = Object.assign({}, DEFAULTS);
+  if (CUR === 'access') S.mode = 'dorian';   /* access points are taught off the ii chord */
+  new URLSearchParams(q || '').forEach((v,k) => { if (k in S) S[k] = v; });
+}
+function writeHash(replace){
+  const q = new URLSearchParams();
+  const base = Object.assign({}, DEFAULTS, CUR === 'access' ? {mode:'dorian'} : {});
+  Object.keys(S).forEach(k => { if (S[k] !== base[k]) q.set(k, S[k]); });
+  const h = '#' + CUR + (q.toString() ? '?' + q : '');
+  if (replace) history.replaceState(null, '', h); else location.hash = h;
+}
+function set(k, v){ S[k] = String(v); writeHash(true); render(); }
+function go(id){ CUR = id; writeHash(false); }
+
+/* ===== controls ===== */
+function selectCtl(label, key, opts){
+  return '<div class="f"><label for="c-'+key+'">'+label+'</label><select id="c-'+key+'" data-k="'+key+'">'
+       + opts.map(o => '<option value="'+o[0]+'"'+(String(o[0])===S[key]?' selected':'')+'>'+o[1]+'</option>').join('')
+       + '</select></div>';
+}
+function segCtl(label, key, opts){
+  return '<div class="f"><label>'+label+'</label><div class="seg">'
+       + opts.map(o => '<button type="button" data-k="'+key+'" data-v="'+o[0]+'" aria-pressed="'+(String(o[0])===S[key])+'">'+o[1]+'</button>').join('')
+       + '</div></div>';
+}
+function toggleCtl(label, key){
+  return '<label class="toggle"><input type="checkbox" data-k="'+key+'" '+(S[key]==='1'?'checked':'')+'>'+label+'</label>';
+}
+const prettyKey = k => k.replace('b','♭').replace('#','♯');
+const KEY_OPTS  = KEYS.map(k => [k, prettyKey(k)]);
+const PART_OPTS = [['c','Concert'],['bb','B♭'],['eb','E♭']];
+/* the composed pages are engraved at concert pitch; the selector rewrites them
+   for the horn in the room rather than needing a separate engraved part */
+const partNote = () => S.part === 'c' ? ''
+  : '<div class="note">Written for <b>' + PARTS[S.part].label + ' instruments</b> — a '
+  + (S.part === 'bb' ? 'major 2nd' : 'major 6th')
+  + ' above concert, so it sounds where the concert page does. Chord symbols move with it.</div>';
+const MODE_OPTS = [['ionian','major'],['aeolian','natural minor'],['dorian','dorian'],['mixolydian','mixolydian']];
+const FAM_OPTS  = [1,2,3,4,5].map(n => [n, n]);
+
+/* ===== the generated cell ===== */
+function enclosureCell(scale, deg, fam, optIdx, rev, opts){
+  opts = opts || {};
+  const T = tonesAt(scale, deg);
+  const list = options(fam, T.type);
+  if (!list.length) return { html:'<p>No pattern of this family is printed for a Type '+T.type+' goal note.</p>', T, list, pat:null };
+  const pat = list[Math.min(optIdx, list.length-1)];
+  const notes = voice(realise(pat, T, rev));
+  const cell = cellBars(notes);
+  const svg = engrave([{ slots:cell.slots, items:cell.items, meter:[cell.beats,4] }],
+    { fifths: opts.fifths, labels:true, chords: opts.chord ? [{bar:0, slot:0, text:opts.chord}] : [] });
+  const toks = (rev ? pat.t.slice().reverse() : pat.t).concat(['GN']);
+  const legend = '<div class="toks">' + toks.map(t =>
+      '<span'+(t==='GN'?' class="gn"':'')+'>'+t+' = '+pretty(t==='GN'?T.GN:T[t])+'</span>').join('') + '</div>';
+  return { html:
+      '<div class="cell"><div class="cap"><b>Family '+fam+(rev?', reversed':'')+'</b>'
+      + '<span class="meta">['+(rev?pat.t.slice().reverse():pat.t).join(' ')+'] &rarr; GN'
+      + ' &middot; ' + cell.beats + '/4 &middot; starts on ' + (cell.lead ? 'an offbeat' : 'a downbeat') + '</span>'
+      + '<span class="cite">'+esc(pat.src)+'</span></div>'
+      + '<div class="stave">'+svg+'</div>'+legend+'</div>', T, list, pat };
+}
+
+/* ===== sections ===== */
+const SECTIONS = [
+  { id:'start',   n:1, group:'Theory',    title:'Why chromaticism',            src:'Outline' },
+  { id:'theory',  n:2, group:null,        title:'Enclosures 101',              src:'Enclosures 101, pp. 1–3' },
+  { id:'raw',     n:3, group:'Generated', title:'Raw materials',               src:'workbook, mm. 1–8' },
+  { id:'build',   n:4, group:null,        title:'Building enclosures',         src:'workbook, mm. 9–64' },
+  { id:'access',  n:5, group:null,        title:'Access points',               src:'Enclosing Access Points' },
+  { id:'scale',   n:6, group:null,        title:'Scale-based practice',        src:'Scale exercises; 101 p. 5' },
+  { id:'vocab',   n:7, group:'Composed',  title:'Vocabulary — ii–V phrases', src:'Enclosures 101, pp. 3–4' },
+  { id:'general', n:8, group:null,        title:'Harmonic generalization',     src:'workbook, p. 3' },
+  { id:'apply',   n:9, group:null,        title:'Application to progressions', src:'workbook, p. 4' }
+];
+
+/* helper: a degree template [deg, alt, octaveOffset, 'g'?] -> note token */
+function fromTemplate(scale, t, baseOct){
+  const n = scale[t[0]];
+  const letter = n.letter, alt = n.alt + (t[1] || 0);
+  /* octave: count letter wrap-ups from the tonic */
+  const up = (LET.indexOf(letter) - LET.indexOf(scale[0].letter) + 7) % 7;
+  const idx = LET.indexOf(letter);
+  const oct = baseOct + (t[2] || 0) + (idx < LET.indexOf(scale[0].letter) ? 1 : 0);
+  return letter + (alt>0 ? '#'.repeat(alt) : alt<0 ? 'b'.repeat(-alt) : '') + oct + (t[3]==='g' ? '*' : '');
+}
+function chunk(arr, n){ const o=[]; for (let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; }
+
+const VIEWS = {
+/* ---------------------------------------------------------------- 1 ----- */
+start(){
+  return '<h2>Why chromaticism</h2><p class="src">Outline</p>'
+  + '<p class="lead">The goal: a high level of goal-oriented chromaticism in your lines, reached by understanding how to ornament simple diatonic material.</p>'
+  + '<div class="note"><b>An enclosure</b> is an ornamentation device that surrounds a strong <b>goal note</b> with a series of weaker diatonic and chromatic notes. The goal notes will almost always be the root, 3rd or 5th of a major or minor triad.</div>'
+  + '<h3>The path through this</h3>'
+  + '<p>Diatonic material — triads and scales, major and minor — comes first. Enclosures are added to it: two-, three- and four-note, always landing the goal note on a downbeat. Then further chromaticism through passing tones, and finally application: generalizing the harmony and playing through changes.</p>'
+  + '<p>Sections 3 to 6 are generated. Pick a key, a goal note and a family and the enclosure is built in front of you, rather than looked up. Sections 7 to 9 are William’s own composed lines, which is the point at which the vocabulary stops being a formula.</p>';
+},
+/* ---------------------------------------------------------------- 2 ----- */
+theory(){
+  const scale = scaleOf('C','ionian'), fifths = writtenFifths('C','ionian');
+  let h = '<h2>Enclosures 101</h2><p class="src">Enclosures 101, pp. 1–3</p>'
+    + '<p class="lead">Three things decide an enclosure: which chord tone you are aiming at, what its diatonic neighbours look like, and how many notes you take to get there.</p>'
+    + '<h3>Goal note types</h3>'
+    + '<p>A goal note is classified by the diatonic steps directly above and below it. That is all — the type follows from the scale, not from the chord.</p>'
+    + '<table class="types"><thead><tr><th>Type</th><th>Below / above</th><th>For example</th><th>In C major</th></tr></thead><tbody>';
+  [['A',0],['B',2],['C',4]].forEach(([t,deg]) => {
+    const T = tonesAt(scale, deg);
+    h += '<tr><td class="t">Type '+t+'</td><td>'+TYPE_TEXT[t].rule+'</td><td>'+TYPE_TEXT[t].eg
+       + '</td><td><span class="ex">'+pretty(T.L)+' → '+pretty(T.GN)+' ← '+pretty(T.U)+'</span></td></tr>';
+  });
+  h += '</tbody></table>'
+    + '<p>The consequence matters more than the label. For a Type A note the lower neighbour is <em>already</em> a half step, so there is no separate chromatic note below it; for Type B the same is true above. Type C has room on both sides. That is why some families have more options than others.</p>'
+    + '<h3>One note either side</h3>'
+    + '<p>The building blocks: a chromatic approach from below, or a diatonic approach from above.</p><div class="grid2">';
+  [0,2,4].forEach(deg => {
+    const T = tonesAt(scale, deg);
+    const mk = pat => { const notes = voice(realise(pat, T, false)); const c = cellBars(notes);
+      return '<div class="stave">' + engrave([{slots:c.slots, items:c.items, meter:[c.beats,4]}], {fifths, labels:true, space:13}) + '</div>'; };
+    h += cellRaw('Type '+T.type+' — GN '+pretty(T.GN),
+      'chromatic below: '+pretty(T.l)+' &middot; diatonic above: '+pretty(T.U),
+      options(1, T.type).map(mk).join(''), '');
+  });
+  h += '</div><h3>The five families</h3>'
+    + '<p>A family is just how many notes precede the goal note. Each step up adds an option; from four notes on, a pitch gets repeated inside the enclosure.</p><div class="grid2">';
+  for (let f=1; f<=5; f++){
+    const T = tonesAt(scale, 4);
+    const r = enclosureCell(scale, 4, f, 0, false, {fifths});
+    h += r.html;
+  }
+  h += '</div><h3>Where the goal note lands</h3>'
+    + '<div class="note">The goal note is almost always on a <b>downbeat</b>. Everything else follows from that: an enclosure of <b>odd</b> length must start on an offbeat, an <b>even</b> one on a downbeat. Nothing else needs to be specified — count back from the downbeat and the parity falls out.</div>'
+    + '<p>Every generated cell below is written that way: the goal note is a quarter on beat one of the next beat group, the enclosure fills the eighths before it, and odd families pick up an eighth rest at the front.</p>';
+  return h;
+},
+/* ---------------------------------------------------------------- 3 ----- */
+raw(){
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const t = d => fromTemplate(scale, d, 4);
+  const triad = [[0,0,0],[2,0,0],[4,0,0],[2,0,0]].map(t).join(' ') + ' ' + t([0,0,0]) + '/4';
+  const up   = [[0,0,0],[1,0,0],[2,0,0],[3,0,0],[4,0,0],[5,0,0],[6,0,0],[0,0,1]].map(t).join(' ');
+  const down = [[1,0,1],[0,0,1],[6,0,0],[5,0,0],[4,0,0],[3,0,0],[2,0,0],[1,0,0]].map(t).join(' ');
+  const last = t([0,0,0]) + '/8';
+  return '<h2>Raw materials</h2><p class="src">workbook, mm. 1–8</p>'
+    + '<p class="lead">The diatonic material the enclosures ornament. Nothing chromatic yet — just the triad and the scale, so the ear knows what is being decorated.</p>'
+    + ctlBar([ selectCtl('Key','key',KEY_OPTS), selectCtl('Scale','mode',MODE_OPTS) ])
+    + cellHtml(prettyKey(tonic)+' '+MODES[S.mode].label+' — triad',
+        '', lineSvg([triad], {fifths, meter:[4,4]}), '', false)
+    + cellRaw(prettyKey(tonic)+' '+MODES[S.mode].label+' — scale',
+        '', systemsHtml([up, down, last], {fifths, meter:[4,4], space:17}, 2), '');
+},
+/* ---------------------------------------------------------------- 4 ----- */
+build(){
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const deg = +S.deg, fam = +S.fam;
+  const T = tonesAt(scale, deg);
+  const list = options(fam, T.type);
+  const optIdx = Math.min(+S.opt, Math.max(0, list.length-1));
+  const chord = tonic + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
+  const degOpts = [[0,'root'],[2,'3rd'],[4,'5th']];
+  let h = '<h2>Building enclosures</h2><p class="src">workbook, mm. 9–64</p>'
+    + '<p class="lead">Pick the context, the goal note and the family. Every pattern offered here is one that appears in the source for that goal-note type — the citation is on each cell.</p>'
+    + ctlBar([ selectCtl('Key','key',KEY_OPTS), selectCtl('Scale','mode',MODE_OPTS),
+               segCtl('Goal note','deg',degOpts), segCtl('Family','fam',FAM_OPTS),
+               toggleCtl('Reverse the direction','rev') ])
+    + '<div class="note">Goal note <b>'+pretty(T.GN)+'</b> is <b>Type '+T.type+'</b> here — '+TYPE_TEXT[T.type].rule
+    + '. Approach tones: L '+pretty(T.L)+' &middot; l '+pretty(T.l)+' &middot; U '+pretty(T.U)
+    + ' &middot; u '+pretty(T.u)+' &middot; S '+pretty(T.S)+'.</div>';
+  if (!list.length) h += '<p>The source prints no family-'+fam+' pattern for a Type '+T.type+' goal note.</p>';
+  else {
+    h += '<div class="grid2">';
+    list.forEach((p,i) => { h += enclosureCell(scale, deg, fam, i, S.rev==='1', {fifths, chord}).html; });
+    h += '</div>';
+    h += '<p>'+list.length+' pattern'+(list.length===1?'':'s')+' for a Type '+T.type+' goal note at family '+fam+'.'
+      + (fam>=4 ? ' From four notes on a pitch repeats inside the enclosure — that is what makes the longer families possible.' : '')+'</p>';
+  }
+  return h;
+},
+/* ---------------------------------------------------------------- 5 ----- */
+access(){
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const fam = +S.fam, deg = +S.deg;
+  const T = tonesAt(scale, deg);
+  const list = options(fam, T.type);
+  const dg = DEGREES.find(d => d.deg === deg) || DEGREES[0];
+  const chord = tonic + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
+  const vName = KEYS.length && scale[4] ? pretty(scale[4]) : '';
+  let h = '<h2>Access points</h2><p class="src">Enclosing Access Points</p>'
+    + '<p class="lead">The same engine, aimed past the triad. The 7th, 9th, 11th and 13th are goal notes too — they just sit on other scale degrees, and their types fall out the same way.</p>'
+    + ctlBar([ selectCtl('Key','key',KEY_OPTS), selectCtl('Scale','mode',MODE_OPTS),
+               segCtl('Access point','deg', DEGREES.map(d => [d.deg, d.short])),
+               segCtl('Family','fam',FAM_OPTS), toggleCtl('Reverse','rev'),
+               toggleCtl('Show the ii/V reading','ap') ]);
+  h += '<div class="note">The <b>'+dg.label+'</b> of '+chordText(chord).replace(/<[^>]+>/g,m=>m)+' is <b>'+pretty(T.GN)+'</b>, a <b>Type '+T.type+'</b> goal note.';
+  if (S.ap === '1') h += ' Over the V a step below, the same pitch is its <b>'+V_DEGREE[deg]+'</b> — so this enclosure does double duty across the ii–V.';
+  h += '</div>';
+  if (!list.length) h += '<p>The source prints no family-'+fam+' pattern for a Type '+T.type+' goal note.</p>';
+  else { h += '<div class="grid2">';
+    list.forEach((p,i) => { h += enclosureCell(scale, deg, fam, i, S.rev==='1', {fifths, chord}).html; });
+    h += '</div>'; }
+  h += '<h3>All seven access points at this family</h3><div class="grid2">';
+  DEGREES.forEach(d => {
+    const t2 = tonesAt(scale, d.deg), l2 = options(fam, t2.type);
+    if (!l2.length) return;
+    const notes = voice(realise(l2[0], t2, S.rev === '1')), c = cellBars(notes);
+    h += cellHtml(d.label + ' — ' + pretty(t2.GN) + ' (Type ' + t2.type + ')',
+      S.ap === '1' ? V_DEGREE[d.deg] + ' of the V' : '',
+      engrave([{slots:c.slots, items:c.items, meter:[c.beats,4]}], {fifths, labels:true}), '', false);
+  });
+  h += '</div>';
+  return h;
+},
+/* ---------------------------------------------------------------- 6 ----- */
+scale(){
+  const tonic = writtenTonic(S.key, 'ionian');
+  const scale = scaleOf(tonic, 'ionian'), fifths = writtenFifths(S.key, 'ionian');
+  const ex = SCALE_EX[S.ex] || SCALE_EX.ascending;
+  const seq = [];
+  const push = t => seq.push(fromTemplate(scale, t, 4));
+  if (S.ex === 'ascending'){
+    ex.lead.forEach(push);
+    for (let o=0; o<ex.octaves; o++) ex.cycle.forEach(t => push([t[0], t[1], (t[2]||0)+o, t[3]]));
+    ex.tail.forEach(push);
+    seq.push(fromTemplate(scale, ex.last, 4) + '/8');
+  } else {
+    ex.pre.forEach(push);
+    ex.cycle.forEach(push);
+    seq.push(fromTemplate(scale, ex.last, 4) + '/4');
+  }
+  const bars = chunk(seq, 8).map(b => b.join(' '));
+  return '<h2>Scale-based practice</h2><p class="src">Scale exercises; Enclosures 101, p. 5</p>'
+    + '<p class="lead">Enclosures strung through a scale line, so the shapes come out under the fingers rather than being assembled note by note. Practise in all twelve keys — that is what the selector is for.</p>'
+    + ctlBar([ selectCtl('Key','key',KEY_OPTS),
+               segCtl('Exercise','ex',[['ascending','Ascending'],['descending','Descending']]) ])
+    + '<div class="note"><b>'+esc(ex.name)+'.</b> '+esc(ex.note)+'</div>'
+    + cellRaw('', '', systemsHtml(bars, {fifths, meter:[4,4], space:17,
+        chords:[{bar:0, slot:0, text:tonic+'^7'}]}, 2), '')
+    + '<p>Every goal note lands on a downbeat. Three-note enclosures start on an offbeat, which is exactly what lets them sit between one scale tone and the next without disturbing the count.</p>';
+},
+/* ---------------------------------------------------------------- 7 ----- */
+vocab(){
+  let h = '<h2>Vocabulary — ii–V phrases</h2><p class="src">Enclosures 101, pp. 3–4</p>'
+    + '<p class="lead">Three plain diatonic ii–V phrases, then the same phrases with the first note enclosed. This is where the device stops being an exercise: the enclosure becomes a pickup into a line you were going to play anyway.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote()
+    + '<h3>The phrases</h3>';
+  VOCAB.plain.forEach(p => {
+    h += cellRaw(p.name, '', systemsHtml(p.bars, {fifths:0, meter:[4,4], chords:VOCAB.chords3, space:17, part:S.part}, 2), 'Enclosures 101 p. 3');
+  });
+  h += '<h3>The same phrases, first note enclosed</h3>'
+     + '<p>The enclosure is used as a pickup device, so it sits in front of the bar line and the phrase itself is untouched.</p>';
+  VOCAB.enclosed.forEach(p => {
+    const chords = VOCAB.chords3.map(c => ({bar:c.bar+1, slot:c.slot, text:c.text}));
+    h += cellRaw(p.name, 'family '+p.fam+' &middot; GN '+esc(p.gn),
+      systemsHtml(p.bars, {fifths:0, meter:[4,4], chords, space:15, part:S.part}, 3), 'Enclosures 101 p. 4');
+  });
+  h += '<h3>Starting the enclosure on the bar line instead</h3>'
+     + '<p>Begin the enclosure at the start of the measure rather than as a pickup and the phrase gets longer: a long ii–V that resolves to a different chord tone, arriving by three-note enclosure.</p>'
+     + cellRaw(VOCAB.long.name, '', systemsHtml(VOCAB.long.bars, {fifths:0, meter:[4,4], chords:VOCAB.long.chords, space:15, part:S.part}, 3), 'Enclosures 101 p. 4');
+  return h;
+},
+/* ---------------------------------------------------------------- 8 ----- */
+general(){
+  let h = '<h2>Harmonic generalization</h2><p class="src">workbook, p. 3 — “All the Things You Are” mm. 1–16</p>'
+    + '<p class="lead">Sixteen bars of changes reduced to six key areas. Enclose against the key area rather than re-deriving goal notes bar by bar, and the line stops chasing the chord symbols.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote();
+  const areaOf = i => ATTYA.areas.find(a => i >= a.from && i <= a.to);
+  const areaName = a => transposeChord(a.root, S.part).replace('#','♯').replace('b','♭') + ' ' + a.q;
+  for (let half=0; half<2; half++){
+    h += '<div class="chart">';
+    for (let i=half*8; i<half*8+8; i++){
+      const a = areaOf(i);
+      h += '<div class="bar'+(a && a.from === i ? ' area-start' : '')+'">'
+         + '<div class="sym">'+chordHtml(transposeChord(ATTYA.bars[i], S.part))+'</div>'
+         + '<div class="slashes">╱ ╱ ╱ ╱</div></div>';
+    }
+    h += '</div><div class="keyareas">';
+    const seen = {};
+    for (let i=half*8; i<half*8+8; i++){
+      const a = areaOf(i);
+      h += '<span>'+(a && !seen[a.from] ? (seen[a.from]=1, esc(areaName(a))) : '')+'</span>';
+    }
+    h += '</div>';
+  }
+  h += '<div class="note">Five bars of one key area, one of its minor, two of its major — then the same shape a fourth away. Six enclosure contexts for sixteen bars, whichever part you are reading.</div>';
+  return h;
+},
+/* ---------------------------------------------------------------- 9 ----- */
+apply(){
+  const C = COMPOSED;
+  const line = (name, bars, chords, cite, note) =>
+    (note ? '<p>'+note+'</p>' : '')
+    + cellRaw(name, '', systemsHtml(bars, {fifths:0, meter:[4,4], chords, space:17, part:S.part}, 2), cite);
+  let h = '<h2>Application to progressions</h2><p class="src">workbook, pp. 3–4</p>'
+    + '<p class="lead">Composed lines, not generated ones. Goal notes are ringed as they are in the source; the notes between them are enclosures, approach tones and passing tones doing the connecting.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote()
+    + '<h3>Exercises</h3>'
+    + line('Apply enclosures to triads — major', C.triadsMaj, [{bar:0,slot:0,text:'C^7'}], 'workbook m. 65')
+    + line('Apply enclosures to triads — minor', C.triadsMin, [{bar:0,slot:0,text:'C-'}], 'workbook m. 68')
+    + line('Connect the enclosures with other scale tones — major', C.connectMaj, [{bar:0,slot:0,text:'C^7'}], 'workbook m. 71')
+    + line('Connect the enclosures with other scale tones — minor', C.connectMin, [{bar:0,slot:0,text:'C-'}], 'workbook m. 74')
+    + line('Enclose every note of the scale', C.everyNote, [{bar:0,slot:0,text:'C^7'}], 'workbook m. 77')
+    + '<h3>ii–V progressions, major and minor</h3>'
+    + line('Major ii–V–I', C.iiVmaj,
+        [{bar:0,slot:0,text:'D-7'},{bar:1,slot:0,text:'G7'},{bar:2,slot:0,text:'C^7'}], 'workbook m. 97')
+    + line('Minor ii–V–i', C.iiVmin,
+        [{bar:0,slot:0,text:'B07'},{bar:1,slot:0,text:'E7(b9)'},{bar:2,slot:0,text:'A-'}], 'workbook m. 101')
+    + '<h3>Standard jazz progressions</h3>'
+    + line('', C.stdA, [{bar:0,slot:0,text:'F-7'},{bar:1,slot:0,text:'Bb-7'},{bar:2,slot:0,text:'Eb7'},{bar:3,slot:0,text:'Ab^7'}], 'workbook m. 105')
+    + line('', C.stdB, [{bar:0,slot:0,text:'Db^7'},{bar:1,slot:0,text:'G7(b9)'},{bar:2,slot:0,text:'C^7'}], 'workbook m. 109')
+    + line('', C.stdC, [{bar:0,slot:0,text:'Bb^7'},{bar:0,slot:4,text:'G7'},{bar:1,slot:0,text:'C-7'},{bar:1,slot:4,text:'F7'},{bar:2,slot:0,text:'D-7'},{bar:2,slot:4,text:'G7'},{bar:3,slot:0,text:'C-7'},{bar:3,slot:4,text:'F7'}], 'workbook m. 113')
+    + line('', C.stdD, [{bar:0,slot:0,text:'F-7'},{bar:0,slot:4,text:'Bb7'},{bar:1,slot:0,text:'Eb^7'},{bar:1,slot:4,text:'Eo7'},{bar:2,slot:0,text:'D-7'},{bar:2,slot:4,text:'G7'},{bar:3,slot:0,text:'C-7'},{bar:3,slot:4,text:'F7'}], 'workbook m. 117')
+    + '<div class="note">These were transcribed from the engraved PDFs rather than re-keyed by hand: pitches and accidentals come straight from the glyph positions, and every bar was checked to fill its meter. Worth a read against the printed part before you hand them to a student.</div>';
+  return h;
+}
+};
+
+function ctlBar(parts){ return '<form class="ctl" onsubmit="return false">'+parts.join('')+'</form>'; }
+
+/* ===== render ===== */
+function render(){
+  const sec = SECTIONS.find(s => s.id === CUR) || SECTIONS[0];
+  el('sec').innerHTML = VIEWS[sec.id]() + navHtml(sec);
+  [...el('rail').querySelectorAll('a')].forEach(a =>
+    a.setAttribute('aria-current', a.dataset.id === CUR ? 'page' : 'false'));
+  document.title = sec.title + ' — Enclosures';
+}
+function navHtml(sec){
+  const i = SECTIONS.indexOf(sec);
+  const prev = SECTIONS[i-1], next = SECTIONS[i+1];
+  return '<div class="nav">'
+    + (prev ? '<a href="#'+prev.id+'">← '+esc(prev.title)+'</a>' : '')
+    + '<span class="sp"></span>'
+    + (next ? '<a href="#'+next.id+'">'+esc(next.title)+' →</a>' : '') + '</div>';
+}
+el('rail').innerHTML = SECTIONS.map(s =>
+  (s.group ? '<li class="grp">'+s.group+'</li>' : '')
+  + '<li><a href="#'+s.id+'" data-id="'+s.id+'"><span class="n">'+s.n+'</span>'+esc(s.title)+'</a></li>').join('');
+
+document.addEventListener('change', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  set(k, e.target.type === 'checkbox' ? (e.target.checked ? '1' : '0') : e.target.value);
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('.seg button'); if (!b) return;
+  if (b.dataset.k === 'fam' || b.dataset.k === 'deg') S.opt = '0';
+  set(b.dataset.k, b.dataset.v);
+});
+addEventListener('hashchange', () => { readHash(); render(); el('sec').focus(); });
+readHash(); writeHash(true); render();
+</script>
+</body>
+</html>
