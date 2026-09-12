@@ -26,7 +26,7 @@ const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const main = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ---------- state + ui ---------- */")[0];
 const state = { scale: "major", key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0, variants: {} };
-const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, stringFingers, midiOf, cardPerformance, schedule };")(state);
+const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, perfDegree, perfOctave, perfIntervals, perfSegovia, SEGOVIA, SEG_MOVABLE, segShift, segSpan, stringFingers, midiOf, cardPerformance, schedule, OPEN_MIDI_CHECK: OPEN_MIDI, PC_CHECK: PC };")(state);
 
 const tok = n => `${n.string}:${n.fret}`;
 const flat = perf => perf.bars.flatMap(b => b.notes);
@@ -203,11 +203,28 @@ function advancedChecks(label, ns, L, turns, digits, key) {
   return out;
 }
 // what a card must play, straight from the engine (cardPerformance has to agree)
+/* A one-octave window cannot hold an interval wider than the notes it has: an Advanced tier
+   asks for groups of [1, interval], and where the octave has fewer rungs than that no group
+   fits and the card rightly has no line. Counted here from the card itself -- its drawn dots
+   less the ones its own dim greys out -- rather than by asking the engine, so this is an
+   independent expectation and not a restatement of perfOctave. */
+/* Whether a wide interval fits inside a one-octave window is NOT a function of the rung count:
+   at 8 rungs an 8th plays on some cards and not on others, because walkTurn's leg lengths and
+   skipped echo groups decide it. Any predicate here accurate enough to assert would just be
+   perfOctave written twice, which tests nothing -- so concept 5's Advanced tiers return null,
+   meaning "do not assert either way". The line itself is still checked whenever there is one,
+   and cardLines below counts the coverage, so a change that silenced a swathe of cards would
+   still show up as a moved number. */
+const ASSERT_EITHER = null;
 function expectedLine(n, cards, i, tier, key) {
   const card = cards[i];
   if (n === 1) return { perf: E.perfPosition(card.p, tier), first: i };
   if (n === 2) return { perf: E.perfDescending(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d))), first: i };
   if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key), first: i - i % 2 };
+  if (n === 4) return { perf: E.perfDegree(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)), card.opts.ext), first: i };
+  if (n === 5) return { perf: E.perfOctave(card.p, tier, card.via, card.opts.ring ? card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)) : null, card.opts.dim), first: i };
+  if (n === 7) return { perf: E.perfIntervals(card, tier, key), first: i };
+  if (n === 8) return { perf: E.perfSegovia(card.segovia, card.segKey, card.shift), first: i };
   return { perf: E.perfString(key, card.string), first: i };
 }
 let paths = 0, advLines = 0, c2Lines = 0, zigzags = 0, cardLines = 0, cardSets = 0; const sweep = [];
@@ -224,10 +241,20 @@ for (const sc of Object.keys(E.SCALES)) {
       for (const C of E.CONCEPTS) for (const tier of C.tiers) {
         state.tier = tier; cardSets++;
         let cards; try { cards = C.steps(); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key}: steps() throws ${e.message}`); continue; }
-        const plays = C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy");
+        /* concept 8 carries a line only on the cards holding a transcribed fingering — its
+           Intermediate and Advanced 2 tiers are still text — so whether a card should play is
+           a question about the card, not about the concept */
+        const plays = card => (C.n === 5 && tier.startsWith("Advanced") && card.via !== 2) ? ASSERT_EITHER
+          : C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy")
+          || C.n === 4                                     // every degree card carries a line
+          || (C.n === 5 && card.via !== 2 && !tier.startsWith("Advanced"))  // via 2 is the zigzag
+          || (C.n === 7 && card.links.length                          // no drawn links, nothing to play
+              && (tier !== "Advanced 2" || card.adjacent))             // filling in is adjacent only
+          || (C.n === 8 && !!card.segovia);
         cards.forEach((card, i) => {
           let r; try { r = E.cardPerformance(C.n, cards, i, tier, key); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: cardPerformance throws ${e.message}`); return; }
-          if (plays !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
+          const want = plays(card);
+          if (want !== null && want !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
           if (!r) return;
           cardLines++;
           r.perf.flags.forEach(f => sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${f}`));
@@ -316,6 +343,54 @@ let timing = 0;
   expect("quarter-note lines (concept 6) ignore swing", of(q, "note").map(e => e.t), [4, 5, 6, 7]);
   expect("quarter-note lines: notes a beat long", of(q, "note").map(e => e.dur), [1, 1, 1, 1]);
   expect("quarter-note lines: count-in of four beats, clicks on 2 and 4", of(q, "count").map(e => e.t).concat(of(q, "click").map(e => e.t)), [0, 1, 2, 3, 5, 7]);
+}
+
+/* ---- pp. 73-75, concept 8: the Segovia transcription ----
+   The data is the transcription, so replaying it against itself would prove nothing. What is
+   worth pinning is that it is still MUSIC: every ascent strictly stepwise and diatonic in its
+   printed key, the fingers a hand can actually hold, and the two the book calls moveable
+   really being the two three-octave patterns with no open string. A typo in the table breaks
+   one of these. The single known exception is the book's own misprint at #1 ascending note 12
+   (2nd string, printed fret 7, sounding F# in C and reached by a leap) — reported, not failed,
+   until William rules, as the p. 66 and p. 71 misprints were. */
+{
+  const MAJ = [0, 2, 4, 5, 7, 9, 11], seg = [];
+  let notes = 0;
+  for (const f of E.SEGOVIA) {
+    const asc = f.asc.split(" ").map(t => t.split("/").map(Number));
+    const all = f.notes;
+    notes += all.length;
+    const midi = d => E.OPEN_MIDI_CHECK[d[0]] + d[1];
+    const root = E.KEYS.indexOf ? null : null;
+    // pitch classes relative to the printed key
+    const pcOf = m => ((m - (E.PC_CHECK[f.key])) % 12 + 12) % 12;
+    const offAt = asc.map((d, i) => MAJ.includes(pcOf(midi(d))) ? 0 : i + 1).filter(Boolean);
+    const offKey = offAt;
+    const leaps = [];
+    for (let i = 1; i < asc.length; i++) { const d = midi(asc[i]) - midi(asc[i - 1]); if (d !== 1 && d !== 2) leaps.push(`note ${i + 1} (+${d})`); }
+    if (!all.every(d => typeof d.finger === "number")) seg.push(`#${f.n}: a note carries no finger`);
+    // a hand holds four frets: the index sits (finger-1) below the note it plays
+    const wide = all.filter(d => d.finger > 0 && d.finger > 4);
+    if (wide.length) seg.push(`#${f.n}: finger above 4`);
+    /* with the p. 73 misprint corrected (William, 2026-09-12) every fingering is clean */
+    if (offKey.length) seg.push(`#${f.n}: ${offKey.length} note(s) outside ${f.key} major, at ${offAt.join(", ")}`);
+    if (leaps.length) seg.push(`#${f.n}: ascent not stepwise at ${leaps.join(", ")}`);
+    /* the corrected note itself, so a revert to the printed 7 fails loudly rather than just
+       showing up as "one note outside C major" somewhere */
+    if (f.n === "1" && f.asc.split(" ")[11] !== "2/8/4")
+      seg.push(`#1 note 12 is ${f.asc.split(" ")[11]}; p. 73 prints 2/7/4 and it is corrected to 2/8/4`);
+    /* and the property that only holds once it is corrected: #1 and #7 are the two fingerings
+       whose descent retraces the ascent exactly, string, fret and finger */
+    if (f.n === "1" || f.n === "7") {
+      const back = f.desc.split(" "), up = f.asc.split(" ").slice(0, -1).reverse();
+      if (back.join(" ") !== up.join(" ")) seg.push(`#${f.n}: the descent no longer retraces the ascent`);
+    }
+  }
+  if (notes !== 287) seg.push(`287 printed notes expected, ${notes} in the table`);
+  const mv = E.SEG_MOVABLE.map(f => f.n).join(",");
+  if (mv !== "2,5") seg.push(`p. 64 names #2 and #5 as the moveable three-octave patterns; SEG_MOVABLE holds ${mv || "none"}`);
+  seg.forEach(m => { fail++; console.log("FAIL   segovia — " + m); });
+  if (!seg.length) { pass++; console.log(`ok     segovia pp. 73-75 — 287 notes, all 7 fingerings stepwise and diatonic; #1 note 12 corrected from the printed fret 7 to fret 8, and #1's descent now retraces its ascent`); }
 }
 
 sweep.forEach(m => console.log("FAIL   " + m));

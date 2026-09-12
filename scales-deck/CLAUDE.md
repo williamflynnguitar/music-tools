@@ -61,8 +61,44 @@ and 4 (on by default), a large finger readout for concept 6, and a count strip: 
 then the bar's eighths (or the count-in) with the current one lit and the meter when a bar is
 short. All settings live in memory only.
 - `cardPerformance(n, cards, i, tier, key)` (engine block) says what a card plays: concepts 1
-  and 2 on every tier, concepts 3 and 6 on Easy; `null` elsewhere, and the Play bar hides.
-  Concepts 4, 5, 7 and 8 have no lines yet.
+  and 2 on every tier, concepts 3 and 6 on Easy, concept 8 wherever the card carries a
+  transcribed fingering; `null` elsewhere, and the Play bar hides. Whether a card plays is a
+  question about the **card**, not the concept — concept 8's Easy and Advanced 1 cards play
+  while its Intermediate and Advanced 2 cards beside them stay text. Concepts 4, 5 and 7 still
+  have no lines, and nor do concept 3 above Easy or concept 6 above Easy: **10 of the 32
+  concept/tier combinations play, 22 are silent.**
+
+## Concept 8, the Segovia fingerings (Sep 2026)
+`SEGOVIA` (below `OPEN_MIDI`, which `SEG_MOVABLE` reads at load — it sat above it for one
+commit and the temporal dead zone killed the whole script while still parsing cleanly, which
+is why `scripts/syntax-check.js` did not catch it and `check.js` did) holds all seven
+fingerings from pp. 73-75 as `"string/fret/finger"` in playing order, ascending then
+descending. 287 notes: #1 is 29 and two octaves, the rest 43 and three.
+- Transcribed from four independent readings of the page — three off the PDF text layer, one
+  off 300 dpi raster geometry — which agreed on every note. Verified as music afterwards:
+  each ascent is strictly stepwise and perfectly diatonic in its printed key.
+- **One note corrected against the page, RULED 2026-09-12.** #1's twelfth ascending note is
+  TAB'd 2nd string fret 7, an F# in C major. The noteheads step evenly either side of it, #1
+  carries no accidental anywhere, the page's own descent TABs that same pitch as fret 8, and
+  the printed 1-2-4 works over frets 5-6-8 but not 5-6-7. William ruled it fret 8, as he did
+  the p. 66 and p. 71 misprints, so the table holds 8 and `check.js` pins it explicitly —
+  a revert to the printed 7 fails by name rather than as a stray off-key note. With the
+  correction in, all seven fingerings are stepwise and diatonic with no exceptions, and #1
+  joins #7 as the two whose descent retraces the ascent exactly; check.js asserts that too,
+  since it is a property that only holds once the note is right.
+- `SEG_MOVABLE` is p. 64's "#2 and #5 ... moveable 3-octave pattern off the 6th and 5th
+  string". Both halves of that sentence matter: #1 also has no open string, and what rules it
+  out is being the two-octave one. `segShift(f, key)` returns the fret offset or `null` when
+  the shape leaves frets 1-19.
+- `perfSegovia` plays the transcription as printed and re-derives nothing — five of the seven
+  descend by a different route than they ascend, so there is no ladder to walk. Fingers sound
+  on every note, concept 8 being one of the places round 1 named the fingering as the lesson.
+- `svgSegovia` borrows `svgStrings`' geometry (so `paintNote` and the highlight work
+  unchanged) but draws six strings out to fret 19, only the fingering's own dots, labelled
+  with the finger, and threads the ascent in playing order.
+- `check.js` does not replay the data against itself, which would prove nothing; it asserts
+  the transcription is still music — stepwise, diatonic, 287 notes, fingers on every note,
+  `SEG_MOVABLE` exactly #2 and #5, and the misprint still at note 12 and nowhere else.
 - `schedule(perf, bpm, swing, clicks)` (engine block) turns a line into an audio timeline: one
   bar of four quarter-note clicks, accent on 1; clicks on beats 2 and 4 of every bar (a 3/4 bar
   has only 2); swing is long-short 2:1 inside each beat. check.js tests it against hand-worked
@@ -76,7 +112,9 @@ short. All settings live in memory only.
   `unlockAudio` inside the Play tap resumes from any non-running state ("interrupted" after a
   call or alarm), starts a silent buffer, and loops a silent `<audio>` so the ringer switch
   doesn't mute Web Audio on Safari before 17; a Screen Wake Lock while playing; and
-  `visibilitychange` resumes the context and re-takes the lock. Not yet tried on an iPhone.
+  `visibilitychange` resumes the context and re-takes the lock. **Confirmed playing on a real
+  iPhone, 2026-09-12.** He reported it plays; the ringer-switch, lock-screen and
+  call-interruption paths have not been separately exercised.
 - The highlight and count strip read `heardTime()`: the audio clock less the output latency
   (from `getOutputTimestamp` when it agrees with `currentTime` within 0.5 s), so a Bluetooth
   speaker doesn't put the ring ahead of the note. Nothing visual drives timing.
@@ -180,17 +218,82 @@ William's rulings, all 2026-09-11:
   as a *dot*, so Bb and Eb get I6/I5 where p. 67 cycles through M6/M5 (the note is in-window
   there). Every printed P6 example uses "B on 3rd string", not the deck's default.
 
+## Rulings, round 5 (2026-09-12)
+- **Concept 2's Advanced turn is B, the echo skip** — `walkTurn`, which is what the engine
+  already did, so nothing changed. He ruled it off the listening proof's three B cards,
+  including the two he had flagged as arguing against it: `C Pinky 6 / 1231`, where the line
+  ends inside the last group down with no climb at all and the root on an `&`, and
+  `F Pinky 5 / 1234`, where five notes come back up instead of eleven. Concept 2 now turns
+  exactly as concept 1 does, which was the point of the rule.
+- **The flagged player defaults all stand**: the highlight on the card's own diagram; one card
+  at a time, with concept 3 following the hand up the neck; 100 BPM; clicks on 2 and 4 on;
+  tempo and feel changes taking effect at the next bar line; Play only where the engine has a
+  line; and the concept 2 Easy fallback with its 7 knock-on cards and concept 5 Easy 2.
+
+## The last five, decided (2026-09-12, mine on his say-so)
+He asked me to decide these rather than rule on them, so each is flagged as my call and each
+was settled against the engine rather than from the notes — two of the five turned out not to
+be questions at all, and the counts in the old list were wrong.
+
+- **The concept 3 zigzag start: no change, and the question was moot.** All six shapes in the
+  cycle root on the 6th or 5th string, so "the very lowest position" and "the lowest with a
+  root on the 6th/5th string" name the *same card* — verified across all 132 scale x key
+  combinations, 0 disagreements. F major's first card reproduces p. 68 note for note
+  (`6:1 6:3 6:5 5:1 5:3 5:5 4:2 4:3`).
+- **The computed below-root finger stays 1.** It is the rule's own definition: the note is in
+  the ladder *because* the index can reach a fret below the lowest dot, so the index is what
+  plays it. It shows only in concept 3, where fingers are the lesson, and a reach is exactly
+  what a finger number should tell you — how to get the note without moving the hand.
+- **Concept 2's climb now reuses the locations the descent used (CHANGED).** `located` takes a
+  `reuse` flag; concepts 1 and 2 pass it, concept 3 must not, since its whole subject is the
+  same pitches in the next position up. Without it a line could return to a pitch five frets
+  from where it just played it — Eb Middle 5 played midi 49 at 5:4 on the way down and 6:9 on
+  the way back — a shift the exercise never asked for. **144 lines** carried a split (the old
+  note said 48); now 0, and all 31 printed examples still match, so the book is compatible.
+- **The 72 Middle 6 cards starting above the 9th: no change, not a bug.** They start on the
+  shape's highest 1st-string note, which is what concept 2's own instruction asks for
+  ("from the highest note on the 1st string to the lowest note on the 6th"). His "Middle 6
+  turns on the 9th" ruling is about concept 1's *turnaround*, a different moment.
+- **Concept 3 Easy no longer dims (CHANGED).** Concept 1 Easy dims below the lowest root
+  because its instruction is "from the lowest root up". Concept 3's says the opposite —
+  "continue scalar motion to the bottom of the next one up" — and the zigzag goes there: on
+  the first card of C major it played **eight** notes on the 6th string that were drawn greyed
+  out, with the playback highlight lighting dots the card presented as optional. A note the
+  line plays is in the exercise by definition. **564 card-sets** were affected (the old note
+  said 329 cards); now 0.
+
+## Concepts 4, 5 and 7 (Sep 2026)
+Built from the handbook's own words on p. 63-64, which settle most of what the earlier
+specification round had guessed at. **25 of the 32 concept/tier combinations now play, up
+from 10.**
+- **Concept 4, `perfDegree`** — concept 1's shape anchored on the card's ringed degree instead
+  of the root. **Easy ascends only**, because the book adds the descent at Intermediate
+  ("Additionally, practice descending through the scales") and p. 69's printed example ends on
+  a whole note. Above Easy it turns at the top, runs to the bottom and comes home to the ring.
+  Two things the ladder had to learn: it follows the CARD's `ext`, not the tier's, because the
+  computed modal fingerings set `ext` false even above Easy (1251 lines were playing an undrawn
+  index-reach note); and it is trimmed to notes the card actually draws, because the "Middle
+  6's 9th is always on offer" rung is not drawn on a computed window (12 more).
+- **Concept 5, `perfOctave`** — the borrowed card's own line with its bottom half cut away.
+  The upper octave is defined by **the card's own `dim` predicate**, not by a pitch floor: the
+  Pinky shapes have no root on the 4th/3rd string at all, so a floor and the greying disagreed
+  on 4 of every 12 Easy cards. Filtering the ladder by what stays bright makes played and
+  bright the same set by construction. `via` says which concept was borrowed; concept 4's ring
+  sits an octave below the floor, so its degree is picked up where it reappears inside the
+  octave. `via === 2` (concept 3's zigzag) returns null — it travels up the neck, and the
+  player only follows the hand between cards for concept 3 itself.
+- **Concept 7, `perfIntervals`** — the card's `links` ARE the line; no placement, so no ladder.
+  **Easy and Intermediate are double stops**, one attack with the upper voice on the note's
+  `with`, because the book opens "we are playing the same scale on two strings
+  simultaneously". Advanced 1 is its "rather than playing the intervals harmonically, play them
+  melodically" — the same intervals, broken. Advanced 2 fills the interval in with every scale
+  tone between, on adjacent pairs only. `pluck` gained one line to sound `note.with`.
+  **The pace is mine, not the book's, which says nothing about rhythm here:** a harmonic
+  interval is a quarter and a broken one is two eighths, so an interval goes by every beat
+  either way.
+
 ## Open questions for William
-Whether the zigzag in concept 3 should start at the very lowest position or the lowest with a root on the 6th/5th string; the computed below-root fingers.
-Engine, still open after round 4:
-- Concept 2's Advanced tiers: his 2a turn (`walkTurn`, the engine now) or the plain turn he
-  heard in the 2d proof (`walk`). He asked to hear both; they're in the listening proof.
-- Whether concept 2's climb should reuse the locations the descent used (48 lines differ).
-- 72 Intermediate Middle 6 concept 2 cards start a step above the 9th.
-- Concept 3 Easy lights a note the card draws dimmed on 329 cards: the step below the next
-  ascent's root sits below the descending card's lowest root, which Easy dims. Should the
-  played note draw normally?
-Player defaults chosen without a ruling (flagged): the highlight on the card's own diagram; one
-card at a time, with concept 3 following the hand up the neck; 100 BPM; clicks on 2 and 4 on;
-tempo and feel changes taking effect at the next bar line; Play only where the engine has a
-line; the concept 2 Easy fallback above, with its 7 knock-on cards and concept 5 Easy 2.
+None on the engine. What is left is work, not rulings — 7 combinations are still silent, and
+two of those are text by design (concept 8's Intermediate and Advanced 2 have nothing to
+transcribe). The five that could be built: concept 3's Intermediate, Advanced 1 and Advanced 2;
+concept 5's Intermediate 1; and concept 6's Intermediate / Advanced.
