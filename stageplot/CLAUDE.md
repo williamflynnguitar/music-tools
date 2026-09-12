@@ -89,6 +89,18 @@ Confirmed: 5 wedges / 5 mixes typical with extras possibly from Shocker
 Studios, a 32-channel console, monitors shared for most groups, everything on
 the deck movable, no acoustic piano.
 
+`shortName` is "Somewhere Works" — the short form of `name`, which carries the
+room ("Somewhere Works — The Lot"). It appears in the warning banners, the
+Wedges tab and the email text. The printed house-equipment list deliberately
+does *not* use it: an over-count reads "— house has 8", because that column is
+narrow, the bullets already carry long verbatim model names, and the tech cares
+that the house has 8 rather than what the house is called. Spelling it out
+there wrapped bullets and pushed Group B onto a second page.
+
+Download filenames keep the `SW-plot-…` / `SW-showcase-…` prefixes: nothing
+parses them, they sort together in a Downloads folder, and renaming would only
+affect new saves.
+
 ### Changing the deck
 
 Edit `VENUE.deck` — one line. Templates and the layout engine work in
@@ -287,9 +299,8 @@ through Load, and dropping a file on the page works anywhere.
 
 ## What prints
 
-One US Letter portrait page where it fits — Group A, Group C, Combos A/B/C and
-the small templates do; Group B and the big bands run to two, which the brief
-allows. Header, diagram, two columns (monitors, house equipment, musicians
+One US Letter portrait page where it fits — every sample plot but the big
+bands does, and the big bands run to two, which the brief allows. Header, diagram, two columns (monitors, house equipment, musicians
 provide, DI boxes on the left; input list on the right), then personnel by song
 if any, notes, and the delivery line. Body text is 10 pt and diagram labels are
 12 pt **at any deck size** — type sizes are computed back through the print
@@ -337,10 +348,6 @@ New in v2:
    is the audience's *right*; low chairs nearest the rhythm section.
 3. **Upright bass implies the house bass rig** — change the role's `backline`
    if uprights usually go straight to a DI at Somewhere Works.
-4. Group B prints on two pages: eight positions, five mixes, and the monitor
-   table now names both the chair and the person. v1 fit it on one only because
-   it printed bare names.
-
 ## Checks
 
 `node check.js` — 195 assertions: the role library, every template (builds,

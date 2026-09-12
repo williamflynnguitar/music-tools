@@ -160,7 +160,7 @@ One US Letter page in portrait if it fits; allow a second page for big bands. Bl
 
 ## 7. Constraint logic (shown, never blocking)
 
-- Wedges placed > `VENUE.monitorMixes` → amber banner: "6 wedges placed; SW normally runs 5. Extras may be available from Shocker Studios — ask the tech."
+- Wedges placed > `VENUE.monitorMixes` → amber banner: "6 wedges placed; Somewhere Works normally runs 5. Extras may be available from Shocker Studios — ask the tech."
 - Wedge with no assignees → flagged in the Monitors table.
 - Person with no wedge → listed under the Monitors table as "No wedge assigned" so sharing is decided consciously. Group C's four vocalists will surface this immediately, which is intended.
 - Channels used > `warnChannelsAt` → amber; > `consoleChannels` → red with the count. Offer the section-mic collapse for horn rows as the one-click fix.

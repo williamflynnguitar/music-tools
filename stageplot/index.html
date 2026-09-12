@@ -331,7 +331,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
  * ------------------------------------------------------------------ */
 const VENUE = {
   name: "Somewhere Works — The Lot",
-  shortName: "SW",
+  shortName: "Somewhere Works",   // the short form of name, for prose
   address: "235 N Emporia, Wichita KS 67202",
   deliverTo: "somewhereworks@wichita.edu",   // ASSUMED — confirm with tech
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
@@ -1370,7 +1370,7 @@ function sheetHTML(p){
   if (!needs.length) left.push('<li class="empty">Nothing from the house.</li>');
   for (const n of needs) left.push('<li>' + (n.need > 1 ? n.need + " × " : "") + esc(n.label) +
     (n.derived ? ' <span style="font-size:8pt;color:#555">(from the input list)</span>' : "") +
-    (n.over ? ' <b>— ' + VENUE.shortName + ' lists ' + n.have + '</b>' : "") + '</li>');
+    (n.over ? ' <b>— house has ' + n.have + '</b>' : "") + '</li>');
   left.push('</ul>');
 
   left.push('<h2>Musicians provide</h2><ul>');
