@@ -10,10 +10,15 @@ Self-contained `index.html`, no dependencies, no storage.
 - `steps`/`degrees` are parallel arrays (length 8 for the bebop scales later).
 - `apply` is the application line from the scale's intro page, verbatim as printed (in C).
 - `spellFrom` = semitones up to the parent major key; note names come from that key's
-  spelling, rotated to the scale root (so C dorian spells Eb/Bb, and Gb dorian borrows
-  F# spelling rather than double flats). Absent → spell each degree from its label,
-  falling back to the enharmonic key (Gb→F#, Db→C#, …) when a double flat would appear —
-  so Gb harmonic minor displays with sharps.
+  spelling, rotated to the scale root (so C dorian spells Eb/Bb). The parent for pitch
+  class 6 is the one with two names in `SPELL`: a flat key borrows Gb's spelling (Ab
+  dorian stays Ab Bb Cb Db Eb F Gb, Db mixolydian Db Eb F Gb Ab Bb Cb), the key F#
+  borrows its own sharps. Absent → spell each degree from its label, falling back to
+  the enharmonic key (Db→C#, Ab→G#, …) when a double flat would appear — so Ab
+  phrygian dominant displays from G#.
+- The key ring is **F#, never Gb** (Sep 2026, William): `KEYS`, every other tool's root
+  ring, and the engraved cells (`…-Fs.svg`) all name pitch class 6 F#. The flat
+  spelling tables keep Gb — it is still the 4th of Db and the b3 of Eb minor.
 - `shapes[id] = { rootString, name, notes: [[string, offset, finger], ...] }` as before;
   `string` 1 (high E) to 6 (low E), `offset` relative to the root on `rootString`.
   `finger: 0` = no finger printed (renders as a plain dot). A shape may carry named

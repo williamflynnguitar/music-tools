@@ -252,9 +252,9 @@ textarea{width:100%;font-family:var(--mono);font-size:13px;resize:vertical}
 /* ===== data: keys, spelling, chord vocabulary, chord scales, progressions =====
    Ported from the position-era engine; the chord-scale rule is unchanged
    (parent scale rotated to the chord root, harmonic-minor parents in minor). */
-const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"]; // cycle of 4ths
 const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
-const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],"F#":["F#","G#","A#","B","C#","D#","E#"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
 /* the collections the chord-scale rule can land on, as spelling recipes only —
    no fingering data lives in this app */
 const SPELL_FROM = { major:0, dorian:10, mixolydian:5 };   // semitones up to the parent major
@@ -310,12 +310,16 @@ const LPC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const SIMPLE = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const MODE_NAMES = ['major','Dorian','Phrygian','Lydian','Mixolydian','Aeolian','Locrian'];
 const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a,c)=>a+(c==='#'?1:-1),0)) % 12 + 12) % 12;
-const keyName = pc => KEYS.find(k=>PC[k]===((pc%12)+12)%12);
+/* the name of a pitch class, for spelling parents. Pitch class 6 is the one with two:
+   a chord written with a flat borrows Gb's spelling (Db7 → Db Eb F Gb Ab Bb Cb, Abm7 →
+   Ab Bb Cb Db Eb F Gb), one written with a sharp borrows F#'s. */
+const keyName = (pc, ref) => { pc = ((pc%12)+12)%12;
+  return pc===6 && ref && ref.includes('#') ? 'F#' : NAMES[pc]; };
 const rotateTo = (names, pc) => { const i=names.findIndex(n=>pcOf(n)===pc); return i<0?null:names.map((_,j)=>names[(i+j)%7]); };
 const raiseName = n => n.endsWith('b') ? n.slice(0,-1) : n+'#';
 function hmSpell(key){                       // harmonic minor of key, spelled from the relative major
   const pc = pcOf(key);
-  const names = rotateTo(SPELL[keyName((pc+3)%12)], pc).slice();
+  const names = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
   names[6] = raiseName(names[6]); return names;
 }
 function mmSpell(key){                       // melodic minor, spelled by degree letters from the key root
@@ -326,15 +330,15 @@ function mmSpell(key){                       // melodic minor, spelled by degree
     return letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
   });
   if(names.some(n=>n.length>2)){             // double accidentals → borrow the relative major
-    const alt = rotateTo(SPELL[keyName((pc+3)%12)], pc).slice();
+    const alt = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
     alt[5] = raiseName(alt[5]); alt[6] = raiseName(alt[6]); return alt;
   }
   return names;
 }
-function ownSpell(rootPc, scaleId){          // spelled notes of a collection rooted at rootPc
-  if(SPELL_FROM[scaleId]!=null) return rotateTo(SPELL[keyName((rootPc+SPELL_FROM[scaleId])%12)], rootPc);
-  if(scaleId==='harmonic') return hmSpell(keyName(rootPc));
-  if(scaleId==='phrygdom') return rotateTo(hmSpell(keyName((rootPc+5)%12)), rootPc);
+function ownSpell(rootPc, scaleId, ref){     // spelled notes of a collection rooted at rootPc
+  if(SPELL_FROM[scaleId]!=null) return rotateTo(SPELL[keyName((rootPc+SPELL_FROM[scaleId])%12, ref)], rootPc);
+  if(scaleId==='harmonic') return hmSpell(keyName(rootPc, ref));
+  if(scaleId==='phrygdom') return rotateTo(hmSpell(keyName((rootPc+5)%12, ref)), rootPc);
   return null;
 }
 const stepsFrom = names => names.map(n=>(pcOf(n)-pcOf(names[0])+12)%12);
@@ -375,19 +379,19 @@ function chordScale(ch){
   if(ch.q==='7'||ch.q==='sus7'){ scaleId=b9?'phrygdom':'mixolydian'; label=ch.root+(b9?' Phrygian dominant':' Mixolydian'); }
   else if(ch.q==='m7'){ scaleId='dorian'; label=ch.root+' Dorian'; }
   else if(ch.q==='m6'||ch.q==='mMaj7'){ scaleId='harmonic'; label=ch.root+' harmonic minor'; }
-  else if(ch.q==='m7b5'){ scaleId='phrygdom'; rootPc=(ch.pc+5)%12; label=keyName(rootPc)+' Phrygian dominant'; }
+  else if(ch.q==='m7b5'){ scaleId='phrygdom'; rootPc=(ch.pc+5)%12; label=keyName(rootPc, ch.root)+' Phrygian dominant'; }
   else { scaleId='major'; label=ch.root+' major'; }
-  let names = ownSpell(rootPc, scaleId);
+  let names = ownSpell(rootPc, scaleId, ch.root);
   if(rootPc!==ch.pc) names = rotateTo(names, ch.pc);
-  return {names, steps:stepsFrom(names), label, own:{scaleId, key:keyName(rootPc)}, flag};
+  return {names, steps:stepsFrom(names), label, own:{scaleId, key:keyName(rootPc, ch.root)}, flag};
 }
 
 /* ---------- progressions. Chords are {root, q, beats, ext?, fn?}; the cycles
    are generated with their annotations built in; the tunes parse at load and
    fall back by quality (flagged †) until annotated. Presets are named by what
    they are; the citation lives in a source field and is not rendered. ---------- */
-const WS = ['C','Bb','Ab','Gb','E','D','F','Eb','Db','B','A','G'];
-const C4 = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
+const WS = ['C','Bb','Ab','F#','E','D','F','Eb','Db','B','A','G'];
+const C4 = ['C','F','Bb','Eb','Ab','Db','F#','B','E','A','D','G'];
 const M = (key,degree)=>({key,mode:'major',degree}), N = (key,degree)=>({key,mode:'minor',degree});
 const CH = (root,q,beats,fn,ext)=>({root, q, beats, fn, ext:ext||[], pc:pcOf(root)});
 function flatten(perKey){ return [].concat(...perKey); }
@@ -1269,7 +1273,7 @@ function scheduleBeat(beat, time){
   const groups=[['cycle','Cycles'],['blues','Blues & rhythm changes'],['tune','Tunes']];
   el('prog').innerHTML = groups.map(([g,label])=>'<optgroup label="'+label+'">'+
     Object.entries(PROGRESSIONS).filter(([,p])=>p.group===g).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('')+'</optgroup>').join('');
-  el('key').innerHTML = KEYS.map(k=>`<option value="${k}">${k.replace('b','♭')}</option>`).join('');
+  el('key').innerHTML = KEYS.map(k=>`<option value="${k}">${k.replace('b','♭').replace('#','♯')}</option>`).join('');
   el('prog').addEventListener('change',e=>{ st.prog=e.target.value; st.locks={}; el('progtext').value=''; stop(); rebuild(); });
   el('progtext').addEventListener('change',()=>{ st.locks={}; stop(); rebuild(); });
   el('key').addEventListener('change',e=>{ st.key=e.target.value; rebuild(); });
