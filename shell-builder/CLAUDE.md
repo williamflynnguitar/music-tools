@@ -146,6 +146,17 @@ there is no inversion or string-set state in this app.
   structure has a B string but no E string, a 6R B string can't reach b9 so
   b13 stands in ("b13 for b9"), and a 5R B string can't reach b13 so b9 does.
   The chart keeps the written symbol.
+- **The symbol wins, always (RULED 2026-09-12: "written alterations should
+  always win").** Every rule below decides only what the chart leaves open. A
+  written alteration is voiced if it can be reached and stands in if it cannot;
+  nothing — not the minor-resolution default, not the tritone-sub rule —
+  overrides a note the transcriber wrote. Mechanically this is three separate
+  guards that happen to agree, so check all three when adding a rule: `want`
+  scores +6 and outranks every preference, `pinsSixth` suppresses the minor-V
+  default when the symbol names its own sixth, and the sub penalty excludes any
+  degree in `want`. Verified: `Db7b9` into `Cmaj7` keeps its b9 though it is a
+  substitution, `G13` into `Cm7` keeps its natural 13, and the plain versions
+  of both take the rule instead.
 - **A written alteration must sound, or its stand-in must (RULED 2026-09-12,
   "b13 for b9").** `pickOffsets` used only to *reward* a requested alteration,
   so where one was unreachable every candidate scored zero and the winner fell
@@ -197,8 +208,8 @@ there is no inversion or string-set state in this app.
   All 29 subs in the library already came out natural, so the rule changed
   nothing — it was emergent from the default offsets rather than stated, and
   nothing held it for a per-chord edit or a new tune. **A written alteration
-  still wins:** a chart spelling `Db7b9` has decided for itself, and no tune in
-  the library does. If both this and the minor-resolution rule ever read true
+  still wins** (his ruling, above): a chart spelling `Db7b9` has decided for
+  itself. No tune in the library does. If both this and the minor-resolution rule ever read true
   the sub wins, since a `bII7` is not a V of that minor; they cannot both fire
   from the same progression (one is a semitone down, the other a fifth) but the
   precedence keeps the degenerate case — a doubled b7 and no extension at
