@@ -1,0 +1,89 @@
+{
+ "v": 1,
+ "id": "plot1",
+ "ensembleId": "example",
+ "ensembleName": "Example Sextet",
+ "director": "",
+ "date": "",
+ "showName": "",
+ "notes": "Invented band. This file is the v1-format migration fixture: made-up names, but every shape a real v1 plot had — a keys player who also sings, gear owned by its player, two drummers on one kit, wedges with assignees, and a song.",
+ "deck": { "widthFt": 24, "depthFt": 12 },
+ "items": [
+  {
+   "id": "i10", "kind": "person", "ref": null, "label": "", "x": 213, "y": 62, "rot": 0,
+   "ownerPersonIds": ["p2"],
+   "inputs": [{ "id": "in11", "phantom": false, "notes": "", "source": "Vocal", "type": "mic" }],
+   "notes": ""
+  },
+  {
+   "id": "i12", "kind": "person", "ref": null, "label": "", "x": 252, "y": 96, "rot": 0,
+   "ownerPersonIds": ["p3"], "inputs": [], "notes": ""
+  },
+  {
+   "id": "i13", "kind": "person", "ref": null, "label": "", "x": 36, "y": 96, "rot": 0,
+   "ownerPersonIds": ["p4"], "inputs": [], "notes": ""
+  },
+  {
+   "id": "i14", "kind": "person", "ref": null, "label": "", "x": 104, "y": 40, "rot": 0,
+   "ownerPersonIds": ["p7"],
+   "inputs": [{ "id": "in15", "phantom": false, "notes": "", "source": "Tenor sax", "type": "mic" }],
+   "notes": ""
+  },
+  {
+   "id": "i16", "kind": "house", "ref": "kb1", "label": "", "x": 213, "y": 34, "rot": 0,
+   "ownerPersonIds": ["p2"],
+   "inputs": [{ "id": "in17", "phantom": false, "notes": "", "source": "Keys", "type": "stereo-di" }],
+   "notes": ""
+  },
+  {
+   "id": "i18", "kind": "house", "ref": "gtramp1", "label": "", "x": 252, "y": 130, "rot": 0,
+   "ownerPersonIds": ["p3"],
+   "inputs": [{ "id": "in19", "phantom": false, "notes": "amp mic", "source": "Guitar", "type": "mic" }],
+   "notes": ""
+  },
+  {
+   "id": "i20", "kind": "house", "ref": "bassamp", "label": "", "x": 36, "y": 130, "rot": 0,
+   "ownerPersonIds": ["p4"],
+   "inputs": [{ "id": "in21", "phantom": false, "notes": "", "source": "Bass", "type": "di" }],
+   "notes": ""
+  },
+  {
+   "id": "i22", "kind": "house", "ref": "kit", "label": "", "x": 144, "y": 108, "rot": 0,
+   "ownerPersonIds": ["p5", "p6"],
+   "inputs": [
+    { "id": "in23", "source": "Kick", "type": "mic", "phantom": false },
+    { "id": "in24", "source": "Snare", "type": "mic", "phantom": false },
+    { "id": "in25", "source": "Hi-hat", "type": "mic", "phantom": false },
+    { "id": "in26", "source": "Tom 1", "type": "mic", "phantom": false },
+    { "id": "in27", "source": "Tom 2", "type": "mic", "phantom": false },
+    { "id": "in28", "source": "OH L", "type": "mic", "phantom": true },
+    { "id": "in29", "source": "OH R", "type": "mic", "phantom": true }
+   ],
+   "notes": ""
+  },
+  {
+   "id": "i30", "kind": "byo", "ref": "byo-pedals", "label": "Pedalboard", "x": 226, "y": 108, "rot": 0,
+   "ownerPersonIds": ["p3"], "inputs": [], "notes": ""
+  }
+ ],
+ "wedges": [
+  { "id": "w31", "number": 1, "x": 213, "y": 12, "rot": 0, "assignees": ["p2"], "request": "more me, less kick" },
+  { "id": "w32", "number": 2, "x": 274, "y": 72, "rot": 0, "assignees": ["p3"], "request": "" },
+  { "id": "w33", "number": 3, "x": 14, "y": 72, "rot": 0, "assignees": ["p4"], "request": "" },
+  { "id": "w34", "number": 4, "x": 96, "y": 96, "rot": 90, "assignees": ["p5", "p6"], "request": "vocal and bass" },
+  { "id": "w35", "number": 5, "x": 104, "y": 10, "rot": 0, "assignees": ["p7"], "request": "" }
+ ],
+ "people": [
+  { "id": "p2", "name": "Sam Ortiz", "role": "keys/vocals", "doubles": [], "byo": [], "wedgeId": "w31" },
+  { "id": "p3", "name": "Dana Bell", "role": "guitar", "doubles": [], "byo": ["pedalboard"], "wedgeId": "w32" },
+  { "id": "p4", "name": "Chris Aoki", "role": "bass", "doubles": [], "byo": [], "wedgeId": "w33" },
+  { "id": "p5", "name": "Jo Fischer", "role": "drums", "doubles": [], "byo": [], "wedgeId": "w34" },
+  { "id": "p6", "name": "Riley Nunez", "role": "drums", "doubles": [], "byo": [], "wedgeId": "w34" },
+  { "id": "p7", "name": "Max Iverson", "role": "tenor sax", "doubles": ["flute"], "byo": [], "wedgeId": "w35" }
+ ],
+ "songs": [
+  { "title": "Opener", "onstage": ["p2", "p3", "p4", "p5", "p6", "p7"] }
+ ],
+ "sections": { "sax": { "on": false, "mics": 2 }, "tbn": { "on": false, "mics": 2 }, "tpt": { "on": false, "mics": 2 } },
+ "channelOrder": null
+}

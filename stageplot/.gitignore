@@ -1,0 +1,11 @@
+# Real ensemble rosters stay on William's machine — the repo is public.
+# Saved plots carry student names, so nothing in samples/ is committed except
+# the invented v1 migration fixture. See CLAUDE.md, "Rosters are local".
+samples/*.json
+samples/v1/*.json
+!samples/v1/example-v1.json
+!samples/v1/example-expected.json
+
+# Print previews rendered from real rosters (they show the names on the page).
+samples/print/group-*.png
+samples/print/combo-*.png

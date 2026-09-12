@@ -1,0 +1,165 @@
+{
+ "channels": 13,
+ "rows": [
+  [
+   1,
+   "Kick",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   0
+  ],
+  [
+   2,
+   "Snare",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   0
+  ],
+  [
+   3,
+   "Hi-hat",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   0
+  ],
+  [
+   4,
+   "Tom 1",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   0
+  ],
+  [
+   5,
+   "Tom 2",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   0
+  ],
+  [
+   6,
+   "OH L",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   1
+  ],
+  [
+   7,
+   "OH R",
+   "Drums (Jo Fischer / Riley Nunez)",
+   "mic",
+   1
+  ],
+  [
+   8,
+   "Bass",
+   "Bass (Chris Aoki)",
+   "di",
+   0
+  ],
+  [
+   9,
+   "Guitar",
+   "Gtr (Dana Bell)",
+   "mic",
+   0
+  ],
+  [
+   10,
+   "Keys L",
+   "Keys (Sam Ortiz)",
+   "stereo-di",
+   0
+  ],
+  [
+   11,
+   "Keys R",
+   "",
+   "stereo-di",
+   0
+  ],
+  [
+   12,
+   "Tenor sax",
+   "Tenor (Max Iverson)",
+   "mic",
+   0
+  ],
+  [
+   13,
+   "Vocal",
+   "Keys (Sam Ortiz)",
+   "mic",
+   0
+  ]
+ ],
+ "monitors": [
+  [
+   1,
+   "Keys (Sam Ortiz)",
+   "more me, less kick"
+  ],
+  [
+   2,
+   "Gtr (Dana Bell)",
+   ""
+  ],
+  [
+   3,
+   "Bass (Chris Aoki)",
+   ""
+  ],
+  [
+   4,
+   "Drums (Jo Fischer / Riley Nunez)",
+   "vocal and bass"
+  ],
+  [
+   5,
+   "Tenor (Max Iverson)",
+   ""
+  ]
+ ],
+ "unassigned": [],
+ "house": [
+  [
+   "kit",
+   1,
+   0
+  ],
+  [
+   "bassamp",
+   1,
+   0
+  ],
+  [
+   "gtramp1",
+   1,
+   0
+  ],
+  [
+   "kb1",
+   1,
+   0
+  ],
+  [
+   "wedge",
+   5,
+   0
+  ],
+  [
+   "micstand",
+   2,
+   0
+  ],
+  [
+   "di",
+   3,
+   0
+  ]
+ ],
+ "di": [
+  "Bass (Chris Aoki)",
+  "Keys (Sam Ortiz) — stereo, 2 DIs"
+ ]
+}
