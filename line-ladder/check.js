@@ -136,7 +136,14 @@ for (const progId of Object.keys(E.PROGRESSIONS)) {
   const svg = E.engrave(bb, 4, { fifths: 2, clef: "treble" });
   ok(Array.isArray(svg) && svg.every(s => s.startsWith("<svg")), "engraver renders the Bb part");
   const ly = E.lyExport(build(iiVI, {}), bars, { part: "bb", key: "C", bpm: 120, name: "test" });
-  ok(ly.includes("\\transpose c d"), "LilyPond Bb part transposes");
+  // the part is transposed in JS, not with a \transpose wrapper: LilyPond preserves letters
+  // when it transposes, so a concert A#/E#/B# would come out of \transpose c a as a double sharp
+  ok(!ly.includes("\\transpose"), "LilyPond source carries no \\transpose wrapper");
+  ok(ly.includes("\\key d \\major"), "LilyPond Bb part is written in D (C concert up a tone)");
+  const lyC = E.lyExport(build(iiVI, {}), bars, { part: "c", key: "C", bpm: 120, name: "test" });
+  ok(lyC.includes("\\key c \\major"), "LilyPond C part stays in C");
+  ok(!/\b[a-g](eses|isis)[',]*\d/.test(ly) && !/\b[a-g](eses|isis)[',]*\d/.test(lyC),
+     "LilyPond source never writes a double accidental");
   ok(!ly.includes("TabStaff") && !ly.includes("StringNumber"), "no TAB in the LilyPond source");
 }
 

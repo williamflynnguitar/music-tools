@@ -157,12 +157,21 @@ so they stay C♯ and F♯. Scales come out letter-by-letter from the root
 (`byDegree`) and fall back to the old borrow-from-the-relative-major only when
 that needs a double.
 
-`fromRoot` keeps a chord symbol and its scale on the same side. A♭7♭9 is the
-one chord where that costs a double — its ♭9 really is B♭♭, and it is the only
-one left anywhere in the app (concert and bass parts; B♭ and E♭ respell it to
-C♭ and G♭). A spelling that would want two doubles is the outlier instead, so
-a typed G♭m6 still draws F♯ harmonic minor. A typed D♯m6 or G♯m6 now gets the
-sharp spelling it asked for, C×/F× and all, rather than a silent respelling.
+`fromRoot` keeps a chord symbol and its scale on the same side. A♭7♭9 is the one
+chord where that costs a double: its ♭9 is strictly B♭♭, so `single` respells it
+A♮ — the ordinary lead-sheet compromise. A letter wanting two doubles is the
+outlier instead, so a typed G♭m6 still draws F♯ harmonic minor.
+
+**No double accidental is written anywhere** (William, 2026-09-12). `single`
+rewrites any ♭♭ or × to the single-accidental name of the same pitch, on the side
+it was heading. The producers that could reach one are all guarded: `byDegree`
+runs off the end of the alphabet on the outlier keys, `hmSpell`/`mmSpell` fall
+back to `sideFor`'s clean side rather than raising an already-sharp leading tone
+(the old `raiseName` turned C♯ into C×), and `fromRoot` respells its one. The
+LilyPond export transposes through `transposeNote` instead of a `\transpose`
+wrapper — LilyPond transposes by interval and keeps letters, so a concert A♯, E♯
+or B♯ came out of `\transpose c a` as a double sharp even when the screen was
+clean. `check.js` asserts the source carries no `\transpose` and no `eses`/`isis`.
 
 ## Engraving and export
 

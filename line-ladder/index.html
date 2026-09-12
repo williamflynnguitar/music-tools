@@ -322,9 +322,14 @@ const pcOf = n => ((LPC[n[0]] + [...n.slice(1)].reduce((a,c)=>a+(c==='#'?1:-1),0
 const keyName = (pc, ref) => { pc = ((pc%12)+12)%12;
   return pc===6 && ref && ref.includes('#') ? 'F#' : NAMES[pc]; };
 const rotateTo = (names, pc) => { const i=names.findIndex(n=>pcOf(n)===pc); return i<0?null:names.map((_,j)=>names[(i+j)%7]); };
-const raiseName = n => n.endsWith('b') ? n.slice(0,-1) : n+'#';
+/* No note is ever written with a double accidental (William, 2026-09-12). Where a spelling
+   asks for one, the note is respelled to the single-accidental name of the same pitch, on the
+   side it was heading — a ♭♭ becomes the flat-side name, a × the sharp-side one. */
+const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const isDouble = n => n.length > 2;
+const single = n => isDouble(n) ? (n[1]==='#' ? SHARP_NAMES : NAMES)[pcOf(n)] : n;
 /* one letter per degree from the root, with whatever accidental that letter needs. Correct
-   by construction but can ask for a double accidental, so every caller checks. */
+   by construction but can ask for a double, so every caller checks with isDouble. */
 function byDegree(key, steps){
   const pc = pcOf(key);
   return steps.map((st,i)=>{
@@ -333,42 +338,37 @@ function byDegree(key, steps){
     return letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
   });
 }
-const hmLetters = key => byDegree(key, [0,2,3,5,7,8,11]);
-function hmSpell(key){                       // harmonic minor of key
-  const names = hmLetters(key);
-  if(!names.some(n=>n.length>2)) return names;
-  const pc = pcOf(key);                      // double accidentals → borrow the relative major
-  const alt = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
-  alt[6] = raiseName(alt[6]); return alt;
-}
-/* which spelling of a minor tonic to write: the side whose harmonic minor needs no double
-   accidental. D♯ and G♯ minor would need C× and F× for the raised 7th, so those two regions
-   are written E♭ and A♭; D♭ and G♭ minor need a double the other way (B♭♭, E♭♭), so they
-   stay C♯ and F♯. Every natural is clean on the flat side. */
-const MINOR_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const minorName = pc => { pc = ((pc%12)+12)%12;
-  return hmLetters(NAMES[pc]).some(n=>n.length>2) ? MINOR_SHARP[pc] : NAMES[pc];
+const HM = [0,2,3,5,7,8,11], MEL = [0,2,3,5,7,9,11];
+/* which spelling of a minor tonic to write: the side that spells the scale without a double.
+   For harmonic minor that rules out D♯ and G♯ (they would want C× and F× for the raised 7th),
+   so those regions are written E♭ and A♭, and it rules out D♭ and G♭ the other way (B♭♭, E♭♭),
+   so those stay C♯ and F♯. Every natural is clean on the flat side. */
+const sideFor = (pc, steps) => { pc = ((pc%12)+12)%12;
+  return byDegree(NAMES[pc], steps).some(isDouble) ? SHARP_NAMES[pc] : NAMES[pc];
 };
-function mmSpell(key){                       // melodic minor, spelled by degree letters from the key root
-  const pc = pcOf(key);
-  const names = byDegree(key, [0,2,3,5,7,9,11]);
-  if(names.some(n=>n.length>2)){             // double accidentals → borrow the relative major
-    const alt = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
-    alt[5] = raiseName(alt[5]); alt[6] = raiseName(alt[6]); return alt;
-  }
-  return names;
+const minorName = pc => sideFor(pc, HM);
+/* harmonic and melodic minor, spelled letter by letter from the root; a root that cannot be
+   spelled that way is rewritten to the side that can, which always exists. */
+function hmSpell(key){
+  const names = byDegree(key, HM);
+  return names.some(isDouble) ? byDegree(sideFor(pcOf(key), HM), HM) : names;
+}
+function mmSpell(key){
+  const names = byDegree(key, MEL);
+  return names.some(isDouble) ? byDegree(sideFor(pcOf(key), MEL), MEL) : names;
 }
 /* the parent rotated to rootPc. Where the collection is rooted on the chord itself and the
    parent spells that root the other way — A♭7♭9 drawing on C♯ minor, whose harmonic minor has
-   no flat spelling — rewrite it from the chord's own letter: a chord symbol and its scale have
-   to agree, and A♭7♭9's ♭9 really is B♭♭ (the written parts respell it). One double is that
-   ♭9 and worth the match; a spelling that wants two — G♭ minor, needing B♭♭ and E♭♭ — is the
-   outlier, so the parent's spelling stands and the symbol is the one left enharmonic. */
+   no flat spelling — rewrite it from the chord's own letter, because a chord symbol and its
+   scale have to agree. A♭7♭9's ♭9 is strictly B♭♭ and comes out as A♮; one such respelling is
+   the ordinary lead-sheet compromise, but a letter wanting two — G♭ minor, needing B♭♭ and
+   E♭♭ — is the outlier, so there the parent's spelling stands and the symbol is what is left
+   enharmonic. */
 const fromRoot = (parent, rootPc, ref) => {
   const names = rotateTo(parent, rootPc);
   if(!ref || pcOf(ref)!==rootPc || names[0]===ref) return names;
   const own = byDegree(ref, stepsFrom(names));
-  return own.filter(n=>n.length>2).length > 1 ? names : own;
+  return own.filter(isDouble).length > 1 ? names : own.map(single);
 };
 function ownSpell(rootPc, scaleId, ref){     // spelled notes of a collection rooted at rootPc
   if(SPELL_FROM[scaleId]!=null) return rotateTo(SPELL[keyName((rootPc+SPELL_FROM[scaleId])%12, ref)], rootPc);
@@ -1157,8 +1157,9 @@ function engraveSystem(bars, first, last, perSys, opts, carryIn){
 /* ---------- LilyPond export (Argue head; generation is concert, the part is
    a \transpose at the end) ---------- */
 function lyNote(name, midi){
+  name = single(name);                       // eses/isis are never written
   const acc=name.slice(1);
-  const suf = acc==='b'?'es':acc==='bb'?'eses':acc==='#'?'is':acc==='##'?'isis':'';
+  const suf = acc==='b'?'es':acc==='#'?'is':'';
   const oct = Math.floor((midi-(ACC[acc]||0))/12)-1;
   return name[0].toLowerCase()+suf+(oct>=4?"'".repeat(oct-3):",".repeat(3-oct));
 }
@@ -1166,8 +1167,13 @@ const LY_Q = {maj7:'maj7','6':'6','7':'7',sus7:'7sus4',m7:'m7',m6:'m6',m7b5:'m7.
 const LY_EXT = {'9':'9',b9:'9-','#9':'9+','11':'11','#11':'11+','13':'13',b13:'13-',b5:'5-','#5':'5+'};
 const LY_LEN = {1:'8',2:'4',4:'2',8:'1'};
 function lyKeyName(k){ const a=k.slice(1); return k[0].toLowerCase()+(a==='b'?'es':a==='#'?'is':''); }
+/* The part is transposed here rather than with a \\transpose wrapper: LilyPond transposes by
+   interval and preserves letters, so a concert A♯, E♯ or B♯ would come out of \\transpose c a
+   as a double sharp. Going through transposeNote instead gives the export exactly the notes
+   the chart on screen shows, key signature included. */
 function lyExport(line, bars, opts){
-  const mus = bars.map((bar,i)=>{
+  const part = opts.part||'c';
+  const mus = transposeBars(bars, part).map((bar,i)=>{
     const items=[].concat(
       bar.notes.map(n=>({slot:n.slot, tok:lyNote(n.name,n.midi)+LY_LEN[n.len]+(n.tieTo?'~':'')})),
       bar.rests.map(r=>({slot:r.slot, tok:'r'+LY_LEN[r.len]})));
@@ -1175,16 +1181,15 @@ function lyExport(line, bars, opts){
     return items.map(x=>x.tok).join(' ')+' |'+((i+1)%4===0&&i+1<bars.length?' \\break':'');
   });
   const chords = line.segs.map(seg=>{
-    const ch=seg.ch, l=ch.root[0].toLowerCase(), a=ch.root.slice(1);
+    const ch=seg.ch, written=transposeChordText(ch.root, part);
+    const l=written[0].toLowerCase(), a=written.slice(1);
     const root=l+(a==='b'?'es':a==='#'?'is':'');
     const dur = ch.beats===2?'2':ch.beats===1?'4':ch.beats===3?'2.':'1'+(ch.beats>4&&ch.beats%4===0?'*'+(ch.beats/4):'');
     const ext=(ch.ext||[]).filter(e=>QUAL[ch.q].allowed.includes(e)&&LY_EXT[e]).map(e=>'.'+LY_EXT[e]).join('');
     return root+dur+':'+LY_Q[ch.q]+ext;
   });
-  const T=PARTS[opts.part||'c'];
-  const wrap = opts.part==='bb' ? m=>'\\transpose c d { '+m+' }'
-             : opts.part==='eb' ? m=>'\\transpose c a { '+m+' }'
-             : m=>m;
+  const T=PARTS[part];
+  const writtenKey = KEY_OF_F[writtenFifths(opts.key||'C', part)] || 'C';
   const tempo = '\\tempo \\markup { \\concat { \\general-align #Y #DOWN \\smaller \\note {4} #1 " = '+(opts.bpm||120)+'  " \\bold "Swing" } }';
   return `\\version "2.24.0"
 \\paper {
@@ -1203,11 +1208,13 @@ function lyExport(line, bars, opts){
   \\override BarNumber.direction = #DOWN \\override BarNumber.self-alignment-X = #LEFT
   \\override BarNumber.font-size = #-2
   barNumberVisibility = #all-bar-numbers-visible } }
-mus = { \\clef "${opts.part==='bass'?'bass':'treble'}" \\key ${lyKeyName(opts.key||'C')} \\major \\numericTimeSignature \\time 4/4 \\accidentalStyle modern ${tempo}
+mus = { \\clef "${part==='bass'?'bass':'treble'}" \\key ${lyKeyName(writtenKey)} \\major \\numericTimeSignature \\time 4/4 \\accidentalStyle modern ${tempo}
   ${mus.join('\n  ')} \\bar "|." }
 \\score { <<
-  \\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } } ${wrap('\\chordmode {\n  '+chords.join(' ')+'\n  }')}
-  \\new Staff { ${wrap('\\mus')} }
+  \\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } } \\chordmode {
+  ${chords.join(' ')}
+  }
+  \\new Staff { \\mus }
 >> }
 `;
 }
