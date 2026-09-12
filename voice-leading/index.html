@@ -90,6 +90,7 @@ body.choose-on .study{display:none}
 .cand.right{border-color:var(--good)}
 .cand.wrong{border-color:var(--bad)}
 .cand .tag{font-size:12px;color:var(--bone-dim);margin-top:2px}
+.cand .tag .stretch{color:var(--warn,#d99a5b)}
 .cand .why{font-size:12px;color:var(--brass);visibility:hidden;min-height:18px}
 .cands.done .cand .why{visibility:visible}
 .score{font-family:var(--mono);font-size:14px;color:var(--bone-dim);margin-top:12px}
@@ -545,6 +546,42 @@ const MONO = "Menlo,Consolas,monospace";
 const use = (id,x,y)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(0.004,-0.004)"/>`;
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const shortTag = v => v.tag.replace('root pos','root').replace(' inv','').replace(' in bass',' bass');
+/* ===== stretch — keep this block byte-identical across the voicing tools =====
+   How far the hand actually has to reach, measured in millimetres rather than
+   counted in frets. Fret spacing shrinks going up the neck, so counting frets
+   measures the wrong thing: a six-fret grip at the 12th fret is an 81mm reach
+   while a four-fret grip at the nut is 97mm, which makes the "narrower" shape
+   the harder one. We take the distance between the lowest and the highest
+   fretted note on a 648mm (25.5") scale. Open strings need no finger, so they
+   are not part of the reach.
+
+   RULED 2026-09-12 (William, having played all 18 of Shell Builder's five-fret
+   cells): warn past 100mm. That marks a five-fret grip at or below the 5th
+   fret (100.1mm) and never marks a four-fret grip, which tops out at 97mm at
+   the nut. It only warns — whatever each tool refuses to voice at all is
+   unchanged, so nothing new becomes reachable.
+
+   The block depends on nothing from the host page. Each tool draws the mark in
+   its own idiom (an SVG tag on a diagram, a chip beside a chord symbol), but
+   the wording and the threshold come from here so a student meets the same
+   signal everywhere. */
+const STRETCH_SCALE_MM = 648;
+const STRETCH_MM = 100;
+const fretDistMM = n => STRETCH_SCALE_MM * (1 - Math.pow(2, -n / 12));
+function stretchMM(frets){
+  const f = frets.filter(n => typeof n === "number" && isFinite(n) && n >= 1);
+  if (f.length < 2) return 0;
+  return fretDistMM(Math.max(...f)) - fretDistMM(Math.min(...f));
+}
+function stretchNote(frets){
+  const mm = stretchMM(frets);
+  if (mm <= STRETCH_MM) return null;
+  return { mm: Math.round(mm), label: "stretch",
+    text: "A " + Math.round(mm) + "mm reach between the lowest and highest fretted note. "
+        + "Past " + STRETCH_MM + "mm it wants a wide hand, so take it further up the neck "
+        + "if it does not sit under yours." };
+}
+/* ===== end stretch ===== */
 const fretOf = v => Math.min(...v.notes.map(n=>n.f).filter(f=>f>0));
 function motionOf(v, prevV, ch){
   const t=topNote(v,ch); if(!prevV) return 'top '+t.name;
@@ -614,6 +651,9 @@ function chartSystems(bars, opts){
           const d=drawChord(staffNotes(it.v,it.ch), hx, opts.labels); g+=d.svg; tops.push([d.topX,d.topY]);
           if(!opts.bare && !it.dim){
             g+=`<text x="${hx.toFixed(2)}" y="${r1.toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.8" fill="#a89f8c">${esc(shortTag(it.v))} fr${fretOf(it.v)}</text>`;
+            /* no fret box here to bracket, so the reach is called out beside the tag */
+            { const sn=stretchNote(it.v.notes.map(n=>n.f));
+              if(sn) g+=`<text x="${hx.toFixed(2)}" y="${(r1+1.05).toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.72" fill="#d99a5b"><title>${sn.text}</title>stretch</text>`; }
             g+=`<text x="${hx.toFixed(2)}" y="${r2.toFixed(2)}" text-anchor="middle" font-family="${MONO}" font-size="0.8" fill="var(--brass)">${esc(motionOf(it.v,it.prevV,it.ch))}</text>`;
           }
         }
@@ -699,7 +739,7 @@ function askChoose(){
   const prevCh = prev ? st.flat[ch.i-1].ch : null;
   el('cands').innerHTML = pick.map((s,i)=>{
     const cell=[]; if(prev) cell.push({ch:prevCh, v:prev, idx:-1, dim:true}); cell.push({ch:item.ch, v:s.c, idx:-1});
-    return `<div class="cand" data-i="${i}">${chartSystems([cell],{bare:true, unit:11, labels:el('labels').checked}).join('')}<div class="tag">${esc(s.c.tag)} · fr${fretOf(s.c)}</div><div class="why">${esc(motionOf(s.c,prev,item.ch))}</div></div>`; }).join('');
+    return `<div class="cand" data-i="${i}">${chartSystems([cell],{bare:true, unit:11, labels:el('labels').checked}).join('')}<div class="tag">${esc(s.c.tag)} · fr${fretOf(s.c)}${stretchNote(s.c.notes.map(n=>n.f)) ? ' · <span class="stretch" title="'+esc(stretchNote(s.c.notes.map(n=>n.f)).text)+'">stretch</span>' : ''}</div><div class="why">${esc(motionOf(s.c,prev,item.ch))}</div></div>`; }).join('');
   el('cands').querySelectorAll('.cand').forEach(c=>c.addEventListener('click',()=>{ strum(pick[+c.dataset.i].c.notes); answerChoose(+c.dataset.i); }));
   el('score').textContent = ch.asked? ch.score+' of '+ch.asked+' nearest so far' : (prev?'':'First chord: anything reasonable is fine. Pick one to set the starting position.');
 }

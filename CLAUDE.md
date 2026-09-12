@@ -89,6 +89,39 @@ F# borrows its own sharps. Factoring the renderer and data into a shared
 file is the next structural change; the "no build step" rule can be kept with
 a concatenation script or by inlining at commit time.
 
+## Stretch warning
+
+Any tool that draws a chord voicing marks the ones that ask for a wide hand.
+The measurement is shared between `===== stretch =====` markers in
+shell-builder, inversion-drill, voice-leading, triad-voicings,
+quartal-voicings and box-buddy — keep the copies byte-identical and run
+`node scripts/stretch-sync.js` (canonical page: shell-builder), with
+`--check` reporting drift, a voicing tool that carries no block, and a
+carrier that never draws the mark.
+
+The unit is **millimetres, not frets**. Fret spacing shrinks going up the
+neck, so counting frets measures the wrong thing: a six-fret grip at the 12th
+fret is an 81mm reach while a four-fret grip at the nut is 97mm, which makes
+the "narrower" shape the harder one. Threshold 100mm, William's ruling on
+2026-09-12. Open strings need no finger and are not part of the reach; nor is
+Shell Builder's ghost root, which shows where the root would be.
+
+It warns only — nothing a tool already refused became reachable. Each tool
+draws it in its own idiom but with the same word, so a student meets the same
+signal everywhere: a bracket in the right-hand gutter spanning the actual
+reach on tools that draw a fret box, plus the word "stretch" when the diagram
+is large enough to carry it, and a chip beside the chord tag in Voice Leading,
+which draws staff and TAB instead. Box Buddy's is drawn rather than coloured
+and labelled S, because its deliverable is a photocopied handout.
+
+## No build step means nothing checks the page
+
+`node scripts/syntax-check.js` parses every page's inline scripts. It exists
+because a copy edit put an apostrophe inside a single-quoted string literal
+and shipped Box Buddy completely dead; the per-tool check scripts all passed,
+because they test musical data rather than whether the page parses. Run it
+after any edit to prose that lives inside a JS string.
+
 ## Spine menu
 
 Every tool page opens with a slim right-aligned "☰ tools" chip — in normal flow at the top of the page, never fixed, so it cannot cover app headers — opening a menu of

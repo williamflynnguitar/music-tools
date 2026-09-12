@@ -534,16 +534,54 @@ function keyRunRaw(keyName, scaleKey, setId, h){
 const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><defs><path id=\"f2\" d=\"M94 66c-60 0 -39 -66 -72 -66c-11 0 -22 7 -22 21c0 154 232 162 232 334c0 50 -17 102 -61 102c-33 0 -66 -14 -66 -44c0 -24 31 -37 31 -61c0 -34 -27 -61 -61 -61s-61 27 -61 61c0 84 72 148 157 148c98 0 190 -55 190 -145c0 -140 -131 -154 -225 -205 c85 -2 113 -61 165 -61c45 0 28 41 57 41c11 0 22 -8 22 -21c0 -29 -48 -109 -144 -109c-92 0 -96 66 -142 66z\" fill=\"currentColor\"/><path id=\"nh\" d=\"M215 137c67 0 111 -37 111 -92c0 -90 -111 -182 -215 -182c-67 0 -111 37 -111 92c0 90 111 182 215 182z\" fill=\"currentColor\"/><path id=\"f4\" d=\"M148 501c10 0 41 -15 72 -15c32 0 63 15 76 15c15 0 26 -11 26 -21c0 -4 -1 -7 -4 -10l-264 -291h134v4c0 60 50 41 75 85c7 11 8 24 14 36c3 7 10 10 17 10c11 0 24 -8 24 -25v-110h70c18 0 27 -14 27 -27s-9 -27 -27 -27h-70c2 -45 36 -82 80 -82c14 0 22 -10 22 -21 s-8 -22 -22 -22c-49 0 -96 14 -145 14s-97 -14 -146 -14c-14 0 -21 11 -21 22s7 21 21 21c44 0 79 37 81 82h-134c-43 0 -57 25 -57 42c0 5 1 10 3 12c73 81 123 182 123 291c0 17 11 31 25 31z\" fill=\"currentColor\"/><path id=\"f1\" d=\"M194 486c16 0 29 15 41 15c13 0 24 -13 24 -31v-341c0 -47 35 -86 81 -86c14 0 21 -10 21 -21s-7 -22 -21 -22c-49 0 -97 14 -146 14s-96 -14 -145 -14c-14 0 -22 11 -22 22s8 21 22 21c46 0 80 39 80 86v137c0 23 -16 35 -30 35c-7 0 -13 -4 -17 -11l-34 -65 c-5 -10 -14 -15 -23 -15c-14 0 -28 12 -28 27c0 4 1 8 3 13l129 250c2 4 7 6 11 6c18 0 37 -20 54 -20z\" fill=\"currentColor\"/><path id=\"f3\" d=\"M261 266c0 -54 85 -40 85 -125c0 -94 -83 -141 -186 -141c-84 0 -160 54 -160 133c0 32 26 58 58 58s58 -26 58 -58c0 -22 -36 -26 -36 -48c0 -33 42 -42 80 -42c41 0 56 50 56 98v21c0 44 -2 77 -43 77h-65c-18 0 -27 14 -27 27s9 27 27 27h65c42 0 43 36 43 83v11 c0 43 -20 70 -61 70c-34 0 -71 -8 -71 -38c0 -19 32 -23 32 -42c0 -28 -23 -51 -51 -51s-51 23 -51 51c0 72 66 123 141 123c93 0 174 -31 174 -113c0 -94 -68 -67 -68 -121z\" fill=\"currentColor\"/><path id=\"clef\" d=\"M646 2c0 -113 -74 -213 -180 -247c3 -34 5 -68 5 -102c0 -20 -1 -40 -2 -60c-7 -121 -91 -228 -209 -228c-108 0 -196 87 -196 196c0 58 53 104 112 104c54 0 95 -48 95 -104c0 -52 -43 -95 -95 -95c-10 0 -20 2 -29 6c26 -38 68 -63 116 -63h3c93 2 153 92 159 190 c1 19 2 37 2 56c0 30 -2 60 -4 90c-5 -1 -43 -8 -88 -8c-194 0 -333 180 -333 375c0 177 130 307 246 442c-31 98 -53 170 -53 347c0 115 55 223 148 290c7 5 16 4 22 -1c68 -80 134 -243 134 -357c0 -143 -85 -255 -178 -364c21 -68 40 -137 57 -206c1 0 5 1 11 1 c156 0 257 -129 257 -262zM462 -202c66 24 111 88 111 162c0 89 -65 178 -170 190c28 -135 50 -272 59 -352zM75 26c0 -145 141 -245 263 -245c1 0 46 0 81 6c-7 65 -27 206 -61 363c-79 -8 -124 -61 -124 -119c0 -43 25 -89 80 -121c5 -5 7 -11 7 -16 c0 -12 -10 -23 -22 -23c-16 0 -127 63 -127 188c0 89 58 175 161 198c-14 58 -29 116 -46 173c-106 -122 -212 -244 -212 -404zM406 1042c-99 -47 -162 -148 -162 -257c0 -49 13 -111 38 -191c79 97 144 199 144 324c0 33 0 63 -20 124z\" fill=\"currentColor\"/><path id=\"sharp\" d=\"M0 117c0 9 6 18 15 21l43 16v157c0 11 8 19 19 19s20 -8 20 -19v-142l81 30v156c0 11 9 20 20 20s19 -9 19 -20v-142l28 11c3 1 5 1 8 1c12 0 22 -10 22 -23v-57c0 -9 -6 -18 -15 -21l-43 -16v-157l28 10c3 1 5 1 8 1c12 0 22 -9 22 -22v-57c0 -9 -6 -18 -15 -21l-43 -16 v-157c0 -11 -8 -19 -19 -19s-20 8 -20 19v142l-81 -30v-156c0 -11 -9 -20 -20 -20s-19 9 -19 20v142l-28 -11c-3 -1 -5 -1 -8 -1c-12 0 -22 10 -22 23v57c0 9 6 18 15 21l43 16v157l-28 -10c-3 -1 -5 -1 -8 -1c-12 0 -22 9 -22 22v57zM178 94l-81 -30v-158l81 30v158z\" fill=\"currentColor\"/><path id=\"flagUp\" d=\"M0 0h-18v250h18v-250zM0 0v250c96 59 222 149 222 259c0 57 -15 111 -40 162c-3 17 10 29 24 29c8 0 16 -5 21 -13c25 -56 40 -116 40 -178c0 -203 -267 -306 -267 -509z\" fill=\"currentColor\"/><path id=\"flat\" d=\"M29 39l-2 -64v-11c0 -22 2 -43 5 -65c44 38 91 80 91 138c0 33 -13 66 -42 66c-31 0 -51 -31 -52 -64zM-28 454c9 5 18 8 28 8s19 -3 28 -8l-7 -343c25 23 58 36 92 36c51 0 87 -49 87 -103c0 -79 -84 -117 -144 -169c-16 -14 -25 -41 -47 -41c-14 0 -25 13 -25 27z\" fill=\"currentColor\"/><path id=\"natural\" d=\"M-8 375c8 5 17 7 26 7s18 -2 26 -7l-3 -187l104 21h4c10 0 18 -8 18 -18l7 -566c-8 -5 -16 -7 -25 -7s-18 2 -26 7l2 187l-103 -21h-4c-10 0 -18 8 -18 18zM130 111l-90 -18l-3 -204l90 18z\" fill=\"currentColor\"/><path id=\"flagDown\" d=\"M0 0c0 -197 207 -335 207 -532c0 -71 -15 -141 -41 -207c-5 -8 -13 -12 -21 -12c-14 0 -27 11 -24 28c26 60 42 125 42 191c0 103 -93 207 -163 282h-18v250h18z\" fill=\"currentColor\"/></defs></svg>";
 /* chord box (box-buddy's diagramSVG, family palette): × muted, O open, Nfr
    label off the nut, box grows for wide spans; frets only, no fingers */
+/* ===== stretch — keep this block byte-identical across the voicing tools =====
+   How far the hand actually has to reach, measured in millimetres rather than
+   counted in frets. Fret spacing shrinks going up the neck, so counting frets
+   measures the wrong thing: a six-fret grip at the 12th fret is an 81mm reach
+   while a four-fret grip at the nut is 97mm, which makes the "narrower" shape
+   the harder one. We take the distance between the lowest and the highest
+   fretted note on a 648mm (25.5") scale. Open strings need no finger, so they
+   are not part of the reach.
+
+   RULED 2026-09-12 (William, having played all 18 of Shell Builder's five-fret
+   cells): warn past 100mm. That marks a five-fret grip at or below the 5th
+   fret (100.1mm) and never marks a four-fret grip, which tops out at 97mm at
+   the nut. It only warns — whatever each tool refuses to voice at all is
+   unchanged, so nothing new becomes reachable.
+
+   The block depends on nothing from the host page. Each tool draws the mark in
+   its own idiom (an SVG tag on a diagram, a chip beside a chord symbol), but
+   the wording and the threshold come from here so a student meets the same
+   signal everywhere. */
+const STRETCH_SCALE_MM = 648;
+const STRETCH_MM = 100;
+const fretDistMM = n => STRETCH_SCALE_MM * (1 - Math.pow(2, -n / 12));
+function stretchMM(frets){
+  const f = frets.filter(n => typeof n === "number" && isFinite(n) && n >= 1);
+  if (f.length < 2) return 0;
+  return fretDistMM(Math.max(...f)) - fretDistMM(Math.min(...f));
+}
+function stretchNote(frets){
+  const mm = stretchMM(frets);
+  if (mm <= STRETCH_MM) return null;
+  return { mm: Math.round(mm), label: "stretch",
+    text: "A " + Math.round(mm) + "mm reach between the lowest and highest fretted note. "
+        + "Past " + STRETCH_MM + "mm it wants a wide hand, so take it further up the neck "
+        + "if it does not sit under yours." };
+}
+/* ===== end stretch ===== */
 function boxSVG(v, showLabels, W){
   W = W||150; const sx=W/8.2, x0=sx*2.0, fy=sx*1.05, y0=fy*.95;   // left margin fits a 2-digit "Nfr"
   const fretted = v.notes.map(n=>n.f).filter(f=>f>0);
   const minF = fretted.length?Math.min(...fretted):1, maxF = fretted.length?Math.max(...fretted):1;
   const hasOpen = v.notes.some(n=>n.f===0);
+  const sn = stretchNote(fretted);
   let base = (minF<=1 || hasOpen) ? 1 : minF;          // opens only read against a drawn nut
   const nF = Math.max(5, maxF-base+1);
   const H = y0+nF*fy+fy*.6;
   const used = new Set(v.notes.map(n=>n.s));
   let o = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,Consolas,monospace">`;
+  if(sn) o+=`<title>${sn.text}</title>`;
   for(let s=6;s>=1;s--){ const x=x0+(6-s)*sx; o+=`<line x1="${x}" y1="${y0}" x2="${x}" y2="${y0+nF*fy}" stroke="#a89f8c" stroke-width="${s>=5?1.4:1}"/>`; }
   for(let i=0;i<=nF;i++){ const y=y0+i*fy; o+=`<line x1="${x0}" y1="${y}" x2="${x0+5*sx}" y2="${y}" stroke="#a89f8c" stroke-width="${i===0&&base===1?4:1}"/>`; }
   if(base>1) o+=`<text x="${x0-sx*.5}" y="${y0+fy/2+4}" font-size="${sx*.6}" text-anchor="end" fill="#6f8a92">${base}fr</text>`;
@@ -554,6 +592,9 @@ function boxSVG(v, showLabels, W){
     const y=y0+(n.f-base)*fy+fy/2;
     o+=`<circle cx="${x}" cy="${y}" r="${sx*.42}" fill="${n.deg==='R'?'#c9a24a':'#e8e1d1'}"/>`;
     if(showLabels) o+=`<text x="${x}" y="${y+sx*.16}" font-size="${sx*.42}" text-anchor="middle" fill="#0b1a1f">${n.deg}</text>`; });
+  if(sn){ const yA=y0+(Math.max(base,Math.min(...fretted))-base)*fy+fy/2;
+    const yB=y0+(Math.min(base+nF-1,Math.max(...fretted))-base)*fy+fy/2, gx=x0+5*sx+sx*.3;
+    o+=`<path d="M${gx-sx*.16},${yA} H${gx} V${yB} H${gx-sx*.16}" fill="none" stroke="#d99a5b" stroke-width="1.3"/>`; }
   return o+'</svg>';
 }
 /* stacked chord on a treble_8 staff (whole-note heads on the shared LilyPond
