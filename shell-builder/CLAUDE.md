@@ -163,16 +163,29 @@ there is no inversion or string-set state in this app.
   before it — the b13 earns its place by being the target's own minor third,
   and the natural 13 is that target's major third, so the target decides. The
   rule only declines a natural 13; it never pushes a natural 5 aside, and a
-  symbol naming its own sixth (`13b9`, `7b13`) still wins. Scope: it applies
-  only to dominants that already carry an alteration, because a **plain**
-  dominant is open to everything by the earlier ruling. At the default
+  symbol naming its own sixth (`13b9`, `7b13`) still wins. Scope: **plain
+  dominants too, extended 2026-09-12** on his say-so. That is the one place
+  the default overrides "a plain dominant is open to everything" — that ruling
+  governs what the picker *offers*, this governs only what the generator
+  reaches for first. A plain dominant needs the b13 chosen outright rather
+  than merely left standing, because with no requested alteration the choice
+  would otherwise fall to a 0.1 tiebreak between the b13 and a doubled b7.
+  At the default
   structure the two rulings coincide, so the visible effect is the stand-in;
   the b13 rule does independent work on the 6R 4-note-rootless shape, where the
   B string is free to take either sixth (`D13b9` into major, `D7#5b9` into
   minor).
-  **Still open:** a *plain* `G7` resolving to `Cm7` keeps its natural 13,
-  because the plain-dominant ruling says the player decides. That is the same
-  semitone against the target's minor third.
+  **"Resolving" means root down a perfect fifth, not merely "a minor chord
+  comes next."** Of the 298 dominant/minor pairs in the library only 169 are a
+  real V-i, and altering the rest would have been actively wrong: 33 are
+  same-root modal shifts (rhythm changes' `G7` into `Gm7`), and in 24 more —
+  `G7` into `Em7` — the natural 13 of the G7 *is* Em7's root, so declining it
+  throws away a common tone. Take the "A" Train's `D7#11` into `Dm7` is the
+  same trap, and `D13#11` is the sound of those bars. A first pass keyed on the
+  target's quality alone changed 24 tunes; keyed on the resolution it changes 7.
+  **Still open:** the tritone substitution, `bII7` into `i`, is a genuine minor
+  resolution this interval test does not catch — 13 in the library, mostly Body
+  And Soul's `Gb7` into `Fm7`.
 - The generator can still voice something the picker wouldn't offer — a plain
   `pickOffsets` puts a natural 13 under a 7b9 — so the sounding note is always
   shown, tagged "as generated", and the E row stays live rather than dimming
