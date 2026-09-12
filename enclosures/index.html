@@ -1055,11 +1055,11 @@ vocab(){
   VOCAB.enclosed.forEach(p => {
     const chords = VOCAB.chords3.map(c => ({bar:c.bar+1, slot:c.slot, text:c.text}));
     h += cellRaw(p.name, 'family '+p.fam+' &middot; GN '+esc(p.gn),
-      systemsHtml(p.bars, {fifths:0, meter:[4,4], chords, space:17}, 2), 'Enclosures 101 p. 4');
+      systemsHtml(p.bars, {fifths:0, meter:[4,4], chords, space:15}, 3), 'Enclosures 101 p. 4');
   });
   h += '<h3>Starting the enclosure on the bar line instead</h3>'
      + '<p>Begin the enclosure at the start of the measure rather than as a pickup and the phrase gets longer: a long ii–V that resolves to a different chord tone, arriving by three-note enclosure.</p>'
-     + cellRaw(VOCAB.long.name, '', systemsHtml(VOCAB.long.bars, {fifths:0, meter:[4,4], chords:VOCAB.long.chords, space:17}, 2), 'Enclosures 101 p. 4');
+     + cellRaw(VOCAB.long.name, '', systemsHtml(VOCAB.long.bars, {fifths:0, meter:[4,4], chords:VOCAB.long.chords, space:15}, 3), 'Enclosures 101 p. 4');
   return h;
 },
 /* ---------------------------------------------------------------- 8 ----- */
