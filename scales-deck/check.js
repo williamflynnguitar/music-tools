@@ -26,7 +26,7 @@ const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const main = src.split("<script>").find(c => c.includes("const SCALES")).split("/* ---------- state + ui ---------- */")[0];
 const state = { scale: "major", key: "C", concept: 0, tier: "Easy", interval: 3, pattern: "1231", i: 0, variants: {} };
-const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, stringFingers, midiOf, cardPerformance, schedule };")(state);
+const E = new Function("state", main + "\n; return { SCALES, CONCEPTS, KEYS, allPlacements, place, basePos, degreeOf, inKey, ladder, rootMidi, topMidi, tierDigits, perfPosition, perfDescending, perfZigzag, perfString, perfSegovia, SEGOVIA, SEG_MOVABLE, segShift, segSpan, stringFingers, midiOf, cardPerformance, schedule, OPEN_MIDI_CHECK: OPEN_MIDI, PC_CHECK: PC };")(state);
 
 const tok = n => `${n.string}:${n.fret}`;
 const flat = perf => perf.bars.flatMap(b => b.notes);
@@ -208,6 +208,7 @@ function expectedLine(n, cards, i, tier, key) {
   if (n === 1) return { perf: E.perfPosition(card.p, tier), first: i };
   if (n === 2) return { perf: E.perfDescending(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d))), first: i };
   if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key), first: i - i % 2 };
+  if (n === 8) return { perf: E.perfSegovia(card.segovia, card.segKey, card.shift), first: i };
   return { perf: E.perfString(key, card.string), first: i };
 }
 let paths = 0, advLines = 0, c2Lines = 0, zigzags = 0, cardLines = 0, cardSets = 0; const sweep = [];
@@ -224,10 +225,14 @@ for (const sc of Object.keys(E.SCALES)) {
       for (const C of E.CONCEPTS) for (const tier of C.tiers) {
         state.tier = tier; cardSets++;
         let cards; try { cards = C.steps(); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key}: steps() throws ${e.message}`); continue; }
-        const plays = C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy");
+        /* concept 8 carries a line only on the cards holding a transcribed fingering — its
+           Intermediate and Advanced 2 tiers are still text — so whether a card should play is
+           a question about the card, not about the concept */
+        const plays = card => C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy")
+          || (C.n === 8 && !!card.segovia);
         cards.forEach((card, i) => {
           let r; try { r = E.cardPerformance(C.n, cards, i, tier, key); } catch (e) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: cardPerformance throws ${e.message}`); return; }
-          if (plays !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
+          if (plays(card) !== !!r) { sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${r ? "plays where no line was expected" : "has no line to play"}`); return; }
           if (!r) return;
           cardLines++;
           r.perf.flags.forEach(f => sweep.push(`concept ${C.n} ${tier} ${sc} ${key} card ${i + 1}: ${f}`));
@@ -316,6 +321,46 @@ let timing = 0;
   expect("quarter-note lines (concept 6) ignore swing", of(q, "note").map(e => e.t), [4, 5, 6, 7]);
   expect("quarter-note lines: notes a beat long", of(q, "note").map(e => e.dur), [1, 1, 1, 1]);
   expect("quarter-note lines: count-in of four beats, clicks on 2 and 4", of(q, "count").map(e => e.t).concat(of(q, "click").map(e => e.t)), [0, 1, 2, 3, 5, 7]);
+}
+
+/* ---- pp. 73-75, concept 8: the Segovia transcription ----
+   The data is the transcription, so replaying it against itself would prove nothing. What is
+   worth pinning is that it is still MUSIC: every ascent strictly stepwise and diatonic in its
+   printed key, the fingers a hand can actually hold, and the two the book calls moveable
+   really being the two three-octave patterns with no open string. A typo in the table breaks
+   one of these. The single known exception is the book's own misprint at #1 ascending note 12
+   (2nd string, printed fret 7, sounding F# in C and reached by a leap) — reported, not failed,
+   until William rules, as the p. 66 and p. 71 misprints were. */
+{
+  const MAJ = [0, 2, 4, 5, 7, 9, 11], seg = [];
+  let notes = 0;
+  for (const f of E.SEGOVIA) {
+    const asc = f.asc.split(" ").map(t => t.split("/").map(Number));
+    const all = f.notes;
+    notes += all.length;
+    const midi = d => E.OPEN_MIDI_CHECK[d[0]] + d[1];
+    const root = E.KEYS.indexOf ? null : null;
+    // pitch classes relative to the printed key
+    const pcOf = m => ((m - (E.PC_CHECK[f.key])) % 12 + 12) % 12;
+    const offAt = asc.map((d, i) => MAJ.includes(pcOf(midi(d))) ? 0 : i + 1).filter(Boolean);
+    const offKey = offAt;
+    const leaps = [];
+    for (let i = 1; i < asc.length; i++) { const d = midi(asc[i]) - midi(asc[i - 1]); if (d !== 1 && d !== 2) leaps.push(`note ${i + 1} (+${d})`); }
+    if (!all.every(d => typeof d.finger === "number")) seg.push(`#${f.n}: a note carries no finger`);
+    // a hand holds four frets: the index sits (finger-1) below the note it plays
+    const wide = all.filter(d => d.finger > 0 && d.finger > 4);
+    if (wide.length) seg.push(`#${f.n}: finger above 4`);
+    const expectOff = f.n === "1" ? 1 : 0;
+    if (offKey.length !== expectOff) seg.push(`#${f.n}: ${offKey.length} note(s) outside ${f.key} major (at ${offAt.join(", ") || "none"}), expected ${expectOff}`);
+    if (leaps.length !== expectOff) seg.push(`#${f.n}: ascent not stepwise at ${leaps.join(", ") || "nowhere"}, expected ${expectOff} break(s)`);
+    /* the misprint is note 12 itself — an F# in C major; the +3 it causes falls on note 13 */
+    if (f.n === "1" && offAt.join() !== "12") seg.push(`#1: the known misprint moved — the note outside C major should be note 12, saw ${offAt.join(", ") || "none"}`);
+  }
+  if (notes !== 287) seg.push(`287 printed notes expected, ${notes} in the table`);
+  const mv = E.SEG_MOVABLE.map(f => f.n).join(",");
+  if (mv !== "2,5") seg.push(`p. 64 names #2 and #5 as the moveable three-octave patterns; SEG_MOVABLE holds ${mv || "none"}`);
+  seg.forEach(m => { fail++; console.log("FAIL   segovia — " + m); });
+  if (!seg.length) { pass++; console.log(`known  segovia pp. 73-75 — 287 notes, 7 fingerings diatonic and stepwise; #1 note 12 is the book's misprint (TAB 7, should be 8), shipped as printed`); known++; }
 }
 
 sweep.forEach(m => console.log("FAIL   " + m));

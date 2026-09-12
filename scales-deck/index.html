@@ -482,6 +482,38 @@ function svgShape(p, opts = {}) {
   }
   return o + `</svg>`;
 }
+/* Concept 8's neck. svgStrings' geometry (so paintNote's row lookup and the playback
+   highlight work unchanged), but all six strings, out to fret 19 because #5 reaches it, and
+   only the fingering's own dots -- labelled with the finger, which is what the page prints
+   and what the tier teaches. The brass thread follows the ascent in playing order, so the
+   route up the neck is the picture. */
+function svgSegovia(f, key, shift) {
+  const TOP = 19, strings = [1, 2, 3, 4, 5, 6];
+  const cw = 34, ch = 30, padL = 30, padT = 24, padB = 14, span = TOP + 1;
+  const W = padL + span * cw + 16, H = padT + 5 * ch + padB + 12;
+  const x = fr => padL + (fr + 0.5) * cw, y = i => padT + i * ch;
+  const sh = shift || 0;
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Segovia fingering ${f.n} in ${key}, three octaves" data-geom="strings" data-strings="${strings.join(",")}" data-cw="${cw}" data-ch="${ch}" data-padl="${padL}" data-padt="${padT}">`;
+  for (let fr = 0; fr <= TOP; fr++) {
+    o += `<line x1="${padL+fr*cw}" y1="${y(0)-11}" x2="${padL+fr*cw}" y2="${y(5)+11}" stroke="var(--bone-dim)" stroke-width="${fr===0?3:1}" opacity=".5"/>`;
+    if ([3,5,7,9,12,15,17,19].includes(fr)) o += `<text x="${x(fr)}" y="${H-2}" font-family="var(--mono)" font-size="11" fill="var(--bone-dim)" text-anchor="middle">${fr}</text>`;
+  }
+  strings.forEach((st, i) => {
+    o += `<line x1="${padL}" y1="${y(i)}" x2="${padL+span*cw}" y2="${y(i)}" stroke="var(--bone-dim)" stroke-width="${0.8+st*0.35}" opacity=".7"/>`;
+    o += `<text x="${padL-8}" y="${y(i)+4}" font-family="var(--mono)" font-size="12" fill="var(--bone-dim)" text-anchor="end">${st}</text>`;
+  });
+  const asc = f.asc.split(" ").map(t => { const q = t.split("/").map(Number); return { string: q[0], fret: q[1] + sh, finger: q[2] }; });
+  o += `<polyline points="${asc.map(d => x(d.fret) + "," + y(d.string - 1)).join(" ")}" fill="none" stroke="var(--brass)" stroke-width="1.4" opacity=".45"/>`;
+  const seen = new Set();
+  f.notes.forEach(d => {
+    const fr = d.fret + sh, id = d.string + ":" + fr;
+    if (seen.has(id)) return; seen.add(id);
+    const dot = mkDot(key, d.string, fr, d.finger);
+    o += `<circle cx="${x(fr)}" cy="${y(d.string-1)}" r="10" fill="${dot.root?'var(--brass)':'var(--bone)'}"/>`;
+    o += `<text x="${x(fr)}" y="${y(d.string-1)+4}" font-family="var(--mono)" font-size="12" font-weight="600" fill="var(--ink)" text-anchor="middle">${d.finger}</text>`;
+  });
+  return o + `</svg>`;
+}
 function svgStrings(key, strings, pairs = []) {    // horizontal lanes, frets 0–NECK_TOP
   const cw = 40, ch = 34, padL = 30, padT = 26, padB = 14, span = NECK_TOP + 1;
   const W = padL + span * cw + 16, H = padT + (strings.length - 1) * ch + padB + 12;
@@ -612,8 +644,34 @@ const CONCEPTS = [
        : t === "Intermediate" ? [`As you climb ${key} ${SCALE().name.toLowerCase()}, name which of the six shapes you're passing through.`, `Use that to spot your own shifting points.`]
        : t === "Advanced 1" ? [`Play all 12 keys using only Segovia fingerings #2 and #5.`, `Each is a movable 3-octave pattern off the 6th and 5th string.`]
        : [`Segovia's route is one way up the mountain. Build your own route through ${key} ${SCALE().name.toLowerCase()} with logical shifts.`, `Compare it with the shapes you know; keep what makes more sense to you.`];
-     return items.map((s, i) => ({ text: true, key, shape: "3 octaves", sub: `Step ${i+1} of ${items.length}`, instr: s, flag: "Segovia fingerings are not yet transcribed; this card is text only" })); } },
+     /* Easy walks the seven printed fingerings; Advanced 1 is p. 64's "all 12 keys by only
+        using fingering #2 and #5", each a moveable pattern shifted to the key. Both draw and
+        play. Intermediate ("name which shape you are passing through") and Advanced 2 ("build
+        your own route") have nothing to transcribe, so they stay text. The fingerings are
+        major-scale, so any other scale stays text too. */
+     if (state.scale === "major" && t === "Easy") return SEGOVIA.map((f, i) => ({
+       segovia: f, segKey: f.key, shift: 0, key: f.key, shape: `Fingering #${f.n}`,
+       svg: svgSegovia(f, f.key, 0),
+       sub: `Fingering #${f.n} of 7 · printed in ${f.key} · use for ${f.keys.join(", ")}`,
+       instr: `Play it as Segovia fingers it; the number on each dot is the left hand. `
+         + (f.n === "1" ? `This one is two octaves — the classical guitar's range stops it short.` : `Three octaves.`)
+         + (SEG_MOVABLE.indexOf(f) >= 0 ? ` No open strings, so this one moves to any key.` : ``),
+       flag: f.n === "1" ? "p. 73 TABs the 12th ascending note at fret 7; the noteheads and the fingering both say 8. Played as printed." : "" }));
+     if (state.scale === "major" && t === "Advanced 1") {
+       const out = [];
+       for (const k of keysFrom(key)) for (const f of SEG_MOVABLE) {
+         const sh = segShift(f, k); if (sh === null) continue;
+         out.push({ segovia: f, segKey: k, shift: sh, key: k, shape: `#${f.n} in ${k}`,
+           svg: svgSegovia(f, k, sh),
+           sub: `${k} · fingering #${f.n}, shifted ${sh} fret${sh === 1 ? "" : "s"} from ${f.key}`,
+           instr: `Play ${k} with fingering #${f.n}. It is the same shape as in ${f.key}; only the hand's position moves.` });
+         break;                                   // one fingering per key, #2 first as printed
+       }
+       if (out.length) return out;
+     }
+     return items.map((s, i) => ({ text: true, key, shape: "3 octaves", sub: `Step ${i+1} of ${items.length}`, instr: s, flag: state.scale === "major" ? "" : "The Segovia fingerings are major-scale; this card is text only" })); } },
 ];
+
 
 /* ===== note path engine ===== */
 /* What the animation plays, note by note. A performance is
@@ -624,6 +682,70 @@ const CONCEPTS = [
    Rules, and the printed examples they reproduce, are in scales-deck/CLAUDE.md; check.js holds
    the pp. 65–71 fixtures. */
 const OPEN_MIDI = { 1:64, 2:59, 3:55, 4:50, 5:45, 6:40 };
+/* ===== Segovia fingerings (pp. 73-75) =====
+   The seven original fingerings as the book prints them, note for note: "string/fret/finger"
+   in playing order, ascending then descending. Transcribed Sep 2026 from four independent
+   readings of the page (three off the text layer, one off 300 dpi raster geometry) that
+   agreed on all 287 notes. Six are three octaves; #1 is two, which is the book's own point:
+   these are classical fingerings "limited by the smaller range of the classical guitar".
+
+   Verified as music and not merely as digits: every ascent is strictly stepwise and perfectly
+   diatonic in its printed key, with exactly ONE exception, and that exception is a misprint in
+   the book. #1 ascending note 12 is TAB'd 2nd string fret 7 -- an F# in C major, reached by a
+   +3 leap. The noteheads step evenly either side of it, #1 carries no accidental anywhere, the
+   descent TABs that same printed pitch as fret 8, and the printed fingering 1-2-4 works over
+   frets 5-6-8 but not over 5-6-7. It is fret 8. The printed 7 is shipped here and the
+   correction is pinned in check.js, the way the p. 66 and p. 71 misprints were held until
+   William ruled on them.
+
+   Five of the seven descend by a different route than they ascend, so this is transcribed
+   location data rather than a ladder: perfSegovia plays it as printed and re-derives nothing. */
+const SEGOVIA = [
+  { n: "1", key: "C", keys: ["C", "D", "Db", "Eb"],
+    asc: "5/3/2 5/5/4 4/2/1 4/3/2 4/5/4 3/2/1 3/4/3 3/5/1 3/7/3 2/5/1 2/6/2 2/7/4 1/5/1 1/7/3 1/8/4",
+    desc: "1/7/3 1/5/1 2/8/4 2/6/2 2/5/1 3/7/3 3/5/1 3/4/3 3/2/1 4/5/4 4/3/2 4/2/1 5/5/4 5/3/2" },
+  { n: "2", key: "G", keys: ["G", "F#", "Ab"],
+    asc: "6/3/2 6/5/4 5/2/1 5/3/2 5/5/4 4/2/1 4/4/3 4/5/4 3/2/1 3/4/3 3/5/1 3/7/3 2/5/1 2/7/3 2/8/4 1/5/1 1/7/3 1/8/1 1/10/3 1/12/1 1/14/3 1/15/4",
+    desc: "1/14/3 1/12/1 1/10/4 1/8/2 1/7/1 2/10/4 2/8/2 2/7/1 3/9/3 3/7/1 4/10/4 4/9/3 4/7/1 5/10/4 5/9/3 5/7/1 5/5/4 5/3/2 5/2/1 6/5/4 6/3/2" },
+  { n: "3", key: "A", keys: ["A"],
+    asc: "5/0/0 5/2/1 5/4/3 5/5/4 5/7/2 5/9/4 4/6/1 4/7/2 4/9/4 3/6/1 3/7/2 3/9/4 2/7/1 2/9/3 2/10/4 1/7/1 1/9/3 1/10/1 1/12/3 1/14/1 1/16/3 1/17/4",
+    desc: "1/16/3 1/14/1 1/12/4 1/10/3 1/9/1 2/12/4 2/10/2 2/9/1 3/11/3 3/9/1 4/12/4 4/11/3 4/9/1 5/12/4 5/11/3 5/9/1 5/7/4 5/5/2 5/4/1 6/7/4 6/5/2" },
+  { n: "4", key: "E", keys: ["E"],
+    asc: "6/0/0 6/2/1 6/4/3 6/5/4 6/7/2 6/9/4 5/6/1 5/7/2 5/9/4 4/6/1 4/7/2 4/9/4 3/6/1 3/8/3 3/9/1 3/11/3 2/9/1 2/10/2 2/12/4 1/9/1 1/11/3 1/12/4",
+    desc: "1/11/3 1/9/1 1/7/4 1/5/2 1/4/1 2/7/4 2/5/2 2/4/1 3/6/3 3/4/1 4/7/4 4/6/3 4/4/1 5/7/4 5/6/3 5/4/1 5/2/1 6/5/4 6/4/3 6/2/1 6/0/0" },
+  { n: "5", key: "B", keys: ["B"],
+    asc: "5/2/2 5/4/4 4/1/1 4/2/2 4/4/4 4/6/1 4/8/3 4/9/4 3/6/1 3/8/3 3/9/1 3/11/3 2/9/1 2/11/3 2/12/4 1/9/1 1/11/3 1/12/1 1/14/3 1/16/1 1/18/3 1/19/4",
+    desc: "1/18/3 1/16/1 1/14/4 1/12/2 1/11/1 2/14/4 2/12/2 2/11/1 3/13/3 3/11/1 4/14/4 4/13/3 4/11/1 5/14/4 5/13/3 5/11/1 5/9/4 5/7/2 5/6/1 6/9/4 6/7/2" },
+  { n: "6", key: "Bb", keys: ["Bb"],
+    asc: "5/1/1 5/3/3 4/0/0 4/1/1 4/3/3 4/5/1 4/7/3 4/8/4 3/5/1 3/7/3 3/8/4 2/6/2 2/8/4 1/5/1 1/6/2 1/8/4 1/10/1 1/11/2 1/13/4 1/15/1 1/17/3 1/18/4",
+    desc: "1/17/3 1/15/1 1/13/4 1/11/2 1/10/1 2/13/4 2/11/2 2/10/1 3/12/3 3/10/1 4/13/4 4/12/2 4/10/1 5/13/4 5/12/2 5/10/1 5/8/4 5/6/2 5/5/1 6/8/4 6/6/2" },
+  { n: "7", key: "F", keys: ["F"],
+    asc: "6/1/1 6/3/3 5/0/0 5/1/1 5/3/3 5/5/1 5/7/3 5/8/4 4/5/1 4/7/3 4/8/4 3/5/1 3/7/3 2/5/1 2/6/2 2/8/4 1/5/1 1/6/2 1/8/4 1/10/1 1/12/3 1/13/4",
+    desc: "1/12/3 1/10/1 1/8/4 1/6/2 1/5/1 2/8/4 2/6/2 2/5/1 3/7/3 3/5/1 4/8/4 4/7/3 4/5/1 5/8/4 5/7/3 5/5/1 5/3/3 5/1/1 5/0/0 6/3/3 6/1/1" },
+].map(f => Object.assign(f, {
+  notes: (f.asc + " " + f.desc).split(" ").map(t => {
+    const parts = t.split("/").map(Number);
+    return { string: parts[0], fret: parts[1], finger: parts[2] };
+  }),
+}));
+/* p. 64: "all 12 keys by only using fingering #2 and #5. Each of those fingerings is a
+   moveable 3-octave pattern off the 6th and 5th string." Both halves of that sentence are
+   needed. #1 also has no open string, so a no-open-strings test alone picks it up as well --
+   but #1 is the two-octave one, which is precisely why the book leaves it out. */
+const segSpan = f => { const a = f.asc.split(" ").map(t => t.split("/").map(Number));
+  const m = d => OPEN_MIDI[d[0]] + d[1];       // OPEN is pitch class; OPEN_MIDI is the pitch
+  return m(a[a.length - 1]) - m(a[0]); };
+const SEG_MOVABLE = SEGOVIA.filter(f => f.notes.every(d => d.fret > 0) && segSpan(f) >= 36);
+/* the fret offset that puts a moveable fingering in `key`, or null when it leaves the neck */
+function segShift(f, key) {
+  const lo = Math.min.apply(null, f.notes.map(d => d.fret));
+  const hi = Math.max.apply(null, f.notes.map(d => d.fret));
+  let sh = (((PC[key] - PC[f.key]) % 12) + 12) % 12;
+  while (hi + sh > 19 && lo + sh - 12 >= 1) sh -= 12;
+  return (hi + sh <= 19 && lo + sh >= 1) ? sh : null;
+}
+/* ===== end Segovia fingerings ===== */
+
 const midiOf = d => OPEN_MIDI[d.string] + d.fret;
 const rootMidi = p => Math.min(...p.dots.filter(d => d.root).map(midiOf));
 // William (2026-09-11): Middle 6 turns around on the 9th, one scale step above its 1st-string root
@@ -798,6 +920,15 @@ function perfZigzag(ps, key) {
 
 // concept 6 (p. 71): one string, lowest scale note (open if in the scale) to the highest at or
 // below the 15th fret and back, quarter notes, the same fingers both ways
+/* concept 8 (pp. 73-75): the printed Segovia fingering, note for note. These are transcribed
+   locations rather than a ladder -- five of the seven descend by a different route -- so walk
+   and located are not used. Fingers sound on every note: round 1 named concept 8 as a place
+   where the fingering IS the lesson, and the book prints a digit over every notehead. */
+function perfSegovia(f, key, shift) {
+  const notes = f.notes.map(d => Object.assign(
+    plain(mkDot(key, d.string, d.fret + (shift || 0), d.finger)), { finger: d.finger }));
+  return { unit: 8, bars: barsOf(notes, 8), flags: [] };
+}
 function perfString(key, string) {
   const frets = [];
   for (let f = 0; f <= 15; f++) if (inKey(key, OPEN_MIDI[string] + f)) frets.push(f);
@@ -864,6 +995,7 @@ function cardPerformance(n, cards, i, tier, key) {
   }
   if (n === 3 && tier === "Easy" && card.p) { const first = i - i % 2; return { perf: perfZigzag(cards.slice(first).map(c => c.p), key), first }; }
   if (n === 6 && tier === "Easy" && card.string) return { perf: perfString(key, card.string), first: i };
+  if (n === 8 && card.segovia) return { perf: perfSegovia(card.segovia, card.segKey, card.shift), first: i };
   return null;
 }
 // the audio timeline of a performance, in seconds from the first count-in click: one bar of four

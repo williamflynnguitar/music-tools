@@ -61,8 +61,40 @@ and 4 (on by default), a large finger readout for concept 6, and a count strip: 
 then the bar's eighths (or the count-in) with the current one lit and the meter when a bar is
 short. All settings live in memory only.
 - `cardPerformance(n, cards, i, tier, key)` (engine block) says what a card plays: concepts 1
-  and 2 on every tier, concepts 3 and 6 on Easy; `null` elsewhere, and the Play bar hides.
-  Concepts 4, 5, 7 and 8 have no lines yet.
+  and 2 on every tier, concepts 3 and 6 on Easy, concept 8 wherever the card carries a
+  transcribed fingering; `null` elsewhere, and the Play bar hides. Whether a card plays is a
+  question about the **card**, not the concept — concept 8's Easy and Advanced 1 cards play
+  while its Intermediate and Advanced 2 cards beside them stay text. Concepts 4, 5 and 7 still
+  have no lines, and nor do concept 3 above Easy or concept 6 above Easy: **10 of the 32
+  concept/tier combinations play, 22 are silent.**
+
+## Concept 8, the Segovia fingerings (Sep 2026)
+`SEGOVIA` (below `OPEN_MIDI`, which `SEG_MOVABLE` reads at load — it sat above it for one
+commit and the temporal dead zone killed the whole script while still parsing cleanly, which
+is why `scripts/syntax-check.js` did not catch it and `check.js` did) holds all seven
+fingerings from pp. 73-75 as `"string/fret/finger"` in playing order, ascending then
+descending. 287 notes: #1 is 29 and two octaves, the rest 43 and three.
+- Transcribed from four independent readings of the page — three off the PDF text layer, one
+  off 300 dpi raster geometry — which agreed on every note. Verified as music afterwards:
+  each ascent is strictly stepwise and perfectly diatonic in its printed key.
+- **One misprint, shipped as printed.** #1's twelfth ascending note is TAB'd 2nd string fret
+  7, an F# in C major. The noteheads step evenly either side of it, #1 carries no accidental
+  anywhere, the descent TABs that same printed pitch as fret 8, and the printed 1-2-4 works
+  over frets 5-6-8 but not 5-6-7. It is fret 8. `check.js` pins the correction and reports it
+  as a known difference, the way the p. 66 and p. 71 misprints were held until William ruled.
+- `SEG_MOVABLE` is p. 64's "#2 and #5 ... moveable 3-octave pattern off the 6th and 5th
+  string". Both halves of that sentence matter: #1 also has no open string, and what rules it
+  out is being the two-octave one. `segShift(f, key)` returns the fret offset or `null` when
+  the shape leaves frets 1-19.
+- `perfSegovia` plays the transcription as printed and re-derives nothing — five of the seven
+  descend by a different route than they ascend, so there is no ladder to walk. Fingers sound
+  on every note, concept 8 being one of the places round 1 named the fingering as the lesson.
+- `svgSegovia` borrows `svgStrings`' geometry (so `paintNote` and the highlight work
+  unchanged) but draws six strings out to fret 19, only the fingering's own dots, labelled
+  with the finger, and threads the ascent in playing order.
+- `check.js` does not replay the data against itself, which would prove nothing; it asserts
+  the transcription is still music — stepwise, diatonic, 287 notes, fingers on every note,
+  `SEG_MOVABLE` exactly #2 and #5, and the misprint still at note 12 and nowhere else.
 - `schedule(perf, bpm, swing, clicks)` (engine block) turns a line into an audio timeline: one
   bar of four quarter-note clicks, accent on 1; clicks on beats 2 and 4 of every bar (a 3/4 bar
   has only 2); swing is long-short 2:1 inside each beat. check.js tests it against hand-worked
