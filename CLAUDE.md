@@ -12,6 +12,14 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
 - `line-ladder/` — stand-alone improvisation line generator, instrument-neutral
   (concept registry + smoothing ladder; handbook cited per concept only)
+- `enclosures/` — **built** (Sep 2026). Enclosure vocabulary, from William's
+  own Enclosures 101 / Access Points / workbook PDFs rather than the handbook.
+  Rule-driven: a pattern catalogue over the approach tones `S S2 L l U u T2`,
+  keyed by goal-note type, generates every enclosure in any key. The catalogue
+  was derived from the source notation and round-trips against all 85 printed
+  enclosures; the two scale exercises regenerate their sources note for note.
+  Sections 7–9 are William's composed lines, transcribed from the vector PDFs.
+  Live SVG engraver adapted from line-ladder — no pre-rendered notation
 - `shell-builder/` — Shell Voicings 101 (pp. 45–51): build and mobilize shells,
   name the result, comp through changes
 - `inversion-drill/` — drop-2/drop-3 inversions (pp. 52–59, key study p. 82),
