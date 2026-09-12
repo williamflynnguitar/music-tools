@@ -240,7 +240,7 @@ the shell" — with one exception: m7 from 5R (E +3) keeps the caution, per
 his "isn't really playable but leave it in". The two cells he ruled
 unplayable are removed from the walk instead: °7 and Δ7#5 from 5R cap the
 E string at +2 (move, mobTable, pickOffsets). Doubled 3rds keep their
-existing caution. The °7 bb7-labeled-"13" mislabel is moot — the only
+existing caution. The °7 °7-labeled-"13" mislabel is moot — the only
 position that produced it is the removed °7 5R E+3. The E reference
 table now shows the +3 row where it is walkable (it was always walkable
 but never displayed).

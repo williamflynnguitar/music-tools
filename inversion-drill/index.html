@@ -265,7 +265,7 @@ const OPEN = [null,64,59,55,50,45,40];
 const ROOTS = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chord roots: F#, not Gb
 const FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];   // flat-key spellings (the 4th of Db is Gb)
 const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const DEG = {R:0,b9:1,'9':2,b3:3,'3':4,'11':5,b5:6,'#11':6,'5':7,'#5':8,b13:8,'6':9,bb7:9,b7:10,'7':11};
+const DEG = {R:0,b9:1,'9':2,b3:3,'3':4,'11':5,b5:6,'#11':6,'5':7,'#5':8,b13:8,'6':9,'°7':9,b7:10,'7':11};
 const QUAL = {
   maj7 :{name:'Major 7',        sym:'Δ7',   tones:['R','3','5','7']},
   m7   :{name:'Minor 7',        sym:'-7',   tones:['R','b3','5','b7']},
@@ -274,7 +274,7 @@ const QUAL = {
   m6   :{name:'Minor 6',        sym:'-6',   tones:['R','b3','5','6']},
   mMaj7:{name:'Minor-major 7',  sym:'-Δ7',  tones:['R','b3','5','7']},
   m7b5 :{name:'Half-diminished',sym:'ø7',   tones:['R','b3','b5','b7']},
-  dim7 :{name:'Diminished 7',   sym:'°7',   tones:['R','b3','b5','bb7']},
+  dim7 :{name:'Diminished 7',   sym:'°7',   tones:['R','b3','b5','°7']},
   maj7s5:{name:'Augmented major 7',sym:'Δ7#5',tones:['R','3','#5','7']},
 };
 const SETS = [

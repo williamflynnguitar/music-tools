@@ -250,7 +250,7 @@ body.choose-on .study{display:none}
 const OPEN = [null,64,59,55,50,45,40];
 const NOTE_PC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const NAMES = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // chord roots: F#, not Gb
-const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,bb7:9,b7:10,'7':11};
+const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,'°7':9,b7:10,'7':11};
 const NINE_FAM = ['b9','9','#9'], FIVE_FAM = ['b5','#11','11','5','#5','b13','13'];
 const QUAL = {
   maj7 :{sym:'Δ7',   third:'3', seventh:'7',  fifth:'5',  allowed:['9','#11','13']},
@@ -260,7 +260,7 @@ const QUAL = {
   m7   :{sym:'-7',   third:'b3',seventh:'b7', fifth:'5',  allowed:['9','11','13']},
   m6   :{sym:'-6',   third:'b3',seventh:'6',  fifth:'5',  allowed:['9','11']},
   m7b5 :{sym:'ø7',   third:'b3',seventh:'b7', fifth:'b5', allowed:['9','11','b13']},
-  dim7 :{sym:'°7',   third:'b3',seventh:'bb7',fifth:'b5', allowed:['9','b13']},
+  dim7 :{sym:'°7',   third:'b3',seventh:'°7',fifth:'b5', allowed:['9','b13']},
   mMaj7:{sym:'-Δ7',  third:'b3',seventh:'7',  fifth:'5',  allowed:['9','11','13']},
   maj7s5:{sym:'Δ7#5',third:'3', seventh:'7',  fifth:'#5', allowed:['9','#11']},
 };
@@ -527,7 +527,7 @@ const NOTE_DEFS = "<svg width=\"0\" height=\"0\" style=\"position:absolute\" ari
 const ACCV = {'':0,'#':1,'##':2,'b':-1,'bb':-2};
 /* letter steps above the root for each chord degree; spelling comes from the
    chord, not from the pitch, so G7b9 gets Ab and C#m7 gets G# */
-const STEPS = {R:0,b9:1,'9':1,'#9':1,b3:2,'3':2,'4':3,'11':3,'#11':3,b5:4,'5':4,'#5':4,b13:5,'6':5,'13':5,bb7:6,b7:6,'7':6};
+const STEPS = {R:0,b9:1,'9':1,'#9':1,b3:2,'3':2,'4':3,'11':3,'#11':3,b5:4,'5':4,'#5':4,b13:5,'6':5,'13':5,'°7':6,b7:6,'7':6};
 function spell(ch, deg){
   const L='CDEFGAB', letter=L[(L.indexOf(ch.rootName[0])+STEPS[deg])%7];
   const pc=(ch.pc+DEG[deg])%12; let d=pc-NOTE_PC[letter]; d=((d+6)%12+12)%12-6;

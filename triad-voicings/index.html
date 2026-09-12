@@ -439,16 +439,25 @@ function diatonicTriads(tonicPc, scaleKey){
     return {pc:(tonicPc+d)%12, q, rn, deg:i};
   });
 }
+/* One letter per degree from the tonic, with whatever accidental that letter needs. No note is
+   ever written with a double accidental (William, 2026-09-12), and a few tonics cannot be
+   spelled this way without one — D♭ minor wants B♭♭ for its ♭6 — so those are written from the
+   other side, which always can. Pitch class 6 is F♯. The old relative-major borrow raised the
+   7th by appending '#' with no check, which spelled A♭ minor's leading tone F×. */
+const FLAT_TONIC  = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const SHARP_TONIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const byDegree = (key, steps) => steps.map((st,i)=>{
+  const letter = 'CDEFGAB'[('CDEFGAB'.indexOf(key[0])+i)%7];
+  let d = (((pcOf(key)+st)%12 - LPC[letter])%12+12)%12; if(d>6) d-=12;
+  return letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
+});
+const spellable = (name, steps) => !byDegree(name, steps).some(n=>n.length>2);
 function keySpell(keyName, scaleKey){          // 7 note names of the scale
   if(scaleKey==='major') return SPELL[keyName];
-  // the relative major. Pitch class 6 has two names in SPELL: a flat key borrows Gb's
-  // spelling (Eb minor stays Eb F Gb Ab Bb Cb D), F# borrows its own sharps.
-  const relPc = (pcOf(keyName)+3)%12;
-  const rel = relPc===6 ? (keyName.includes('b') ? 'Gb' : 'F#') : KEYS.find(k=>pcOf(k)===relPc);
-  const i0 = SPELL[rel].findIndex(n=>pcOf(n)===pcOf(keyName));
-  const names = SPELL[rel].map((_,j)=>SPELL[rel][(i0+j)%7]);
-  names[6] = names[6].endsWith('b') ? names[6].slice(0,-1) : names[6]+'#';
-  return names;
+  const steps = SCALEDEF[scaleKey];
+  if(spellable(keyName, steps)) return byDegree(keyName, steps);
+  const pc = pcOf(keyName);
+  return byDegree(spellable(FLAT_TONIC[pc], steps) ? FLAT_TONIC[pc] : SHARP_TONIC[pc], steps);
 }
 /* Open rows in the key study (Sep 2026, off-book: Ex. 8 prescribes closed
    sets — assumption B, confirmed by William). setId is a CSETS key or

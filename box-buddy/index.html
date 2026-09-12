@@ -209,7 +209,7 @@ Ebmaj7 | Am7b5 D7b9 | Gm7 | G7 |</textarea>
 
 const NOTE_PC = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
 const OPEN = [null,64,59,55,50,45,40];        // MIDI of open string 1..6
-const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,bb7:9,b7:10,'7':11};
+const DEG = {R:0,b9:1,'9':2,'#9':3,b3:3,'3':4,'4':5,'11':5,'#11':6,b5:6,'5':7,'#5':8,b13:8,'6':9,'13':9,'°7':9,b7:10,'7':11};
 const NINE_FAM = ['b9','9','#9'];
 const FIVE_FAM = ['b5','#11','11','5','#5','b13','13'];
 
@@ -221,7 +221,7 @@ const QUAL = {
   m7   :{name:'Minor 7',       sym:'m7',   third:'b3',seventh:'b7', fifth:'5',  allowed:['9','11','13']},
   m6   :{name:'Minor 6',       sym:'m6',   third:'b3',seventh:'6',  fifth:'5',  allowed:['9','11']},
   m7b5 :{name:'Half-diminished',sym:'m7b5',third:'b3',seventh:'b7', fifth:'b5', allowed:['9','11','b13']},
-  dim7 :{name:'Diminished 7',  sym:'dim7', third:'b3',seventh:'bb7',fifth:'b5', allowed:['9','b13']},
+  dim7 :{name:'Diminished 7',  sym:'dim7', third:'b3',seventh:'°7',fifth:'b5', allowed:['9','b13']},
   mMaj7:{name:'Minor-major 7', sym:'m(maj7)',third:'b3',seventh:'7',fifth:'5', allowed:['9','11','13']},
   maj7s5:{name:'Augmented major 7',sym:'maj7#5',third:'3',seventh:'7',fifth:'#5',allowed:['9','#11']},
 };

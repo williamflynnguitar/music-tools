@@ -59,7 +59,8 @@ untouched; `rebuild` is wrapped only to mark the other tabs dirty.
 
 ## Harmony
 - `TONAL` holds major, harmonic minor, melodic minor step sets. `diatonic(key, ton)` stacks scale thirds and matches the interval set to a quality; note names are spelled letter-by-letter (`spell`).
-- Chord-tone labels: R, 3/b3, 5/b5/#5, 7/b7/bb7.
+- Chord-tone labels: R, 3/b3, 5/b5/#5, 7/b7/°7. The diminished seventh is labelled
+  °7, not bb7: no double accidental is written anywhere (William, 2026-09-12).
 
 ## Approaches
 1. **Parallel · one key** (Ex. 1): the chosen *finger's* shapes of one quality in one
