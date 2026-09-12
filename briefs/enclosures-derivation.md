@@ -62,6 +62,16 @@ token sequences per (family, type) became the catalogue.
 - Both scale exercises regenerate **note for note** in C (41 and 21 notes), and
   therefore transpose correctly to the other eleven keys.
 
+## Transposing parts
+
+Sections 7–9 carry a Concert/B♭/E♭ selector rather than three engraved charts.
+A written part is the concert pitch moved up a major 2nd (B♭) or major 6th (E♭)
+and spelled on the letter that many steps away, which preserves the spelling of
+almost every note; the handful that would land on a double accidental (`A#` up a
+6th is `Fx`) are respelled in the direction of the original. No key signature is
+added, because the workbook has none — it passes through several keys a page and
+is written with accidentals throughout, so the transposed parts are too.
+
 ## Two things to know
 
 - The brief's engine section says Type A is "half step both sides". It is not,

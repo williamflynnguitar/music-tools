@@ -23,7 +23,7 @@ Stand-alone:
 
 - **enclosures/** — goal notes, the three types and the five families, built
   from the rule in any key; access points through the 13th, scale exercises in
-  twelve keys, and the composed ii–V pages
+  twelve keys, and the composed ii–V pages in Concert, B♭ or E♭
 - **line-ladder/** — an improvisation line generator for any instrument
 - **two-and-four/** — a time trainer that clicks on beats 2 and 4, then fades
   out so your inner clock does the work

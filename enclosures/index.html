@@ -698,9 +698,9 @@ const VOCAB = {
 const ATTYA = {
   bars: ['F-7','Bb-7','Eb7','Ab^7','Db^7','G7(b9)','C^7','C^7',
          'C-7','F-7','Bb7','Eb^7','Ab^7','D7(b9)','G^7','G^7'],
-  areas: [ {from:0,  to:4,  name:'A♭ major'}, {from:5, to:5,  name:'C minor'},
-           {from:6,  to:7,  name:'C major'},       {from:8, to:12, name:'E♭ major'},
-           {from:13, to:13, name:'G minor'},       {from:14,to:15, name:'G major'} ]
+  areas: [ {from:0,  to:4,  root:'Ab', q:'major'}, {from:5,  to:5,  root:'C', q:'minor'},
+           {from:6,  to:7,  root:'C',  q:'major'}, {from:8,  to:12, root:'Eb', q:'major'},
+           {from:13, to:13, root:'G',  q:'minor'}, {from:14, to:15, root:'G', q:'major'} ]
 };
 
 /* ----- Scale-based practice. Both exercises are written as degree templates
@@ -741,6 +741,48 @@ const NOTE_RE = /^([A-G])(#{1,2}|b{1,2})?(-?\d)(\*)?(?:\/(\d+))?$/;
 const REST_RE = /^R(?:\/(\d+))?$/;
 
 /* "D4 F#4* Bb3/2 R/4" -> bar object */
+/* Transposing parts. A B-flat instrument sounds a major 2nd below what it
+   reads and an E-flat instrument a major 6th below, so the written part is the
+   concert pitch moved up by that interval and spelled on the letter that many
+   steps away. No key signature is added: the composed pages pass through
+   several keys apiece and are written with accidentals throughout, as the
+   engraved parts are. */
+const PARTS = {
+  c:  { semis:0, degs:0, label:'Concert' },
+  bb: { semis:2, degs:1, label:'B♭'  },
+  eb: { semis:9, degs:5, label:'E♭'  }
+};
+const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+function transposeNote(n, part){
+  const T = PARTS[part] || PARTS.c;
+  if (!T.semis && !T.degs) return n;
+  const m = midiOf(n) + T.semis, pc = ((m % 12) + 12) % 12;
+  let letter = LET[(LET.indexOf(n.letter) + T.degs) % 7];
+  let alt = fold(pc - LPC[letter]);
+  /* moving the letter that many steps keeps the spelling for almost every
+     note, but a few land on a double accidental (A# up a 6th is Fx). Respell
+     those the way the engraver would, keeping the direction of the original. */
+  if (Math.abs(alt) > 1){
+    const pick = (alt > 0 ? SHARP_NAMES : FLAT_NAMES)[pc];
+    letter = pick[0];
+    alt = pick.length > 1 ? (pick[1] === '#' ? 1 : -1) : 0;
+  }
+  return { letter, alt, oct: Math.floor((m - alt) / 12) - 1 };
+}
+function transposeChord(text, part){
+  const T = PARTS[part] || PARTS.c;
+  if (!T.semis && !T.degs) return text;
+  const m = /^([A-G])(#|b)?(.*)$/.exec(text);
+  if (!m) return text;
+  const n = transposeNote({ letter:m[1], alt: m[2]==='#' ? 1 : m[2]==='b' ? -1 : 0, oct:4 }, part);
+  return n.letter + (n.alt>0 ? '#'.repeat(n.alt) : n.alt<0 ? 'b'.repeat(-n.alt) : '') + m[3];
+}
+const xposeItems = (bar, part) => !part || part === 'c' ? bar : Object.assign({}, bar, {
+  items: bar.items.map(i => i.rest ? i : Object.assign({}, i, transposeNote(i, part))) });
+const xposeChords = (chords, part) => !part || part === 'c' ? (chords || [])
+  : (chords || []).map(c => Object.assign({}, c, { text: transposeChord(c.text, part) }));
+
 function parseBar(str, meter){
   const items = []; let slot = 0;
   str.trim().split(/\s+/).forEach(tok => {
@@ -758,8 +800,8 @@ function parseBar(str, meter){
 }
 function lineSvg(barStrs, opts){
   opts = opts || {};
-  const bars = barStrs.map((s,i) => parseBar(s, i === 0 ? opts.meter : null));
-  return engrave(bars, opts);
+  const bars = barStrs.map((s,i) => xposeItems(parseBar(s, i === 0 ? opts.meter : null), opts.part));
+  return engrave(bars, Object.assign({}, opts, { chords: xposeChords(opts.chords, opts.part) }));
 }
 /* break a long line into systems of `per` bars, keeping chords with their bar */
 function systemsHtml(barStrs, opts, per){
@@ -767,9 +809,9 @@ function systemsHtml(barStrs, opts, per){
   let out = '';
   for (let i=0; i<barStrs.length; i+=per){
     const slice = barStrs.slice(i, i+per);
-    const chords = (opts.chords || []).filter(c => c.bar >= i && c.bar < i+per)
-                                      .map(c => ({ bar:c.bar-i, slot:c.slot, text:c.text }));
-    const bars = slice.map((s,j) => parseBar(s, (i===0 && j===0) ? opts.meter : null));
+    const chords = xposeChords((opts.chords || []).filter(c => c.bar >= i && c.bar < i+per)
+                                 .map(c => ({ bar:c.bar-i, slot:c.slot, text:c.text })), opts.part);
+    const bars = slice.map((s,j) => xposeItems(parseBar(s, (i===0 && j===0) ? opts.meter : null), opts.part));
     out += '<div class="stave">' + engrave(bars, Object.assign({}, opts, { chords })) + '</div>';
   }
   return out;
@@ -807,7 +849,7 @@ function voice(notes){
 }
 
 /* ===== state in the URL hash ===== */
-const DEFAULTS = { key:'C', mode:'ionian', deg:'0', fam:'2', opt:'0', rev:'0', ex:'ascending', ap:'0' };
+const DEFAULTS = { key:'C', mode:'ionian', deg:'0', fam:'2', opt:'0', rev:'0', ex:'ascending', ap:'0', part:'c' };
 let S = Object.assign({}, DEFAULTS), CUR = 'start';
 function readHash(){
   const h = location.hash.replace(/^#/, '');
@@ -842,6 +884,13 @@ function toggleCtl(label, key){
   return '<label class="toggle"><input type="checkbox" data-k="'+key+'" '+(S[key]==='1'?'checked':'')+'>'+label+'</label>';
 }
 const KEY_OPTS  = KEYS.map(k => [k, k.replace('b','♭')]);
+const PART_OPTS = [['c','Concert'],['bb','B♭'],['eb','E♭']];
+/* the composed pages are engraved at concert pitch; the selector rewrites them
+   for the horn in the room rather than needing a separate engraved part */
+const partNote = () => S.part === 'c' ? ''
+  : '<div class="note">Written for <b>' + PARTS[S.part].label + ' instruments</b> — a '
+  + (S.part === 'bb' ? 'major 2nd' : 'major 6th')
+  + ' above concert, so it sounds where the concert page does. Chord symbols move with it.</div>';
 const MODE_OPTS = [['ionian','major'],['aeolian','natural minor'],['dorian','dorian'],['mixolydian','mixolydian']];
 const FAM_OPTS  = [1,2,3,4,5].map(n => [n, n]);
 
@@ -1046,44 +1095,47 @@ scale(){
 vocab(){
   let h = '<h2>Vocabulary — ii–V phrases</h2><p class="src">Enclosures 101, pp. 3–4</p>'
     + '<p class="lead">Three plain diatonic ii–V phrases, then the same phrases with the first note enclosed. This is where the device stops being an exercise: the enclosure becomes a pickup into a line you were going to play anyway.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote()
     + '<h3>The phrases</h3>';
   VOCAB.plain.forEach(p => {
-    h += cellRaw(p.name, '', systemsHtml(p.bars, {fifths:0, meter:[4,4], chords:VOCAB.chords3, space:17}, 2), 'Enclosures 101 p. 3');
+    h += cellRaw(p.name, '', systemsHtml(p.bars, {fifths:0, meter:[4,4], chords:VOCAB.chords3, space:17, part:S.part}, 2), 'Enclosures 101 p. 3');
   });
   h += '<h3>The same phrases, first note enclosed</h3>'
      + '<p>The enclosure is used as a pickup device, so it sits in front of the bar line and the phrase itself is untouched.</p>';
   VOCAB.enclosed.forEach(p => {
     const chords = VOCAB.chords3.map(c => ({bar:c.bar+1, slot:c.slot, text:c.text}));
     h += cellRaw(p.name, 'family '+p.fam+' &middot; GN '+esc(p.gn),
-      systemsHtml(p.bars, {fifths:0, meter:[4,4], chords, space:15}, 3), 'Enclosures 101 p. 4');
+      systemsHtml(p.bars, {fifths:0, meter:[4,4], chords, space:15, part:S.part}, 3), 'Enclosures 101 p. 4');
   });
   h += '<h3>Starting the enclosure on the bar line instead</h3>'
      + '<p>Begin the enclosure at the start of the measure rather than as a pickup and the phrase gets longer: a long ii–V that resolves to a different chord tone, arriving by three-note enclosure.</p>'
-     + cellRaw(VOCAB.long.name, '', systemsHtml(VOCAB.long.bars, {fifths:0, meter:[4,4], chords:VOCAB.long.chords, space:15}, 3), 'Enclosures 101 p. 4');
+     + cellRaw(VOCAB.long.name, '', systemsHtml(VOCAB.long.bars, {fifths:0, meter:[4,4], chords:VOCAB.long.chords, space:15, part:S.part}, 3), 'Enclosures 101 p. 4');
   return h;
 },
 /* ---------------------------------------------------------------- 8 ----- */
 general(){
   let h = '<h2>Harmonic generalization</h2><p class="src">workbook, p. 3 — “All the Things You Are” mm. 1–16</p>'
-    + '<p class="lead">Sixteen bars of changes reduced to six key areas. Enclose against the key area rather than re-deriving goal notes bar by bar, and the line stops chasing the chord symbols.</p>';
+    + '<p class="lead">Sixteen bars of changes reduced to six key areas. Enclose against the key area rather than re-deriving goal notes bar by bar, and the line stops chasing the chord symbols.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote();
   const areaOf = i => ATTYA.areas.find(a => i >= a.from && i <= a.to);
+  const areaName = a => transposeChord(a.root, S.part).replace('#','♯').replace('b','♭') + ' ' + a.q;
   for (let half=0; half<2; half++){
     h += '<div class="chart">';
     for (let i=half*8; i<half*8+8; i++){
       const a = areaOf(i);
       h += '<div class="bar'+(a && a.from === i ? ' area-start' : '')+'">'
-         + '<div class="sym">'+chordHtml(ATTYA.bars[i])+'</div>'
+         + '<div class="sym">'+chordHtml(transposeChord(ATTYA.bars[i], S.part))+'</div>'
          + '<div class="slashes">╱ ╱ ╱ ╱</div></div>';
     }
     h += '</div><div class="keyareas">';
     const seen = {};
     for (let i=half*8; i<half*8+8; i++){
       const a = areaOf(i);
-      h += '<span>'+(a && !seen[a.name] ? (seen[a.name]=1, esc(a.name)) : '')+'</span>';
+      h += '<span>'+(a && !seen[a.from] ? (seen[a.from]=1, esc(areaName(a))) : '')+'</span>';
     }
     h += '</div>';
   }
-  h += '<div class="note">Bars 1–5 are all A♭ major; one bar of C minor, two of C major; then the same shape a fourth away — E♭ major, G minor, G major. Six enclosure contexts for sixteen bars.</div>';
+  h += '<div class="note">Five bars of one key area, one of its minor, two of its major — then the same shape a fourth away. Six enclosure contexts for sixteen bars, whichever part you are reading.</div>';
   return h;
 },
 /* ---------------------------------------------------------------- 9 ----- */
@@ -1091,9 +1143,10 @@ apply(){
   const C = COMPOSED;
   const line = (name, bars, chords, cite, note) =>
     (note ? '<p>'+note+'</p>' : '')
-    + cellRaw(name, '', systemsHtml(bars, {fifths:0, meter:[4,4], chords, space:17}, 2), cite);
+    + cellRaw(name, '', systemsHtml(bars, {fifths:0, meter:[4,4], chords, space:17, part:S.part}, 2), cite);
   let h = '<h2>Application to progressions</h2><p class="src">workbook, pp. 3–4</p>'
     + '<p class="lead">Composed lines, not generated ones. Goal notes are ringed as they are in the source; the notes between them are enclosures, approach tones and passing tones doing the connecting.</p>'
+    + ctlBar([ segCtl('Part','part', PART_OPTS) ]) + partNote()
     + '<h3>Exercises</h3>'
     + line('Apply enclosures to triads — major', C.triadsMaj, [{bar:0,slot:0,text:'C^7'}], 'workbook m. 65')
     + line('Apply enclosures to triads — minor', C.triadsMin, [{bar:0,slot:0,text:'C-'}], 'workbook m. 68')

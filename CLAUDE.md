@@ -18,7 +18,10 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   keyed by goal-note type, generates every enclosure in any key. The catalogue
   was derived from the source notation and round-trips against all 85 printed
   enclosures; the two scale exercises regenerate their sources note for note.
-  Sections 7–9 are William's composed lines, transcribed from the vector PDFs.
+  Sections 7–9 are William's composed lines, transcribed from the vector PDFs,
+  with a Concert/B♭/E♭ part selector — transposition is computed, so the three
+  engraved parts are not needed. No key signature in those sections, matching
+  the workbook, which writes everything with accidentals.
   Live SVG engraver adapted from line-ladder — no pre-rendered notation
 - `shell-builder/` — Shell Voicings 101 (pp. 45–51): build and mobilize shells,
   name the result, comp through changes
