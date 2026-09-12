@@ -828,7 +828,10 @@ function notate(notes, opts = {}) {
     const dir = up ? -1 : 1, sx = c => c.x + (up ? 1.23 : 0.07);   // LilyPond: head is 1.23 wide, anchored at its left edge
     if (grp.length === 1) {
       const c = grp[0], tip = c.y + dir * 3.5;
-      o += `<line x1="${sx(c)}" y1="${c.y}" x2="${sx(c)}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>` + use(up ? "flagUp" : "flagDown", sx(c), tip);
+      // the glyphs are named for the way their ink runs, not for the stem: flagUp
+      // draws above its anchor, flagDown below. A flag hangs back towards the
+      // notehead, so an up stem takes flagDown and a down stem flagUp.
+      o += `<line x1="${sx(c)}" y1="${c.y}" x2="${sx(c)}" y2="${tip}" stroke="currentColor" stroke-width="0.13"/>` + use(up ? "flagDown" : "flagUp", sx(c), tip);
       tops.push({ x: c.x, top: up ? tip - 0.6 : c.y });
     } else {
       const f = grp[0], l = grp[grp.length - 1];
