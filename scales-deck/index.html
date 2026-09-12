@@ -656,7 +656,7 @@ const CONCEPTS = [
        instr: `Play it as Segovia fingers it; the number on each dot is the left hand. `
          + (f.n === "1" ? `This one is two octaves — the classical guitar's range stops it short.` : `Three octaves.`)
          + (SEG_MOVABLE.indexOf(f) >= 0 ? ` No open strings, so this one moves to any key.` : ``),
-       flag: f.n === "1" ? "p. 73 TABs the 12th ascending note at fret 7; the noteheads and the fingering both say 8. Played as printed." : "" }));
+       flag: f.n === "1" ? "p. 73 TABs the 12th ascending note at fret 7; the noteheads, the missing accidental and the 1-2-4 fingering all say 8. Corrected." : "" }));
      if (state.scale === "major" && t === "Advanced 1") {
        const out = [];
        for (const k of keysFrom(key)) for (const f of SEG_MOVABLE) {
@@ -690,19 +690,20 @@ const OPEN_MIDI = { 1:64, 2:59, 3:55, 4:50, 5:45, 6:40 };
    these are classical fingerings "limited by the smaller range of the classical guitar".
 
    Verified as music and not merely as digits: every ascent is strictly stepwise and perfectly
-   diatonic in its printed key, with exactly ONE exception, and that exception is a misprint in
-   the book. #1 ascending note 12 is TAB'd 2nd string fret 7 -- an F# in C major, reached by a
-   +3 leap. The noteheads step evenly either side of it, #1 carries no accidental anywhere, the
-   descent TABs that same printed pitch as fret 8, and the printed fingering 1-2-4 works over
-   frets 5-6-8 but not over 5-6-7. It is fret 8. The printed 7 is shipped here and the
-   correction is pinned in check.js, the way the p. 66 and p. 71 misprints were held until
-   William ruled on them.
+   diatonic in its printed key. One note is CORRECTED against the page, on William's ruling of
+   2026-09-12, and it is the book's own misprint: #1 ascending note 12 is TAB'd 2nd string
+   fret 7, an F# in C major reached by a +3 leap. The noteheads step evenly either side of it,
+   #1 carries no accidental anywhere, the descent already TABs that same printed pitch as fret
+   8, and the printed fingering 1-2-4 works over frets 5-6-8 but not over 5-6-7. It is fret 8,
+   and it is written as fret 8 here. With the correction in, #1's descent retraces its ascent
+   exactly, which the page's own descent says it should. Same treatment as the p. 66 and p. 71
+   misprints he ruled on earlier.
 
    Five of the seven descend by a different route than they ascend, so this is transcribed
    location data rather than a ladder: perfSegovia plays it as printed and re-derives nothing. */
 const SEGOVIA = [
   { n: "1", key: "C", keys: ["C", "D", "Db", "Eb"],
-    asc: "5/3/2 5/5/4 4/2/1 4/3/2 4/5/4 3/2/1 3/4/3 3/5/1 3/7/3 2/5/1 2/6/2 2/7/4 1/5/1 1/7/3 1/8/4",
+    asc: "5/3/2 5/5/4 4/2/1 4/3/2 4/5/4 3/2/1 3/4/3 3/5/1 3/7/3 2/5/1 2/6/2 2/8/4 1/5/1 1/7/3 1/8/4",
     desc: "1/7/3 1/5/1 2/8/4 2/6/2 2/5/1 3/7/3 3/5/1 3/4/3 3/2/1 4/5/4 4/3/2 4/2/1 5/5/4 5/3/2" },
   { n: "2", key: "G", keys: ["G", "F#", "Ab"],
     asc: "6/3/2 6/5/4 5/2/1 5/3/2 5/5/4 4/2/1 4/4/3 4/5/4 3/2/1 3/4/3 3/5/1 3/7/3 2/5/1 2/7/3 2/8/4 1/5/1 1/7/3 1/8/1 1/10/3 1/12/1 1/14/3 1/15/4",

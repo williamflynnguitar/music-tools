@@ -77,11 +77,15 @@ descending. 287 notes: #1 is 29 and two octaves, the rest 43 and three.
 - Transcribed from four independent readings of the page — three off the PDF text layer, one
   off 300 dpi raster geometry — which agreed on every note. Verified as music afterwards:
   each ascent is strictly stepwise and perfectly diatonic in its printed key.
-- **One misprint, shipped as printed.** #1's twelfth ascending note is TAB'd 2nd string fret
-  7, an F# in C major. The noteheads step evenly either side of it, #1 carries no accidental
-  anywhere, the descent TABs that same printed pitch as fret 8, and the printed 1-2-4 works
-  over frets 5-6-8 but not 5-6-7. It is fret 8. `check.js` pins the correction and reports it
-  as a known difference, the way the p. 66 and p. 71 misprints were held until William ruled.
+- **One note corrected against the page, RULED 2026-09-12.** #1's twelfth ascending note is
+  TAB'd 2nd string fret 7, an F# in C major. The noteheads step evenly either side of it, #1
+  carries no accidental anywhere, the page's own descent TABs that same pitch as fret 8, and
+  the printed 1-2-4 works over frets 5-6-8 but not 5-6-7. William ruled it fret 8, as he did
+  the p. 66 and p. 71 misprints, so the table holds 8 and `check.js` pins it explicitly —
+  a revert to the printed 7 fails by name rather than as a stray off-key note. With the
+  correction in, all seven fingerings are stepwise and diatonic with no exceptions, and #1
+  joins #7 as the two whose descent retraces the ascent exactly; check.js asserts that too,
+  since it is a property that only holds once the note is right.
 - `SEG_MOVABLE` is p. 64's "#2 and #5 ... moveable 3-octave pattern off the 6th and 5th
   string". Both halves of that sentence matter: #1 also has no open string, and what rules it
   out is being the two-octave one. `segShift(f, key)` returns the fret offset or `null` when

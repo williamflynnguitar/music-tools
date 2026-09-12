@@ -350,17 +350,25 @@ let timing = 0;
     // a hand holds four frets: the index sits (finger-1) below the note it plays
     const wide = all.filter(d => d.finger > 0 && d.finger > 4);
     if (wide.length) seg.push(`#${f.n}: finger above 4`);
-    const expectOff = f.n === "1" ? 1 : 0;
-    if (offKey.length !== expectOff) seg.push(`#${f.n}: ${offKey.length} note(s) outside ${f.key} major (at ${offAt.join(", ") || "none"}), expected ${expectOff}`);
-    if (leaps.length !== expectOff) seg.push(`#${f.n}: ascent not stepwise at ${leaps.join(", ") || "nowhere"}, expected ${expectOff} break(s)`);
-    /* the misprint is note 12 itself — an F# in C major; the +3 it causes falls on note 13 */
-    if (f.n === "1" && offAt.join() !== "12") seg.push(`#1: the known misprint moved — the note outside C major should be note 12, saw ${offAt.join(", ") || "none"}`);
+    /* with the p. 73 misprint corrected (William, 2026-09-12) every fingering is clean */
+    if (offKey.length) seg.push(`#${f.n}: ${offKey.length} note(s) outside ${f.key} major, at ${offAt.join(", ")}`);
+    if (leaps.length) seg.push(`#${f.n}: ascent not stepwise at ${leaps.join(", ")}`);
+    /* the corrected note itself, so a revert to the printed 7 fails loudly rather than just
+       showing up as "one note outside C major" somewhere */
+    if (f.n === "1" && f.asc.split(" ")[11] !== "2/8/4")
+      seg.push(`#1 note 12 is ${f.asc.split(" ")[11]}; p. 73 prints 2/7/4 and it is corrected to 2/8/4`);
+    /* and the property that only holds once it is corrected: #1 and #7 are the two fingerings
+       whose descent retraces the ascent exactly, string, fret and finger */
+    if (f.n === "1" || f.n === "7") {
+      const back = f.desc.split(" "), up = f.asc.split(" ").slice(0, -1).reverse();
+      if (back.join(" ") !== up.join(" ")) seg.push(`#${f.n}: the descent no longer retraces the ascent`);
+    }
   }
   if (notes !== 287) seg.push(`287 printed notes expected, ${notes} in the table`);
   const mv = E.SEG_MOVABLE.map(f => f.n).join(",");
   if (mv !== "2,5") seg.push(`p. 64 names #2 and #5 as the moveable three-octave patterns; SEG_MOVABLE holds ${mv || "none"}`);
   seg.forEach(m => { fail++; console.log("FAIL   segovia — " + m); });
-  if (!seg.length) { pass++; console.log(`known  segovia pp. 73-75 — 287 notes, 7 fingerings diatonic and stepwise; #1 note 12 is the book's misprint (TAB 7, should be 8), shipped as printed`); known++; }
+  if (!seg.length) { pass++; console.log(`ok     segovia pp. 73-75 — 287 notes, all 7 fingerings stepwise and diatonic; #1 note 12 corrected from the printed fret 7 to fret 8, and #1's descent now retraces its ascent`); }
 }
 
 sweep.forEach(m => console.log("FAIL   " + m));
