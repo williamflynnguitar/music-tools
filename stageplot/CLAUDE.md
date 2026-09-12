@@ -123,7 +123,14 @@ instrument, add a row; nothing else in the file enumerates instruments.
   has no acoustic piano, so piano *is* a house keyboard), drums → the house kit. A
   `stance:"object"` role like the kit *is* its gear: the position draws as the
   kit and no separate item exists, which is why two drummers on one kit give
-  one set of channels.
+  one set of channels. `kitPieces()` draws the kit in plan view inside that
+  footprint — kick at the downstage edge with its resonant head to the
+  audience, snare and toms behind it, floor tom and ride to the drummer's
+  right, hats to their left, and the drummer as a solid mark at the back with
+  a tick for which way they face. Cymbals are thinner than drums rather than
+  dashed: dashed means "the band brings it" on this page. The name sits under
+  the kit like every other position's, so the drawing has the footprint to
+  itself.
 - Custom roles: the Positions tab's "custom role…" writes into
   `plot.customRoles`, so an odd instrument travels inside the saved file and
   needs no code change. `roleDef()` looks there first.
