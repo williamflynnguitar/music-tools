@@ -112,6 +112,15 @@ design choice affects what a student learns, say so rather than picking
 silently — e.g. distributing silent bars evenly through a phrase trains
 something different from one long silent block.
 
+Inversions are named by the note actually in the bass — root position has the
+root lowest, 1st inversion the 3rd, and so on — never by the close voicing a
+drop voicing was derived from. Drop-2 moves the 2nd-from-top voice down an
+octave and drop-3 the 3rd-from-top, so the rotation has to be shifted back
+before the name is applied (inversion-drill shipped the unshifted name until
+Sep 2026, calling a 5-in-the-bass drop-2 "root position"). Where an extension
+has taken the bass voice (9 for R, #11 for 5) there is no inversion to name:
+say what is in the bass instead.
+
 Assume jazz defaults unless told otherwise: swing feel, backbeat on 2 and 4,
 8-bar phrases with 12 available for blues.
 
