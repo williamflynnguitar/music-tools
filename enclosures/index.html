@@ -285,6 +285,18 @@ function halfBelow(n){
 }
 const semisUp = (a,b) => ((pcOf(b) - pcOf(a)) % 12 + 12) % 12;
 
+const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+/* Spelling an approach tone on its neighbour's letter is right until the
+   neighbour is already altered the same way: the upper neighbour of Ab in C
+   minor would be Bbb. Nobody writes that, so anything past a single accidental
+   is respelled to the plain name for its pitch, keeping the direction. */
+function simplify(n){
+  if (Math.abs(n.alt) <= 1) return n;
+  const pick = (n.alt > 0 ? SHARP_NAMES : FLAT_NAMES)[pcOf(n)];
+  return { letter: pick[0], alt: pick.length > 1 ? (pick[1] === '#' ? 1 : -1) : 0 };
+}
+
 /* the approach tones around scale degree `deg`, and the GN's type */
 function tonesAt(scale, deg){
   const GN = scale[deg];
@@ -292,11 +304,11 @@ function tonesAt(scale, deg){
   const U  = scale[(deg+1)%7];
   /* l and u keep the letters of the neighbours they replace — that is what
      makes the 3rd of C minor read Fb above Eb, and F natural above E. */
-  const l  = spellAs(L, (pcOf(GN)+11)%12);
-  const u  = spellAs(U, (pcOf(GN)+1)%12);
-  const S  = halfBelow(l);
-  const S2 = halfBelow(L);
-  const T2 = spellAs(scale[(deg+2)%7], (pcOf(U)+1)%12);
+  const l  = simplify(spellAs(L, (pcOf(GN)+11)%12));
+  const u  = simplify(spellAs(U, (pcOf(GN)+1)%12));
+  const S  = simplify(halfBelow(l));
+  const S2 = simplify(halfBelow(L));
+  const T2 = simplify(spellAs(scale[(deg+2)%7], (pcOf(U)+1)%12));
   const below = semisUp(L, GN), above = semisUp(GN, U);
   const type = below === 1 ? 'A' : above === 1 ? 'B' : 'C';
   return { GN, L, U, l, u, S, S2, T2, type, deg,
@@ -767,8 +779,6 @@ const PARTS = {
   bb: { semis:2, degs:1, label:'B♭'  },
   eb: { semis:9, degs:5, label:'E♭'  }
 };
-const SHARP_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const FLAT_NAMES  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 function transposeNote(n, part){
   const T = PARTS[part] || PARTS.c;
   if (!T.semis && !T.degs) return n;
@@ -945,15 +955,20 @@ const SECTIONS = [
   { id:'apply',   n:9, group:null,        title:'Application to progressions', src:'workbook, p. 4' }
 ];
 
-/* helper: a degree template [deg, alt, octaveOffset, 'g'?] -> note token */
+/* helper: a degree template [deg, alt, octaveOffset, 'g'?] -> note token.
+   The chromatic offset lands on a degree that may already be altered — the 2nd
+   of Ab lowered is Bbb — so the result is respelled the same way the approach
+   tones are, and the octave re-derived from the pitch in case the respelling
+   crosses a letter. */
 function fromTemplate(scale, t, baseOct){
   const n = scale[t[0]];
-  const letter = n.letter, alt = n.alt + (t[1] || 0);
   /* octave: count letter wrap-ups from the tonic */
-  const up = (LET.indexOf(letter) - LET.indexOf(scale[0].letter) + 7) % 7;
-  const idx = LET.indexOf(letter);
+  const idx = LET.indexOf(n.letter);
   const oct = baseOct + (t[2] || 0) + (idx < LET.indexOf(scale[0].letter) ? 1 : 0);
-  return letter + (alt>0 ? '#'.repeat(alt) : alt<0 ? 'b'.repeat(-alt) : '') + oct + (t[3]==='g' ? '*' : '');
+  const raw = { letter: n.letter, alt: n.alt + (t[1] || 0) };
+  const midi = 12*(oct+1) + LPC[raw.letter] + raw.alt;
+  const w = simplify(raw);
+  return nameOf(w) + (Math.floor((midi - w.alt) / 12) - 1) + (t[3] === 'g' ? '*' : '');
 }
 function chunk(arr, n){ const o=[]; for (let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; }
 
