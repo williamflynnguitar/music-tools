@@ -9,9 +9,9 @@
 
 ## 1. What this is
 
-A stage plot builder for WSU student ensembles performing at Somewhere Works (SW), 235 N Emporia, Wichita. It replaces hand-drawn plots that SW student techs have complained about. It is venue-specific by design: the stage, the house backline, the monitor ceiling, and the ensemble rosters are all pre-loaded. A director should be able to open the file, pick an ensemble, drag a few things, type monitor requests, and print a one-page plot in under five minutes.
+A stage plot builder for WSU student ensembles performing at Somewhere Works, 235 N Emporia, Wichita. It replaces hand-drawn plots that Somewhere Works student techs have complained about. It is venue-specific by design: the stage, the house backline, the monitor ceiling, and the ensemble rosters are all pre-loaded. A director should be able to open the file, pick an ensemble, drag a few things, type monitor requests, and print a one-page plot in under five minutes.
 
-What the SW techs said they need (verbatim priorities, from a student tech):
+What the Somewhere Works techs said they need (verbatim priorities, from a student tech):
 
 1. Layout of stage — instruments and placement, legible.
 2. Monitors — how many, and what each wedge's musicians want in it.
@@ -57,7 +57,7 @@ const VENUE = {
     { id:"musicstand", label:"Music stand",      cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
     { id:"di",      label:"DI box (house)",      cat:"di",      w:6,  d:6,  count:8 },   // ASSUMED count
     { id:"power",   label:"Power strip",         cat:"power",   w:14, d:4,  count:6 },   // ASSUMED count
-    { id:"riser",   label:"Riser 8×4",           cat:"riser",   w:96, d:48, count:0 },   // ASSUMED — unknown if SW has any
+    { id:"riser",   label:"Riser 8×4",           cat:"riser",   w:96, d:48, count:0 },   // ASSUMED — unknown if Somewhere Works has any
   ],
   // Fixed context drawn outside the deck, not draggable:
   context: {
@@ -129,7 +129,7 @@ Rosters to include (names print on the plot):
 > Shared personnel across ensembles was expected and deliberately not
 > deduplicated.
 
-"Piano" in any jazz roster maps to a house keyboard item by default, since SW has no acoustic piano. The person's role still prints as "piano."
+"Piano" in any jazz roster maps to a house keyboard item by default, since Somewhere Works has no acoustic piano. The person's role still prints as "piano."
 
 Shared personnel across ensembles (a keys/vocalist and a drummer across A and B, a drummer across B and C, a guitarist and two sax players across the groups and combos) is expected; do not deduplicate. [names redacted — see above]
 

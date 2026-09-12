@@ -153,7 +153,7 @@ svg.deck .hit:active{cursor:grabbing}
 .dlg{max-width:560px;margin:0 auto;background:var(--petrol);border:1px solid var(--line);border-radius:6px;padding:18px 20px 22px}
 .dlg.wide{max-width:680px}
 .dlg h2{font-size:19px;font-weight:400;margin:0 0 4px}
-.dlgh{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);font-weight:400;margin:18px 0 6px}
+.dlgh{font-family:var(--mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);font-weight:600;margin:18px 0 6px}
 .dlg textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:4px;padding:8px 10px;color:var(--bone);font-family:var(--mono);font-size:13px;line-height:1.5;resize:vertical}
 .totals{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--bone-dim);border:1px solid var(--line);border-radius:4px;padding:8px 12px;margin-bottom:12px}
 .totals b{color:var(--bone);font-weight:400;font-size:15px}
@@ -327,7 +327,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
  * preset re-lays out proportionally; plots already saved keep the deck
  * they were drawn on (Plot.deck), so old files never shift.
  * Values marked ASSUMED are placeholders William is confirming with
- * the SW tech; do not invent models to fill them in.
+ * the Somewhere Works tech; do not invent models to fill them in.
  * ------------------------------------------------------------------ */
 const VENUE = {
   name: "Somewhere Works — The Lot",
@@ -353,7 +353,7 @@ const VENUE = {
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
     { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:6,  d:6,  count:8 },   // ASSUMED count
     { id:"power",   label:"Power strip",      short:"Power",   cat:"power",   w:14, d:4,  count:6 },   // ASSUMED count
-    { id:"riser",   label:"Riser 8×4",        short:"Riser",   cat:"riser",   w:96, d:48, count:0 },   // ASSUMED — unknown if SW has any
+    { id:"riser",   label:"Riser 8×4",        short:"Riser",   cat:"riser",   w:96, d:48, count:0 },   // ASSUMED — unknown if Somewhere Works has any
   ],
   // Fixed context drawn outside the deck, not draggable:
   context: {
@@ -397,7 +397,7 @@ function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()
  *
  *   grp/sub   where its channels sort (see the channel-ordering rule)
  *   stance    "standing" | "seated" | "object" (the gear is the marker)
- *   backline  a VENUE.house id this role implies; SW has no acoustic
+ *   backline  a VENUE.house id this role implies; Somewhere Works has no acoustic
  *             piano, so piano and organ mean a house keyboard
  *   gearSide  which side of the player the backline sits: "up" behind
  *             (amps), "down" in front (keyboards)
@@ -513,15 +513,15 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
 
 /* ---- instrumentation templates: shapes, not rosters --------------- */
 const TEMPLATES = [
-  { id:"combo", name:"Jazz combo", note:"a horn or two over rhythm — add or drop players once you're in",
+  { id:"combo", name:"Jazz combo", note:"horns over a rhythm section; add or drop players after",
     parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]] },
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
     parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"rock", name:"Rock / pop band", note:"lead vocal, gtr, keys, bass, drums",
+  { id:"rock", name:"Rock / pop band", note:"lead vocal, guitar, keys, bass, drums",
     parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"vocals", name:"Vocals + rhythm section", note:"three voices over a rhythm section",
+  { id:"vocals", name:"Vocals + rhythm section", note:"three voices, rhythm section",
     parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]] },
-  { id:"duo", name:"Solo / duo", note:"voice doubling acoustic, plus an upright if there are two of you",
+  { id:"duo", name:"Solo / duo", note:"voice doubling acoustic guitar",
     parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1]] },
 ];
 
@@ -677,7 +677,7 @@ function layoutObjects(plot){
 }
 
 /* Monitor groups: who shares a mix. Built in priority order, then
-   merged from the back until they fit SW's wedge count. */
+   merged from the back until they fit the wedge count at Somewhere Works. */
 function monitorGroups(plot){
   const labels = positionLabels(plot), groups = [];
   const add = (name, list) => { if (list.length) groups.push({ name, list }); };
@@ -1556,7 +1556,7 @@ function renderPanel(p){
       H.push('<h3>Rhythm section</h3><div class="seg2">' +
         '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums centre<span>bass to the side</span></button>' +
         '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass centre<span>drums to the side</span></button></div>' +
-        '<p class="note">“The side” is stage left — the performer\'s left, which prints on the right-hand side of the page. Anything you have dragged stays put.</p>');
+        '<p class="note">The side is stage left: the performer\'s left, printed on the right of the page. Anything you have dragged stays where it is.</p>');
     }
 
     H.push("<h3>Add a position</h3><div class='chips'>");
@@ -1567,7 +1567,7 @@ function renderPanel(p){
       '<button class="btn sm" id="bCustomRole">custom…</button></div>');
 
     H.push("<h3>On stage — " + p.positions.length + "</h3><div class='plist'>");
-    if (!p.positions.length) H.push('<p class="note">Nobody yet. Add positions above, or start from a shape with New.</p>');
+    if (!p.positions.length) H.push('<p class="note">No positions yet. Add one above, or pick a shape from New.</p>');
     for (const pos of p.positions){
       const w = p.wedges.find(w => w.assignees.includes(pos.id));
       H.push('<div class="prow" style="align-items:flex-start"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
@@ -1577,7 +1577,7 @@ function renderPanel(p){
         '<button class="btn sm" data-psel="' + pos.id + '" title="select on the canvas">edit</button>' +
         '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>');
     }
-    H.push('</div><p class="note">Names are optional everywhere. Positions carry the channels; a plot with no names at all still prints completely.</p>');
+    H.push('</div><p class="note">Names are optional. The channels come from the positions, so a plot with no names still prints in full.</p>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
@@ -1585,15 +1585,15 @@ function renderPanel(p){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push("</div><p class='note'>Backline appears on its own when a position needs it — a guitar brings an amp, piano means a house keyboard. Add one here only if you want an extra.</p>");
+    H.push("</div><p class='note'>Backline is added automatically: a guitar gets an amp, piano gets a house keyboard. Use these buttons only for an extra.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
     for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + '</span></button>');
-    H.push("</div><p class='note'>Select a placed item to type what it is — “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>. Channels come from the position it belongs to.</p>");
+    H.push("</div><p class='note'>Select a placed item to name it: “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>. Its channels come from the position that owns it.</p>");
   }
   if (S.tab === "wedges"){
-    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Mixes list positions, so they read fine before anyone is named.</p>");
+    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Mixes are listed by position, not by name.</p>");
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
       H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
         '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>');
@@ -1635,7 +1635,7 @@ function renderPanel(p){
       '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
       '<h3>Deck (this plot)</h3><div class="insprow"><input type="text" id="fW" style="width:70px"> ft wide <input type="text" id="fD" style="width:70px"> ft deep</div>' +
-      '<p class="note">New plots start from VENUE.deck (' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′). This plot keeps what is saved with it.</p>' +
+      '<p class="note">New plots start at ' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′ (VENUE.deck). This plot keeps the size saved with it.</p>' +
       '<h3>Songs</h3>');
     (p.songs || []).forEach((s, i) => {
       H.push('<div class="wedgecard"><header><input type="text" data-song="' + i + '" value="' + esc(s.title) + '" style="flex:1;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:4px 6px">' +
@@ -1961,23 +1961,17 @@ async function copyText(t){
 }
 
 /* ================= start screen: template, build, load ================= */
-const EXAMPLES = [                      // saved plots that ship with the tool, not app structure
-  ["group-a.json","Group A"], ["group-b.json","Group B"], ["group-c.json","Group C"],
-  ["combo-a.json","Combo A"], ["combo-b.json","Combo B"], ["combo-c.json","Combo C"], ["big-band.json","Big Band"],
-];
 function openStart(){
   const dlg = $("startDlg");
   dlg.innerHTML = '<div class="dlg wide"><h2>New plot</h2>' +
-    '<p>Three ways in. All of them land in the same editor.</p>' +
+    '<h3 class="dlgh">Build the instrumentation</h3>' +
+    '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against Somewhere Works: 32 channels, 5 mixes</span></button>' +
+    '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
     '<h3 class="dlgh">Start from a shape</h3><div class="pickgrid">' +
     TEMPLATES.map(t => '<button class="btn" data-tpl="' + t.id + '">' + esc(t.name) + '<span class="sub">' + esc(t.note || "") + '</span></button>').join("") +
     '</div>' +
-    '<h3 class="dlgh">Build the instrumentation</h3>' +
-    '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against SW\'s 32 channels and 5 mixes</span></button>' +
-    '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
     '<h3 class="dlgh">Open something</h3>' +
     '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button></div>' +
-    '<div id="examples" class="note">Examples…</div>' +
     (S.plots.length ? '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div>' : "") +
     '</div>';
   dlg.hidden = false;
@@ -1989,23 +1983,7 @@ function openStart(){
   $("bStartBuild").onclick = () => { dlg.hidden = true; openInstrumentation(null); };
   $("bStartLoad").onclick = () => $("fileIn").click();
   const cancel = $("bCancelNew"); if (cancel) cancel.onclick = () => { dlg.hidden = true; };
-  renderExamples();
 }
-function renderExamples(){
-  const box = $("examples"); if (!box) return;
-  box.innerHTML = 'Examples: ' + EXAMPLES.map(([f, n]) => '<button class="btn sm" data-ex="' + f + '">' + esc(n) + '</button>').join(" ") +
-    '<div id="exNote" style="margin-top:6px"></div>';
-  box.querySelectorAll("[data-ex]").forEach(b => b.onclick = async () => {
-    try {
-      const r = await fetch("samples/" + b.dataset.ex);
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      loadJSON(await r.text(), b.textContent);
-    } catch (err){
-      $("exNote").textContent = "Opening a file straight off disk (file://) blocks that fetch — use Load and pick stageplot/samples/" + b.dataset.ex + " instead.";
-    }
-  });
-}
-
 /* ================= instrumentation form ================= */
 function openInstrumentation(target){
   const dlg = $("startDlg");
@@ -2018,7 +1996,7 @@ function openInstrumentation(target){
     const ch = channelCount(preview), mixes = preview.wedges.length, pos = preview.positions.length;
     const chCls = ch > VENUE.consoleChannels ? "red" : ch > VENUE.warnChannelsAt ? "amber" : "";
     dlg.innerHTML = '<div class="dlg wide"><h2>' + (target ? "Instrumentation" : "Build the instrumentation") + '</h2>' +
-      '<p>How many of each. Everything else — channels, wedges, backline — follows from it.</p>' +
+      '<p>Set how many of each. Channels, wedges and backline are worked out from these numbers.</p>' +
       '<div class="totals"><span class="' + chCls + '"><b>' + ch + '</b> / ' + VENUE.consoleChannels + ' channels</span>' +
       '<span><b>' + pos + '</b> positions</span><span><b>' + mixes + '</b> / ' + VENUE.monitorMixes + ' mixes</span></div>' +
       '<div class="instr">' + entries().map(([id, n]) => {
@@ -2068,7 +2046,7 @@ function openBulkNames(){
   const draw = () => {
     const rows = parseNameList(text, p);
     dlg.innerHTML = '<div class="dlg wide"><h2>Paste the roster</h2>' +
-      '<p>One per line. “Name — instrument” aims each name at the right position; plain names fill the list in order. Nothing is applied until you say so.</p>' +
+      '<p>One name per line. Add “— instrument” to send a name to a particular position; the rest fill the list in order. Check the preview before you apply.</p>' +
       '<textarea id="bulkText" rows="9" placeholder="Sam Ortiz — keys&#10;Dana Bell — guitar&#10;Chris Aoki — bass&#10;Jo Fischer — drums"></textarea>' +
       (rows.length ? '<h3 class="dlgh">Preview</h3><table class="prev"><thead><tr><th>Name</th><th>Goes to</th></tr></thead><tbody>' +
         rows.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + (r.label ? esc(r.label) : '<span style="color:var(--amber)">no position left</span>') + '</td></tr>').join("") +
@@ -2089,7 +2067,7 @@ function openBulkNames(){
 function openCustomRole(){
   const dlg = $("startDlg");
   dlg.innerHTML = '<div class="dlg"><h2>Custom instrument</h2>' +
-    '<p>Anything that walks in the door. It lands in this plot and travels with the file.</p>' +
+    '<p>For an instrument the list doesn\'t cover. It is saved inside this plot\'s file.</p>' +
     '<div class="fld"><label>Name</label><input type="text" id="crLabel" placeholder="Steel pan"></div>' +
     '<div class="fld"><label>Short label for the diagram</label><input type="text" id="crShort" placeholder="Pan"></div>' +
     '<div class="insprow"><div class="fld" style="flex:1"><label>Input</label><select id="crType">' +

@@ -81,8 +81,8 @@ templates, warnings, the house-equipment list, the delivery line.
 | `kit` label — Gretsch 4-pc | **ASSUMED** | the photo says Gretsch, the tech's example said Yamaha |
 | `bassamp` — Ampeg 8×10 | **ASSUMED** | |
 | `gtramp1`, `kb1`, `kb2` — "model TBD" | **ASSUMED** | left as written; they print verbatim, so do not invent models |
-| `micstand` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than SW has" |
-| `riser` count 0 | **ASSUMED** | unknown whether SW owns any |
+| `micstand` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
+| `riser` count 0 | **ASSUMED** | unknown whether Somewhere Works owns any |
 | `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
 
 Confirmed: 5 wedges / 5 mixes typical with extras possibly from Shocker
@@ -119,8 +119,8 @@ instrument, add a row; nothing else in the file enumerates instruments.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → house amp, bass and
-  upright → house rig, keys → house keyboard 1, organ → keyboard 2 (SW has no
-  acoustic piano, so piano *is* a house keyboard), drums → the house kit. A
+  upright → house rig, keys → house keyboard 1, organ → keyboard 2 (Somewhere Works
+  has no acoustic piano, so piano *is* a house keyboard), drums → the house kit. A
   `stance:"object"` role like the kit *is* its gear: the position draws as the
   kit and no separate item exists, which is why two drummers on one kit give
   one set of channels.
@@ -266,15 +266,17 @@ is unpleasant to text. No hand-rolled inflate: the API is native in Chrome
 and asks for the `.json`. The hash carries the whole session, so a showcase
 link opens every plot and its changeover sheets, read-only.
 
-## Examples on the start screen
+## The start screen
 
-The Examples row fetches `samples/*.json`. Those files are gitignored, so on
-the deployed site the buttons find nothing and the app says so and points at
-Load — which is correct: the rosters are not public. On William's machine,
-served over a local HTTP server (`python3 -m http.server 8017` from the repo
-root), they load. Straight off `file://` browsers block the fetch either way.
-Embedding them in the page is not an option: that is exactly the names leak
-`check.js` guards against.
+Three sections, in this order: **Build the instrumentation** (the form, plus a
+blank plot), **Start from a shape** (the five templates), **Open something**
+(Load a `.json`, or drop one anywhere on the page). Building comes first
+because it is the general path — the templates are a shortcut, not the point.
+
+There is no Examples list. It fetched `samples/*.json`, which are gitignored,
+so it found nothing on the deployed site and only worked on a local server —
+a button that fails for everyone but one person. The saved plots still open
+through Load, and dropping a file on the page works anywhere.
 
 ## What prints
 
@@ -327,7 +329,7 @@ New in v2:
 2. **Big band seating**: rhythm section at true stage left per the brief, which
    is the audience's *right*; low chairs nearest the rhythm section.
 3. **Upright bass implies the house bass rig** — change the role's `backline`
-   if uprights usually go straight to a DI at SW.
+   if uprights usually go straight to a DI at Somewhere Works.
 4. Group B prints on two pages: eight positions, five mixes, and the monitor
    table now names both the chair and the person. v1 fit it on one only because
    it printed bare names.

@@ -1,4 +1,4 @@
-# Claude Code Prompt — SW Stage Plot Tool v2: generalize the ensemble model
+# Claude Code Prompt — Somewhere Works Stage Plot Tool v2: generalize the ensemble model
 
 Paste into a Claude Code session on the `music-tools` repo.
 
@@ -6,9 +6,9 @@ Read `stageplot/CLAUDE.md` and `stageplot/index.html` before changing anything.
 
 v1 works, but it hardcoded my fall 2026 WSU rosters into the app. That was the
 wrong altitude. This tool should serve any act loading into Somewhere Works —
-other WSU ensembles, next semester's personnel, touring bands, community groups
-— while staying venue-specific to SW. The venue knowledge is the moat; the
-roster knowledge was a mistake.
+other WSU ensembles, next semester's personnel, touring bands, community
+groups — while staying venue-specific to Somewhere Works. The venue knowledge
+is the moat; the roster knowledge was a mistake.
 
 This is a refactor, not a rebuild. Keep the venue config, the canvas, the wedge
 model, the input-list derivation, the constraint warnings, the changeover
@@ -54,11 +54,12 @@ each entry carries:
 - footprint in inches, and whether the position is seated, standing, or a fixed
   object (a kit)
 - whether it implies a piece of house backline (piano → house keyboard, since
-  SW has no acoustic piano; bass → bass rig; guitar → guitar amp)
+  Somewhere Works has no acoustic piano; bass → bass rig; guitar → guitar amp)
 - layout affinity: which zone it wants (see §4) and how strongly
 
-Seed it with everything SW plausibly sees: voice, guitar, electric bass,
-upright bass, drums, percussion (aux), keys/piano, organ, alto/tenor/bari/
+Seed it with everything Somewhere Works plausibly sees: voice, guitar,
+electric bass, upright bass, drums, percussion (aux), keys/piano, organ,
+alto/tenor/bari/
 soprano sax, flute, clarinet, trumpet, flugelhorn, trombone, bass trombone,
 tuba, violin, cello, acoustic guitar, harmonica, DJ/laptop, horn section
 (generic), backing track playback.
@@ -97,9 +98,9 @@ fully editable.
 
 **Path B — Build it.** A compact instrumentation form: a row per role with a
 stepper for how many. Add roles, remove roles, set counts. Show a live running
-total of positions, channels, and wedges needed against SW's limits as the
-numbers change — a bandleader learning that 17 individually-miked players
-exceed a 32-channel console while building is the whole point.
+total of positions, channels, and wedges needed against the Somewhere Works
+limits as the numbers change — a bandleader learning that 17 individually-miked
+players exceed a 32-channel console while building is the whole point.
 
 **Path C — Load.** Open a saved `.json` or a share link. This is how a
 returning ensemble works: last semester's plot loads, you swap the names,
