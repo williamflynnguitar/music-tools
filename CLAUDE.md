@@ -60,7 +60,13 @@ scales-deck and arpeggios-deck between `===== shared scale data =====` markers.
 (line-ladder no longer carries it — the rebuilt engine is pitch-only and keeps
 just the spelling recipes.)
 Keep the copies byte-identical — `SHAPES` and `MAJOR` are aliases into
-`SCALES.major` for older code. Factoring the renderer and data into a shared
+`SCALES.major` for older code.
+
+Pitch class 6 is **F#, never Gb**, in every root or key ring a student picks from
+(Sep 2026), and in the engraved cell names (`…-Fs.svg`). The flat spelling tables
+still hold Gb, because it is still the 4th of Db and the b3 of Eb minor: where a
+tool derives a parent key from a pitch class, a flat key borrows Gb's spelling and
+F# borrows its own sharps. Factoring the renderer and data into a shared
 file is the next structural change; the "no build step" rule can be kept with
 a concatenation script or by inlining at commit time.
 

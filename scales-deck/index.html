@@ -192,11 +192,11 @@
 
 <script>
 /* ===== shared scale data — keep byte-identical across fretboard, scales-deck, arpeggios-deck ===== */
-const KEYS  = ["C","F","Bb","Eb","Ab","Db","Gb","B","E","A","D","G"]; // cycle of 4ths
-const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,Gb:6,G:7,Ab:8,A:9,Bb:10,B:11};
+const KEYS  = ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"]; // cycle of 4ths
+const PC    = {C:0,Db:1,D:2,Eb:3,E:4,F:5,"F#":6,G:7,Ab:8,A:9,Bb:10,B:11};
 const OPEN  = {1:4,2:11,3:7,4:2,5:9,6:4};                             // open-string pitch classes
 const CYCLE = ["P6","P5","M6","M5","I6","I5"];                        // p. 61, cycle of fingerings
-const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
+const SPELL = {C:["C","D","E","F","G","A","B"],F:["F","G","A","Bb","C","D","E"],Bb:["Bb","C","D","Eb","F","G","A"],Eb:["Eb","F","G","Ab","Bb","C","D"],Ab:["Ab","Bb","C","Db","Eb","F","G"],Db:["Db","Eb","F","Gb","Ab","Bb","C"],Gb:["Gb","Ab","Bb","Cb","Db","Eb","F"],"F#":["F#","G#","A#","B","C#","D#","E#"],B:["B","C#","D#","E","F#","G#","A#"],E:["E","F#","G#","A","B","C#","D#"],A:["A","B","C#","D","E","F#","G#"],D:["D","E","F#","G","A","B","C#"],G:["G","A","B","C","D","E","F#"]};
 /* SCALES[id]: steps/degrees are parallel arrays (length 8 for the bebop scales later);
    apply is the application line from the scale's intro page, verbatim as printed (in C);
    spellFrom = semitones up to the parent major key, for note spelling (absent: spell from degrees);
@@ -366,13 +366,17 @@ function noteNames(key, scaleId) {
       let diff = ((pcOf(k) + sc.steps[i]) % 12 - LPC[letter] + 12) % 12; if (diff > 6) diff -= 12;
       return letter + (diff > 0 ? "#".repeat(diff) : "b".repeat(-diff));
     });
-    const ENH = { Db:"C#", Eb:"D#", Gb:"F#", Ab:"G#", Bb:"A#" };   // avoid double flats in minor keys
+    const ENH = { Db:"C#", Eb:"D#", Ab:"G#", Bb:"A#" };           // avoid double flats in minor keys
     const SIMPLE = ["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
     let names = from(key);
     if (ENH[key] && names.some(x => x.length > 2)) names = from(ENH[key]);
     return names.map(n => n.length > 2 ? SIMPLE[pcOf(n)] : n);   // no double accidentals survive
   }
-  const parent = KEYS.find(k => PC[k] === (PC[key] + sc.spellFrom) % 12);
+  // the parent major key whose spelling the mode borrows. Pitch class 6 is the one
+  // that has two names in SPELL: a flat key borrows Gb's spelling (Db mixolydian stays
+  // Db Eb F Gb Ab Bb Cb), F# borrows its own sharps.
+  const ppc = (PC[key] + sc.spellFrom) % 12;
+  const parent = ppc === 6 ? (key.includes("b") ? "Gb" : "F#") : KEYS.find(k => PC[k] === ppc);
   const names = SPELL[parent];
   const i0 = names.findIndex(n => pcOf(n) === PC[key]);
   return names.map((_, j) => names[(i0 + j) % names.length]);

@@ -17,6 +17,7 @@ const { OPEN, KEYS, FAMILIES, PRESETS, TUNES, walkCards, transposePreset } = E;
 const out = path.join(__dirname, "ly/quartal"); fs.mkdirSync(out, { recursive: true });
 const keys = process.argv[2] ? process.argv[2].split(",") : KEYS;
 let n = 0;
+const safe = k => k.replace("#", "s");          // cell files use s for sharp (F# → Fs)
 const write = (name, text) => { fs.writeFileSync(path.join(out, name + ".ly"), text); n++; };
 
 const LYA = { "": "", "#": "is", "##": "isis", b: "es", bb: "eses" };
@@ -77,7 +78,7 @@ for (const key of keys) for (const fam of Object.keys(FAMILIES)) {
     for (const card of walkCards(key, fam, strings, inv)) {
       const pos = seen[card.d] = (seen[card.d] || 0);
       seen[card.d]++;
-      write(`${fam}-${strings.join("")}-i${inv}-d${card.d}-p${pos}-${key}`,
+      write(`${fam}-${strings.join("")}-i${inv}-d${card.d}-p${pos}-${safe(key)}`,
         cell(lyChord({ strings: card.strings, frets: card.frets, notes: card.names }, 1) + ' \\bar ""'));
     }
   }
@@ -92,7 +93,7 @@ for (const p of PRESETS) for (const key of keys) {
     lyChord(v, 2, { bass: v.bass, sym: v.sym }) + " | " +
     lyChord(i, 1, { bass: i.bass, sym: i.sym, below: p.plane ? `→ half-step planing (${p.plane})` : null }) +
     ' \\bar "||"';
-  write(`prog-${p.id}-${key}`, cell(mus, { time: true, barnums: true, textlen: true }));
+  write(`prog-${p.id}-${safe(key)}`, cell(mus, { time: true, barnums: true, textlen: true }));
 }
 
 // (c) the tunes, one cell per row (tied rows span two bars)

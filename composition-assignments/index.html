@@ -531,7 +531,7 @@ const ACC={'':0,'#':1,'##':2,'b':-1,'bb':-2,'n':0};
 const mod12=x=>((x%12)+12)%12;
 const pcName=(pc,flats)=>(flats?NAMES_F:NAMES_S)[mod12(pc)];
 const disp=name=>name[0]+name.slice(1).replace(/#/g,'♯').replace(/b/g,'♭');
-const KEYS=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const KEYS=['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];   // scale roots: F#, not Gb
 
 /* major scale spelled from the key's own letters (degree 3 of E is G#, never Ab) */
 function majorScale(key){
