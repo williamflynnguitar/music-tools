@@ -162,6 +162,30 @@ design choice affects what a student learns, say so rather than picking
 silently — e.g. distributing silent bars evenly through a phrase trains
 something different from one long silent block.
 
+**No double flats or double sharps, anywhere** (William, 2026-09-12) — not in
+engraved notation, note names, chord symbols, degree labels, exported LilyPond
+or the pre-rendered cells. That includes diminished chords: a °7's seventh is
+labelled °7, never bb7, and D♭°7 is spelled D♭ F♭ G B♭.
+
+Every tool that spells notes one letter per degree runs off the end of the
+alphabet somewhere, so each carries a guard. Three shapes recur:
+
+- a letter needing two accidentals gives way to the plain name of the same
+  pitch, on the side it was heading (`single` / `spell` / `spellDeg`);
+- a tonic whose scale cannot be spelled cleanly is written from the side that
+  can — D♯ and G♯ minor are written E♭ and A♭, D♭ and G♭ minor stay C♯ and
+  F♯ (`minorName` / `sideFor` / `keySpell` / `scaleSpelled` / `writtenTonic`);
+- never raise a degree by appending '#' to a name that may already be sharp —
+  that is what spelled A♭ minor's leading tone F× in three tools at once.
+
+Transposing by interval preserves letters, so it can manufacture a double from
+a clean concert part: Line Ladder's LilyPond export transposes through
+`transposeNote` rather than a `\transpose` wrapper for exactly this reason.
+
+Checking it: grep the generated `.ly` under `notation/pipeline/ly/` for
+`eses`/`isis`, and the checked-in SVG cells for the glyph path prefixes
+`d="M153 0` (double sharp) and `d="M191 39` (double flat).
+
 Inversions are named by the note actually in the bass — root position has the
 root lowest, 1st inversion the 3rd, and so on — never by the close voicing a
 drop voicing was derived from. Drop-2 moves the 2nd-from-top voice down an

@@ -882,7 +882,15 @@ function readHash(){
   CUR = SECTIONS.some(s => s.id === id) ? id : 'start';
   S = Object.assign({}, DEFAULTS);
   if (CUR === 'access') S.mode = 'dorian';   /* access points are taught off the ii chord */
-  new URLSearchParams(q || '').forEach((v,k) => { if (k in S) S[k] = v; });
+  /* A key or mode is only ever one the selectors offer. A hand-edited hash used to go
+     straight into S, and a tonic outside the ring — B♯, A♯, F♭ — spells its scale with
+     double accidentals, which are never written (William, 2026-09-12). */
+  const ALLOWED = { key: KEYS, mode: Object.keys(MODES) };
+  new URLSearchParams(q || '').forEach((v,k) => {
+    if (!(k in S)) return;
+    if (ALLOWED[k] && !ALLOWED[k].includes(v)) return;
+    S[k] = v;
+  });
 }
 function writeHash(replace){
   const q = new URLSearchParams();
