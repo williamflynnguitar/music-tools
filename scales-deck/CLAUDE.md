@@ -216,17 +216,26 @@ William's rulings, all 2026-09-11:
   as a *dot*, so Bb and Eb get I6/I5 where p. 67 cycles through M6/M5 (the note is in-window
   there). Every printed P6 example uses "B on 3rd string", not the deck's default.
 
+## Rulings, round 5 (2026-09-12)
+- **Concept 2's Advanced turn is B, the echo skip** — `walkTurn`, which is what the engine
+  already did, so nothing changed. He ruled it off the listening proof's three B cards,
+  including the two he had flagged as arguing against it: `C Pinky 6 / 1231`, where the line
+  ends inside the last group down with no climb at all and the root on an `&`, and
+  `F Pinky 5 / 1234`, where five notes come back up instead of eleven. Concept 2 now turns
+  exactly as concept 1 does, which was the point of the rule.
+- **The flagged player defaults all stand**: the highlight on the card's own diagram; one card
+  at a time, with concept 3 following the hand up the neck; 100 BPM; clicks on 2 and 4 on;
+  tempo and feel changes taking effect at the next bar line; Play only where the engine has a
+  line; and the concept 2 Easy fallback with its 7 knock-on cards and concept 5 Easy 2.
+
 ## Open questions for William
-Whether the zigzag in concept 3 should start at the very lowest position or the lowest with a root on the 6th/5th string; the computed below-root fingers.
-Engine, still open after round 4:
-- Concept 2's Advanced tiers: his 2a turn (`walkTurn`, the engine now) or the plain turn he
-  heard in the 2d proof (`walk`). He asked to hear both; they're in the listening proof.
+Still genuinely open — these are questions where no pick was made, so round 5 did not settle
+them:
+- Whether the zigzag in concept 3 should start at the very lowest position, or the lowest with
+  a root on the 6th/5th string.
+- The computed below-root fingers.
 - Whether concept 2's climb should reuse the locations the descent used (48 lines differ).
 - 72 Intermediate Middle 6 concept 2 cards start a step above the 9th.
 - Concept 3 Easy lights a note the card draws dimmed on 329 cards: the step below the next
   ascent's root sits below the descending card's lowest root, which Easy dims. Should the
   played note draw normally?
-Player defaults chosen without a ruling (flagged): the highlight on the card's own diagram; one
-card at a time, with concept 3 following the hand up the neck; 100 BPM; clicks on 2 and 4 on;
-tempo and feel changes taking effect at the next bar line; Play only where the engine has a
-line; the concept 2 Easy fallback above, with its 7 knock-on cards and concept 5 Easy 2.
