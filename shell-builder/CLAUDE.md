@@ -104,9 +104,32 @@ there is no inversion or string-set state in this app.
   chord always lands on a note the picker would offer. Choosing a B or E note
   pins struct/rs/rf/off together.
 - `extOptions` is the availability engine: the book's windows, then `judge()`,
-  then `symbolAllows`, then hand span — span ≤3 offered, span 4 only from
-  `SPAN4_KEEP`, span ≥5 never. `SPAN4_KEEP` is **empty pending William's
-  keep/cut on the 23 five-fret cells** (same pattern as triad-voicings).
+  then `symbolAllows`, then hand span — four frets or fewer offered, six or
+  more never. **Five frets (`span===4`) is offered, RULED 2026-09-12:** William
+  played all 18 five-fret cells the generator can reach and kept every one ("I
+  can play them all"). There is no `SPAN4_KEEP` whitelist here any more — those
+  18 are the complete set over every quality × root string × structure × fret
+  1–15, so a whitelist naming all of them was a no-op. Unlike triad-voicings,
+  where he cut 21 of 23, nothing is excluded on span alone.
+
+  Two things to carry forward. The ruling is **his** hand: these are grips a
+  professional reach accepts, and the students are the other half of the
+  audience, so a Ready/stretch caveat or a position floor is the obvious place
+  to go if a student can't hold one. And the rule is now span-based rather than
+  enumerated, so a **new quality or structure added to `QUAL`/`STRUCT` will have
+  its five-fret cells offered automatically** — re-run the enumeration and show
+  him the new grips rather than assuming the ruling covers them.
+
+  The 18 as played, all of them in the 4-note rootless structure
+  (`quality|rootString|structure|B+E`):
+
+  ```
+  6|5|4|R+6        7|6|4|#11+#9     7|5|4|b9+b7      7|5|4|9+b7
+  7|5|4|#9+b7      7|5|4|R+13       maj7|5|4|R+13    7sus|5|4|R+13
+  m7|6|4|11+9      m7|5|4|R+13      m7|5|4|9+13      m6|6|4|11+9
+  m6|5|4|R+6       m6|5|4|9+6       m7b5|6|4|11+9    mMaj7|6|4|11+9
+  mMaj7|5|4|R+13   mMaj7|5|4|9+13
+  ```
 - **Name collision hazard.** The shared progressions block carries its own
   `degName(pc, step, semi)` (a key-transposition helper). Shell Builder's own
   chord-degree namer is therefore called `shellDeg(off, qKey)`: when the block

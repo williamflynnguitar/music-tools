@@ -764,11 +764,6 @@ function progVoiceLead(bars){
    walks down to −4, and °7/Δ7#5 from 5R cap the E string at +2. On top of
    that: judge() must be happy, the chord symbol has to allow the note, and
    the shape has to be playable. */
-const SPAN4_KEEP = [];   /* "quality|rs|struct|B+E" cells William has kept. The
-                            23 five-fret cells are out for his keep/cut ruling,
-                            so none are offered yet — same pattern as
-                            triad-voicings' SPAN4_KEEP. */
-function cellId(q, rs, struct, degs){ return [q, rs, struct, degs.join('+')].join('|'); }
 /* The symbol decides. A plain dominant is open to every extension it can
    reach — William, Sep 2026: "extensions depend on harmonic context. That's
    what developing a good harmonic concept as a player is all about." An
@@ -798,8 +793,12 @@ function extOptions(ch, struct, rs, rf){
     const degs = [b.deg].concat(e ? [e.deg] : []);
     if(!symbolAllows(ch, degs)) continue;
     const fr = v.notes.map(n=>n.f), span = Math.max(...fr) - Math.min(...fr);
-    if(span>=5) continue;                       // six frets or more: never
-    if(span===4 && !SPAN4_KEEP.includes(cellId(ch.quality, rs, struct, degs))) continue;
+    /* Hand span. Six frets or more is never offered. Five frets is, because
+       William played all 18 five-fret cells the generator can reach (2026-09-12)
+       and kept every one. Those 18 are the complete set, so a whitelist naming
+       them would have been a no-op and the ruling is expressed as the rule
+       instead. It is his hand, not a student's — see CLAUDE.md. */
+    if(span>=5) continue;
     cells.push({ob, oe, b:b.deg, e:e?e.deg:null, span});
   }
   return {cells, hasE:v0.hasE};
