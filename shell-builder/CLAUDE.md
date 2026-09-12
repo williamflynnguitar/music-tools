@@ -84,8 +84,55 @@ side by side and still read as one bar (beat row underneath). The same
 treatment lives in Inversion Drill (`.sys`) and Box Buddy (`.chart`,
 screen-only so printed handouts keep 4-bar systems).
 
+## Per-chord editor in Through changes (Sep 2026)
+Before this, Through changes held one global state: the sidebar Structure
+list re-voiced every chord, which is what a student hit in a lesson
+("that's changing all of them"). Structure was the *only* voicing control —
+there is no inversion or string-set state in this app.
+
+- `progEdit` maps `bar:slot:chordText` → `{struct?, rs?, rf?, off?}`, cleared
+  when the progression changes. The chord's own text is in the key, so an
+  edit in a typed chart belongs to that chord and drops when it is retyped.
+  In memory only, per the no-storage rule.
+- **Edits never re-lead the rest of the chart.** `progVoiceLead` still walks
+  the automatic chain and `prev` follows the *automatic* pick, so editing one
+  chord leaves every other chord where it was (William's ruling; the
+  alternative, re-leading downstream, is a "re-lead from here" button if he
+  ever wants it).
+- A structure or position change re-picks the offsets through `pickOffsets`
+  (now taking an explicit structure) and then `snapToOffered`, so an edited
+  chord always lands on a note the picker would offer. Choosing a B or E note
+  pins struct/rs/rf/off together.
+- `extOptions` is the availability engine: the book's windows, then `judge()`,
+  then `symbolAllows`, then hand span — span ≤3 offered, span 4 only from
+  `SPAN4_KEEP`, span ≥5 never. `SPAN4_KEEP` is **empty pending William's
+  keep/cut on the 23 five-fret cells** (same pattern as triad-voicings).
+- `symbolAllows`: **a plain dominant is open to every extension it can
+  reach** — William, Sep 2026: "extensions depend on harmonic context. That's
+  what developing a good harmonic concept as a player is all about." An
+  explicitly altered symbol takes the altered list only (no natural 9 or 13,
+  and no natural 5 once the symbol carries #5/b13).
+- `subLabel` is his stand-in rule, **not printed on pp. 45–51**: where the
+  structure has a B string but no E string, a 6R B string can't reach b9 so
+  b13 stands in ("b13 for b9"), and a 5R B string can't reach b13 so b9 does.
+  The chart keeps the written symbol.
+- The generator can still voice something the picker wouldn't offer — a plain
+  `pickOffsets` puts a natural 13 under a 7b9 — so the sounding note is always
+  shown, tagged "as generated", and the E row stays live rather than dimming
+  to a dead end. **Open question for William:** should the automatic voicing
+  follow the altered rule too? That would change the default voicing of every
+  7b9 in the built-in progressions and tunes.
+- Editor placement: after the system on a wide screen (a system is one row);
+  inside the system, directly after the tapped bar, below 560px, where the
+  system stacks one bar per line and "after the system" would be off screen.
+  `progNarrow` tracks the breakpoint and a resize re-renders across it.
+- Re-rendering anchors on the selected chord's screen position and scrolls
+  back by the delta, so opening the editor never slides the chart under a
+  thumb. Escape deselects.
+
 ## Next
 - Extension Quiz variant where the student must *build* a named chord.
+- William's keep/cut on the 23 five-fret cells, then fill `SPAN4_KEEP`.
 
 ## Doubled 7th (Sep 2026 D-review)
 William reviewed all 12 reachable doubled-7th cells (D1–D12). judge() now
