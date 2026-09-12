@@ -250,7 +250,7 @@ const MODES = {
   dorian:     { steps:[0,2,3,5,7,9,10], label:'dorian',        quality:'min7' },
   mixolydian: { steps:[0,2,4,5,7,9,10], label:'mixolydian',    quality:'dom7' }
 };
-const KEYS = ['C','F','Bb','Eb','Ab','Db','Gb','B','E','A','D','G'];
+const KEYS = ['C','F','Bb','Eb','Ab','Db','F#','B','E','A','D','G'];  // cycle of 4ths
 /* the scale degree each access point sits on, 0-based */
 const DEGREES = [
   { deg:0, label:'root', short:'R'  }, { deg:2, label:'3rd',  short:'3'  },
@@ -416,7 +416,7 @@ const SLOTW = 3.25, LEADIN = 1.7, TAILPAD = 0.7;
 const SIG_SHARP_Y = [0,1.5,-0.5,1,2.5,0.5,2];
 const SIG_FLAT_Y  = [2,0.5,2.5,1,3,1.5,3.5];
 const SHARP_LETTERS = 'FCGDAEB', FLAT_LETTERS = 'BEADGCF';
-const FIFTHS = {C:0,G:1,D:2,A:3,E:4,B:5,'F#':6,F:-1,Bb:-2,Eb:-3,Ab:-4,Db:-5,Gb:-6,Cb:-7};
+const FIFTHS = {C:0,G:1,D:2,A:3,E:4,B:5,'F#':6,'C#':7,F:-1,Bb:-2,Eb:-3,Ab:-4,Db:-5,Gb:-6,Cb:-7};
 const ACCVAL = {'':0,'#':1,'##':2,'b':-1,'bb':-2,'n':0};
 
 function keyAlterMap(fifths){
@@ -426,12 +426,19 @@ function keyAlterMap(fifths){
   return m;
 }
 /* the key signature a mode is written in: its relative major */
+const MODE_REL = { ionian:0, dorian:-2, mixolydian:-1, aeolian:-3 };
+const ENHARM = { Db:'C#', 'C#':'Db', Gb:'F#', 'F#':'Gb', Cb:'B', B:'Cb' };
+const fifthsOf = t => FIFTHS[t] === undefined ? 0 : FIFTHS[t];
+/* Db natural minor wants eight flats and a double flat in the scale; write it
+   as C# minor instead. Every other key and mode on offer stays inside seven. */
+function writtenTonic(tonic, mode){
+  const rel = MODE_REL[mode] || 0;
+  if (Math.abs(fifthsOf(tonic) + rel) <= 7) return tonic;
+  const alt = ENHARM[tonic];
+  return (alt && Math.abs(fifthsOf(alt) + rel) <= 7) ? alt : tonic;
+}
 function writtenFifths(tonic, mode){
-  const rel = { ionian:0, dorian:-2, mixolydian:-1, aeolian:3 }[mode] || 0;
-  let f = (FIFTHS[tonic] === undefined ? 0 : FIFTHS[tonic]) + rel;
-  if (f > 6)  f -= 12;
-  if (f < -6) f += 12;
-  return f;
+  return fifthsOf(writtenTonic(tonic, mode)) + (MODE_REL[mode] || 0);
 }
 const midiOf = n => 12*(n.oct+1) + LPC[n.letter] + n.alt;
 
@@ -883,7 +890,8 @@ function segCtl(label, key, opts){
 function toggleCtl(label, key){
   return '<label class="toggle"><input type="checkbox" data-k="'+key+'" '+(S[key]==='1'?'checked':'')+'>'+label+'</label>';
 }
-const KEY_OPTS  = KEYS.map(k => [k, k.replace('b','♭')]);
+const prettyKey = k => k.replace('b','♭').replace('#','♯');
+const KEY_OPTS  = KEYS.map(k => [k, prettyKey(k)]);
 const PART_OPTS = [['c','Concert'],['bb','B♭'],['eb','E♭']];
 /* the composed pages are engraved at concert pitch; the selector rewrites them
    for the horn in the room rather than needing a separate engraved part */
@@ -990,7 +998,8 @@ theory(){
 },
 /* ---------------------------------------------------------------- 3 ----- */
 raw(){
-  const scale = scaleOf(S.key, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
   const t = d => fromTemplate(scale, d, 4);
   const triad = [[0,0,0],[2,0,0],[4,0,0],[2,0,0]].map(t).join(' ') + ' ' + t([0,0,0]) + '/4';
   const up   = [[0,0,0],[1,0,0],[2,0,0],[3,0,0],[4,0,0],[5,0,0],[6,0,0],[0,0,1]].map(t).join(' ');
@@ -999,19 +1008,20 @@ raw(){
   return '<h2>Raw materials</h2><p class="src">workbook, mm. 1–8</p>'
     + '<p class="lead">The diatonic material the enclosures ornament. Nothing chromatic yet — just the triad and the scale, so the ear knows what is being decorated.</p>'
     + ctlBar([ selectCtl('Key','key',KEY_OPTS), selectCtl('Scale','mode',MODE_OPTS) ])
-    + cellHtml(S.key.replace('b','♭')+' '+MODES[S.mode].label+' — triad',
+    + cellHtml(prettyKey(tonic)+' '+MODES[S.mode].label+' — triad',
         '', lineSvg([triad], {fifths, meter:[4,4]}), '', false)
-    + cellRaw(S.key.replace('b','♭')+' '+MODES[S.mode].label+' — scale',
+    + cellRaw(prettyKey(tonic)+' '+MODES[S.mode].label+' — scale',
         '', systemsHtml([up, down, last], {fifths, meter:[4,4], space:17}, 2), '');
 },
 /* ---------------------------------------------------------------- 4 ----- */
 build(){
-  const scale = scaleOf(S.key, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
   const deg = +S.deg, fam = +S.fam;
   const T = tonesAt(scale, deg);
   const list = options(fam, T.type);
   const optIdx = Math.min(+S.opt, Math.max(0, list.length-1));
-  const chord = S.key.replace('b','♭') + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
+  const chord = tonic + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
   const degOpts = [[0,'root'],[2,'3rd'],[4,'5th']];
   let h = '<h2>Building enclosures</h2><p class="src">workbook, mm. 9–64</p>'
     + '<p class="lead">Pick the context, the goal note and the family. Every pattern offered here is one that appears in the source for that goal-note type — the citation is on each cell.</p>'
@@ -1033,12 +1043,13 @@ build(){
 },
 /* ---------------------------------------------------------------- 5 ----- */
 access(){
-  const scale = scaleOf(S.key, S.mode), fifths = writtenFifths(S.key, S.mode);
+  const tonic = writtenTonic(S.key, S.mode);
+  const scale = scaleOf(tonic, S.mode), fifths = writtenFifths(S.key, S.mode);
   const fam = +S.fam, deg = +S.deg;
   const T = tonesAt(scale, deg);
   const list = options(fam, T.type);
   const dg = DEGREES.find(d => d.deg === deg) || DEGREES[0];
-  const chord = S.key.replace('b','♭') + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
+  const chord = tonic + (S.mode==='ionian'?'^7':S.mode==='mixolydian'?'7':'-7');
   const vName = KEYS.length && scale[4] ? pretty(scale[4]) : '';
   let h = '<h2>Access points</h2><p class="src">Enclosing Access Points</p>'
     + '<p class="lead">The same engine, aimed past the triad. The 7th, 9th, 11th and 13th are goal notes too — they just sit on other scale degrees, and their types fall out the same way.</p>'
@@ -1067,7 +1078,8 @@ access(){
 },
 /* ---------------------------------------------------------------- 6 ----- */
 scale(){
-  const scale = scaleOf(S.key, 'ionian'), fifths = writtenFifths(S.key, 'ionian');
+  const tonic = writtenTonic(S.key, 'ionian');
+  const scale = scaleOf(tonic, 'ionian'), fifths = writtenFifths(S.key, 'ionian');
   const ex = SCALE_EX[S.ex] || SCALE_EX.ascending;
   const seq = [];
   const push = t => seq.push(fromTemplate(scale, t, 4));
@@ -1088,7 +1100,7 @@ scale(){
                segCtl('Exercise','ex',[['ascending','Ascending'],['descending','Descending']]) ])
     + '<div class="note"><b>'+esc(ex.name)+'.</b> '+esc(ex.note)+'</div>'
     + cellRaw('', '', systemsHtml(bars, {fifths, meter:[4,4], space:17,
-        chords:[{bar:0, slot:0, text:S.key.replace('b','♭')+'^7'}]}, 2), '')
+        chords:[{bar:0, slot:0, text:tonic+'^7'}]}, 2), '')
     + '<p>Every goal note lands on a downbeat. Three-note enclosures start on an offbeat, which is exactly what lets them sit between one scale tone and the next without disturbing the count.</p>';
 },
 /* ---------------------------------------------------------------- 7 ----- */
