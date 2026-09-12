@@ -323,28 +323,57 @@ const keyName = (pc, ref) => { pc = ((pc%12)+12)%12;
   return pc===6 && ref && ref.includes('#') ? 'F#' : NAMES[pc]; };
 const rotateTo = (names, pc) => { const i=names.findIndex(n=>pcOf(n)===pc); return i<0?null:names.map((_,j)=>names[(i+j)%7]); };
 const raiseName = n => n.endsWith('b') ? n.slice(0,-1) : n+'#';
-function hmSpell(key){                       // harmonic minor of key, spelled from the relative major
+/* one letter per degree from the root, with whatever accidental that letter needs. Correct
+   by construction but can ask for a double accidental, so every caller checks. */
+function byDegree(key, steps){
   const pc = pcOf(key);
-  const names = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
-  names[6] = raiseName(names[6]); return names;
-}
-function mmSpell(key){                       // melodic minor, spelled by degree letters from the key root
-  const pc = pcOf(key), MEL = [0,2,3,5,7,9,11];
-  const names = MEL.map((st,i)=>{
+  return steps.map((st,i)=>{
     const letter = 'CDEFGAB'[('CDEFGAB'.indexOf(key[0])+i)%7];
     let d = (((pc+st)%12 - LPC[letter])%12+12)%12; if(d>6) d-=12;
     return letter + (d>0?'#'.repeat(d):'b'.repeat(-d));
   });
+}
+const hmLetters = key => byDegree(key, [0,2,3,5,7,8,11]);
+function hmSpell(key){                       // harmonic minor of key
+  const names = hmLetters(key);
+  if(!names.some(n=>n.length>2)) return names;
+  const pc = pcOf(key);                      // double accidentals → borrow the relative major
+  const alt = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
+  alt[6] = raiseName(alt[6]); return alt;
+}
+/* which spelling of a minor tonic to write: the side whose harmonic minor needs no double
+   accidental. D♯ and G♯ minor would need C× and F× for the raised 7th, so those two regions
+   are written E♭ and A♭; D♭ and G♭ minor need a double the other way (B♭♭, E♭♭), so they
+   stay C♯ and F♯. Every natural is clean on the flat side. */
+const MINOR_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const minorName = pc => { pc = ((pc%12)+12)%12;
+  return hmLetters(NAMES[pc]).some(n=>n.length>2) ? MINOR_SHARP[pc] : NAMES[pc];
+};
+function mmSpell(key){                       // melodic minor, spelled by degree letters from the key root
+  const pc = pcOf(key);
+  const names = byDegree(key, [0,2,3,5,7,9,11]);
   if(names.some(n=>n.length>2)){             // double accidentals → borrow the relative major
     const alt = rotateTo(SPELL[keyName((pc+3)%12, key)], pc).slice();
     alt[5] = raiseName(alt[5]); alt[6] = raiseName(alt[6]); return alt;
   }
   return names;
 }
+/* the parent rotated to rootPc. Where the collection is rooted on the chord itself and the
+   parent spells that root the other way — A♭7♭9 drawing on C♯ minor, whose harmonic minor has
+   no flat spelling — rewrite it from the chord's own letter: a chord symbol and its scale have
+   to agree, and A♭7♭9's ♭9 really is B♭♭ (the written parts respell it). One double is that
+   ♭9 and worth the match; a spelling that wants two — G♭ minor, needing B♭♭ and E♭♭ — is the
+   outlier, so the parent's spelling stands and the symbol is the one left enharmonic. */
+const fromRoot = (parent, rootPc, ref) => {
+  const names = rotateTo(parent, rootPc);
+  if(!ref || pcOf(ref)!==rootPc || names[0]===ref) return names;
+  const own = byDegree(ref, stepsFrom(names));
+  return own.filter(n=>n.length>2).length > 1 ? names : own;
+};
 function ownSpell(rootPc, scaleId, ref){     // spelled notes of a collection rooted at rootPc
   if(SPELL_FROM[scaleId]!=null) return rotateTo(SPELL[keyName((rootPc+SPELL_FROM[scaleId])%12, ref)], rootPc);
-  if(scaleId==='harmonic') return hmSpell(keyName(rootPc, ref));
-  if(scaleId==='phrygdom') return rotateTo(hmSpell(keyName((rootPc+5)%12, ref)), rootPc);
+  if(scaleId==='harmonic') return fromRoot(hmSpell(minorName(rootPc)), rootPc, ref);
+  if(scaleId==='phrygdom') return fromRoot(hmSpell(minorName((rootPc+5)%12)), rootPc, ref);
   return null;
 }
 const stepsFrom = names => names.map(n=>(pcOf(n)-pcOf(names[0])+12)%12);
@@ -412,9 +441,9 @@ const PROGRESSIONS = {
     chords: flatten(C4.map(k=>{const s=SPELL[k]; return [
       CH(s[0],'maj7',4,M(k,1)), CH(s[5],'m7',4,M(k,6)), CH(s[1],'m7',4,M(k,2)), CH(s[4],'7',4,M(k,5))];}))},
   tonal:{name:'Tonal progressions around the cycle', source:'JGTH 3rd ed., p. 90', group:'cycle',
-    chords: flatten(C4.map(k=>{const s=SPELL[k], rm=s[5]; return [
+    chords: flatten(C4.map(k=>{const s=SPELL[k], rm=minorName(pcOf(s[5])), m=hmSpell(rm); return [
       CH(s[1],'m7',2,M(k,2)), CH(s[4],'7',2,M(k,5)), CH(s[0],'maj7',2,M(k,1)), CH(s[3],'maj7',2,M(k,4)),
-      CH(s[6],'m7b5',2,N(rm,2)), CH(s[2],'7',2,N(rm,5),['b9']), CH(rm,'m6',2,N(rm,1)), CH(rm,'7',2,'sec',['b9'])];}))},
+      CH(m[1],'m7b5',2,N(rm,2)), CH(m[4],'7',2,N(rm,5),['b9']), CH(rm,'m6',2,N(rm,1)), CH(rm,'7',2,'sec',['b9'])];}))},
   bluesBb:{name:'Blues in B♭', source:'JGTH 3rd ed., p. 93', group:'blues', chords:[
     CH('Bb','7',4,'sec'), CH('Eb','7',4,'sec'), CH('Bb','7',4,'sec'),
     CH('F','m7',2,M('Eb',2)), CH('Bb','7',2,M('Eb',5)),

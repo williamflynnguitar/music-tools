@@ -146,6 +146,24 @@ annotated blues presets and local ii–V arrivals tagged `@I` of the local
 key. check.js asserts every progression builds flag-free, which validates
 each annotation's degree against the chord root.
 
+## Minor spelling
+
+A minor tonic is written on whichever side its harmonic minor needs no double
+accidental (`minorName`): D♯ and G♯ minor want C× and F× for the raised 7th, so
+those regions are E♭ and A♭ — the two minor cells of *Tonal progressions* read
+Fø7 B♭7♭9 E♭−6 and B♭ø7 E♭7♭9 A♭−6, and the whole-step minor cycle's A♭ cell
+matches its own key label at last. D♭ and G♭ minor want doubles the other way,
+so they stay C♯ and F♯. Scales come out letter-by-letter from the root
+(`byDegree`) and fall back to the old borrow-from-the-relative-major only when
+that needs a double.
+
+`fromRoot` keeps a chord symbol and its scale on the same side. A♭7♭9 is the
+one chord where that costs a double — its ♭9 really is B♭♭, and it is the only
+one left anywhere in the app (concert and bass parts; B♭ and E♭ respell it to
+C♭ and G♭). A spelling that would want two doubles is the outlier instead, so
+a typed G♭m6 still draws F♯ harmonic minor. A typed D♯m6 or G♯m6 now gets the
+sharp spelling it asked for, C×/F× and all, rather than a silent respelling.
+
 ## Engraving and export
 
 `engrave` renders a single staff on the LilyPond glyph outlines: key
