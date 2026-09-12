@@ -106,8 +106,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .canvashead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.05em}
 .deckwrap{background:#08151a;border:1px solid var(--line);border-radius:5px;padding:6px}
 svg.deck{display:block;width:100%;height:auto;touch-action:none}
+svg.deck{cursor:default}
+svg.deck text{cursor:inherit;user-select:none;-webkit-user-select:none}
 svg.deck .hit{cursor:grab}
 svg.deck g.sel rect,svg.deck g.sel circle,svg.deck g.sel path{stroke:var(--brass);stroke-width:2.4}
+svg.deck g.sel text{fill:var(--brass)}
 svg.deck .hit:active{cursor:grabbing}
 .inspector{margin-top:12px;border:1px solid var(--line);border-radius:5px;padding:10px 12px}
 .inspector h3{margin:0 0 8px;font-size:15px;font-weight:400}
@@ -1220,10 +1223,17 @@ function diagramSVG(plot, opt){
   const ink = print ? "#000" : "#e8e1d1", dim = print ? "#555" : "#a89f8c";
   const deckFill = print ? "#fff" : "#0d232b", houseFill = print ? "#e6e6e6" : "#1a4551";
   const halo = print ? "#fff" : "#0d232b";
-  const P = [], t = (s, x, y, pt, cls, extra) =>
-    P.push('<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + g.pt(pt).toFixed(1) +
+  const P = [], ts = (s, x, y, pt, cls, extra) =>
+    '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" font-size="' + g.pt(pt).toFixed(1) +
       '" text-anchor="middle" fill="' + (cls === "dim" ? dim : ink) + '" font-family="Helvetica, Arial, sans-serif" paint-order="stroke" stroke="' +
-      halo + '" stroke-width="' + (g.pt(pt) * .18).toFixed(2) + '"' + (extra || "") + '>' + esc(s) + '</text>');
+      halo + '" stroke-width="' + (g.pt(pt) * .18).toFixed(2) + '"' + (extra || "") + '>' + esc(s) + '</text>';
+  const t = (s, x, y, pt, cls, extra) => P.push(ts(s, x, y, pt, cls, extra));
+  /* A label belongs to the thing it names: same data-id, so the pointer keeps
+     the grab hand across it and dragging the name drags the player. Absolute
+     coordinates, so the drag handler shifts it by a delta (data-abs). */
+  const labelled = (obj, px, py, inner) => P.push(print ? inner :
+    '<g class="hit' + (S.sel === obj.id ? " sel" : "") + '" data-id="' + obj.id + '" data-abs="1" data-sx="' +
+    px.toFixed(1) + '" data-sy="' + py.toFixed(1) + '">' + inner + '</g>');
 
   // deck, grid, fixed context
   P.push('<rect x="' + g.M + '" y="' + g.M + '" width="' + D.w + '" height="' + D.d + '" fill="' + deckFill + '" stroke="' + ink + '" stroke-width="1.6"/>');
@@ -1256,7 +1266,7 @@ function diagramSVG(plot, opt){
   const draw = (obj, body) => {
     const sel = !print && S.sel === obj.id;
     P.push('<g transform="translate(' + g.sx(obj.x).toFixed(1) + ',' + g.sy(obj.y).toFixed(1) + ') rotate(' + (obj.rot || 0) + ')"' +
-      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '"') + '>' + body + '</g>');
+      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '" data-rot="' + (obj.rot || 0) + '"') + '>' + body + '</g>');
   };
   const stroke = obj => (!print && S.sel === obj.id) ? "#c9a24a" : ink;
   const swid = obj => (!print && S.sel === obj.id) ? 2.5 : 1.3;
@@ -1265,7 +1275,7 @@ function diagramSVG(plot, opt){
   for (const w of plot.wedges){
     const def = houseDef("wedge");
     draw(w, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + stroke(w) + '" stroke-width="' + swid(w) + '"' + bad(w) + '/>');
-    t(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(DRAW.smallPt) * .35, DRAW.smallPt);
+    labelled(w, g.sx(w.x), g.sy(w.y), ts(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(DRAW.smallPt) * .35, DRAW.smallPt));
   }
   // backline and other gear
   for (const it of plot.items){
@@ -1277,8 +1287,9 @@ function diagramSVG(plot, opt){
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    t(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim");
-    if (it.kind === "byo" && it.label) t(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim");
+    if (it.kind === "byo" && it.label) gl += ts(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    labelled(it, px, py, gl);
   }
   // positions
   for (const pos of plot.positions){
@@ -1289,20 +1300,22 @@ function diagramSVG(plot, opt){
         '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>';
       if (role.id === "drums") body += '<circle r="' + (f.d * .19) + '" cy="' + (f.d * .29) + '" fill="none" stroke="' + stroke(pos) + '" stroke-width="1.1"/>';
       draw(pos, body);
-      let ky = py - f.d/2 + g.pt(DRAW.labelPt) * 1.3;                 // labels ride inside the shape
+      let ky = py - f.d/2 + g.pt(DRAW.labelPt) * 1.3, inner = "";     // labels ride inside the shape
       for (const ln of lines){
-        t(ln.text, px, ky, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
+        inner += ts(ln.text, px, ky, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
         ky += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.08;
       }
+      labelled(pos, px, py, inner);
       continue;
     }
     draw(pos, '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>');
     const lb = LB[pos.id];
-    let ly = (lb ? g.sy(lb.y1) : py + f.d/2) + g.pt(DRAW.labelPt) * .95;
+    let ly = (lb ? g.sy(lb.y1) : py + f.d/2) + g.pt(DRAW.labelPt) * .95, inner = "";
     for (const ln of lines){
-      t(ln.text, px, ly, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
+      inner += ts(ln.text, px, ly, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
       ly += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.05;
     }
+    labelled(pos, px, py, inner);
   }
   return '<svg viewBox="0 0 ' + g.vbW.toFixed(0) + ' ' + g.vbH.toFixed(0) + '" xmlns="http://www.w3.org/2000/svg"' +
          (print ? ' style="width:' + g.widthIn.toFixed(2) + 'in;height:auto"' : "") + '>' + P.join("") + '</svg>';
@@ -1825,7 +1838,7 @@ function wireCanvas(){
     if (!obj) return;
     S.sel = id;
     svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
-    g.classList.add("sel");
+    svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => el.classList.add("sel"));
     renderInspector(p);
     const before = snapshot(), D = deckIn(p), geo = diagramGeom(p);
     const pt = svg.createSVGPoint();
@@ -1839,7 +1852,11 @@ function wireCanvas(){
       if (S.snap){ x = Math.round(x / 6) * 6; y = Math.round(y / 6) * 6; }
       if (Math.abs(x - obj.x) < .01 && Math.abs(y - obj.y) < .01) return;
       obj.x = x; obj.y = y; moved = true;
-      g.setAttribute("transform", "translate(" + geo.sx(x).toFixed(1) + "," + geo.sy(y).toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
+      const nx = geo.sx(x), ny = geo.sy(y);
+      svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => {
+        if (el.dataset.abs) el.setAttribute("transform", "translate(" + (nx - el.dataset.sx).toFixed(1) + "," + (ny - el.dataset.sy).toFixed(1) + ")");
+        else el.setAttribute("transform", "translate(" + nx.toFixed(1) + "," + ny.toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
+      });
     };
     const up = () => {
       svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); svg.removeEventListener("pointercancel", up);

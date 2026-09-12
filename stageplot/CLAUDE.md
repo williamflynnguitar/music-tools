@@ -61,6 +61,12 @@ Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
   names printed.
 - `moved:true` means a human dragged it. The layout engine never touches it
   again until someone hits re-layout.
+- On the canvas a label carries the same `data-id` as the thing it names, so
+  the grab cursor holds across the name and dragging the name drags the
+  player. The drag handler moves every element with that id — the shape group
+  by absolute transform, label groups (`data-abs`) by delta. SVG text is
+  `user-select:none`, or hovering a name flips the pointer to an I-beam over
+  text nobody can edit.
 
 ## VENUE — the one place venue facts live
 
