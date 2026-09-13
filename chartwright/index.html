@@ -600,7 +600,10 @@ function isChordToken(t) {
   const m = /^([A-G])(#{1,2}|b{1,2})?(.*)$/.exec(t);
   if (!m) return false;
   let rest = m[3];
-  const slash = /\/([A-G])(#|b)?$/.exec(rest);
+  // the bass takes the same accidentals the root does, doubles included: a pasted A/Ebb
+  // has to be recognised as a chord or the whole line imports as lyrics. normalizeSym
+  // rewrites the double on the way in (root CLAUDE.md, William 2026-09-12).
+  const slash = /\/([A-G])(#{1,2}|b{1,2})?$/.exec(rest);
   if (slash) rest = rest.slice(0, slash.index);
   return /^(?:maj|min|dim|aug|sus|add|alt|no|M|m|Δ|ø|°|o|\+|-|\d|#|b|\(|\)|\.)*$/.test(rest);
 }
