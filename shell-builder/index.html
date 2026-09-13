@@ -953,8 +953,8 @@ function subLabel(ch, opts){
   /* A #11 chord is lydian dominant, and that scale's other tensions are the natural 9 and 13 --
      so where the #11 cannot be reached, the natural 9 is what it implies (William, 2026-09-13:
      "A student needs to learn that implies a natural 9 if the 9 is the only thing available to
-     them"). The 13 is my extension of the same reasoning, for a position that reaches the 13
-     but not the 9. */
+     them"). The 13 covers a position that reaches the 13 but not the 9: I proposed it on the same
+     reasoning and he kept it the same day ("keep the 13 for #11 too"). */
   if(ext.includes('#11') && !degs.has('#11') && !degs.has('b5')) {
     if(degs.has('9'))  return {deg:'9',  text:'9 for #11'};
     if(degs.has('13')) return {deg:'13', text:'13 for #11'};

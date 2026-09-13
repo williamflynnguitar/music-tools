@@ -162,7 +162,8 @@ there is no inversion or string-set state in this app.
     root reaches its written 9, so "b9 for b13" no longer steers a student to an unwritten
     note. And a #11 chord now teaches its inference: where the #11 is out of reach, **"9 for
     #11"** (or "13 for #11" if only the 13 is), because the lydian dominant a #11 implies
-    carries those naturals. The 13 half is my extension of his reasoning.
+    carries those naturals. The 13 half was my extension of his reasoning, and he kept it
+    ("keep the 13 for #11 too").
   The engine keeps sounding whichever written tension the position reaches — G7#5 in one bar
   of I Hear A Rhapsody and G9 in another — which is now the point rather than a defect: the
   student meets the same symbol with two different answers available.
