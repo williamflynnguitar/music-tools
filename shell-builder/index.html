@@ -897,7 +897,16 @@ function symbolAllows(ch, degs){
   if(ch.quality!=='7' && ch.quality!=='7sus') return true;
   const ext = ch.ext || [];
   if(!ext.some(e=>['b9','#9','b5','#5','b13'].includes(e))) return true;
-  if(degs.some(d=>d==='9'||d==='13')) return false;
+  /* A tension the symbol WRITES is always offered, altered symbol or not (William, 2026-09-13:
+     "Keep both and students will learn to judiciously choose based on what's available to
+     them. They need to experience seeing two extensions and picking one to play.") This
+     follows from "written alterations should always win". Before it, G9#5 refused the natural
+     9 its own symbol writes: on the 5th-string root the picker offered R b9 #9 while the
+     engine was sounding the 9, so a student never saw the second extension to choose between.
+     The Sep 11 ruling still stands for the naturals the symbol does NOT write -- a 7b9 still
+     withholds an unwritten 9 or 13. Matched by pitch, as everywhere else. */
+  const writes = d => ext.some(e => DEG[e]%12 === DEG[d]%12);
+  if(degs.some(d=>(d==='9'||d==='13') && !writes(d))) return false;
   if(ext.some(e=>e==='#5'||e==='b13') && degs.includes('5')) return false;
   return true;
 }
@@ -933,8 +942,23 @@ function extOptions(ch, struct, rs, rf){
 function subLabel(ch, opts){
   if(opts.hasE) return null;
   const ext = ch.ext || [], degs = new Set(opts.cells.map(c=>c.b));
+  /* A stand-in is for when NOTHING the symbol writes can sound here. If a written tension is
+     reachable, the student chooses among the written ones and no stand-in is suggested:
+     G9#5 on the 5th-string root reaches its written 9, so "b9 for b13" no longer steers the
+     student to a note the chart never asks for. */
+  const written = new Set(ext.map(e => DEG[e]%12));
+  if([...degs].some(d => EXT.includes(d) && written.has(DEG[d]%12))) return null;
   if(ext.includes('b9') && !degs.has('b9') && degs.has('#5')) return {deg:'#5', text:'b13 for b9'};
   if(ext.some(e=>e==='b13'||e==='#5') && !degs.has('#5') && degs.has('b9')) return {deg:'b9', text:'b9 for b13'};
+  /* A #11 chord is lydian dominant, and that scale's other tensions are the natural 9 and 13 --
+     so where the #11 cannot be reached, the natural 9 is what it implies (William, 2026-09-13:
+     "A student needs to learn that implies a natural 9 if the 9 is the only thing available to
+     them"). The 13 is my extension of the same reasoning, for a position that reaches the 13
+     but not the 9. */
+  if(ext.includes('#11') && !degs.has('#11') && !degs.has('b5')) {
+    if(degs.has('9'))  return {deg:'9',  text:'9 for #11'};
+    if(degs.has('13')) return {deg:'13', text:'13 for #11'};
+  }
   return null;
 }
 /* A chord the student has edited should land on a note the picker would
