@@ -146,6 +146,27 @@ there is no inversion or string-set state in this app.
   structure has a B string but no E string, a 6R B string can't reach b9 so
   b13 stands in ("b13 for b9"), and a 5R B string can't reach b13 so b9 does.
   The chart keeps the written symbol.
+- **Students choose among what is written (RULED 2026-09-13).** William: "Keep both and
+  students will learn to judiciously choose based on what's available to them. They need to
+  experience seeing two extensions and picking one to play. Same with Ab7#11. A student needs
+  to learn that implies a natural 9 if the 9 is the only thing available to them." This is a
+  teaching ruling, so it governs the PICKER, and the generator is deliberately left alone —
+  verified byte-identical across all 54 progressions and tunes. Two changes:
+  - `symbolAllows` always offers a tension the symbol writes. G9#5 writes two tensions and
+    structure 1 has one slot, so no position fits both: the 5th-string root reaches the 9,
+    the 6th-string root the #5. The picker used to refuse the written 9 outright (offering
+    `R b9 #9` while the engine sounded the 9), so a student never saw the second extension.
+    It now offers both, one per position. The Sep 11 ruling still holds for naturals a symbol
+    does not write: a 7b9 still withholds an unwritten 9 or 13.
+  - `subLabel` suggests a stand-in only when nothing written can sound. G9#5 on the 5th-string
+    root reaches its written 9, so "b9 for b13" no longer steers a student to an unwritten
+    note. And a #11 chord now teaches its inference: where the #11 is out of reach, **"9 for
+    #11"** (or "13 for #11" if only the 13 is), because the lydian dominant a #11 implies
+    carries those naturals. The 13 half was my extension of his reasoning, and he kept it
+    ("keep the 13 for #11 too").
+  The engine keeps sounding whichever written tension the position reaches — G7#5 in one bar
+  of I Hear A Rhapsody and G9 in another — which is now the point rather than a defect: the
+  student meets the same symbol with two different answers available.
 - **The symbol wins, always (RULED 2026-09-12: "written alterations should
   always win").** Every rule below decides only what the chart leaves open. A
   written alteration is voiced if it can be reached and stands in if it cannot;
@@ -165,9 +186,8 @@ there is no inversion or string-set state in this app.
   the picker beside it printed `subLabel`'s "b13 for b9". The generator now
   takes that same stand-in — the b13 for an unreachable b9 at 6R, the b9 for an
   unreachable b13 at 5R — so those 17 `7b9` chords now sound and name the b13.
-  Five cases remain with no stand-in and are **open**: three `G9#5` in I Hear A
-  Rhapsody (which loses its #5 in one bar and its natural 9 in another) and two
-  `Ab7#11` in Stella. Those pairings were never ruled on.
+  The three `G9#5` in I Hear A Rhapsody and two `Ab7#11` in Stella that
+  had no pairing are settled by the "students choose" ruling below.
 - **Into a minor chord the sixth defaults to the b13 (RULED 2026-09-12,
   "default to b13 on minor ii-V").** `pickOffsets` takes an `intoMinor` flag
   that `progVoiceLead` derives from the *next sounding chord*, not from the ii
