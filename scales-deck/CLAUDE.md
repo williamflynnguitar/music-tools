@@ -315,22 +315,21 @@ previous commit), and concept 6's pinned run and shift counts did not move.
 - **Concept 6 above Easy** — `perfString` takes `tier`. Its single merged tier shows BOTH the
   Interval and Pattern controls and the book asks for "intervals and patterns along a single
   string", so both do something: **the Interval sets the groups, and typing anything into
-  Pattern other than its default replaces them. That split is mine** — the book names both
-  without saying how to combine them, and a live control that changed nothing would be worse.
+  Pattern other than its default replaces them.** The book names both without saying how to
+  combine them; I proposed this split and **William kept it (2026-09-13)**.
 - **Concept 5 Intermediate 1** — concept 3's zigzag with each fingering confined to the upper
   octave its card leaves bright (`perfZigzag`'s optional `bright` predicates). This needed the
   **player generalised**: `paintNote`, `stopPlayer` and the finger label keyed on
   `c.n === 3`; they now key on `perf.spans`, which `perfZigzag` sets, so any line that crosses
   cards turns the card as the hand moves. Verified in the browser for concept 5 Intermediate 1
   (card 1 to 2) and concept 3 Easy at 240 BPM (cards 1 to 5).
-  **One real trade-off, flagged for William's ear:** upper-octave slices of adjacent fingerings
+  **One real trade-off, RULED 2026-09-13:** upper-octave slices of adjacent fingerings
   do not always overlap, so of 1808 joins between fingerings 1657 are stepwise and **129 leap a
   perfect 4th** — C major descends to C on the 3rd string and the next shape's octave starts on
   the G below. Connecting them by step instead would mean playing notes the card greys out,
-  which breaks the rule that what sounds is what stays bright. I kept the rule and took the
-  leap.
+  which breaks the rule that what sounds is what stays bright. William chose to **keep the
+  leap**.
 
 ## Open questions for William
-- Concept 5 Intermediate 1's 4th leaps at 129 of 1808 joins (above): keep the leap, or let
-  the join play below the octave and draw those notes normally?
-- Concept 6's Interval/Pattern split is my call and worth a veto if you use it differently.
+None. Every concept/tier combination that can play does, and every design choice made along the
+way has been ruled on.
