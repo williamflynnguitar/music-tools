@@ -504,6 +504,7 @@ async function loadState() {
   if (!state || !Array.isArray(state.songs) || !state.songs.length) {
     state = seedState();
   }
+  state.songs.forEach(normalizeSong);   // a chart saved before the no-doubles rule
   if (!state.songs.find(s => s.id === state.currentId)) state.currentId = state.songs[0].id;
   // If this device has newer work than the artifact, push it up.
   if (lT > rT) { dirtySinceArtifact = true; artifactReady.then(a => { if (a) saveArtifact(); }); }
@@ -618,6 +619,23 @@ const SHARPS = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const FLATS  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 const PC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
 
+/* No chord is written with a double accidental (root CLAUDE.md, William 2026-09-12). A chart
+   can still arrive carrying one — typed into the popover, pasted through the import parser, or
+   restored from a save made before the rule — so every entry point runs through here. Only
+   doubles are rewritten, and each keeps the side it was heading: F## → G, Dbb → C. Single
+   accidentals are left exactly as written; the flats toggle is what respells those. */
+function normalizeSym(sym) {
+  return String(sym).replace(/([A-G])(##|bb)/g, (all, letter, acc) => {
+    const sharp = acc[0] === "#";
+    return (sharp ? SHARPS : FLATS)[((PC[letter] + (sharp ? 2 : -2)) % 12 + 12) % 12];
+  });
+}
+function normalizeSong(song) {
+  for (const sec of song.sections) for (const line of sec.lines)
+    for (const c of line.chords) c.sym = normalizeSym(c.sym);
+  return song;
+}
+
 function transposeSym(sym, delta, useFlats) {
   if (/^(N\.?C\.?|\||%|x\d+)$/i.test(sym)) return sym;
   return sym.replace(/([A-G])(#{1,2}|b{1,2})?/g, (all, letter, acc) => {
@@ -656,7 +674,7 @@ function chordsFromChordLine(chordLine, lyricLen) {
   const re = /\S+/g;
   let m;
   while ((m = re.exec(chordLine))) {
-    chords.push({ id: uid(), pos: Math.min(m.index, maxPos), sym: m[0] });
+    chords.push({ id: uid(), pos: Math.min(m.index, maxPos), sym: normalizeSym(m[0]) });
   }
   // collapse accidental duplicates at the same slot
   const seen = {};
@@ -1012,7 +1030,7 @@ function commitChord(sym) {
   const found = findLine(ctx.lineId);
   if (!found) return;
   const { line } = found;
-  sym = sym.trim();
+  sym = normalizeSym(sym.trim());
   mutate(() => {
     if (ctx.cid) {
       const c = line.chords.find(c => c.id === ctx.cid);

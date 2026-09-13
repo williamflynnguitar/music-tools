@@ -51,6 +51,9 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   Predates the no-storage rule: it keeps charts in try/catch-wrapped
   localStorage, and carries dormant Claude-artifact save code from its
   original home. Both are deliberate exceptions until it gets a rework.
+  Its parser accepts whatever gets pasted in, so `normalizeSym` rewrites a
+  double accidental at every entry point — typed, imported, or restored from
+  a save made before the rule.
 
 ## Who these are for
 
