@@ -896,8 +896,21 @@ function perfDescending(p, tier, ring) {
 // its top, down k+1 to the step below k+2's root; k+2 starts on beat 1. The line never pauses:
 // when the eighths between ascents come out odd, the descent skips the new root (p. 68 bar 4).
 // Fingers show on both notes of every change of placement.
-function perfZigzag(ps, key) {
-  const Ls = ps.map(p => ladder(p, true)), notes = [], downbeats = new Set(), flags = [];
+/* `tier` (Sep 2026). Easy starts each fingering at its root, which is p. 68. Above Easy the
+   book says "Explore the entirety of each fingering shape by playing all the notes below the
+   root before continuing to the next", so the ascent starts at the bottom of the shape
+   instead. The Advanced tiers then walk each leg in the tier's interval or pattern -- the
+   zigzag's legs are unchanged, the digits apply inside them, which keeps the joins and the
+   change-of-position fingers exactly where they were. */
+/* `bright` (optional, one predicate per placement) confines each fingering to the notes its card
+   leaves bright -- concept 5's Intermediate 1 is this zigzag played through the upper octave of
+   every shape only, and its cards grey out the rest. */
+function perfZigzag(ps, key, tier, bright) {
+  const easy = !tier || tier === "Easy", grouped = tier && tier.startsWith("Advanced");
+  const digits = grouped ? tierDigits(tier) : [1];
+  const Ls = ps.map((p, k) => { const L = ladder(p, true);
+    return bright && bright[k] ? L.filter(r => r.locs.some(l => bright[k](l))).map(r => Object.assign({}, r, { locs: r.locs.filter(l => bright[k](l)) })) : L; });
+  const notes = [], downbeats = new Set(), flags = [];
   const run = (k, from, to) => {
     const dir = Math.sign(to - from) || 1, rungs = [];
     for (let m = from, guard = 0; guard < 60; m = scaleStep(key, m, dir), guard++) {
@@ -907,24 +920,38 @@ function perfZigzag(ps, key) {
       }
       if (m === to) break;
     }
+    const walked = grouped && rungs.length > 1
+      ? walkTurn([0, rungs.length - 1], digits).map(i => rungs[i]) : rungs;
     const prev = notes[notes.length - 1];
-    located(prev ? [{ locs: [prev] }].concat(rungs) : rungs).slice(prev ? 1 : 0).forEach(d => notes.push(Object.assign(plain(d), { pos: k })));
+    located(prev ? [{ locs: [prev] }].concat(walked) : walked).slice(prev ? 1 : 0).forEach(d => notes.push(Object.assign(plain(d), { pos: k })));
   };
+  const floorOf = k => (easy && !bright) ? rootMidi(ps[k]) : Ls[k][0].midi;
+  const topOf = k => Math.min(topMidi(ps[k]), Ls[k][Ls[k].length - 1].midi);
   for (let k = 0; k < ps.length; k += 2) {
     if (k) downbeats.add(notes.length);
     const up = ps[k], dn = ps[k + 1], next = ps[k + 2];
-    run(k, rootMidi(up), topMidi(up));
-    if (!dn) { run(k, topMidi(up), rootMidi(up)); break; }
+    run(k, floorOf(k), topOf(k));
+    if (!dn) { run(k, topOf(k), floorOf(k)); break; }
     // a Middle 6 9th can sit above the next fingering's top (dorian, the minors, half-whole):
     // then the line turns on the 9th and comes straight down through k+1
-    if (topMidi(dn) > topMidi(up)) run(k + 1, topMidi(up), topMidi(dn));
-    run(k + 1, Math.max(topMidi(up), topMidi(dn)), next ? scaleStep(key, rootMidi(next), -1) : rootMidi(dn));
+    if (topOf(k + 1) > topOf(k)) run(k + 1, topOf(k), topOf(k + 1));
+    /* the join target stays the note under the NEXT fingering's root, as p. 68 has it: only the
+       first ascent starts lower above Easy, which is where "all the notes below the root" is
+       heard. Aiming the descent at the next shape's floor instead asks this fingering for a
+       note it does not contain. */
+    /* confined to upper octaves, the descent cannot reach under the next shape's floor -- that
+       note usually sits below this shape's own octave -- so it stops at this shape's floor */
+    const target = next ? scaleStep(key, bright ? floorOf(k + 2) : rootMidi(next), -1) : floorOf(k + 1);
+    run(k + 1, Math.max(topOf(k), topOf(k + 1)), bright ? Math.max(target, floorOf(k + 1)) : target);
   }
   // p. 68's join (William, 2026-09-11): …G E | F. Skipping the root that is about to open the next
   // bar leaves whole beats before the ascent, so barsOf never holds a note; that bar keeps what's
   // left (3/4, 2/4 or 1/4)
   const starts = [0, ...[...downbeats].sort((a, b) => a - b)], drop = new Set();
-  for (let j = 0; j + 1 < starts.length; j++) {
+  /* p. 68's rule was derived from Easy's note counts. Above Easy the first ascent starts lower,
+     so the parity differs and there is often no root sitting where the rule expects one; the
+     odd bar simply stays short, which is the same fallback the rule itself produces. */
+  for (let j = 0; j + 1 < starts.length && easy && !bright; j++) {
     const b = starts[j + 1];
     if ((b - starts[j]) % 2 === 0) continue;
     if (notes[b - 2] && notes[b - 2].midi === notes[b].midi) drop.add(b - 2);
@@ -933,7 +960,9 @@ function perfZigzag(ps, key) {
   const kept = notes.filter((n, i) => !drop.has(i)), moved = i => i - [...drop].filter(d => d < i).length;
   // fingers on both notes of a change of placement, or on neither (the bebop scales carry no fingers)
   kept.forEach((n, i) => { if (i && n.pos !== kept[i - 1].pos && kept[i - 1].fingerIn && n.fingerIn) { kept[i - 1].finger = kept[i - 1].fingerIn; n.finger = n.fingerIn; } });
-  return { unit: 8, bars: barsOf(kept, 8, new Set([...downbeats].map(moved))), flags };
+  /* spans: this line crosses cards, so the player turns the card as the hand moves. Keyed on the
+     line rather than on "concept 3", because concept 5's Intermediate 1 borrows this zigzag */
+  return { unit: 8, bars: barsOf(kept, 8, new Set([...downbeats].map(moved))), flags, spans: true };
 }
 
 // concept 6 (p. 71): one string, lowest scale note (open if in the scale) to the highest at or
@@ -957,11 +986,11 @@ function perfDegree(p, tier, ring, withExt) {
   /* the ladder has to match what the CARD draws, not what the tier would normally allow:
      concept 4's computed modal fingerings set ext false even above Easy, and deriving the
      ladder from the tier instead put an undrawn index-reach note into 1251 lines */
+  /* No trimming to the drawn dots here: show()'s `also` already draws any note the line plays
+     that the diagram would otherwise miss -- the index reach and Middle 6's 9th among them --
+     and both of those are rules William ruled in, so the ladder keeps them. */
   const easy = tier === "Easy";
-  /* and the ladder's own "Middle 6's 9th is always on offer" rung is not drawn on concept 4's
-     computed windows either, so the ladder is trimmed to what is actually on the card */
-  const drawn = new Set(p.dots.concat(p.extended).map(d => d.string + ":" + d.fret));
-  const L = ladder(p, !!withExt).filter(r => r.locs.some(l => drawn.has(l.string + ":" + l.fret)));
+  const L = ladder(p, !!withExt);
   const at = m => L.findIndex(r => r.midi === m);
   const start = at(midiOf(ring));
   if (start < 0) return null;
@@ -980,7 +1009,7 @@ function perfDegree(p, tier, ring, withExt) {
    zigzag, which travels up the neck rather than staying in one position; it returns null, so
    the Play bar hides on Intermediate 1. */
 function perfOctave(p, tier, via, ring, dim) {
-  if (via === 2 || !dim) return null;
+  if (!dim) return null;
   /* The upper octave is defined by the card's OWN dim predicate rather than by a pitch floor.
      The Pinky shapes have no root on the 4th/3rd string at all, and `upper()` falls back to
      "everything on that string" there, so a midi floor and the greying would have disagreed on
@@ -1047,12 +1076,28 @@ function perfIntervals(card, tier, key) {
   });
   return notes.length > 1 ? { unit: 8, bars: barsOf(notes, 8), flags: [] } : null;
 }
-function perfString(key, string) {
+/* Concept 6's upper tier is one merged "Intermediate / Advanced" and the book asks for both:
+   "Playing intervals and patterns along a single string ... involves lots of large shifts and
+   jumps ... a good way of ensuring that your knowledge of both the scale and string is
+   rock-solid." Both controls are live on that tier, so both do something: the Interval sets the
+   groups, and typing anything into Pattern other than its default replaces them. That split is
+   mine -- the book names both without saying how to combine them, and a control that changed
+   nothing would be worse than either choice. */
+function perfString(key, string, tier) {
   const frets = [];
   for (let f = 0; f <= 15; f++) if (inKey(key, OPEN_MIDI[string] + f)) frets.push(f);
   const { fingers, flags } = stringFingers(frets.filter(f => f > 0));
-  const notes = frets.concat(frets.slice(0, -1).reverse()).map(f =>
-    Object.assign(plain(mkDot(key, string, f, 0)), { finger: f ? fingers.get(f) : 0 }));
+  const up = frets.concat(frets.slice(0, -1).reverse());
+  let order = up.map((f, i) => i);
+  if (tier && tier !== "Easy") {
+    const typed = [...String(state.pattern)].map(n => +n).filter(n => n >= 1);
+    const digits = String(state.pattern) !== "1231" && typed.length ? typed : [1, state.interval];
+    const walked = walkTurn([0, frets.length - 1, 0], digits);
+    if (walked.length > 1) order = walked;
+    else flags.push(`no group of ${digits.join("")} fits this string`);
+  }
+  const notes = order.map(i => { const f = (tier && tier !== "Easy") ? frets[i] : up[i];
+    return Object.assign(plain(mkDot(key, string, f, 0)), { finger: f ? fingers.get(f) : 0 }); });
   return { unit: 4, bars: barsOf(notes, 4), flags };
 }
 // concept 6 fingering (p. 71 and William's picks, 2026-09-11): two notes per hand position, the
@@ -1112,6 +1157,15 @@ function cardPerformance(n, cards, i, tier, key) {
     return ring ? { perf: perfDescending(card.p, tier, ring), first: i } : null;
   }
   if (n === 7) { const perf = perfIntervals(card, tier, key); return perf ? { perf, first: i } : null; }
+  if (n === 5 && card.via === 2 && card.p) {
+    /* Intermediate 1: "Do this same thing, but using the approach explained in #3" -- concept 3's
+       zigzag, each fingering confined to the upper octave its card leaves bright */
+    const first = i - i % 2, set = cards.slice(first);
+    const bright = set.map(c => { const drawn = new Set(c.p.dots.concat(c.p.extended).map(d => d.string + ":" + d.fret));
+      return l => drawn.has(l.string + ":" + l.fret) && !(c.opts.dim && c.opts.dim(l)); });
+    const perf = perfZigzag(set.map(c => c.p), key, "Easy", bright);
+    return perf && perf.bars.length ? { perf, first } : null;
+  }
   if (n === 5 && card.p) {
     const ring = card.opts && card.opts.ring ? card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)) : null;
     const perf = perfOctave(card.p, tier, card.via, ring, card.opts && card.opts.dim);
@@ -1121,8 +1175,8 @@ function cardPerformance(n, cards, i, tier, key) {
     const ring = card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d));
     return ring ? { perf: perfDegree(card.p, tier, ring, card.opts.ext), first: i } : null;
   }
-  if (n === 3 && tier === "Easy" && card.p) { const first = i - i % 2; return { perf: perfZigzag(cards.slice(first).map(c => c.p), key), first }; }
-  if (n === 6 && tier === "Easy" && card.string) return { perf: perfString(key, card.string), first: i };
+  if (n === 3 && card.p) { const first = i - i % 2; return { perf: perfZigzag(cards.slice(first).map(c => c.p), key, tier), first }; }
+  if (n === 6 && card.string) return { perf: perfString(key, card.string, tier), first: i };
   if (n === 8 && card.segovia) return { perf: perfSegovia(card.segovia, card.segKey, card.shift), first: i };
   return null;
 }
@@ -1290,7 +1344,7 @@ function stopPlayer() {
   const fn = document.getElementById("fingerNum"); if (fn) fn.textContent = "–";
   paintCount(null);
   releaseWake(); silentStop();
-  if (run && CONCEPTS[state.concept].n === 3 && steps[state.i]) syncVariant(steps[state.i]);   // concept 3 may have turned cards
+  if (run && run.path && run.path.perf.spans && steps[state.i]) syncVariant(steps[state.i]);   // a spanning line may have turned cards
 }
 function startPlayer() {
   current = cardPerformance(CONCEPTS[state.concept].n, steps, state.i, state.tier, state.key);   // the card on screen now
@@ -1359,7 +1413,7 @@ function holdLayout(card) {
 // light the note on the card's diagram; concept 3 turns to the card of the placement the hand is in
 function paintNote(run, n) {
   const c = CONCEPTS[state.concept];
-  if (c.n === 3 && state.i !== run.path.first + n.pos) { state.i = run.path.first + n.pos; show(true); }
+  if (run.path.perf.spans && state.i !== run.path.first + n.pos) { state.i = run.path.first + n.pos; show(true); }
   const svg = document.querySelector("#card svg[data-geom]");
   if (!svg) return;
   const d = svg.dataset, row = d.geom === "strings" ? d.strings.split(",").map(Number).indexOf(n.string) : n.string - 1;
@@ -1374,7 +1428,7 @@ function paintNote(run, n) {
   }
   g.setAttribute("transform", `translate(${x} ${y})`);
   // fingers only where they're the lesson: the shifts in concept 3, every note on one string in concept 6
-  g.lastChild.textContent = (c.n === 3 || c.n === 6) && n.finger != null ? String(n.finger) : "";
+  g.lastChild.textContent = (run.path.perf.spans || c.n === 6 || c.n === 8) && n.finger != null ? String(n.finger) : "";
   // on a phone concept 6's lane is 19 px tall: the finger again, large, in the Play bar (0 = open, as p. 71 prints it)
   if (c.n === 6 && n.finger != null) document.getElementById("fingerNum").textContent = n.finger;
 }

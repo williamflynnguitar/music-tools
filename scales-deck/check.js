@@ -220,12 +220,13 @@ function expectedLine(n, cards, i, tier, key) {
   const card = cards[i];
   if (n === 1) return { perf: E.perfPosition(card.p, tier), first: i };
   if (n === 2) return { perf: E.perfDescending(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d))), first: i };
-  if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key), first: i - i % 2 };
+  if (n === 3) return { perf: E.perfZigzag(cards.slice(i - i % 2).map(c => c.p), key, tier), first: i - i % 2 };
   if (n === 4) return { perf: E.perfDegree(card.p, tier, card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)), card.opts.ext), first: i };
+  if (n === 5 && card.via === 2) return E.cardPerformance(5, cards, i, tier, key);   // the zigzag borrow spans cards
   if (n === 5) return { perf: E.perfOctave(card.p, tier, card.via, card.opts.ring ? card.p.dots.concat(card.p.extended).find(d => card.opts.ring(d)) : null, card.opts.dim), first: i };
   if (n === 7) return { perf: E.perfIntervals(card, tier, key), first: i };
   if (n === 8) return { perf: E.perfSegovia(card.segovia, card.segKey, card.shift), first: i };
-  return { perf: E.perfString(key, card.string), first: i };
+  return { perf: E.perfString(key, card.string, tier), first: i };
 }
 let paths = 0, advLines = 0, c2Lines = 0, zigzags = 0, cardLines = 0, cardSets = 0; const sweep = [];
 const SIX_PINNED = { runs: 288, whole: 222, split: 66, longShift: 42 };   // 2026-09-11, 11 scales; a ranking change moves these
@@ -244,8 +245,8 @@ for (const sc of Object.keys(E.SCALES)) {
         /* concept 8 carries a line only on the cards holding a transcribed fingering — its
            Intermediate and Advanced 2 tiers are still text — so whether a card should play is
            a question about the card, not about the concept */
-        const plays = card => (C.n === 5 && tier.startsWith("Advanced") && card.via !== 2) ? ASSERT_EITHER
-          : C.n === 1 || C.n === 2 || ((C.n === 3 || C.n === 6) && tier === "Easy")
+        const plays = card => (C.n === 5 && (tier.startsWith("Advanced") || card.via === 2)) ? ASSERT_EITHER
+          : C.n === 1 || C.n === 2 || C.n === 3 || C.n === 6
           || C.n === 4                                     // every degree card carries a line
           || (C.n === 5 && card.via !== 2 && !tier.startsWith("Advanced"))  // via 2 is the zigzag
           || (C.n === 7 && card.links.length                          // no drawn links, nothing to play

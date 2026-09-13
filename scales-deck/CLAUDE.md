@@ -292,8 +292,45 @@ from 10.**
   interval is a quarter and a broken one is two eighths, so an interval goes by every beat
   either way.
 
+## The last five (Sep 2026)
+**30 of the 32 concept/tier combinations now play.** The two silent ones are concept 8's
+Intermediate and Advanced 2, which have nothing to transcribe. Concept 3 Easy and concept 6
+Easy are byte-identical to what William ruled on (977 and 792 lines diffed against the
+previous commit), and concept 6's pinned run and shift counts did not move.
+
+- **Concept 3 above Easy** — `perfZigzag` takes `tier`. The book: "Explore the entirety of each
+  fingering shape by playing all the notes below the root before continuing to the next." So
+  above Easy the FIRST ascent of each fingering starts at the bottom of the shape rather than
+  its root; the join targets stay where p. 68 put them. (Aiming the descent at the next shape's
+  floor instead asked the current fingering for notes it does not contain.) The Advanced tiers
+  apply the interval or pattern *inside* each leg, so the joins and the change-of-position
+  fingers stay put. p. 68's odd-bar join rule was derived from Easy's note counts and is gated
+  to Easy: above it the parity differs and the odd bar simply stays short.
+- **The index reach is load-bearing — do not trim it out of the zigzag's ladder.** Trimming the
+  ladder to drawn dots broke 52 Easy lines ("no location for midi 46") because the reach is
+  exactly what removes leaps in mixolydian and the minors, as round 1 established. The reach
+  is not in `p.extended`, but `show()`'s `also` already draws any note the line plays that the
+  diagram would miss, so a played note is always on the card without touching the ladder.
+  Concept 4 had the same trim and it came out for the same reason.
+- **Concept 6 above Easy** — `perfString` takes `tier`. Its single merged tier shows BOTH the
+  Interval and Pattern controls and the book asks for "intervals and patterns along a single
+  string", so both do something: **the Interval sets the groups, and typing anything into
+  Pattern other than its default replaces them. That split is mine** — the book names both
+  without saying how to combine them, and a live control that changed nothing would be worse.
+- **Concept 5 Intermediate 1** — concept 3's zigzag with each fingering confined to the upper
+  octave its card leaves bright (`perfZigzag`'s optional `bright` predicates). This needed the
+  **player generalised**: `paintNote`, `stopPlayer` and the finger label keyed on
+  `c.n === 3`; they now key on `perf.spans`, which `perfZigzag` sets, so any line that crosses
+  cards turns the card as the hand moves. Verified in the browser for concept 5 Intermediate 1
+  (card 1 to 2) and concept 3 Easy at 240 BPM (cards 1 to 5).
+  **One real trade-off, flagged for William's ear:** upper-octave slices of adjacent fingerings
+  do not always overlap, so of 1808 joins between fingerings 1657 are stepwise and **129 leap a
+  perfect 4th** — C major descends to C on the 3rd string and the next shape's octave starts on
+  the G below. Connecting them by step instead would mean playing notes the card greys out,
+  which breaks the rule that what sounds is what stays bright. I kept the rule and took the
+  leap.
+
 ## Open questions for William
-None on the engine. What is left is work, not rulings — 7 combinations are still silent, and
-two of those are text by design (concept 8's Intermediate and Advanced 2 have nothing to
-transcribe). The five that could be built: concept 3's Intermediate, Advanced 1 and Advanced 2;
-concept 5's Intermediate 1; and concept 6's Intermediate / Advanced.
+- Concept 5 Intermediate 1's 4th leaps at 129 of 1808 joins (above): keep the leap, or let
+  the join play below the octave and draw those notes normally?
+- Concept 6's Interval/Pattern split is my call and worth a veto if you use it differently.
