@@ -136,12 +136,11 @@ not printed fingers. Note the symmetric-scale labeling rule: hwdim's three
 the root of the anchoring string (R5 at 13fr is M5's pattern rooted a ring
 finger up). A root is a *pitch* match — offset 0 on a non-root string is
 not a root; don't audit by offset.
-Known UI quirks (unfixed, awaiting William's ruling with the 3.1 report):
-render() builds the fingering picker before the stale-id guard resets
-state.fingering, so switching from a scale that has the current id to one
-that doesn't (major P6 → hwdim) draws the diagram at cycle[0] with no
-picker button pressed; "Next in cycle" indexOf's ids that may not be in
-the cycle (descending bebop ids → jumps to cycle[0]).
+Two UI quirks from the 3.1 report, both fixed (5f11b45, Sep 2026): render()
+built the fingering picker before the stale-id guard reset state.fingering,
+so switching from a scale that has the current id to one that doesn't
+(major P6 → hwdim) drew the diagram with no picker button pressed; and
+"Next in cycle" sent a fingering outside the cycle list back to cycle[0].
 
 ## Full range (four-note-per-string half-whole), Sep 2026
 The deferred 4nps fingering shipped to William's spec: `FR6`/`FR5` in
@@ -150,8 +149,11 @@ each next string restarting a tritone up (forced by the math: 4 of the 8
 tones per string), +1 fret shift per string pair except +2 between
 strings 3 and 2; fingers **1-1-3-4** per string (index covers the
 half-step pair — William rejected 1-2-3-4). Both carry `clip:true`, and
-they are NOT in the cycle (nextInCycle steps from them to cycle[0]); the
-whole-neck view ignores non-cycle shapes. `place()` handles `clip`: when
+they are NOT in the cycle; the whole-neck view ignores non-cycle shapes.
+"Next in cycle" steps them from the cycle position on their root string and
+keeps Full range when the next position has one: FR6 in C → FR5 in F (same
+frets, as R6 → R5), then FR5 → M6. They used to fall to cycle[0], so FR5 in C
+went to R6 in F under a hint that called it the same position (fixed Sep 14). `place()` handles `clip`: when
 a shape outruns fret 19 in a high key and cannot drop an octave, it cuts
 **by pitch at the first off-board note** (fret-clipping alone leaves a
 hole mid-line where a lower string's top note falls away under a higher
@@ -161,5 +163,7 @@ extracts place() from this file, so its cells clip identically — the 24
 FR cells are rendered.
 
 Both UI quirks above were approved and fixed (Sep 2026): the stale-id
-guard now runs before the picker is built, and `nextInCycle()` steps
-descending bebop ids by position, keeping the descending variant.
+guard now runs before the picker is built, and `nextInCycle()` stepped
+descending bebop ids by position, keeping the descending variant. The bebop
+fingerings, descending ids included, were removed on Sep 10 (187a369), and
+the same rule now serves Full range.

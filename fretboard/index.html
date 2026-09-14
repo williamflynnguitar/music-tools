@@ -799,17 +799,22 @@ function activeNotes(sc, id) {                       // the chosen variant's not
 }
 const cyc = () => SCALES[state.scale].cycle;
 
-// Next fingering around the cycle. A descending bebop id (P6d) is not in the
-// ascending cycle list, so step by its position — and keep the descending
-// variant when the next position has one — instead of jumping to cycle[0].
+// Next fingering around the cycle. A fingering outside the cycle list steps from
+// the cycle position it belongs to, and stays in its own family when the next
+// position has a member. Today that is half-whole's Full range: FR6 and FR5 sit
+// on R6's and R5's root strings, so FR6 in C steps to FR5 in F on the same frets,
+// as R6 steps to R5, and FR5 steps to M6, which has no Full range. Before, both
+// fell to cycle[0], so FR5 in C went to R6 in F under a hint calling that the
+// same position. (The descending bebop ids this first handled, Sep 2026, were
+// removed with the bebop fingerings.)
 function nextInCycle() {
-  const sc = SCALES[state.scale], c = cyc();
-  const cur = sc.shapes[state.fingering];
-  let i = c.indexOf(state.fingering);
-  if (i < 0 && cur && cur.pos) i = c.findIndex(x => sc.shapes[x].pos === cur.pos);
-  const nxt = c[(Math.max(i, -1) + 1) % c.length];
-  const pos = sc.shapes[nxt].pos;
-  return (cur && cur.dir === "desc" && pos && sc.shapes[pos + "d"]) ? pos + "d" : nxt;
+  const sc = SCALES[state.scale], c = cyc(), id = state.fingering, cur = sc.shapes[id];
+  if (!cur) return c[0];
+  if (c.includes(id)) return c[(c.indexOf(id) + 1) % c.length];
+  const home = x => c.find(y => sc.shapes[y].rootString === sc.shapes[x].rootString);
+  const nxt = c[(c.indexOf(home(id)) + 1) % c.length];
+  const kin = Object.keys(sc.shapes).find(x => !c.includes(x) && sc.shapes[x].name === cur.name && home(x) === nxt);
+  return kin || nxt;
 }
 
 function seg(containerId, items, current, onPick) {
