@@ -40,8 +40,8 @@ a spot on the deck, and — optionally — one or more names.
 ```
 Plot { schemaVersion:2, name, director, date, showName, notes, printNames,
        deck, positions[], items[], wedges[], songs[], customRoles[],
-       sections{}, channelOrder }
-Position { id, roleId, x, y, rot, moved, names[], doubles[], inputs[], notes, byo[] }
+       sections{}, sectionsIncludeUnmiked, channelOrder }
+Position { id, roleId, x, y, rot, moved, names[], doubles[], inputs[], notes, byo[], pkg }
 Item     { id, kind:"house"|"byo"|"label", ref, label, x, y, rot, moved,
            ownerPositionIds[], inputs[] }   // inputs only on migrated v1 gear
 Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
@@ -123,7 +123,8 @@ instrument, add a row; nothing else in the file enumerates instruments.
   backline:"gtramp1",            // a VENUE.house id this role implies (optional)
   gearSide:"up",                 // "up" = amp behind the player, "down" = keyboard in front
   zone:"front",                  // "front" | "front-center" | "rhythm" | "mid"
-  inputs:[{ source:"Trumpet", type:"mic", phantom:false }] }
+  pkgs:"horn",                   // which PKG_SETS entry names its setups
+  start:"none" }                 // the package a new player gets — never one with a mic
 ```
 
 - `family` drives row packing (`voice`, `sax`, `brass`, `rhythm`, `strings`,
@@ -169,51 +170,65 @@ order; a guitar's is an amp mic; a voice's is Vocal — and `removeMic()` takes
 the player's last mic away, never a DI. Renaming a mic, adding a DI or removing
 a specific input is in the inspector (edit), one row per input with ×.
 
-There used to be three plot-wide presets (acoustic-leaning / light
-reinforcement / fully miked) on the Positions tab, a per-player package
-dropdown, and "full kit (7)" / "jazz minimal (4)" buttons on a kit. William
-cut all of them from the page in favour of the two buttons. The machinery
-below is still in the engine, because it decides **what a new plot or a newly
-added player starts with** — but nothing on screen asks the director to pick a
-profile any more.
+**Nothing starts miked** (William, 2026-09-14). No template, no blank plot and
+no player added later — an unrecognised "Other" included — arrives with a mic, and no horn row starts on section
+mics. A DI source keeps its DI — keys, organ, bass, upright, acoustic guitar,
+violin, cello, DJ and playback — because an electric instrument with nothing plugged
+in isn't a choice anyone is making. Every template therefore opens at a
+couple of channels (the jazz combo and the big band are both **2**: keys and
+bass) with everything else listed under Not miked, and the director builds the
+input list up from there.
 
-A role offers **packages** (`PKG_SETS`, chosen per role by `pkgs`), a position
-holds one in `pos.pkg`, and its inputs are generated from it. Sets: `kit`
+Where this came from, so it isn't rebuilt by accident: the amplification
+amendment gave the plot three profiles (acoustic-leaning / light
+reinforcement / fully miked), let each template pick one, and put the profile
+buttons on the Positions tab, a per-player package dropdown in the inspector,
+and "full kit (7)" / "jazz minimal (4)" buttons on a kit. William removed all
+of it in one afternoon in favour of + mic / − mic, then removed the channel
+warning's suggested cuts, then the templates' starting mics. `PROFILES`,
+`applyProfile()`, `role.pkgDefaults`, `plot.ampProfile` and `pos.pkgOverride`
+are gone; `migratePlot()` strips the last two from files saved while they
+existed.
+
+What survives is the **package** vocabulary, because it still names a
+player's setup. A role offers packages (`PKG_SETS`, chosen per role by `pkgs`)
+and a position records the one its inputs amount to in `pos.pkg`. Sets: `kit`
 (none / kick / kick+OH / kick+snare+OH / +hat / full close-mic), `amp`
 (none / amp mic / DI / DI+mic), `keys` (none / mono / stereo), `horn`
 (none / individual mic), `voice`, `pickup` (none / DI / mic / both), `simple`,
-`section`, `line`. A shared **section** mic is still a row-level thing —
-`plot.sections` — because it covers a group, not a position.
+`section`, `line`. Packages are how `inferPackage()` reads an old file, how the
+Not miked section words its reason ("acoustic", "amp not miked"), and what
+`addMic()` borrows its mic names from. `role.start` is the package a new
+player gets — `none`, or the DI package for a DI source (keys start **mono**,
+which William kept). Any hand edit re-reads `pos.pkg` with `inferPackage()`;
+it is `null` when the inputs match no package, and nothing depends on it.
 
-`PROFILES` sets a whole plot's starting point, and `role.pkgDefaults` says what
-each role starts with under each:
+A double ticked "own channel" gets `doubleInputs()`: the DI the role would
+start with, or one mic. Ticking the box is the director asking for the
+channel, so that one is not a starting mic; the duo template's acoustic
+guitar double brings only its DI.
 
-| | acoustic-leaning | light reinforcement | fully miked |
-|---|---|---|---|
-| drums | not miked | kick + overheads | full close-mic |
-| horns | acoustic | individual mics, rows folded to section mics | individual mics |
-| guitar amp | not miked | amp mic | amp mic |
-| bass | DI | DI | DI + amp mic |
-| keys | mono DI | stereo DI | stereo DI |
-| voice | mic | mic | mic |
+A shared **section** mic is a row-level thing — `plot.sections` — because it
+covers a group, not a position. A row is every horn of that kind on stage,
+miked or not (`sectionRows()`), so ticking "Sax section" on the Inputs tab is
+how an unmiked row gets two shared mics. A section folds away only the mics of
+players *in* that row: a vocalist doubling tenor on their own channel keeps
+it when the sax section is ticked.
 
-Templates start on the profile that suits them: jazz combo and solo/duo
-acoustic-leaning, big band light, rock and vocals fully miked; a blank plot is
-light. A jazz combo therefore opens at **2 channels** — keys and bass DI —
-which is what a combo in a room this size actually needs. `plot.ampProfile`
-stays on the plot, unseen, so a trumpet added to that combo arrives unmiked
-like the horns already there, and one added to a big band arrives with a mic.
-
-Any hand edit — + mic, − mic, an input's × — re-reads the player's package
-with `inferPackage()` and sets `pos.pkgOverride`. Nothing on the page reads
-that flag now that the profile buttons are gone; `applyProfile()` would honour
-it if a plot-wide control ever came back.
+Files saved before 2026-09-14 were written when a row held only horns with a
+mic, so a ticked section on a row the director had unmiked by hand printed
+nothing. `settleOldSections()` clears those ticks on load, so the file prints
+what it printed before, and marks the plot `sectionsIncludeUnmiked: true`.
 
 **Not miked is printed, not implied.** `notMiked()` lists every position with
-nothing reaching the console — as "Drums (acoustic)", "Sax section" when a
-whole row is silent — under the input list, and each carries a ⊘ on the
+nothing reaching the console — "Drums (acoustic)", "Vox (not miked)" — under
+the input list on the page and in the email text, and each carries a ⊘ on the
 diagram. A fully-miked plot prints no such section. A position covered by its
-row's section mics is not unmiked.
+row's section mics is not unmiked. Two or more silent players collapse to
+"Sax section (acoustic)" only when the row is a real section (`SEC_CORE`:
+saxes; trombones; trumpets and flugelhorn) and nobody in it has any input — a
+flute and a clarinet, or a row where someone's double has a mic, are named one
+by one.
 
 **The channel warning states the count and stops there.** Amber past
 `VENUE.warnChannelsAt`, red past the console. It used to offer one-click cuts
@@ -223,8 +238,8 @@ William had them removed on 2026-09-14 — the director makes the cuts with
 
 Reading an older file: `inferPackage()` matches a position's inputs against its
 role's packages, so a v1 kit with its seven channels lands on `close` rather
-than a broken state. v1 plots are marked `ampProfile: "full"`, which is what
-they were.
+than a broken state. A v1 plot keeps every input it had — nothing about
+starting mics touches a file that already has inputs.
 
 ## Channel ordering
 
@@ -437,8 +452,8 @@ New in v2:
 1. **Big band channels.** 17 players with individual horn mics comes to
    **24** channels (7 drums + 1 bass + 1 guitar + 2 keys + 13 horns) — it never
    reaches the amber line at 28, let alone red at 32. The v1 brief expected it
-   to. If real big band nights should carry doubles mics, solo mics for the sax
-   and brass rows, or a vocal mic, they can be preset defaults.
+   to. Nothing starts miked now, so this is only a note on the arithmetic: a
+   big band that wants doubles mics or solo mics adds them by hand.
 2. **Big band seating** — settled by William, 2026-09-14 (see the layout
    engine). It moved the rhythm section from stage left, where the v1 brief
    had it, to stage right. He described the trumpets once as "4, 3, 2, 1" and
@@ -446,16 +461,16 @@ New in v2:
    puts Tpt 1 in line with Alto 1 and Tbn 1 as he asked.
 3. **Upright bass implies the house bass rig** — change the role's `backline`
    if uprights usually go straight to a DI at Somewhere Works.
-4. **The starting mics are my reading, not gospel** (`pkgDefaults` in each
-   role). The ones most worth arguing with: keys drops to a mono DI under
-   acoustic-leaning (William kept this, 2026-09-14); a bass gets DI + amp mic
-   under fully miked. One line each. A guitar amp is miked under light
-   reinforcement — William's call, 2026-09-14.
-5. Fully miked, the 17-piece big band totals **25** channels — still inside a
+4. **Which sources start on a DI** (`start` on each role) is my reading:
+   bass, upright, acoustic guitar, violin and cello start on their DI or
+   pickup; keys and organ on a mono DI; DJ and playback on a stereo DI.
+   Everything else starts with nothing. One line each.
+5. Miked the way the old "fully miked" profile did it (`FULLY_MIKED` in
+   `check.js`), the 17-piece big band totals **25** channels — still inside a
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 195 assertions: the role library, every template (builds,
+`node check.js` — 279 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

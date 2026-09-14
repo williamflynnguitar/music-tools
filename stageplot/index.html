@@ -415,36 +415,36 @@ function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()
 const MIC = s => [{ source:s, type:"mic", phantom:false }];
 const ROLES = [
   // voice
-  { id:"voice",     label:"Voice",            short:"Vox",   family:"voice",  grp:"vocals", sub:0, stance:"standing", w:22, d:22, zone:"front-center", pkgs:"voice", pkgDefaults:{acoustic:"mic",light:"mic",full:"mic"}, inputs:MIC("Vocal") },
+  { id:"voice",     label:"Voice",            short:"Vox",   family:"voice",  grp:"vocals", sub:0, stance:"standing", w:22, d:22, zone:"front-center", pkgs:"voice", start:"none", inputs:MIC("Vocal") },
   // rhythm section
-  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", pkgs:"amp", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
-  { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"amp", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Bass", type:"di", phantom:false }] },
-  { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"pickup", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
-  { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit", pkgs:"kit", pkgDefaults:{acoustic:"none",light:"kick-oh",full:"close"}, inputs:null /* KIT_FULL */ },
-  { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:36, d:30, zone:"rhythm", pkgs:"simple", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Percussion") },
-  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"kb1", gearSide:"down", pkgs:"keys", pkgDefaults:{acoustic:"mono",light:"stereo",full:"stereo"}, inputs:[{ source:"Keys", type:"stereo-di", phantom:false }] },
-  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"kb2", gearSide:"down", pkgs:"keys", pkgDefaults:{acoustic:"mono",light:"stereo",full:"stereo"}, inputs:[{ source:"Organ", type:"stereo-di", phantom:false }] },
-  { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", pkgs:"line", pkgDefaults:{acoustic:"stereo",light:"stereo",full:"stereo"}, inputs:[{ source:"DJ / laptop", type:"stereo-di", phantom:false }] },
-  { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", pkgs:"line", pkgDefaults:{acoustic:"stereo",light:"stereo",full:"stereo"}, inputs:[{ source:"Playback", type:"stereo-di", phantom:false }] },
+  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", pkgs:"amp", start:"none", inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
+  { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"amp", start:"di", inputs:[{ source:"Bass", type:"di", phantom:false }] },
+  { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"pickup", start:"di", inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
+  { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit", pkgs:"kit", start:"none", inputs:null /* KIT_FULL */ },
+  { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:36, d:30, zone:"rhythm", pkgs:"simple", start:"none", inputs:MIC("Percussion") },
+  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"kb1", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Keys", type:"stereo-di", phantom:false }] },
+  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"kb2", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Organ", type:"stereo-di", phantom:false }] },
+  { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", pkgs:"line", start:"stereo", inputs:[{ source:"DJ / laptop", type:"stereo-di", phantom:false }] },
+  { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", pkgs:"line", start:"stereo", inputs:[{ source:"Playback", type:"stereo-di", phantom:false }] },
   // saxes and other woodwinds — one row
-  { id:"bari",      label:"Bari sax",         short:"Bari",  family:"sax",    grp:"horn",   sub:0, stance:"standing", w:24, d:24, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Bari sax") },
-  { id:"tenor",     label:"Tenor sax",        short:"Tenor", family:"sax",    grp:"horn",   sub:1, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Tenor sax") },
-  { id:"alto",      label:"Alto sax",         short:"Alto",  family:"sax",    grp:"horn",   sub:2, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Alto sax") },
-  { id:"soprano",   label:"Soprano sax",      short:"Sop",   family:"sax",    grp:"horn",   sub:3, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Soprano sax") },
-  { id:"clarinet",  label:"Clarinet",         short:"Cl",    family:"sax",    grp:"horn",   sub:4, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Clarinet") },
-  { id:"flute",     label:"Flute",            short:"Fl",    family:"sax",    grp:"horn",   sub:5, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Flute") },
+  { id:"bari",      label:"Bari sax",         short:"Bari",  family:"sax",    grp:"horn",   sub:0, stance:"standing", w:24, d:24, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Bari sax") },
+  { id:"tenor",     label:"Tenor sax",        short:"Tenor", family:"sax",    grp:"horn",   sub:1, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Tenor sax") },
+  { id:"alto",      label:"Alto sax",         short:"Alto",  family:"sax",    grp:"horn",   sub:2, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Alto sax") },
+  { id:"soprano",   label:"Soprano sax",      short:"Sop",   family:"sax",    grp:"horn",   sub:3, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Soprano sax") },
+  { id:"clarinet",  label:"Clarinet",         short:"Cl",    family:"sax",    grp:"horn",   sub:4, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Clarinet") },
+  { id:"flute",     label:"Flute",            short:"Fl",    family:"sax",    grp:"horn",   sub:5, stance:"standing", w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Flute") },
   // brass — low brass row, then high brass row
-  { id:"tuba",      label:"Tuba",             short:"Tuba",  family:"brass",  grp:"horn",   sub:6, stance:"seated",   w:34, d:34, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Tuba") },
-  { id:"btrombone", label:"Bass trombone",    short:"B.Tbn", family:"brass",  grp:"horn",   sub:7, stance:"seated",   w:26, d:26, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Bass trombone") },
-  { id:"trombone",  label:"Trombone",         short:"Tbn",   family:"brass",  grp:"horn",   sub:8, stance:"seated",   w:26, d:26, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Trombone") },
-  { id:"hornsection",label:"Horn section",    pick:"Horn section (generic)", short:"Horns", family:"brass", grp:"horn", sub:9, stance:"standing", w:60, d:24, zone:"front", pkgs:"section", pkgDefaults:{acoustic:"none",light:"two",full:"two"}, inputs:[{ source:"Horn section mic 1", type:"mic", phantom:false }, { source:"Horn section mic 2", type:"mic", phantom:false }] },
-  { id:"trumpet",   label:"Trumpet",          short:"Tpt",   family:"brass",  grp:"horn",   sub:10, stance:"seated",  w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Trumpet") },
-  { id:"flugel",    label:"Flugelhorn",       short:"Flug",  family:"brass",  grp:"horn",   sub:11, stance:"seated",  w:22, d:22, zone:"front", pkgs:"horn", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:MIC("Flugelhorn") },
+  { id:"tuba",      label:"Tuba",             short:"Tuba",  family:"brass",  grp:"horn",   sub:6, stance:"seated",   w:34, d:34, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Tuba") },
+  { id:"btrombone", label:"Bass trombone",    short:"B.Tbn", family:"brass",  grp:"horn",   sub:7, stance:"seated",   w:26, d:26, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Bass trombone") },
+  { id:"trombone",  label:"Trombone",         short:"Tbn",   family:"brass",  grp:"horn",   sub:8, stance:"seated",   w:26, d:26, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Trombone") },
+  { id:"hornsection",label:"Horn section",    pick:"Horn section (generic)", short:"Horns", family:"brass", grp:"horn", sub:9, stance:"standing", w:60, d:24, zone:"front", pkgs:"section", start:"none", inputs:[{ source:"Horn section mic 1", type:"mic", phantom:false }, { source:"Horn section mic 2", type:"mic", phantom:false }] },
+  { id:"trumpet",   label:"Trumpet",          short:"Tpt",   family:"brass",  grp:"horn",   sub:10, stance:"seated",  w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Trumpet") },
+  { id:"flugel",    label:"Flugelhorn",       short:"Flug",  family:"brass",  grp:"horn",   sub:11, stance:"seated",  w:22, d:22, zone:"front", pkgs:"horn", start:"none", inputs:MIC("Flugelhorn") },
   // strings and everything else
-  { id:"acoustic",  label:"Acoustic guitar",  short:"Ac gtr",family:"strings",grp:"guitar", sub:1, stance:"standing", w:22, d:22, zone:"front", pkgs:"pickup", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Acoustic guitar", type:"di", phantom:false }] },
-  { id:"violin",    label:"Violin",           short:"Vln",   family:"strings",grp:"strings",sub:0, stance:"standing", w:22, d:22, zone:"mid", pkgs:"pickup", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Violin", type:"di", phantom:false }] },
-  { id:"cello",     label:"Cello",            short:"Cello", family:"strings",grp:"strings",sub:1, stance:"seated",   w:28, d:28, zone:"mid", pkgs:"pickup", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Cello", type:"di", phantom:false }] },
-  { id:"harmonica", label:"Harmonica",        short:"Harp",  family:"other",  grp:"other",  sub:0, stance:"standing", w:22, d:22, zone:"front", pkgs:"simple", pkgDefaults:{acoustic:"mic",light:"mic",full:"mic"}, inputs:MIC("Harmonica") },
+  { id:"acoustic",  label:"Acoustic guitar",  short:"Ac gtr",family:"strings",grp:"guitar", sub:1, stance:"standing", w:22, d:22, zone:"front", pkgs:"pickup", start:"di", inputs:[{ source:"Acoustic guitar", type:"di", phantom:false }] },
+  { id:"violin",    label:"Violin",           short:"Vln",   family:"strings",grp:"strings",sub:0, stance:"standing", w:22, d:22, zone:"mid", pkgs:"pickup", start:"di", inputs:[{ source:"Violin", type:"di", phantom:false }] },
+  { id:"cello",     label:"Cello",            short:"Cello", family:"strings",grp:"strings",sub:1, stance:"seated",   w:28, d:28, zone:"mid", pkgs:"pickup", start:"di", inputs:[{ source:"Cello", type:"di", phantom:false }] },
+  { id:"harmonica", label:"Harmonica",        short:"Harp",  family:"other",  grp:"other",  sub:0, stance:"standing", w:22, d:22, zone:"front", pkgs:"simple", start:"none", inputs:MIC("Harmonica") },
 ];
 /* ---- mic packages -------------------------------------------------- *
  * Amplification is a choice, not an assumption. A role offers packages;
@@ -504,13 +504,6 @@ const PKG_SETS = {
     { id:"stereo", label:"Stereo DI", inputs:r => [SD(r.label)] },
   ],
 };
-/* The three profiles set every position at once; a position the director
-   has chosen for is never restyled by a profile change. */
-const PROFILES = [
-  { id:"acoustic", label:"Acoustic-leaning", note:"voices and DI sources only — drums, horns and amps stay acoustic" },
-  { id:"light",    label:"Light reinforcement", note:"voices, DIs, guitar amp, kick + overheads, section mics on the horn rows" },
-  { id:"full",     label:"Fully miked", note:"close-mic everything" },
-];
 function pkgSet(plot, role){
   if (role.pkgs) return PKG_SETS[role.pkgs];
   return [{ id:"custom", label:"As set up", inputs:() => (role.inputs || []).map(i => Object.assign({ phantom:false, notes:"" }, i)) },
@@ -518,10 +511,14 @@ function pkgSet(plot, role){
 }
 function pkgDef(plot, role, id){
   const set = pkgSet(plot, role);
-  return set.find(p => p.id === id) || set.find(p => p.id === defaultPkgId(role, "full")) || set[0];
+  return set.find(p => p.id === id) || set[0];
 }
-function defaultPkgId(role, profile){
-  if (role.pkgDefaults) return role.pkgDefaults[profile] || role.pkgDefaults.full;
+/* What a player starts with: no mics, ever (William, 2026-09-14) — the
+   director adds them. A DI source keeps its DI, because a keyboard or a bass
+   with nothing plugged in isn't a choice anyone is making. A custom role
+   starts with whatever inputs the director gave it when they made it. */
+function startPkgId(role){
+  if (role.start) return role.start;
   return (role.inputs && role.inputs.length) ? "custom" : "none";
 }
 function packageInputs(plot, role, id){
@@ -531,31 +528,13 @@ function packageInputs(plot, role, id){
    a v1 file tags a position's own inputs with its own role, so compare. */
 function ownInput(plot, pos, inp){ return !inp.role || inp.role === pos.roleId; }
 
-/* Give a position a package. `manual` marks it as the director's choice,
-   which no profile change will overwrite. Inputs the doubles brought with
-   them are kept — they belong to the double, not to this package. */
-function setPackage(plot, pos, id, manual){
+/* Give a position a package. Inputs the doubles brought with them are
+   kept — they belong to the double, not to this package. */
+function setPackage(plot, pos, id){
   pos.pkg = id;
-  if (manual) pos.pkgOverride = true;
   const doubles = pos.inputs.filter(i => !ownInput(plot, pos, i));
   pos.inputs = packageInputs(plot, roleOf(plot, pos), id).map(i => Object.assign({ id:nextIdE("in") }, i)).concat(doubles);
   return pos;
-}
-function applyProfile(plot, profile, all){
-  plot.ampProfile = profile;
-  for (const pos of plot.positions){
-    if (pos.pkgOverride && !all) continue;
-    setPackage(plot, pos, defaultPkgId(roleOf(plot, pos), profile), false);
-    if (all) pos.pkgOverride = false;
-  }
-  const rows = sectionRows(plot);                 // light reinforcement puts the horn rows on section mics
-  for (const row of ["sax","tbn","tpt","voice"]){
-    const sec = plot.sections[row] || (plot.sections[row] = { on:false, mics:2 });
-    if (sec.manual && !all) continue;
-    sec.on = profile === "light" && (rows[row] || []).length >= 3;
-    if (all) sec.manual = false;
-  }
-  return plot;
 }
 /* Reading an existing plot: which package do these inputs amount to? */
 function inferPackage(plot, pos){
@@ -595,21 +574,22 @@ function addMic(plot, pos){
   const source = nextMicName(plot, pos), role = roleOf(plot, pos);
   const notes = role.pkgs === "amp" ? "amp mic" : "";
   pos.inputs.push({ id:nextIdE("in"), source, type:"mic", phantom:/^OH/.test(source), notes });
-  pos.pkg = inferPackage(plot, pos); pos.pkgOverride = true;
+  pos.pkg = inferPackage(plot, pos);
   return pos;
 }
 function removeMic(plot, pos){
   const mics = ownMics(plot, pos);
   if (!mics.length) return pos;
   pos.inputs.splice(pos.inputs.lastIndexOf(mics[mics.length - 1]), 1);
-  pos.pkg = inferPackage(plot, pos); pos.pkgOverride = true;
+  pos.pkg = inferPackage(plot, pos);
   return pos;
 }
 
-const ROLE_FALLBACK = { id:"other", label:"Other", short:"Other", family:"other", grp:"other", sub:9, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Input") };
+const ROLE_FALLBACK = { id:"other", label:"Other", short:"Other", family:"other", grp:"other", sub:9, stance:"standing", w:22, d:22, zone:"front", start:"none", inputs:MIC("Input") };
 const GROUP_ORDER = { drums:0, bass:1, guitar:2, keys:3, horn:4, strings:5, vocals:6, other:7 };
 const SEC_ROW_OF = { sax:"sax", brass:null };     // brass splits below
 const SEC_LABEL = { sax:"Sax section", tbn:"Trombone section", tpt:"Trumpet section" };
+const SEC_CORE = { sax:["alto","tenor","bari","soprano"], tbn:["trombone","btrombone"], tpt:["trumpet","flugel"] };   // who a "section" label may stand for
 function sectionRowOf(role){
   if (!role) return null;
   if (role.family === "sax") return "sax";
@@ -622,8 +602,13 @@ function roleDef(plot, id){
          ROLES.find(r => r.id === id) || ROLE_FALLBACK;
 }
 function roleOf(plot, pos){ return roleDef(plot, pos.roleId); }
-function roleInputs(role){          // what this role brings when everything is miked
-  return packageInputs(null, role, defaultPkgId(role, "full"));
+/* A double ticked "own channel": the DI it would start with, or else one
+   mic — ticking the box is the director asking for the channel. */
+function doubleInputs(role){
+  const start = packageInputs(null, role, startPkgId(role));
+  if (start.length) return start;
+  const one = pkgSet(null, role).map(k => packageInputs(null, role, k.id)).find(xs => xs.length === 1 && xs[0].type === "mic");
+  return one || [{ source:role.label, type:"mic", phantom:false, notes:"" }];
 }
 /* Free text -> a role id. Used by the v1 migration and by bulk name
    entry ("Sam Lee — tenor"). Most specific first. */
@@ -682,19 +667,14 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
 /* ---- instrumentation templates: shapes, not rosters --------------- */
 const TEMPLATES = [
   { id:"combo", name:"Jazz combo", note:"horns over a rhythm section; add or drop players after",
-    profile:"acoustic",
     parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]] },
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
-    profile:"light",
     parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]] },
   { id:"rock", name:"Rock / pop band", note:"lead vocal, guitar, keys, bass, drums",
-    profile:"full",
     parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
   { id:"vocals", name:"Vocals + rhythm section", note:"three voices, rhythm section",
-    profile:"full",
     parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]] },
   { id:"duo", name:"Solo / duo", note:"voice doubling acoustic guitar",
-    profile:"acoustic",
     parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic", input:true }] },1]] },
 ];
 
@@ -1006,37 +986,34 @@ function blankPlot(deck, name){
     director:"", date:"", showName:"", notes:"", printNames:true,
     deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
     positions:[], items:[], wedges:[], songs:[], customRoles:[], rhythmPlan:"drums-centre",
-    ampProfile:"light",
-    sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } },
+    sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, sectionsIncludeUnmiked:true,
     channelOrder:null };
 }
 function addPosition(plot, roleId, opts){
   const o = opts || {}, role = roleDef(plot, roleId);
   const pos = { id:nextIdE("pos"), roleId, x:0, y:0, rot:0, moved:false,
     names:o.names || [], doubles:(o.doubles || []).slice(), inputs:[], notes:"",
-    pkg:defaultPkgId(role, plot.ampProfile || "full"), pkgOverride:false };
+    pkg:startPkgId(role) };
   pos.inputs = packageInputs(plot, role, pos.pkg).map(i => Object.assign({ id:nextIdE("in") }, i));
   for (const d of pos.doubles) if (d.input)
-    for (const i of roleInputs(roleDef(plot, d.roleId))) pos.inputs.push(Object.assign({ id:nextIdE("in"), role:d.roleId }, i));
+    for (const i of doubleInputs(roleDef(plot, d.roleId))) pos.inputs.push(Object.assign({ id:nextIdE("in"), role:d.roleId }, i));
   plot.positions.push(pos);
   return pos;
 }
 /* parts: [[roleId|{roleId,doubles}, count], ...] */
-function makeFromParts(parts, deck, name, profile){
+function makeFromParts(parts, deck, name){
   const plot = blankPlot(deck, name);
-  if (profile) plot.ampProfile = profile;
   for (const [what, count] of parts){
     const spec = typeof what === "string" ? { roleId:what } : what;
     for (let i = 0; i < count; i++) addPosition(plot, spec.roleId, { doubles:spec.doubles });
   }
-  applyProfile(plot, plot.ampProfile, true);
   autoLayout(plot, { force:true });
   return plot;
 }
 function makeFromTemplate(id, deck){
   const t = TEMPLATES.find(x => x.id === id);
   if (!t) return blankPlot(deck);
-  const plot = makeFromParts(t.parts, deck, t.name, t.profile);
+  const plot = makeFromParts(t.parts, deck, t.name);
   plot.templateId = t.id;
   return plot;
 }
@@ -1147,11 +1124,10 @@ function syncWedgeIds(plot){                    // wedge.assignees is the source
   for (const p of plot.positions) p.wedgeId = of[p.id] || null;
 }
 function sectionRows(plot){                     // which horn rows exist, and who is in them
-  const rows = {};
+  const rows = {};                                // miked or not: a section mic is how an unmiked row gets heard
   for (const pos of plot.positions){
     const row = sectionRowOf(roleOf(plot, pos));
     if (!row) continue;
-    if (!pos.inputs.some(i => i.type === "mic")) continue;
     (rows[row] = rows[row] || []).push(pos);
   }
   return rows;
@@ -1168,7 +1144,7 @@ function inputUnits(plot){
     for (const inp of pos.inputs){
       const irole = inp.role ? roleDef(plot, inp.role) : role;
       const irow = sectionRowOf(irole);
-      if (irow && collapsed(irow) && inp.type === "mic") continue;      // folded into section mics
+      if (irow && collapsed(irow) && inp.type === "mic" && rows[irow].includes(pos)) continue;   // folded into section mics — a double on a player outside the row keeps its channel
       push(inp, { posId:pos.id, who, grp:irole.grp, sub:irole.sub,
                   stand:inp.type === "mic" && irole.family !== "rhythm" });
     }
@@ -1267,7 +1243,8 @@ function notMiked(plot){
   }
   const wholeRow = {};
   for (const row of Object.keys(rows))
-    if (rows[row].length > 1 && rows[row].every(p => silent.some(x => x.pos === p))) wholeRow[row] = true;
+    if (rows[row].length > 1 && rows[row].every(p => silent.some(x => x.pos === p) && !p.inputs.length && SEC_CORE[row].includes(roleOf(plot, p).id)))
+      wholeRow[row] = true;                         // a double's mic, or a flute in the row, and the players are named one by one
   const done = {};
   for (const x of silent){
     if (x.row && wholeRow[x.row]){
@@ -1299,13 +1276,6 @@ function warnings(plot){
   if (plot.layoutNote) out.push({ level:"amber", text:"Tight fit: " + plot.layoutNote + ". Drag anything that reads wrong." });
   if (plot.layoutStuck) out.push({ level:"amber", text:plot.layoutStuck + " position(s) couldn't be placed clear of everything else — drag them." });
   return out;
-}
-function collapseSections(plot){                // every horn row onto shared mics at once
-  const rows = sectionRows(plot);
-  for (const row of Object.keys(rows)){
-    const s = plot.sections[row] || (plot.sections[row] = { on:false, mics:2 });
-    if (!s.on && rows[row].length > (s.mics || 2)){ s.on = true; s.manual = true; }
-  }
 }
 
 /* ---- changeover (derived; nothing extra to author) ---------------- */
@@ -1391,6 +1361,20 @@ function todayISO(){ const d = new Date(); return [d.getFullYear(), String(d.get
 const V1_ITEM_ROLE = { kit:"drums", bassamp:"bass", gtramp1:"guitar", kb1:"keys", kb2:"organ",
   "byo-gtramp":"guitar", "byo-bassamp":"bass", "byo-keys":"keys", "byo-kit":"drums",
   "byo-laptop":"dj", "byo-acoustic":"acoustic", "byo-upright":"upright" };
+/* Before 2026-09-14 a section row only held horns with a mic, so a ticked
+   section on a row the director had unmiked by hand printed nothing. Now the
+   row holds every horn, and that stale tick would add section mics nobody
+   saw. Files written under the old rule get those ticks cleared on load. */
+function settleOldSections(plot){
+  if (plot.sectionsIncludeUnmiked) return;
+  for (const row of Object.keys(plot.sections || {})){
+    const sec = plot.sections[row];
+    const members = plot.positions.filter(p => sectionRowOf(roleOf(plot, p)) === row);
+    if (sec && sec.on && !members.some(p => p.inputs.some(i => i.type === "mic"))) sec.on = false;
+    if (sec) delete sec.manual;                     // profile-era flag
+  }
+  plot.sectionsIncludeUnmiked = true;
+}
 /* v1 stored named people plus items that carried the inputs. v2 stores
    positions that carry their own inputs. Positions are created in v1
    item order so channel numbers come out identical. */
@@ -1450,12 +1434,9 @@ function migrateV1(p){
     assignees:[...new Set((w.assignees || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))], request:w.request || "" }));
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
-  out.ampProfile = "full";                        // v1 miked everything it could
-  for (const pos of out.positions){
-    const guess = inferPackage(out, pos);
-    pos.pkg = guess;
-    pos.pkgOverride = guess === null || guess !== defaultPkgId(roleOf(out, pos), "full");
-  }
+  for (const pos of out.positions) pos.pkg = inferPackage(out, pos);   // v1 miked everything; its inputs come across as they were
+  delete out.sectionsIncludeUnmiked;
+  settleOldSections(out);
   syncWedgeIds(out);
   return out;
 }
@@ -1468,15 +1449,13 @@ function migratePlot(p){
   p.printNames = p.printNames !== false;
   p.rhythmPlan = p.rhythmPlan === "bass-centre" ? "bass-centre" : "drums-centre";
   p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
-  p.ampProfile = ["acoustic","light","full"].includes(p.ampProfile) ? p.ampProfile : "full";
+  delete p.ampProfile;                                // saved while plot-wide mic profiles existed
   for (const pos of p.positions){
     pos.names = pos.names || []; pos.doubles = pos.doubles || []; pos.inputs = pos.inputs || []; pos.rot = pos.rot || 0;
-    if (pos.pkg === undefined){                       // written before packages existed
-      const guess = inferPackage(p, pos);
-      pos.pkg = guess;
-      pos.pkgOverride = guess === null || guess !== defaultPkgId(roleOf(p, pos), p.ampProfile);
-    }
+    if (pos.pkg === undefined) pos.pkg = inferPackage(p, pos);   // written before packages existed
+    delete pos.pkgOverride;
   }
+  settleOldSections(p);
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; it.inputs = it.inputs || []; }
   for (const w of p.wedges) w.assignees = w.assignees || [];
   syncWedgeIds(p);
@@ -2112,14 +2091,14 @@ function renderInspector(p){
   if ($("iRole")) $("iRole").onchange = () => mut(() => {
     const q = plot(), pos = find(q, sel.id), old = roleOf(q, pos);
     pos.roleId = $("iRole").value;
-    setPackage(q, pos, defaultPkgId(roleDef(q, pos.roleId), q.ampProfile), pos.pkgOverride);
+    setPackage(q, pos, startPkgId(roleDef(q, pos.roleId)));
     autoLayout(q, { force:false });
   });
   el.querySelectorAll("[data-dbl]").forEach(c => c.onchange = () => mut(() => {
     const q = plot(), pos = find(q, sel.id), d = pos.doubles[+c.dataset.dbl];
     d.input = c.checked;
     pos.inputs = pos.inputs.filter(i => i.role !== d.roleId);
-    if (d.input && d.roleId) for (const i of roleInputs(roleDef(q, d.roleId))) pos.inputs.push(Object.assign({ id:nextId("in"), role:d.roleId }, i));
+    if (d.input && d.roleId) for (const i of doubleInputs(roleDef(q, d.roleId))) pos.inputs.push(Object.assign({ id:nextId("in"), role:d.roleId }, i));
   }));
   el.querySelectorAll("[data-dbldel]").forEach(b => b.onclick = () => mut(() => {
     const q = plot(), pos = find(q, sel.id), d = pos.doubles.splice(+b.dataset.dbldel, 1)[0];
@@ -2135,7 +2114,7 @@ function renderInspector(p){
   el.querySelectorAll("[data-isrc]").forEach(i => bindText(i, () => sel.inputs[+i.dataset.isrc].source, v => sel.inputs[+i.dataset.isrc].source = v));
   el.querySelectorAll("[data-itype]").forEach(s => s.onchange = () => mut(() => sel.inputs[+s.dataset.itype].type = s.value));
   el.querySelectorAll("[data-iph]").forEach(c => c.onchange = () => mut(() => sel.inputs[+c.dataset.iph].phantom = c.checked));
-  const handSet = () => { const q = plot(), pos = find(q, sel.id); if (pos){ pos.pkg = inferPackage(q, pos); pos.pkgOverride = true; } };
+  const handSet = () => { const q = plot(), pos = find(q, sel.id); if (pos) pos.pkg = inferPackage(q, pos); };
   el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => mut(() => { sel.inputs.splice(+b.dataset.idel, 1); handSet(); }));
   el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => { sel.inputs.push({ id:nextId("in"), source:titleCase(roleOf(plot(), sel).label), type:b.dataset.iadd, phantom:false, notes:"" }); handSet(); }));
   $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
@@ -2264,6 +2243,8 @@ function emailText(p){
   if (mon.unassigned.length) L.push("  No wedge assigned: " + mon.unassigned.join(", "));
   L.push("", "INPUT LIST");
   for (const r of rows) L.push("  " + String(r.ch).padStart(2) + ". " + r.source + (r.who ? " (" + r.who + ")" : "") + " [" + r.type + (r.phantom ? ", 48V" : "") + "]");
+  const silent = notMiked(p);
+  if (silent.length) L.push("", "NOT MIKED", "  " + silent.map(x => x.label + " (" + x.why + ")").join(", "));
   L.push("", "HOUSE EQUIPMENT NEEDED");
   for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
   L.push("", "MUSICIANS PROVIDE");
