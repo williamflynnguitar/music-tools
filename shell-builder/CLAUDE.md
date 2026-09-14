@@ -145,7 +145,8 @@ there is no inversion or string-set state in this app.
 - `subLabel` is his stand-in rule, **not printed on pp. 45–51**: where the
   structure has a B string but no E string, a 6R B string can't reach b9 so
   b13 stands in ("b13 for b9"), and a 5R B string can't reach b13 so b9 does.
-  The chart keeps the written symbol.
+  A 6R B string can't reach #9 either, and the #5 stands in ("#5 for #9",
+  2026-09-14). The chart keeps the written symbol.
 - **Students choose among what is written (RULED 2026-09-13).** William: "Keep both and
   students will learn to judiciously choose based on what's available to them. They need to
   experience seeing two extensions and picking one to play. Same with Ab7#11. A student needs
@@ -186,6 +187,22 @@ there is no inversion or string-set state in this app.
   the picker beside it printed `subLabel`'s "b13 for b9". The generator now
   takes that same stand-in — the b13 for an unreachable b9 at 6R, the b9 for an
   unreachable b13 at 5R — so those 17 `7b9` chords now sound and name the b13.
+  **"#5 for #9"** joined them on 2026-09-14 ("the rule is sharp 5 for sharp 9"),
+  as a third `standIn` pairing and a new `subLabel` line, both on dominants
+  only (on Δ7#5 the #5 is the chord's own fifth, not a stand-in). It changes
+  no library chart in any structure. The library has two #9 chords, Blue
+  Bossa's G7#9, and wherever they land on the 6th-string root the #9 either
+  sounds on the E string or there is no B string. It shows when a 7#9 sits on
+  the 6th-string root in structure 1 or 3, which a typed chart can do
+  (`Cmaj7 | C7#9` in structure 1 lands at 6R 8fr). The picker now labels the
+  #5 "#5 for #9", and `pickOffsets` picks it by rule. An edited chord already
+  landed on the #5 before, but only by accident: the picker refuses the
+  unwritten 13 on an altered symbol, and `snapToOffered`'s tie between the #5
+  and the b7 went to whichever came first. An unedited 7#9 on the 6th-string
+  root used to sound the 13 unless it was resolving to minor (then the b13
+  default already gave it the same note), and now sounds the #5.
+  The same rulings are ported to Voice Leading and Box Buddy; see their
+  CLAUDE.md files.
   The three `G9#5` in I Hear A Rhapsody and two `Ab7#11` in Stella that
   had no pairing are settled by the "students choose" ruling below.
 - **Into a minor chord the sixth defaults to the b13 (RULED 2026-09-12,

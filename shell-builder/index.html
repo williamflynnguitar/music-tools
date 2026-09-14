@@ -764,8 +764,11 @@ function pickOffsets(ch, rs, rf, struct, ctx){
      b13, so the b9 does. Until this, an unreachable alteration scored nothing
      on every candidate and the winner fell out of 0.1 of fret travel, which
      left 22 chords in the library sounding no alteration at all — a chart
-     reading G7b9 voiced and named "G13". */
-  const standIn = wants(1) && !reach(1) ? 8 : wants(8) && !reach(8) ? 1 : null;
+     reading G7b9 voiced and named "G13". "#5 for #9" (William, 2026-09-14) is
+     the third pairing: a 6R B string cannot reach the #9 either, so the #5
+     stands in. */
+  const standIn = wants(1) && !reach(1) ? 8 : wants(8) && !reach(8) ? 1
+                : q.dom && wants(3) && !reach(3) ? 8 : null;
   /* Into a minor chord the sixth degree defaults to the b13, which is the
      target's own minor third; the natural 13 is that target's MAJOR third and
      belongs to a major resolution (William, 2026-09-12: "default to b13 on
@@ -951,7 +954,8 @@ function extOptions(ch, struct, rs, rf){
 /* William's stand-in rule (his teaching, not printed on pp. 45–51), for
    structures with a B string but no E string: a 6R B string cannot reach b9,
    so the b13 stands in for it, and a 5R B string cannot reach b13, so the b9
-   stands in. The chart keeps the written symbol either way. */
+   stands in. A 6R B string cannot reach #9 either, and the #5 stands in for
+   that. The chart keeps the written symbol either way. */
 function subLabel(ch, opts){
   if(opts.hasE) return null;
   const ext = ch.ext || [], degs = new Set(opts.cells.map(c=>c.b));
@@ -962,6 +966,10 @@ function subLabel(ch, opts){
   const written = new Set(ext.map(e => DEG[e]%12));
   if([...degs].some(d => EXT.includes(d) && written.has(DEG[d]%12))) return null;
   if(ext.includes('b9') && !degs.has('b9') && degs.has('#5')) return {deg:'#5', text:'b13 for b9'};
+  /* William, 2026-09-14: "the rule is sharp 5 for sharp 9". Same position problem as the b9 --
+     a 6th-string root's B string stops short of it -- and the same note answers it. Dominants
+     only: on Δ7#5 the #5 is the chord's own fifth, not an extension standing in for anything. */
+  if(QUAL[ch.quality].dom && ext.includes('#9') && !degs.has('#9') && degs.has('#5')) return {deg:'#5', text:'#5 for #9'};
   if(ext.some(e=>e==='b13'||e==='#5') && !degs.has('#5') && degs.has('b9')) return {deg:'b9', text:'b9 for b13'};
   /* A #11 chord is lydian dominant, and that scale's other tensions are the natural 9 and 13 --
      so where the #11 cannot be reached, the natural 9 is what it implies (William, 2026-09-13:
