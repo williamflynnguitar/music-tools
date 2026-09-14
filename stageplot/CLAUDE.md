@@ -411,12 +411,20 @@ through Load, and dropping a file on the page works anywhere.
 ## What prints
 
 One US Letter portrait page where it fits — every sample plot but the big
-bands does, and the big bands run to two, which the brief allows. Header, diagram, two columns (monitors, house equipment, musicians
+bands does, and the big bands run to two, which the brief allows. Header, diagram, a key, two columns (monitors, house equipment, musicians
 provide, DI boxes on the left; input list on the right), then personnel by song
 if any, notes, and the delivery line. Body text is 10 pt and diagram labels are
 12 pt **at any deck size** — type sizes are computed back through the print
 scale, so changing `VENUE.deck` never shrinks names below the tech's
 legibility line.
+
+**The key** (added 2026-09-14, when William pointed out nobody would read ⊘)
+sits under the diagram on the page and under the canvas on screen. It lists
+only what this plot draws — `legendKeys()` decides, `legendHTML()` draws the
+swatches — so a fully miked band's key never mentions not miked and a plot
+with no band-brought gear has no dashed box. Labelled things (DRAPE, PA,
+AUDIENCE, the names) aren't keyed; they already say what they are. Keep an
+entry's words short: the key has to stay on one line on a big band's page.
 
 The preview's "≈ 1 page" is measured from the rendered height, not the
 browser's own pagination — a good guide, not gospel.
@@ -470,7 +478,7 @@ New in v2:
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 279 assertions: the role library, every template (builds,
+`node check.js` — 286 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

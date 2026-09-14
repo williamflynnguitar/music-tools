@@ -125,6 +125,10 @@ svg.deck .hit:active{cursor:grabbing}
 .inspector h3 span{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin-left:8px}
 .insprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 .legendnote{font-size:12.5px;color:var(--bone-dim);margin-top:8px;line-height:1.4}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px}
+.legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend svg{flex:none}
+.legend-screen{margin-top:8px;font-family:var(--mono);font-size:12px;color:var(--bone)}
 
 /* right rail — the printed page, live */
 .pagerail{border-left:1px solid var(--line);padding:12px 14px 40px;min-width:0}
@@ -150,6 +154,8 @@ svg.deck .hit:active{cursor:grabbing}
 .sheet ul{margin:1px 0;padding-left:13px}
 .sheet li{margin:0}
 .sheet .flag{font-family:var(--psans);font-size:9pt}
+.sheet .legend{font-family:var(--psans);font-size:8.5pt;gap:0 14px;margin:2px 0 3px}
+.sheet .legend svg{width:24px;height:17.5px}
 .sheet .diagram{break-inside:avoid;margin:3px 0 1px}
 .sheet .diagram svg{display:block;width:100%;height:auto}
 .sheet .foot{font-family:var(--psans);font-size:7.5pt;color:#444;margin-top:4px;border-top:.5pt solid #999;padding-top:3px}
@@ -315,6 +321,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
   <main class="canvaswrap">
     <div class="canvashead" id="canvashead"></div>
     <div class="deckwrap"><svg class="deck" id="deck" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="legend legend-screen" id="canvaslegend"></div>
     <p class="legendnote" id="legendnote"></p>
     <div class="inspector" id="inspector" hidden></div>
   </main>
@@ -1233,6 +1240,21 @@ function unmiked(plot, pos){                     // nothing of this position rea
   if (pos.inputs.filter(i => ownInput(plot, pos, i)).length) return false;
   return !(row && sec[row] && sec[row].on);
 }
+/* The diagram's key: only the symbols this plot actually draws, in the
+   order a reader meets them. Shared by the printed page and the canvas. */
+function legendKeys(plot){
+  const out = [], has = (id, text, yes) => { if (yes) out.push({ id, text }); };
+  const pos = plot.positions, stance = p => roleOf(plot, p).stance;
+  has("player",  "player", pos.some(p => stance(p) !== "object"));
+  has("unmiked", "not miked", pos.some(p => unmiked(plot, p)));
+  has("wedge",   "wedge, numbered by mix", plot.wedges.length);
+  has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
+  has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo"));
+  has("drummer", "drummer, facing the audience", pos.some(p => roleOf(plot, p).id === "drums"));
+  has("truss",   "truss post", VENUE.context.trussCorners);
+  has("off",     "over the deck edge", pos.concat(plot.items, plot.wedges).some(o => offDeck(o, plot)));
+  return out;
+}
 function notMiked(plot){
   const labels = positionLabels(plot), rows = sectionRows(plot), sec = plot.sections || {};
   const silent = [], out = [];
@@ -1513,6 +1535,21 @@ function wedgePath(w, d){                              // trapezoid, throw face 
   const x = -w/2, y = -d/2, t = w * .62;
   return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
 }
+function legendHTML(plot, print){
+  const ink = print ? "#000" : "#e8e1d1", dim = print ? "#555" : "#a89f8c";
+  const ground = print ? "#fff" : "#0d232b", fill = print ? "#e6e6e6" : "#1a4551";
+  const sw = {
+    player:  '<circle cx="11" cy="8" r="6.2" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
+    unmiked: '<circle cx="11" cy="8" r="5.6" fill="' + ground + '" stroke="' + dim + '" stroke-width="1.1"/><path d="M7.2,11.8L14.8,4.2" stroke="' + dim + '" stroke-width="1.1"/>',
+    wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
+    house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
+    byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
+    drummer: '<circle cx="11" cy="6" r="4" fill="' + ink + '"/><path d="M11,6v7" stroke="' + ink + '" stroke-width="1.2"/>',
+    truss:   '<rect x="5" y="2" width="12" height="12" fill="none" stroke="' + dim + '" stroke-width="1.1"/><path d="M5,2l12,12M17,2l-12,12" stroke="' + dim + '" stroke-width="1"/>',
+    off:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="#c0392b" stroke-width="2"/>',
+  };
+  return legendKeys(plot).map(k => '<span><svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true">' + sw[k.id] + '</svg>' + esc(k.text) + '</span>').join("");
+}
 function diagramSVG(plot, opt){
   const o = opt || {}, print = o.mode === "print", g = diagramGeom(plot), D = g.D;
   const LB = labelBoxes(plot, g), labels = positionLabels(plot);
@@ -1639,7 +1676,8 @@ function sheetHTML(p){
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
   H.push('<div class="diagram">' + diagramSVG(p, { mode:"print" }) + '</div>');
-  H.push('<p class="flag" style="margin:2px 0 0;font-size:8pt">Drawn from the performer\'s view: audience at the bottom, stage left and right are the player\'s. Grey = house gear, dashed = the band brings it.</p>');
+  H.push('<p class="flag" style="margin:2px 0 0;font-size:8pt">Drawn from the performer\'s view: audience at the bottom, stage left and right are the player\'s.</p>' +
+    '<div class="legend">' + legendHTML(p, true) + '</div>');
 
   const left = [], right = [];
   left.push('<h2>Monitors</h2><table><thead><tr><th style="width:10%">Mix</th><th style="width:46%">Who</th><th>What they want</th></tr></thead><tbody>');
@@ -1757,6 +1795,7 @@ function renderWarnings(p){
   $("warns").innerHTML = w.map(x => '<div class="warn ' + x.level + '"><span>' + esc(x.text) + '</span></div>').join("");
 }
 function renderCanvas(p){
+  $("canvaslegend").innerHTML = legendHTML(p, false);
   $("canvashead").innerHTML = '<span>' + esc(p.name) + '</span><span>' + p.positions.length + ' positions</span>' +
     '<span>' + channelCount(p) + ' ch · ' + p.wedges.length + ' mixes</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
     (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>' +

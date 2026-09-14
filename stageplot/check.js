@@ -20,7 +20,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   diagramGeom, labelBoxes, positionLabelBox, kitInputs,
   PKG_SETS, pkgSet, pkgDef, startPkgId, packageInputs, setPackage,
   inferPackage, notMiked, unmiked,
-  addMic, removeMic, ownMics, micSummary, bigBandSeats };`)();
+  addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -264,6 +264,22 @@ for (const t of E.TEMPLATES){
   eq(chOf(reread), 4, "…so it prints the 4 channels it printed before (bass, keys, 2 sax section mics)");
   ok(!("manual" in reread.sections.sax), "…and the profile-era flag is gone");
   ok(reread.sectionsIncludeUnmiked, "…and the file is marked as read under the new rule");
+}
+
+/* ---- 3d. the diagram's key lists what the diagram draws ---- */
+{
+  const ids = p => E.legendKeys(p).map(k => k.id).join(",");
+  const combo = T("combo");
+  eq(ids(combo), "player,unmiked,wedge,house,drummer,truss", "the jazz combo's key: " + ids(combo));
+  ok(!/unmiked/.test(ids(mike(T("rock")))), "a fully miked plot's key doesn't mention not miked");
+  const blank = E.blankPlot();
+  eq(ids(blank), "truss", "an empty deck's key has only the truss");
+  E.addPosition(blank, "keys");
+  ok(!/drummer|wedge|byo/.test(ids(blank)), "…and never lists a symbol that isn't drawn: " + ids(blank));
+  const byo = T("combo"); byo.items.push({ id:"b1", kind:"byo", ref:"byo-pedals", label:"", x:40, y:40, rot:0, moved:true, ownerPositionIds:[], inputs:[] });
+  ok(/byo/.test(ids(byo)), "band-brought gear adds the dashed box to the key");
+  ok(E.legendKeys(combo).every(k => k.text && !/⊘/.test(k.text)), "every key entry is words, not another symbol");
+  ok(/class="legend"/.test(src) && /id="canvaslegend"/.test(src), "the key is on the printed page and under the canvas");
 }
 
 /* ---- 3c. mics by hand ---- */
