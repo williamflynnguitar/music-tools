@@ -234,9 +234,9 @@ const STYLES = {
     intro:'Play these low, short and even. Each chord uses only the root, 3rd and 7th, so it stays out of the way of the horns and the bass.'
   },
   bossa:{
-    name:'Bossa nova', desc:'Four-note shells with roots. The bass note can alternate root and 5th.',
-    family:'shell', size:4, rootless:false, preferSix:false, altBass:true,
-    rhythm:{bass:[1,0,0,0,1,0,0,0], chord:[0,1,0,1,0,0,1,0], text:'Thumb plays the bass on 1 and 3; fingers play the chord between. Where a hollow circle appears, move the bass to that note on beat 3.'},
+    name:'Bossa nova', desc:'Four-note shells with roots. The thumb keeps the root in the bass.',
+    family:'shell', size:4, rootless:false, preferSix:false,
+    rhythm:{bass:[1,0,0,0,1,0,0,0], chord:[0,1,0,1,0,0,1,0], text:'Thumb plays the root on 1 and 3; fingers play the chord between.'},
     intro:'Play fingerstyle. The thumb takes the low note, the fingers take the upper three strings together.'
   },
   rootless:{
@@ -397,12 +397,10 @@ function shellCandidates(chord, style, log, heading){
         if(rs===6){ place(4,q.seventh); place(3,q.third); } else { place(4,q.third); place(3,q.seventh); }
         place(2,bDeg); place(1,eDeg);
       }
-      let alt = null;
-      if(style.altBass && rs===5) alt = {s:6, f:nearestFret(6,(rootPc+DEG[q.fifth])%12,rf), label:q.fifth};
       const fs = notes.map(n=>n.f);
       const span = Math.max(...fs)-Math.min(...fs);
       if(span > 5) continue;
-      out.push({notes, alt, anchor:rf, rs, span, tag: rs+'R '+rf+'fr'});
+      out.push({notes, anchor:rf, rs, span, tag: rs+'R '+rf+'fr'});
     }
   }
   return out;
@@ -445,7 +443,7 @@ function drop2Candidates(chord, log){
          that voice (9 for R, #11 for 5) the tag says what is in the bass instead. */
       const bassDeg = degs[order[0]];
       const name = bassDeg===PLAIN[order[0]] ? INV[order[0]] : bassDeg+' in bass';
-      out.push({notes, alt:null, anchor, span, tag: name+' · top '+degs[order[3]]});
+      out.push({notes, anchor, span, tag: name+' · top '+degs[order[3]]});
     }
   }
   return out;
@@ -538,7 +536,7 @@ function stretchNote(frets){
 /* ===== end stretch ===== */
 function diagramSVG(v, showLabels){
   const W=88, H=104, x0=16, y0=22, sx=11, fy=15, nF=5;
-  const frets = v.notes.map(n=>n.f).concat(v.alt ? [v.alt.f] : []);
+  const frets = v.notes.map(n=>n.f);
   const sn = stretchNote(v.notes.map(n=>n.f));
   const minF = Math.min(...frets), maxF = Math.max(...frets);
   let base = minF <= 1 ? 1 : minF;
@@ -553,7 +551,7 @@ function diagramSVG(v, showLabels){
   // mutes / opens
   for(let s=6;s>=1;s--){
     const x = x0 + (6-s)*sx;
-    if(!used.has(s) && !(v.alt && v.alt.s===s)) o += `<text x="${x}" y="${y0-7}" font-size="9" text-anchor="middle" fill="#777">×</text>`;
+    if(!used.has(s)) o += `<text x="${x}" y="${y0-7}" font-size="9" text-anchor="middle" fill="#777">×</text>`;
   }
   // notes
   v.notes.forEach(n=>{
@@ -562,11 +560,6 @@ function diagramSVG(v, showLabels){
     o += `<circle cx="${x}" cy="${y}" r="5.2" fill="#141414"/>`;
     if(showLabels) o += `<text x="${x}" y="${y+2.6}" font-size="6.5" text-anchor="middle" fill="#fff">${n.label}</text>`;
   });
-  if(v.alt){
-    const x = x0 + (6-v.alt.s)*sx, y = y0 + (v.alt.f-base)*fy + fy/2;
-    o += `<circle cx="${x}" cy="${y}" r="5.2" fill="#fff" stroke="#141414" stroke-width="1.2" stroke-dasharray="2 1.5"/>`;
-    if(showLabels) o += `<text x="${x}" y="${y+2.6}" font-size="6.5" text-anchor="middle" fill="#141414">${v.alt.label}</text>`;
-  }
   /* printed on paper, so the reach is drawn rather than coloured — a band
      director's copier turns #d99a5b into the same grey as everything else */
   if(sn){ const ff=v.notes.map(n=>n.f).filter(f=>f>=1);

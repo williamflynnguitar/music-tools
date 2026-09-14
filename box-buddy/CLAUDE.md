@@ -69,8 +69,11 @@ not looked up. Rules from "Shell Voicings 101":
     two G7#9 in Blue Bossa to #5), Rootless 144 (all b13 into minor). No
     chord changed position, because this chooser goes by root fret, not by
     top note.
-- Bossa style adds an "alt bass" marker (dashed ring) on the 6th string for
-  5R chords, using the chord's actual fifth degree.
+- Bossa nova used to add an alternating-bass marker, a dashed ring on the
+  6th string for 5R chords at the quality's plain fifth, for the thumb to
+  take on beat 3. It printed a natural 5 under charts that wrote #5 or b13.
+  William removed it on 2026-09-14 ("eliminate the alternating bass
+  entirely"), so the thumb stays on the root on 1 and 3.
 
 **Engine — drop-2** (`drop2Candidates`): for each of the four close-voicing
 inversions, drop the second-highest note, realize on strings 4-3-2-1 as
