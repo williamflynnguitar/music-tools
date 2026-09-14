@@ -381,7 +381,7 @@ const VENUE = {
 };
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 18, labelPt: 12, smallPt: 9.5, tinyPt: 8 };
+const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8 };   // the bottom holds the PA stacks and AUDIENCE
 
 /* Bring-your-own palette. Free-text description prints after "BYO:". */
 const BYO_KINDS = [
@@ -1081,7 +1081,7 @@ function zoneOf(o, plot){                       // DSL / CSC / USR, stage left &
 }
 function posText(o, plot){ return zoneOf(o, plot) + " (" + ftIn(o.x) + " from SL, " + ftIn(o.y) + " from DS)"; }
 function diagramGeom(plot){
-  const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + 2*M;
+  const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + M + DRAW.marginBottom;
   let widthIn = 7.5, h = widthIn * vbH / vbW;
   const maxH = 5.3;
   if (h > maxH){ widthIn = maxH * vbW / vbH; h = maxH; }
@@ -1585,12 +1585,12 @@ function diagramSVG(plot, opt){
     P.push('<rect x="' + (cx - 7) + '" y="' + (cy - 7) + '" width="14" height="14" fill="none" stroke="' + dim + '" stroke-width="1.2"/>' +
            '<path d="M' + (cx - 7) + ',' + (cy - 7) + 'l14,14M' + (cx + 7) + ',' + (cy - 7) + 'l-14,14" stroke="' + dim + '" stroke-width="1"/>');
   }
-  if (c.mainsDownstageLR) for (const side of [-1, 1]){
-    const x = side < 0 ? g.M - 24 : g.M + D.w + 8, y = g.M + D.d + 4;
-    P.push('<rect x="' + x + '" y="' + y + '" width="16" height="24" fill="none" stroke="' + dim + '" stroke-width="1.2"/>');
-    t("PA", x + 8, y + 15, DRAW.tinyPt, "dim");
+  if (c.mainsDownstageLR) for (const side of [-1, 1]){      // just outside the downstage corners, below the truss, inside the frame
+    const w = 16, h = 16, x = side < 0 ? 1 : g.vbW - w - 1, y = g.M + D.d + 9;
+    P.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="none" stroke="' + dim + '" stroke-width="1.2"/>');
+    t("PA", x + w / 2, y + h / 2 + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim");
   }
-  t(c.audienceLabel, g.M + D.w/2, g.M + D.d + 26, DRAW.smallPt, "dim", ' letter-spacing="' + (g.pt(DRAW.smallPt) * .3).toFixed(1) + '"');
+  t(c.audienceLabel, g.M + D.w/2, g.M + D.d + 20, DRAW.smallPt, "dim", ' letter-spacing="' + (g.pt(DRAW.smallPt) * .3).toFixed(1) + '"');
   t("STAGE RIGHT", g.M - 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(-90 ' + (g.M - 11) + ' ' + (g.M + D.d/2) + ')"');
   t("STAGE LEFT", g.M + D.w + 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(90 ' + (g.M + D.w + 11) + ' ' + (g.M + D.d/2) + ')"');
   t(plot.deck.widthFt + "′ × " + plot.deck.depthFt + "′", g.M + D.w - 26, g.M - 11, DRAW.tinyPt, "dim");

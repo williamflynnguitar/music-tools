@@ -426,6 +426,11 @@ with no band-brought gear has no dashed box. Labelled things (DRAPE, PA,
 AUDIENCE, the names) aren't keyed; they already say what they are. Keep an
 entry's words short: the key has to stay on one line on a big band's page.
 
+The diagram's frame has a deeper bottom margin (`DRAW.marginBottom`) than its
+sides, to hold the PA stacks and the AUDIENCE label; until 2026-09-14 both were
+drawn outside the frame and never printed. The margin is as tight as it can be
+while a big band's page still fits on one sheet — check that before growing it.
+
 The preview's "≈ 1 page" is measured from the rendered height, not the
 browser's own pagination — a good guide, not gospel.
 
