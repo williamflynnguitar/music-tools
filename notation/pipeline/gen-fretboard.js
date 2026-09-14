@@ -17,7 +17,14 @@ for (const scId of Object.keys(SCALES)) { const sc = SCALES[scId];
       for (const key of keys) {
         const p = place(scId, shId, key);
         const id = (scId + "-" + shId + (v ? "-" + v : "")).replace(/[^A-Za-z0-9-]/g, "_");
-        const notes = p.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
-        fs.writeFileSync(path.join(out, `${id}-${safe(key)}.ly`), lyShape(notes, { compact: true, desc: sh.dir === "desc" })); n++;
+        // the default octave, plus the octave above or below wherever it fits the board whole:
+        // Next in cycle draws those to stay near the diagram before (fretboard notationPanel)
+        const centre = (p.minFret + p.maxFret) / 2;
+        const cells = [[p, ""], [place(scId, shId, key, centre + 12), "-8va"], [place(scId, shId, key, centre - 12), "-8vb"]]
+          .filter(([q, sfx]) => sfx === "" || (sfx === "-8va" ? q.shift > 0 : q.shift < 0));
+        for (const [q, sfx] of cells) {
+          const notes = q.dots.map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
+          fs.writeFileSync(path.join(out, `${id}-${safe(key)}${sfx}.ly`), lyShape(notes, { compact: true, desc: sh.dir === "desc" })); n++;
+        }
       } } } }
 console.log(n, "fretboard cells");

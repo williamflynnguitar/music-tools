@@ -142,6 +142,30 @@ so switching from a scale that has the current id to one that doesn't
 (major P6 → hwdim) drew the diagram with no picker button pressed; and
 "Next in cycle" sent a fingering outside the cycle list back to cycle[0].
 
+## Next in cycle stays by the diagram before it (Sep 14 2026)
+William: "keep the next diagram near the one before it". `place(scale, id, key, near)`
+takes an optional fret; the step button passes the centre of the diagram it is leaving,
+and the next shape takes whichever octave that fits the board whole sits closest to it
+(ties keep the default). Every other caller passes nothing and gets the book's position,
+unchanged for all 828 placements; picking a scale, key or fingering by hand clears `near`,
+while a variant, label mode or notation toggle keeps it.
+
+Over every fingering in every key, 12 steps each (9,792 steps), no step now moves farther
+than the board requires (75 did). In the browser, with the major P6 variant too (9,936
+steps), the hint matched the drawn move, the TAB notes matched the diagram and the fetched
+cell matched the octave on every step. What still moves is
+the cycle itself and the board: after the six fingerings the cycle moves on a fourth, five
+frets down or seven up where down is under the nut (1,656 steps), and 183 more land where
+the near octave doesn't fit. So the hint names the move from the diagram Next in cycle will
+draw: "same position" when the centre moves less than 3 frets, otherwise "7 frets up". It
+used to promise the same position on every step.
+
+A shifted placement (`shift` ±1 on the placement) has its own engraved cell,
+`<cell>-8va.svg` (or `-8vb`, which no shape needs today), and the caption says "an octave
+above the book's position". `gen-fretboard.js` emits one wherever the octave fits whole:
+185 cells, all `-8va`. The Download .ly button writes the placement on screen and adds the
+same suffix to the file name.
+
 ## Full range (four-note-per-string half-whole), Sep 2026
 The deferred 4nps fingering shipped to William's spec: `FR6`/`FR5` in
 `SCALES.hwdim.shapes`, name "Full range". Half–whole–half per string,

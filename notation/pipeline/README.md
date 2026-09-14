@@ -9,18 +9,23 @@ Requires: node, python3, lilypond (2.24+) on the PATH.
 
     cd notation/pipeline
     node gen-arpeggios.js        # → ly/arpeggios/*.ly   (2,376 cells: 198 shapes × 12 keys)
-    node gen-fretboard.js        # → ly/fretboard/*.ly   (1,020 cells: 85 fingerings × 12 keys)
+    node gen-fretboard.js        # → ly/fretboard/*.ly   (1,013 cells: 69 fingerings and variants × 12 keys, plus 185 an octave up)
     node gen-quartal.js          # → ly/quartal/*.ly     (1,443 cells: cards × 12 keys + ii–V–I sets + tune bars)
     ./render.sh all              # → ../svg/arpeggios/*.svg, ../svg/fretboard/*.svg,
                                  #   and quartal-voicings/notation/*.svg (per-app store, per that brief)
 
 `render.sh` runs LilyPond in parallel (JOBS=n to override) and skips cells that already
-exist, so re-running after a data change only renders what's new. Delete the SVGs for a
+exist, so re-running after a data change only renders what's new. Two things to clear first,
+both git-ignored: `ly/<set>/` keeps `.ly` files for shapes that no longer exist, which would
+render as orphan cells, and `post.py` rewrites every `*.cropped.svg` left in `build/<set>/`,
+so old build output would overwrite current cells. (Sep 2026: `ly/fretboard` held 1,496
+files for 1,013 cells, and `build/fretboard` 2,088.) Delete the SVGs for a
 shape to force a re-render. About 1.5 s per cell per core: the full set is roughly
 15 minutes on 8 cores.
 
 Cell names — arpeggios: `<octaves>-<quality>-<shapeIndex>-<key>.svg`; fretboard:
-`<scale>-<shape>[-<variant>]-<key>.svg`. Keys use `s` for sharp (`Fs`). The apps build the
+`<scale>-<shape>[-<variant>]-<key>[-8va|-8vb].svg`, the suffix marking the octave above or
+below the default placement, which Next in cycle draws to stay near the diagram before. Keys use `s` for sharp (`Fs`). The apps build the
 same names in `notationPanel()`.
 
 Files:

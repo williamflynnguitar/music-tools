@@ -455,7 +455,7 @@ function chordText(text, scaleId, key) {
 function rootFret(key, string) {
   return (PC[key] - OPEN[string] + 12) % 12;
 }
-function place(scaleId, shapeId, key) {
+function place(scaleId, shapeId, key, near) {
   const sc = SCALES[scaleId], s = sc.shapes[shapeId], names = noteNames(key, scaleId);
   const notes = activeNotes(sc, shapeId);
   let rf = rootFret(key, s.rootString);
@@ -464,6 +464,20 @@ function place(scaleId, shapeId, key) {
   const hi = () => rf + Math.max(...notes.map(n => n[1]));
   if (lo() < floor) rf += 12;                      // keep off the nut, as the book does
   if (hi() > 19 && lo() - 12 >= floor) rf -= 12;
+  /* `near` is a fret the hand is already at. Next in cycle passes the centre of the diagram
+     it is stepping from, and the shape takes whichever octave that fits the board whole sits
+     closest to it (William, 2026-09-14: "keep the next diagram near the one before it").
+     Without it, each diagram took its octave on its own, so 90 of the 792 steps around the
+     cycles redrew six or more frets away (I5 in C at fret 3, then P6 in F at fret 10) under a
+     hint promising the same position. A tie keeps the default octave. Every other caller
+     passes nothing and gets the default above. `shift` tells the notation which cell to fetch. */
+  const home = rf;
+  if (near != null) {
+    const minOff = Math.min(...notes.map(n => n[1])), maxOff = Math.max(...notes.map(n => n[1]));
+    const centre = r => (Math.max(floor, r + minOff) + Math.min(19, r + maxOff)) / 2;
+    for (const r of [home - 12, home + 12])
+      if (r + minOff >= floor && r + maxOff <= 19 && Math.abs(centre(r) - near) < Math.abs(centre(rf) - near)) rf = r;
+  }
   // clip shapes (Full range) outrun the board in high keys and cannot drop
   // an octave: show the portion that fits, per William (Sep 2026). Cut by
   // pitch at the first off-board note, not by fret — clipping frets alone
@@ -484,7 +498,7 @@ function place(scaleId, shapeId, key) {
     return { i, string: str, fret, finger: fin, pc, degree: deg, root: deg === 0, alt: !!alt,
              note: deg >= 0 ? names[deg] : "?" };
   });
-  return { id: shapeId, scale: scaleId, key, rootFret: rf, dots, clipped: notes.length - kept.length,
+  return { id: shapeId, scale: scaleId, key, rootFret: rf, shift: (rf - home) / 12, dots, clipped: notes.length - kept.length,
            minFret: Math.min(...dots.map(d => d.fret)), maxFret: Math.max(...dots.map(d => d.fret)) };
 }
 
@@ -714,16 +728,18 @@ function notationPanel(p) {
   const sh = SCALES[p.scale].shapes[p.id], v = state.variants[vKey(p.id)];
   const notes = p.dots.filter(d => !d.alt).map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
   const id = (p.scale + "-" + p.id + (v ? "-" + v : "")).replace(/[^A-Za-z0-9-]/g, "_");
-  const src = `../notation/svg/fretboard/${id}-${p.key.replace("#", "s")}.svg`;
+  // an octave-shifted placement has its own engraved cell: <cell>-8va / -8vb
+  const oct = p.shift > 0 ? "-8va" : p.shift < 0 ? "-8vb" : "";
+  const src = `../notation/svg/fretboard/${id}-${p.key.replace("#", "s")}${oct}.svg`;
   const opts = { beam: 4, desc: sh.dir === "desc" };
-  return `<div class="ly" data-src="${src}" data-notes='${JSON.stringify(notes)}' data-opts='${JSON.stringify(opts)}'></div><p class="lynote"><span>staff + TAB in ${p.key}${sh.dir === "desc" ? " · descending" : ""}, engraved with LilyPond</span><button type="button" class="dlLy" data-scale="${p.scale}" data-id="${p.id}">Download .ly</button></p>`;
+  return `<div class="ly" data-src="${src}" data-notes='${JSON.stringify(notes)}' data-opts='${JSON.stringify(opts)}'></div><p class="lynote"><span>staff + TAB in ${p.key}${p.shift ? `, an octave ${p.shift > 0 ? "above" : "below"} the book’s position` : ""}${sh.dir === "desc" ? " · descending" : ""}, engraved with LilyPond</span><button type="button" class="dlLy" data-scale="${p.scale}" data-id="${p.id}">Download .ly</button></p>`;
 }
 function downloadLy(p) {
   const sc = SCALES[p.scale], sh = sc.shapes[p.id];
   const notes = p.dots.filter(d => !d.alt).map(d => ({ string: d.string, fret: d.fret, finger: d.finger, note: d.note }));
   const text = lyShape(notes, { beam: 4, desc: sh.dir === "desc", title: `${p.key} ${sc.name.toLowerCase()} · ${p.id} · ${sh.name}`, part: "Guitar", source: "Flynn, Jazz Guitar Technique Handbook\\n" + (sc.pages || "") });
   const blob = new Blob([text], { type: "text/plain" }), a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = `${p.key}-${p.scale}-${p.id}.ly`.replace("#", "s"); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  a.href = URL.createObjectURL(blob); a.download = `${p.key}-${p.scale}-${p.id}${p.shift > 0 ? "-8va" : p.shift < 0 ? "-8vb" : ""}.ly`.replace("#", "s"); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 /* ---------- whole-neck view ---------- */
 const NECK_TOP = 17;
@@ -791,7 +807,7 @@ function drawNeck() {
 }
 
 /* ---------- state + ui ---------- */
-const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", notation: "on", variants: {}, neckSel: null };
+const state = { scale: "major", key: "C", fingering: "I6", mode: "fingers", notation: "on", variants: {}, neckSel: null, near: null };
 const vKey = id => state.scale + ":" + id;
 function activeNotes(sc, id) {                       // the chosen variant's notes, default otherwise
   const sh = sc.shapes[id], v = state.variants[vKey(id)];
@@ -834,11 +850,12 @@ function render() {
   // resolve a fingering id left over from another scale BEFORE building the
   // picker, or it renders with no button pressed after a scale switch
   if (!sc.shapes[state.fingering] && state.fingering !== "all" && state.fingering !== "neck") state.fingering = cyc()[0];
-  seg("scales", Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; render(); });
-  seg("keys", KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; render(); });
+  // picking a scale, key or fingering by hand starts from the book's position again
+  seg("scales", Object.keys(SCALES).map(s => ({ id: s, label: SCALES[s].name })), state.scale, s => { state.scale = s; state.near = null; render(); });
+  seg("keys", KEYS.map(k => ({ id: k, label: k })), state.key, k => { state.key = k; state.near = null; render(); });
   seg("fingerings", [...Object.keys(sc.shapes).map(f => ({ id: f, label: f })),
       { id: "all", label: "All", wide: true }, { id: "neck", label: "Whole neck", wide: true }],
-      state.fingering, f => { state.fingering = f; render(); });
+      state.fingering, f => { state.fingering = f; state.near = null; render(); });
   // The bebop scales ship without fingerings (William's ruling): no finger digits
   // in the data, so the Fingers label mode has nothing to print — drop it and
   // fall back to degrees, leaving state.mode alone for the scales that have them.
@@ -867,7 +884,7 @@ function render() {
   const neck = state.fingering === "neck";
   const ids = neck ? [] : state.fingering === "all" ? Object.keys(sc.shapes) : [state.fingering];
   main.classList.toggle("grid", ids.length > 1);
-  const placed = ids.map(id => place(state.scale, id, state.key));
+  const placed = ids.map(id => place(state.scale, id, state.key, ids.length === 1 ? state.near : null));
   const passnote = sc.passing != null && !neck ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><polygon points="13,0 26,13 13,26 0,13" fill="var(--bone)"/></svg> diamond = the scale’s added passing tone</p>` : "";
   const altnote = placed.some(q => q.dots.some(d => d.alt))
     ? `<p class="passnote"><svg width="13" height="13" viewBox="0 0 26 26" style="vertical-align:-2px"><circle cx="13" cy="13" r="11" fill="none" stroke="var(--bone)" stroke-width="2.5" stroke-dasharray="4 3"/></svg> dashed = the same note in the other place it falls at the edge of this position — either string, your call</p>`
@@ -889,11 +906,22 @@ function render() {
   } else {
     const nf = nextInCycle();
     const nk = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
-    hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, same position.`;
+    /* Say where the hand goes, measured on the diagram Next in cycle will actually draw. Most
+       steps stay put. Every sixth one can't: after the six fingerings the cycle moves on a fourth
+       (five frets down, or seven up where down is under the nut), and near either end of the
+       board the near octave doesn't fit. The hint used to say "same position" for those too. */
+    const here = placed[0], there = place(state.scale, nf, nk, (here.minFret + here.maxFret) / 2);
+    const move = (there.minFret + there.maxFret) / 2 - (here.minFret + here.maxFret) / 2;
+    const frets = Math.abs(there.minFret - here.minFret);
+    const where = Math.abs(move) < 3 ? "same position"
+      : `${frets} fret${frets === 1 ? "" : "s"} ${there.minFret > here.minFret ? "up" : "down"}`;
+    hint.innerHTML = `<code>${state.key} ${state.fingering}</code> → <code>${nk} ${nf}</code>, ${where}.`;
   }
 }
 document.getElementById("step").addEventListener("click", () => {
   if (state.fingering === "all" || state.fingering === "neck") return;
+  const from = place(state.scale, state.fingering, state.key, state.near);
+  state.near = (from.minFret + from.maxFret) / 2;   // the next diagram stays by this one
   state.fingering = nextInCycle();
   state.key = KEYS[(KEYS.indexOf(state.key) + 1) % 12];
   render();
@@ -902,7 +930,7 @@ document.getElementById("step").addEventListener("click", () => {
 /* ---------- neck interactions ---------- */
 document.getElementById("diagrams").addEventListener("click", e => {
   const dl = e.target.closest ? e.target.closest(".dlLy") : null;
-  if (dl) { downloadLy(place(dl.dataset.scale, dl.dataset.id, state.key)); return; }
+  if (dl) { downloadLy(place(dl.dataset.scale, dl.dataset.id, state.key, state.fingering === dl.dataset.id ? state.near : null)); return; }
   if (state.fingering === "neck" && e.target.closest && e.target.closest("[data-neckreset]")) {
     state.neckSel = null;
     render();
