@@ -1,4 +1,4 @@
-# Music tools
+# Jazz Guitar Practice Tools
 
 Small, self-contained browser tools for jazz guitar practice and teaching, by
 William Flynn. Each tool is a single HTML file with no setup required, made
