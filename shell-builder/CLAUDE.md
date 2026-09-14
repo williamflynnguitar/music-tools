@@ -201,8 +201,9 @@ there is no inversion or string-set state in this app.
   and the b7 went to whichever came first. An unedited 7#9 on the 6th-string
   root used to sound the 13 unless it was resolving to minor (then the b13
   default already gave it the same note), and now sounds the #5.
-  The same rulings are ported to Voice Leading and Box Buddy; see their
-  CLAUDE.md files.
+  Voice Leading carries all of these rulings. Box Buddy carries the stand-ins
+  only and keeps the 13 as every dominant's default, by William's choice for
+  a tool aimed at music educators; see both CLAUDE.md files.
   The three `G9#5` in I Hear A Rhapsody and two `Ab7#11` in Stella that
   had no pairing are settled by the "students choose" ruling below.
 - **Into a minor chord the sixth defaults to the b13 (RULED 2026-09-12,

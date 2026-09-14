@@ -31,44 +31,37 @@ not looked up. Rules from "Shell Voicings 101":
 - Requested extensions replace the slot in their family (9-family or
   5-family) at the nearest fret to the root (`nearestFret`). This reproduces
   the B/E mobilization tables without storing them.
-- Shell Builder's rulings, ported (Sep 2026). They touch only the B string,
-  so they apply to styles that play it (`rootless` or `size>=4`), and
-  Four-to-the-bar keeps its root-3rd-7th shell.
-  - **Stand-ins** (ruled 2026-09-12 and 09-13, ported 2026-09-14). When a
-    written tension is outside the B string's family and sounds nowhere else
-    in the grip, the slot takes b13 for b9, **#5 for #9** (ruled 2026-09-14),
-    b9 for b13 or #5, or 9 for #11. A written note that can sound always
-    wins. Shell Builder's "13 for #11" is in the code but can't fire on a
-    dominant here, because a 6R B string reaches the #11 itself.
-  - **b13 into a minor V–i** (ruled 2026-09-12, ported 2026-09-14).
-    `voiceProgression` reads each chord's next written chord, skipping repeat
-    signs, because a repeat reuses the voicing before it: `G7 | % | Cm7` is
-    one G7 resolving, and both bars show the b13. A plain `7` whose root falls
-    a perfect fifth into a chord with a minor third defaults its 6R B string
-    to the b13, the target's own minor third. G7 to Gm7 and G7 to Em7 keep the
-    13. Any written tension that fits the slot (13, b13, #5, #11, b5) wins,
-    and 7sus4 is left alone. Written out as `G7 | G7 | Cm7`, the first G7 gets
-    the 13 and the second the b13. Voice Leading and Shell Builder read the
-    repeat sign that way too, since both parse % into a copy of the chord, so
-    `G7 | % | Cm7` is the one chart Box Buddy voices differently from them.
-  - **Tritone subs stay natural** (ruled 2026-09-12, ported 2026-09-14). Root
-    down a semitone is kept off that b13. It changes nothing here and can't:
-    no chord reads as both a sub and a minor V–i, and every other default is
-    already natural. The gate keeps the precedence the same as Shell Builder.
-  - The legend used to key diagrams on chord label and position tag, which
-    was enough while a label and position pinned the notes. Now a G7 at
-    6R 3fr is R b7 3 b13 into Cm7 and R b7 3 13 into Cmaj7, so where one label
-    and tag carry two voicings the tag names the highest note that differs
-    ("6R 3fr · b13"), in the legend, the chart and the in-order layout. Checked
-    in the browser over Voice Leading's library in every style and both
-    layouts: every chart chord's tag names a diagram with its own notes. With
-    the old key, 25 library chords pointed at the other voicing's diagram.
-  - Measured by running Voice Leading's 54-chart library through Box Buddy
-    (the seven key-transposable presets in all 12 keys), against 1217231:
-    Four-to-the-bar 0, Ballad 0, Bossa nova 27 (25 b13 into minor, and the
-    two G7#9 in Blue Bossa to #5), Rootless 144 (all b13 into minor). No
-    chord changed position, because this chooser goes by root fret, not by
-    top note.
+- **A dominant defaults to the 13, wherever it resolves** (William,
+  2026-09-14: "I still want box buddy to default to 13 extension on a
+  dominant chord. To illustrate to music educators and developing guitarists
+  that that's the way we do it in jazz."). This is a deliberate difference
+  from Voice Leading and Shell Builder, which default to the b13 when a
+  dominant resolves down a fifth to a minor chord. Box Buddy carried that
+  default, and the tritone-sub gate that only guarded it, for part of the
+  same day; both came back out, so the engine reads no chord's destination.
+- **Stand-ins for written alterations** (Shell Builder's rulings, 2026-09-12
+  and 09-13, ported 2026-09-14). They touch only the B string, so they apply
+  to styles that play it (`rootless` or `size>=4`), and Four-to-the-bar keeps
+  its root-3rd-7th shell. When a written tension is outside the B string's
+  family and sounds nowhere else in the grip, the slot takes b13 for b9,
+  **#5 for #9** (ruled 2026-09-14), b9 for b13 or #5, or 9 for #11. A
+  written note that can sound always wins, and a written alteration isn't
+  the default the 13 ruling is about: F7(b9) in Bossa nova plays R b7 3 b13,
+  not a 13 that would hide the flat nine. Shell Builder's "13 for #11" is in
+  the code but can't fire on a dominant here, because a 6R B string reaches
+  the #11 itself. Against the output before the stand-ins (1217231), with
+  Voice Leading's 54-chart library run through Box Buddy in all 12 keys, the
+  only change still standing is Blue Bossa's two G7#9 in Bossa nova, 13 to #5.
+- The legend keys diagrams on chord label and position tag, and the chart
+  points every chord with that label and tag at one diagram. That is only
+  right while a label and position pin the notes. While the b13 default was
+  in, they didn't (a G7 at 6R 3fr was R b7 3 b13 into Cm7 and R b7 3 13 into
+  Cmaj7), and 25 library chords pointed at the wrong diagram. So where one
+  label and tag carry more than one voicing, the tag names the highest note
+  that differs ("6R 3fr · b13") in the legend, the chart and the in-order
+  layout. Nothing triggers it now: every library chart in every style has one
+  voicing per label and tag. It stays so a rule that reads context can't
+  bring the bug back.
 - Bossa nova used to add an alternating-bass marker, a dashed ring on the
   6th string for 5R chords at the quality's plain fifth, for the thumb to
   take on beat 3. It printed a natural 5 under charts that wrote #5 or b13.
