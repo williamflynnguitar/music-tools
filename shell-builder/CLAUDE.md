@@ -234,12 +234,23 @@ there is no inversion or string-set state in this app.
   from the same progression (one is a semitone down, the other a fifth) but the
   precedence keeps the degenerate case — a doubled b7 and no extension at
   all — from being reachable.
-- The generator can still voice something the picker wouldn't offer — a plain
-  `pickOffsets` puts a natural 13 under a 7b9 — so the sounding note is always
-  shown, tagged "as generated", and the E row stays live rather than dimming
-  to a dead end. **Open question for William:** should the automatic voicing
-  follow the altered rule too? That would change the default voicing of every
-  7b9 in the built-in progressions and tunes.
+- The sounding note is always shown, tagged "as generated", and the E row stays live rather
+  than dimming to a dead end — originally because a plain `pickOffsets` could put a natural 13
+  under a 7b9 the picker would not offer. The question that raised ("should the automatic
+  voicing follow the altered rule too?") is **settled**, and it turned out to be the wrong
+  question: see the Sep 2026 rulings above on stand-ins, the minor-resolution b13, tritone subs,
+  written tensions and students choosing. At the default structure the generator now builds
+  nothing the picker refuses (0 of 1853 chords).
+- **Only holdable positions (Sep 2026).** `nearestFret` never goes below the nut, so a
+  middle-string note that belongs under fret 0 can only wrap up an octave. Bbm7 from the 5th
+  string at fret 1 put its b3 on the 4th string at fret 11 — a ten-fret grip — and the position
+  search accepted it because nothing measured the grip. 8 chords in the default chart: both
+  cycle presets, All The Things You Are, Donna Lee (three) and Out Of Nowhere (two). Both the
+  position search in `progVoiceLead` and the editor's `positionsFor` now skip any root position
+  whose shape spans six frets or more — the limit `extOptions` already enforces on B and E — and
+  a chord with no compact position anywhere keeps its narrowest rather than none (none do: 1475
+  positions offered across every quality, root and structure, 0 unplayable, 0 chords stranded).
+  The 8 moved to a compact 6th-string root at fret 6; nothing else in the library moved.
 - Editor placement: after the system on a wide screen (a system is one row);
   inside the system, directly after the tapped bar, below 560px, where the
   system stacks one bar per line and "after the system" would be off screen.

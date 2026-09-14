@@ -856,15 +856,28 @@ function progVoiceLead(bars){
   return bars.map((bar,bi)=>bar.map((ch,si)=>{
     if(!QUAL[ch.quality]) return {ch, v:null, key:null};
     const hctx = { intoMinor: headingMinor(ch), isSub: subbing(ch) };
-    let best = null, bc = 1e9;
+    /* A root position is only a candidate if the shape can actually be held there. nearestFret
+       never goes below the nut, so when a middle-string note belongs under fret 0 it can only
+       wrap up an octave: Bbm7 from the 5th string at fret 1 put its b3 on the 4th string at
+       fret 11, a ten-fret grip, in the default chart of All The Things You Are and both cycle
+       presets (8 chords in all). The position search accepted it because nothing measured the
+       grip. The limit is the one extOptions already enforces on the B and E strings -- six frets
+       or more is never offered -- so the generator can no longer build what the picker refuses.
+       A chord with no compact position anywhere keeps its narrowest one rather than none. */
+    let best = null, bc = 1e9, narrow = null, nspan = 1e9;
     for(const rs of [6,5]){
       const base = ((ch.pc-OPEN[rs])%12+12)%12;
       for(let rf=(base===0?12:base); rf<=15; rf+=12){
         const p = pickOffsets(ch, rs, rf, null, hctx);
+        const fr = buildAt(ch.pc, ch.quality, st.struct, rs, rf, p.off).notes.map(n=>n.f);
+        const span = Math.max(...fr) - Math.min(...fr);
+        if(span < nspan){ nspan = span; narrow = {rs, rf, off:p.off}; }
+        if(span >= 5) continue;
         const cost = (prev===null ? Math.abs(rf-7)*0.3 : Math.abs(rf-prev)) - p.extScore*5;
         if(cost<bc){ bc=cost; best={rs, rf, off:p.off}; }
       }
     }
+    if(!best) best = narrow;
     prev = best.rf;
     const key = editKey(bi, si, ch);
     const ed = E.get(key);
@@ -976,11 +989,18 @@ function snapToOffered(ch, struct, rs, rf, off){
   }
   return {2:best.ob, 1:best.oe};
 }
-function positionsFor(ch){
-  const out = [];
+/* The per-chord editor's Position chips. Same rule as the position search in progVoiceLead:
+   a root position the shape cannot be held in is not offered, or a student could tap straight
+   into the ten-fret Bbm7 the generator no longer builds. Measured on the structure the chord is
+   actually in, since whether a middle-string note wraps depends on which strings are played. */
+function positionsFor(ch, struct){
+  const sIdx = struct==null ? st.struct : struct, out = [];
   for(const rs of [6,5]){
     const base = ((ch.pc-OPEN[rs])%12+12)%12;
-    for(let rf=(base===0?12:base); rf<=15; rf+=12) out.push({rs, rf});
+    for(let rf=(base===0?12:base); rf<=15; rf+=12){
+      const fr = buildAt(ch.pc, ch.quality, sIdx, rs, rf, {2:0,1:0}).notes.map(n=>n.f);
+      if(Math.max(...fr) - Math.min(...fr) < 5) out.push({rs, rf});
+    }
   }
   return out.sort((a,b)=>a.rf-b.rf);
 }
@@ -998,7 +1018,7 @@ function editorHTML(it){
   let h = `<div class="pedit"><div class="pehead"><span class="psym">${fmt(label(ch), ch.rootName)}</span>`
         + `<span class="pewhere">bar ${it.bar} · ${STRUCT[it.struct].name} · ${it.v.rs}R at ${it.v.rf}fr${it.edited?' · edited':''}</span></div>`;
   h += chipRow('Structure', STRUCT.map(s=>({t:s.name, on:s.id===it.struct, act:'struct', val:s.id})));
-  h += chipRow('Position', positionsFor(ch).map(p=>({t:p.rs+'R · '+p.rf+'fr', on:p.rs===it.v.rs&&p.rf===it.v.rf, act:'pos', val:p.rs+'.'+p.rf})));
+  h += chipRow('Position', positionsFor(ch, it.struct).map(p=>({t:p.rs+'R · '+p.rf+'fr', on:p.rs===it.v.rs&&p.rf===it.v.rf, act:'pos', val:p.rs+'.'+p.rf})));
   const opts = extOptions(ch, it.struct, it.v.rs, it.v.rf);
   if(opts){
     const sub = subLabel(ch, opts);
