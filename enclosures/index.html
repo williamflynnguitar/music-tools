@@ -17,6 +17,11 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="description" content="Build enclosures from the rule, in any key.">
 <style>
+/* Repeated taps must not hand the browser a double-tap zoom (Sep 2026):
+   tapping twice in quick succession zoomed the page on iOS and the controls
+   had to be pinched back out. Pinch zoom is untouched. */
+button,.toggle{touch-action:manipulation}
+
 :root{
   --ink:#0a1a20; --petrol:#10303a; --petrol-2:#163f4b; --line:#1e4a58;
   --bone:#e9e2d2; --bone-dim:#a9a597; --brass:#c9a44c; --warn:#d4715f;
