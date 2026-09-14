@@ -153,13 +153,29 @@ instrument, add a row; nothing else in the file enumerates instruments.
 `ROLE_MATCH` turns free text into a role id ("Sam — bass trombone"), most
 specific pattern first. It is used by bulk name entry and the v1 migration.
 
-## Mic packages and the amplification profile
+## Mics: set by hand, per player
 
 **Amplification is a choice, not an assumption.** v1 miked everything it could:
 place a kit, get seven channels. That inflated the count, made the console
 warnings meaningless, and put things on the tech's list nobody was going to
 patch. Worse, a source missing from the input list was ambiguous — acoustic by
 decision, or forgotten?
+
+**The director sets mics by hand** (William, 2026-09-14). Every row in the
+Positions tab's On stage list carries **+ mic** and **− mic**, and says what the
+player has ("2 mics · DI", "not miked"). `addMic()` names the new mic the way
+the role's own setups name it — a kit fills in Kick, Snare, Hi-hat, Tom 1… in
+order; a guitar's is an amp mic; a voice's is Vocal — and `removeMic()` takes
+the player's last mic away, never a DI. Renaming a mic, adding a DI or removing
+a specific input is in the inspector (edit), one row per input with ×.
+
+There used to be three plot-wide presets (acoustic-leaning / light
+reinforcement / fully miked) on the Positions tab, a per-player package
+dropdown, and "full kit (7)" / "jazz minimal (4)" buttons on a kit. William
+cut all of them from the page in favour of the two buttons. The machinery
+below is still in the engine, because it decides **what a new plot or a newly
+added player starts with** and it powers the channel-warning suggestions —
+but nothing on screen asks the director to pick a profile any more.
 
 A role offers **packages** (`PKG_SETS`, chosen per role by `pkgs`), a position
 holds one in `pos.pkg`, and its inputs are generated from it. Sets: `kit`
@@ -169,27 +185,28 @@ holds one in `pos.pkg`, and its inputs are generated from it. Sets: `kit`
 `section`, `line`. A shared **section** mic is still a row-level thing —
 `plot.sections` — because it covers a group, not a position.
 
-`PROFILES` sets everything at once, and `role.pkgDefaults` says what each role
-does under each:
+`PROFILES` sets a whole plot's starting point, and `role.pkgDefaults` says what
+each role starts with under each:
 
 | | acoustic-leaning | light reinforcement | fully miked |
 |---|---|---|---|
 | drums | not miked | kick + overheads | full close-mic |
 | horns | acoustic | individual mics, rows folded to section mics | individual mics |
-| guitar amp | not miked | not miked | amp mic |
+| guitar amp | not miked | amp mic | amp mic |
 | bass | DI | DI | DI + amp mic |
 | keys | mono DI | stereo DI | stereo DI |
 | voice | mic | mic | mic |
 
 Templates start on the profile that suits them: jazz combo and solo/duo
-acoustic-leaning, big band light, rock and vocals fully miked. A jazz combo
-therefore opens at **2 channels** — keys and bass DI — which is what a combo in
-a room this size actually needs.
+acoustic-leaning, big band light, rock and vocals fully miked; a blank plot is
+light. A jazz combo therefore opens at **2 channels** — keys and bass DI —
+which is what a combo in a room this size actually needs. `plot.ampProfile`
+stays on the plot, unseen, so a trumpet added to that combo arrives unmiked
+like the horns already there, and one added to a big band arrives with a mic.
 
-**A hand-picked package is never restyled.** `setPackage(…, manual)` sets
-`pos.pkgOverride`, and `applyProfile()` skips those unless it is called with
-`all` (which is what plot creation and "follow the profile again" do). The
-Positions tab says how many are set by hand.
+Any hand edit — + mic, − mic, an input's × — re-reads the player's package
+with `inferPackage()` and sets `pos.pkgOverride`, so a later suggestion never
+swaps out inputs the director chose.
 
 **Not miked is printed, not implied.** `notMiked()` lists every position with
 nothing reaching the console — as "Drums (acoustic)", "Sax section" when a
@@ -197,7 +214,7 @@ whole row is silent — under the input list, and each carries a ⊘ on the
 diagram. A fully-miked plot prints no such section. A position covered by its
 row's section mics is not unmiked.
 
-**The channel meter now means something**, so it can argue back:
+**The channel meter means something**, so it can argue back:
 `reductions()` returns only the cuts available on this stage — "Sax section on
 2 shared mics −3", "Drums to kick, snare + overheads −3", "Keys to a mono DI
 −1" — sorted by what they save, and the warning banner offers the top three as
@@ -255,22 +272,39 @@ block above `LAYOUT` and are meant to be argued with:
 
 - Rows pack front to back in score order: voices downstage, then saxes, then
   low brass, then high brass, then strings and oddments.
-- Within a row, chairs run stage-left to stage-right in channel order, so the
-  bari sits nearest the rhythm section as a big band sits. **Lead chairs are
-  not centred** — see deferred.
+- Within a row, chairs run stage-left to stage-right in channel order.
+  **Lead chairs are not centred** in a small band — see deferred.
 - Five or fewer horns merge into a single front line instead of thin rows.
 - The rhythm section owns the upstage band: kit upstage centre, bass stage
   left, guitar stage right, keys downstage of them. With **eight or more
-  horns** the band is treated as a big band: the rhythm section moves into a
-  stage-left column (`LAYOUT.rhythmBig`) and the horn rows take the rest of
-  the deck at full depth.
+  horns** the band is treated as a big band and seated the way William sets
+  one up (2026-09-14). Page left to right, which is stage right to stage left:
+
+  | row | seats |
+  |---|---|
+  | back | bass rig in the corner, drums, Tpt 2, Tpt 1, Tpt 3, Tpt 4 |
+  | middle | keys (keyboard turned vertical), Tbn 2, Tbn 1, Tbn 3, Tbn 4 |
+  | front | Gtr, Tenor 1, Alto 1, Alto 2, Tenor 2, Bari |
+
+  `bigBandSeats()` gives each section row its chair order and its lead chair;
+  the rows then share columns so **Alto 1, Tbn 1 and Tpt 1 line up**, and
+  every chair lines up with the rows behind it. The guitar takes the column
+  just stage right of Tenor 1. The keyboard is rotated 90° and sits stage left
+  of its player, who is on the wall side facing the band — so it runs
+  upstage-downstage just behind and to the side of the guitar, since the kit
+  and the guitar amp fill the space directly behind. Generalised: brass reads
+  lead-second (2 1 3 4 5…), with bass trombone, tuba and flugelhorn at the far
+  end; saxes read Tenor 1, the altos, soprano/clarinet/flute, the remaining
+  tenors, bari. The rhythm block is `LAYOUT.rhythmBig`; the horn columns start
+  at `LAYOUT.bigBandColumn` of the width.
 - `plot.rhythmPlan` picks between two standard arrangements, because combos
   argue about this one: `"drums-centre"` (the default — kit upstage centre,
   bass out at the stage-left edge) and `"bass-centre"` (the two swapped,
   `LAYOUT.rhythmSwapped`). The toggle is on the Positions tab and only shows
   for a band that has both and isn't a big band. Flipping it unpins the
   rhythm players so they move, and leaves everything else alone.
-- Amps sit behind their player, keyboards in front of theirs.
+- Amps sit behind their player, keyboards in front of theirs — except the
+  big band's vertical keyboard, above.
 - Wedges land downstage of the group they serve; a group parked upstage would
   otherwise put its wedge inside the row in front, so those go outboard at the
   end of their row.
@@ -386,10 +420,9 @@ transitions other than by moving tabs.
 
 New in v2:
 
-- **Lead chairs are not centred.** A row runs in channel order stage-left to
-  stage-right, so Tpt 1 sits at the rhythm-section end rather than in the
-  middle of the row as a lead player usually does. It is one comparison in the
-  row-packing loop; left alone until William says which he wants.
+- **Lead chairs are not centred in a small band.** Below eight horns a row
+  runs in channel order. The big band has William's seating (lead second from
+  the rhythm section, lead column lined up); a combo does not.
 - **Row-to-row label crossings.** With three horn rows on a 12′ deck, a label
   can grazes the row in front (`check.js` prints these as "label crossings",
   currently 3–11″ overlaps). The white halo keeps them readable. A proper fix
@@ -405,14 +438,18 @@ New in v2:
    reaches the amber line at 28, let alone red at 32. The v1 brief expected it
    to. If real big band nights should carry doubles mics, solo mics for the sax
    and brass rows, or a vocal mic, they can be preset defaults.
-2. **Big band seating**: rhythm section at true stage left per the brief, which
-   is the audience's *right*; low chairs nearest the rhythm section.
+2. **Big band seating** — settled by William, 2026-09-14 (see the layout
+   engine). It moved the rhythm section from stage left, where the v1 brief
+   had it, to stage right. He described the trumpets once as "4, 3, 2, 1" and
+   once as "2, 1, 3, 4" left to right; the engine uses 2 1 3 4, which also
+   puts Tpt 1 in line with Alto 1 and Tbn 1 as he asked.
 3. **Upright bass implies the house bass rig** — change the role's `backline`
    if uprights usually go straight to a DI at Somewhere Works.
-4. **The profile defaults are my reading, not gospel** (`pkgDefaults` in each
+4. **The starting mics are my reading, not gospel** (`pkgDefaults` in each
    role). The ones most worth arguing with: keys drops to a mono DI under
-   acoustic-leaning; a guitar amp stays unmiked under light reinforcement; a
-   bass gets DI + amp mic under fully miked. One line each.
+   acoustic-leaning (William kept this, 2026-09-14); a bass gets DI + amp mic
+   under fully miked. One line each. A guitar amp is miked under light
+   reinforcement — William's call, 2026-09-14.
 5. Fully miked, the 17-piece big band totals **25** channels — still inside a
    32-channel console. The reduction suggestions were verified against a plot
    that does exceed it (that band plus six voices, 31 channels).

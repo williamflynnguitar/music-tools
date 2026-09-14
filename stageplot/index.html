@@ -90,6 +90,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .pitem.dim{opacity:.55}
 .prow{display:flex;align-items:center;gap:8px;background:var(--petrol);border-radius:4px;padding:6px 9px;font-size:13.5px}
 .prow .nm{flex:1;min-width:0}
+.pcard{flex-direction:column;align-items:stretch;gap:5px}
+.pcard .pline{display:flex;align-items:center;gap:6px}
+.pcard .ct{font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
+.pcard .ct.mics{flex:1}
 .prow .role{color:var(--bone-dim);font-size:12px;font-family:var(--mono)}
 .fld{margin-bottom:10px}
 .fld label,.fld .lbl{display:block;font-size:12px;color:var(--bone-dim);margin-bottom:3px}
@@ -127,7 +131,7 @@ svg.deck .hit:active{cursor:grabbing}
 .pagerail{border-left:1px solid var(--line);padding:12px 14px 40px;min-width:0}
 .pagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.05em}
 #sheetScale{transform-origin:top left}
-.sheetbox{overflow:hidden}
+.sheetbox{overflow:hidden;background:#fff;padding:var(--sheetpad,20px);border-radius:2px}   /* on screen: a paper margin round the page */
 
 /* ---------- the printed page ---------- */
 .sheet{width:7.5in;background:#fff;color:#000;font-family:var(--serif);font-size:10pt;line-height:1.22;position:relative}
@@ -192,7 +196,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
   .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#startDlg{display:none!important}
   .app{display:block;padding:0}
   .pagerail{display:block;border:0;padding:0;max-width:none;overflow:visible}
-  .sheetbox{overflow:visible}
+  .sheetbox{overflow:visible;padding:0;background:none;height:auto!important}
   #sheetScale{transform:none!important;width:auto!important;height:auto!important}
   .sheet{width:7.5in;font-size:10pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .sheet .pagerule{display:none}
@@ -414,7 +418,7 @@ const ROLES = [
   // voice
   { id:"voice",     label:"Voice",            short:"Vox",   family:"voice",  grp:"vocals", sub:0, stance:"standing", w:22, d:22, zone:"front-center", pkgs:"voice", pkgDefaults:{acoustic:"mic",light:"mic",full:"mic"}, inputs:MIC("Vocal") },
   // rhythm section
-  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", pkgs:"amp", pkgDefaults:{acoustic:"none",light:"none",full:"mic"}, inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
+  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", pkgs:"amp", pkgDefaults:{acoustic:"none",light:"mic",full:"mic"}, inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
   { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"amp", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Bass", type:"di", phantom:false }] },
   { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"pickup", pkgDefaults:{acoustic:"di",light:"di",full:"di-mic"}, inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
   { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit", pkgs:"kit", pkgDefaults:{acoustic:"none",light:"kick-oh",full:"close"}, inputs:null /* KIT_FULL */ },
@@ -505,7 +509,7 @@ const PKG_SETS = {
    has chosen for is never restyled by a profile change. */
 const PROFILES = [
   { id:"acoustic", label:"Acoustic-leaning", note:"voices and DI sources only — drums, horns and amps stay acoustic" },
-  { id:"light",    label:"Light reinforcement", note:"voices, DIs, kick + overheads, section mics on the horn rows" },
+  { id:"light",    label:"Light reinforcement", note:"voices, DIs, guitar amp, kick + overheads, section mics on the horn rows" },
   { id:"full",     label:"Fully miked", note:"close-mic everything" },
 ];
 function pkgSet(plot, role){
@@ -563,6 +567,44 @@ function inferPackage(plot, pos){
   for (const p of set) if (sig(packageInputs(plot, role, p.id)) === mine) return p.id;
   if (!own.length) return "none";
   return null;                                     // hand-edited: leave it alone
+}
+/* Mics by hand, one at a time — the director's control over amplification.
+   A new mic is named the way the role's own packages name it, so a kit
+   fills in Kick, Snare, Hi-hat… and an amp mic still reads as one. */
+function ownMics(plot, pos){ return pos.inputs.filter(i => i.type === "mic" && ownInput(plot, pos, i)); }
+function nextMicName(plot, pos){
+  const role = roleOf(plot, pos), have = new Set(pos.inputs.map(i => i.source));
+  const hasDI = pos.inputs.some(i => i.type !== "mic" && ownInput(plot, pos, i));
+  let base = role.label;
+  if (role.id === "drums"){ const k = KIT_FULL.find(n => !have.has(n)); if (k) return k; base = "Kit"; }
+  else if (role.pkgs === "voice") base = "Vocal";
+  else if (role.pkgs === "amp" && hasDI) base = role.label + " amp";
+  else if (role.pkgs === "pickup" && hasDI) base = role.label + " mic";
+  if (!have.has(base)) return base;
+  for (let n = 2; ; n++) if (!have.has(base + " " + n)) return base + " " + n;
+}
+function micSummary(plot, pos){                  // "2 mics · DI", for the On stage list
+  const n = t => pos.inputs.filter(i => i.type === t).length, out = [];
+  const mics = n("mic"), dis = n("di") + n("xlr"), sd = n("stereo-di");
+  if (mics) out.push(mics + (mics > 1 ? " mics" : " mic"));
+  if (dis) out.push(dis > 1 ? dis + " DIs" : "DI");
+  if (sd) out.push(sd > 1 ? sd + " stereo DIs" : "stereo DI");
+  if (!out.length) return unmiked(plot, pos) ? "not miked" : "section mic";
+  return out.join(" · ");
+}
+function addMic(plot, pos){
+  const source = nextMicName(plot, pos), role = roleOf(plot, pos);
+  const notes = role.pkgs === "amp" ? "amp mic" : "";
+  pos.inputs.push({ id:nextIdE("in"), source, type:"mic", phantom:/^OH/.test(source), notes });
+  pos.pkg = inferPackage(plot, pos); pos.pkgOverride = true;
+  return pos;
+}
+function removeMic(plot, pos){
+  const mics = ownMics(plot, pos);
+  if (!mics.length) return pos;
+  pos.inputs.splice(pos.inputs.lastIndexOf(mics[mics.length - 1]), 1);
+  pos.pkg = inferPackage(plot, pos); pos.pkgOverride = true;
+  return pos;
 }
 
 const ROLE_FALLBACK = { id:"other", label:"Other", short:"Other", family:"other", grp:"other", sub:9, stance:"standing", w:22, d:22, zone:"front", inputs:MIC("Input") };
@@ -665,9 +707,16 @@ const TEMPLATES = [
  *    order (bari nearest the rhythm section, as a big band sits).
  *  - The rhythm section owns the upstage band: kit upstage centre,
  *    bass stage left, guitar stage right, keys downstage of them.
- *  - With eight or more horns the band is a big band: the rhythm
- *    section moves into a stage-left column and the horn rows take
- *    the rest of the deck, using its full depth.
+ *  - With eight or more horns the band is a big band, seated the way
+ *    William sets one up (2026-09-14). Page left to right, which is
+ *    stage right to stage left:
+ *      back row   bass rig in the corner, drums, Tpt 2 1 3 4
+ *      middle     keys (keyboard turned vertical), Tbn 2 1 3 4
+ *      front      guitar, Tenor 1, Alto 1, Alto 2, Tenor 2, Bari
+ *    Alto 1, Tbn 1 and Tpt 1 share a column. Guitar sits beside
+ *    Tenor 1; the keyboard runs upstage-downstage behind the guitar,
+ *    player on the wall side facing the band. Bass trombone, tuba and
+ *    flugelhorn extend their row away from the rhythm section.
  *  - Amps sit behind their player, keyboards in front of theirs.
  *  - Everything is a fraction of the deck, so a new VENUE.deck
  *    re-lays every template proportionally.
@@ -677,7 +726,7 @@ const TEMPLATES = [
  * ------------------------------------------------------------------ */
 const LAYOUT = {
   frontY: .26, frontBackY: .58, rowGapMax: .24,   // the front band, where rows live
-  bigBandY: .28, bigBandBackY: .90, bigBandColumn: .36, hornsForBigBand: 8,
+  bigBandY: .28, bigBandBackY: .76, bigBandColumn: .465, hornsForBigBand: 8,
   edge: 16,                    // inches kept clear of the deck edge when packing a row
   comfySpacing: 46, minSpacing: 26,
   /* Standard shape, [fx, fy] per role. Two arrangements, because combos
@@ -692,15 +741,37 @@ const LAYOUT = {
     drums:[.15,.74], bass:[.52,.62], upright:[.52,.62], guitar:[.87,.63],
     keys:[.74,.40], organ:[.26,.40], perc:[.40,.86], dj:[.74,.80], playback:[.62,.90],
   },
-  rhythmBig: {                 // big-band shape: the stage-left column
-    drums:[.149,.757], bass:[.330,.500], upright:[.330,.500], guitar:[.330,.160],
-    keys:[.104,.382], organ:[.104,.139], perc:[.250,.640], dj:[.104,.640], playback:[.049,.640],
+  rhythmBig: {                 // big-band shape: the stage-right block (fx near 1 is page left)
+    bass:[.899,.729], upright:[.885,.715], drums:[.708,.778], keys:[.875,.375],
+    guitar:[.654,.280],          // only used when there is no sax row to sit beside
+    organ:[.875,.160], perc:[.560,.900], dj:[.896,.180], playback:[.950,.560],
   },
   gearUp: .17, gearDown: .26,  // how far the backline sits from its player (fraction of depth)
   wedgeGap: 30,                // inches downstage of the position it serves
   stagger: [0, .07, -.07, .14, -.14],
 };
 function clampIn(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+/* Big band chair order for one section row, page left to right (stage
+   right to stage left), and which chair is the lead. Brass reads 2 1 3 4;
+   saxes read Tenor 1, the altos, Tenor 2, Bari. */
+function bigBandSeats(plot, row, labels){
+  const of = ids => row.filter(p => ids.includes(roleOf(plot, p).id)).sort((a, b) => labels[a.id].index - labels[b.id].index);
+  const leadSecond = list => list.length > 1 ? [list[1], list[0]].concat(list.slice(2)) : list.slice();
+  const fam = roleOf(plot, row[0]).family;
+  let order, lead;
+  if (fam === "sax"){
+    const tenors = of(["tenor"]), altos = of(["alto"]);
+    order = tenors.slice(0, 1).concat(altos, of(["soprano","clarinet","flute"]), tenors.slice(1), of(["bari"]));
+    lead = altos.length ? order.indexOf(altos[0]) : 0;
+  } else {
+    const chairs = of(["trumpet"]).length ? of(["trumpet"]) : of(["trombone"]);
+    order = leadSecond(chairs).concat(of(["flugel","btrombone","tuba","hornsection"]));
+    lead = chairs.length ? order.indexOf(chairs[0]) : 0;
+  }
+  order = order.concat(row.filter(p => !order.includes(p)));   // custom roles in a horn family, at the far end
+  return { row, order, lead };
+}
 
 function autoLayout(plot, opt){
   const force = opt && opt.force, D = deckIn(plot), W = D.w, DP = D.d;
@@ -726,14 +797,32 @@ function autoLayout(plot, opt){
   if (mids.length) rows.push(mids);
   for (const r of rows) r.sort((a, b) => { const ra = roleOf(plot, a), rb = roleOf(plot, b);
     return (ra.sub - rb.sub) || (labels[a.id].index - labels[b.id].index); });
+  const seated = big ? [sax, low, high].filter(r => r.length).map(r => bigBandSeats(plot, r, labels)) : [];
 
   // row depths
   const y0 = big ? LAYOUT.bigBandY : LAYOUT.frontY, y1 = big ? LAYOUT.bigBandBackY : LAYOUT.frontBackY;
   const gap = rows.length > 1 ? Math.min(LAYOUT.rowGapMax, (y1 - y0) / (rows.length - 1)) : 0;
-  const xLo = (big ? LAYOUT.bigBandColumn * W : 0) + LAYOUT.edge, xHi = W - LAYOUT.edge;
+  const xLo = LAYOUT.edge, xHi = W - (big ? LAYOUT.bigBandColumn * W : LAYOUT.edge);
+
+  // big band: the section rows share columns, lead chairs in one line
+  let col = null;
+  if (seated.length){
+    const lo = Math.min.apply(null, seated.map(r => -r.lead)), hi = Math.max.apply(null, seated.map(r => r.order.length - 1 - r.lead));
+    const pLo = LAYOUT.bigBandColumn * W, pHi = W - LAYOUT.edge;   // page-x, measured from stage right
+    let spacing = hi > lo ? Math.min(LAYOUT.comfySpacing, (pHi - pLo) / (hi - lo)) : 0;
+    if (hi > lo && spacing < LAYOUT.minSpacing){ spacing = LAYOUT.minSpacing; notes.push("horn columns are tighter than " + LAYOUT.minSpacing + "″"); }
+    const leadPage = (pLo + pHi) / 2 - (lo + hi) / 2 * spacing;
+    col = { spacing, x: k => W - (leadPage + k * spacing) };
+  }
 
   rows.forEach((row, i) => {
     const fy = y0 + i * gap, span = xHi - xLo;
+    const seat = col && seated.find(r => r.row === row);
+    if (seat){
+      seat.order.forEach((p, j) => { if (pinned(p)) return; p.x = clampIn(col.x(j - seat.lead), 12, W - 12); p.y = fy * DP; });
+      seat.y = fy * DP;
+      return;
+    }
     const want = LAYOUT.comfySpacing;
     let spacing = row.length > 1 ? Math.min(want, span / (row.length - 1)) : 0;
     if (row.length > 1 && spacing < LAYOUT.minSpacing){ spacing = LAYOUT.minSpacing; notes.push("row of " + row.length + " is tighter than " + LAYOUT.minSpacing + "″"); }
@@ -750,6 +839,11 @@ function autoLayout(plot, opt){
     if (pinned(p)) continue;
     p.x = clampIn((slot[0] + (LAYOUT.stagger[n] || 0)) * W, 18, W - 18);
     p.y = clampIn(slot[1] * DP, 18, DP - 18);
+    const saxSeat = big && r.id === "guitar" && col && seated.find(q => q.row === sax);
+    if (saxSeat){                            // beside Tenor 1, one column further stage right
+      p.x = clampIn(col.x(-saxSeat.lead - 1 - n), 18, W - 18);
+      p.y = saxSeat.y;
+    }
   }
 
   // backline: an amp behind its player, a keyboard in front
@@ -763,6 +857,14 @@ function autoLayout(plot, opt){
     }
     if (pinned(it)) continue;
     const down = r.gearSide === "down";     // a keyboard sits in front, an amp behind
+    if (big && r.id === "keys"){            // big band: keyboard turned vertical, stage left of its player
+      const def = itemDef(it) || { d:16 };
+      it.rot = 90;
+      it.x = clampIn(p.x - (r.w / 2 + def.d / 2 + 3), 12, W - 12);
+      it.y = p.y;
+      continue;
+    }
+    it.rot = 0;
     it.x = p.x;
     it.y = clampIn(p.y + (down ? -LAYOUT.gearDown : LAYOUT.gearUp) * DP, 12, DP - 12);
   }
@@ -1541,7 +1643,9 @@ function diagramSVG(plot, opt){
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim");
+    const turned = (it.rot || 0) % 180 === 90;       // a vertical keyboard reads along its length
+    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim",
+      turned ? ' transform="rotate(-90 ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
     if (it.kind === "byo" && it.label) gl += ts(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
     labelled(it, px, py, gl);
   }
@@ -1734,7 +1838,8 @@ function renderCanvas(p){
 function renderSheet(p){
   const sheet = $("sheet");
   sheet.innerHTML = sheetHTML(p);
-  const box = $("sheetbox"), avail = Math.min(box.clientWidth, document.documentElement.clientWidth - 8);
+  const box = $("sheetbox"), pad = parseFloat(getComputedStyle(box).paddingLeft) || 0;
+  const avail = Math.min(box.clientWidth, document.documentElement.clientWidth - 8) - 2 * pad;
   const scale = Math.min(1, avail / (7.5 * 96));
   $("sheetScale").style.transform = "scale(" + scale + ")";
   $("sheetScale").style.width = (7.5 * 96) + "px";
@@ -1743,7 +1848,7 @@ function renderSheet(p){
     const r = document.createElement("div"); r.className = "pagerule"; r.style.top = (i * pageH) + "px";
     r.innerHTML = "<span>page " + (i + 1) + "</span>"; sheet.appendChild(r);
   }
-  box.style.height = (h * scale) + "px";
+  box.style.height = (h * scale + 2 * pad) + "px";
   $("pagehead").innerHTML = '<span>The printed page</span><span>≈ ' + pages + ' page' + (pages > 1 ? "s" : "") + ' (US Letter)</span>';
 }
 
@@ -1809,11 +1914,6 @@ function renderPanel(p){
     H.push('<label class="chk"><input type="checkbox" id="cPrintNames"' + (p.printNames !== false ? " checked" : "") + '> Print names</label>');
     H.push('<div class="insprow" style="margin:8px 0"><button class="btn sm" id="bInstr">Instrumentation…</button>' +
       '<button class="btn sm" id="bBulk">Paste names…</button></div>');
-    const prof = PROFILES.find(x => x.id === p.ampProfile) || PROFILES[1];
-    H.push('<h3>Amplification</h3><div class="chips">' +
-      PROFILES.map(x => '<button class="btn sm" data-profile="' + x.id + '" aria-pressed="' + (x.id === p.ampProfile) + '">' + esc(x.label) + '</button>').join("") +
-      '</div><p class="note">' + esc(prof.note) + '. Sets every position at once; anything you have chosen for yourself keeps its own setting.' +
-      (p.positions.some(x => x.pkgOverride) ? ' <b>' + p.positions.filter(x => x.pkgOverride).length + ' set by hand.</b>' : "") + '</p>');
 
     if (hasDrums && hasBass && horns < LAYOUT.hornsForBigBand){
       H.push('<h3>Rhythm section</h3><div class="seg2">' +
@@ -1833,14 +1933,17 @@ function renderPanel(p){
     if (!p.positions.length) H.push('<p class="note">No positions yet. Add one above, or pick a shape from New.</p>');
     for (const pos of p.positions){
       const w = p.wedges.find(w => w.assignees.includes(pos.id));
-      H.push('<div class="prow" style="align-items:flex-start"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
-        '<span class="role">' + esc(labels[pos.id].role.label) + '</span><br>' +
-        '<input type="text" data-pname="' + pos.id + '" placeholder="name (optional)" style="width:100%;margin-top:3px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 6px;font-size:13px"></span>' +
+      H.push('<div class="prow pcard"><div class="pline"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
+        '<span class="role">' + esc(labels[pos.id].role.label) + '</span></span>' +
         '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
         '<button class="btn sm" data-psel="' + pos.id + '" title="select on the canvas">edit</button>' +
-        '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>');
+        '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>' +
+        '<input type="text" data-pname="' + pos.id + '" placeholder="name (optional)" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 6px;font-size:13px">' +
+        '<div class="pline"><span class="ct mics">' + micSummary(p, pos) + '</span>' +
+        '<button class="btn sm" data-micadd="' + pos.id + '" title="add a mic to this player">+ mic</button>' +
+        '<button class="btn sm" data-micdel="' + pos.id + '" title="take this player\'s last mic away"' + (ownMics(p, pos).length ? "" : " disabled") + '>− mic</button></div></div>');
     }
-    H.push('</div><p class="note">Names are optional. The channels come from the positions, so a plot with no names still prints in full.</p>');
+    H.push('</div><p class="note">Names are optional. A player with no mic and no DI prints under “Not miked”. Edit a player to rename a mic or add a DI.</p>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
@@ -1920,6 +2023,8 @@ function renderPanel(p){
     if (S.sel === b.dataset.pdel) S.sel = null;
     autoLayout(q, { force:false });                       // the row closes up around the gap
   }));
+  el.querySelectorAll("[data-micadd]").forEach(b => b.onclick = () => commit(() => { const q = plot(); addMic(q, find(q, b.dataset.micadd)); }));
+  el.querySelectorAll("[data-micdel]").forEach(b => b.onclick = () => commit(() => { const q = plot(); removeMic(q, find(q, b.dataset.micdel)); }));
   el.querySelectorAll("[data-quickadd]").forEach(b => b.onclick = () => commit(() => {
     const q = plot(), pos = addPosition(q, b.dataset.quickadd);
     autoLayout(q, { force:false });
@@ -1960,7 +2065,6 @@ function renderPanel(p){
   }));
   const unf = $("bUnfreeze"); if (unf) unf.onclick = () => commit(() => { plot().channelOrder = null; });
   const pn = $("cPrintNames"); if (pn) pn.onchange = () => commit(() => { plot().printNames = pn.checked; });
-  el.querySelectorAll("[data-profile]").forEach(b => b.onclick = () => commit(() => applyProfile(plot(), b.dataset.profile, false)));
   const bi = $("bInstr"); if (bi) bi.onclick = () => openInstrumentation(plot());
   const bb = $("bBulk"); if (bb) bb.onclick = () => openBulkNames();
   const bcr = $("bCustomRole"); if (bcr) bcr.onclick = () => openCustomRole();
@@ -2003,12 +2107,6 @@ function renderInspector(p){
     H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
       roleOptions(p, sel.roleId) + '</select></div></div>');
     H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
-    const role = roleOf(p, sel), set = pkgSet(p, role), dflt = defaultPkgId(role, p.ampProfile);
-    H.push('<div class="fld"><label>Mic package' + (sel.pkgOverride ? ' <span style="color:var(--brass)">— set by hand</span>' : "") + '</label>' +
-      '<select id="iPkg" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
-      set.map(k => '<option value="' + k.id + '"' + (k.id === sel.pkg ? " selected" : "") + '>' + esc(k.label) +
-        ' — ' + pkgChannels(p, role, k.id) + ' ch' + (k.id === dflt ? " (profile default)" : "") + '</option>').join("") +
-      '</select>' + (sel.pkgOverride ? '<button class="btn sm" id="bPkgReset" style="margin-top:5px">follow the profile again</button>' : "") + '</div>');
     H.push('<div class="fld"><span class="lbl">Doubles</span>');
     (sel.doubles || []).forEach((d, i) => H.push('<div class="inputrow" style="grid-template-columns:1fr auto auto"><span>' +
       esc(d.label || roleDef(p, d.roleId).label) + '</span><label class="chk"><input type="checkbox" data-dbl="' + i + '"' + (d.input ? " checked" : "") + '> own channel</label>' +
@@ -2037,10 +2135,9 @@ function renderInspector(p){
         '<label class="chk" title="phantom power"><input type="checkbox" data-iph="' + i + '"' + (inp.phantom ? " checked" : "") + '>48V</label>' +
         '<button class="btn sm" data-idel="' + i + '">×</button></div>');
     });
-    H.push('<div class="insprow" style="margin-top:6px"><button class="btn sm" data-iadd="mic">+ mic</button><button class="btn sm" data-iadd="di">+ DI</button>' +
-      '<button class="btn sm" data-iadd="stereo-di">+ stereo DI</button>' +
-      (roleOf(p, sel).id === "drums" ? '<button class="btn sm" id="bKitFull">full kit (7)</button><button class="btn sm" id="bKitMin">jazz minimal (4)</button>' : "") +
-      '</div></div>');
+    if (!sel.inputs.length) H.push('<p class="note">No inputs — prints as not miked.</p>');
+    H.push('<div class="insprow" style="margin-top:6px"><button class="btn sm" id="bMicAdd">+ mic</button><button class="btn sm" data-iadd="di">+ DI</button>' +
+      '<button class="btn sm" data-iadd="stereo-di">+ stereo DI</button></div></div>');
     H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
   }
   H.push('<div class="insprow"><button class="btn sm" id="bRot">rotate (R)</button><button class="btn sm" id="bDel">delete</button>' +
@@ -2053,12 +2150,7 @@ function renderInspector(p){
   if ($("iByo")) bindText($("iByo"), () => (sel.byo || []).join(", "), v => sel.byo = v.split(",").map(s => s.trim()).filter(Boolean));
   if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
   if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
-  if ($("iPkg")) $("iPkg").onchange = () => mut(() => setPackage(plot(), find(plot(), sel.id), $("iPkg").value, true));
-  if ($("bPkgReset")) $("bPkgReset").onclick = () => mut(() => {
-    const q = plot(), pos = find(q, sel.id);
-    pos.pkgOverride = false;
-    setPackage(q, pos, defaultPkgId(roleOf(q, pos), q.ampProfile), false);
-  });
+  if ($("bMicAdd")) $("bMicAdd").onclick = () => mut(() => { const q = plot(); addMic(q, find(q, sel.id)); });
   if ($("iRole")) $("iRole").onchange = () => mut(() => {
     const q = plot(), pos = find(q, sel.id), old = roleOf(q, pos);
     pos.roleId = $("iRole").value;
@@ -2085,10 +2177,9 @@ function renderInspector(p){
   el.querySelectorAll("[data-isrc]").forEach(i => bindText(i, () => sel.inputs[+i.dataset.isrc].source, v => sel.inputs[+i.dataset.isrc].source = v));
   el.querySelectorAll("[data-itype]").forEach(s => s.onchange = () => mut(() => sel.inputs[+s.dataset.itype].type = s.value));
   el.querySelectorAll("[data-iph]").forEach(c => c.onchange = () => mut(() => sel.inputs[+c.dataset.iph].phantom = c.checked));
-  el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => mut(() => sel.inputs.splice(+b.dataset.idel, 1)));
-  el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => sel.inputs.push({ id:nextId("in"), source:"Input", type:b.dataset.iadd, phantom:false, notes:"" })));
-  if ($("bKitFull")) $("bKitFull").onclick = () => mut(() => sel.inputs = kitInputs(KIT_FULL).map(i => Object.assign({ id:nextId("in") }, i)));
-  if ($("bKitMin")) $("bKitMin").onclick = () => mut(() => sel.inputs = kitInputs(KIT_MIN).map(i => Object.assign({ id:nextId("in") }, i)));
+  const handSet = () => { const q = plot(), pos = find(q, sel.id); if (pos){ pos.pkg = inferPackage(q, pos); pos.pkgOverride = true; } };
+  el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => mut(() => { sel.inputs.splice(+b.dataset.idel, 1); handSet(); }));
+  el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => { sel.inputs.push({ id:nextId("in"), source:titleCase(roleOf(plot(), sel).label), type:b.dataset.iadd, phantom:false, notes:"" }); handSet(); }));
   $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
   $("bDel").onclick = () => mut(() => {
     const q = plot();

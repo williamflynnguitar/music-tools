@@ -19,7 +19,8 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, syncWedgeIds, itemDef,
   diagramGeom, labelBoxes, positionLabelBox, kitInputs,
   PKG_SETS, PROFILES, pkgSet, pkgDef, defaultPkgId, packageInputs, setPackage, applyProfile,
-  inferPackage, notMiked, unmiked, reductions, applyReduction, pkgChannels };`)();
+  inferPackage, notMiked, unmiked, reductions, applyReduction, pkgChannels,
+  addMic, removeMic, ownMics, micSummary, bigBandSeats };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -215,6 +216,42 @@ for (const t of E.TEMPLATES){
 
   // and a fully-miked plot prints no Not miked section at all
   eq(E.notMiked(T("rock")).length, 0, "the rock template has nothing unmiked");
+
+  // a guitar amp is miked under light reinforcement (William, 2026-09-14)
+  const gtr = E.makeFromParts([["guitar",1],["keys",1]], null, "Light", "light");
+  eq(gtr.positions[0].pkg, "mic", "light reinforcement mics the guitar amp");
+  eq(gtr.positions[1].pkg, "stereo", "…keys stay stereo under light");
+  eq(E.defaultPkgId(E.roleDef(null, "keys"), "acoustic"), "mono", "…and mono under acoustic-leaning (kept)");
+}
+
+/* ---- 3c. mics by hand ---- */
+{
+  const combo = T("combo");
+  const kit = combo.positions.find(x => x.roleId === "drums"), tpt = combo.positions.find(x => x.roleId === "trumpet");
+  const keys = combo.positions.find(x => x.roleId === "keys");
+  eq(E.micSummary(combo, kit), "not miked", "an acoustic kit reads as not miked in the list");
+  E.addMic(combo, kit); E.addMic(combo, kit);
+  eq(kit.inputs.map(i => i.source).join(","), "Kick,Snare", "+ mic on a kit fills in the kit pieces in order");
+  eq(E.micSummary(combo, kit), "2 mics", "…and the list says so");
+  ok(!E.notMiked(combo).some(x => /Drums/.test(x.label)), "…and the kit leaves the Not miked section");
+  eq(chOf(combo), 4, "…two more channels");
+  E.removeMic(combo, kit);
+  eq(kit.inputs.map(i => i.source).join(","), "Kick", "− mic takes the last one away");
+  E.removeMic(combo, kit);
+  ok(E.unmiked(combo, kit), "…down to none, and it is not miked again");
+  E.removeMic(combo, kit);
+  eq(kit.inputs.length, 0, "− mic on a player with no mic does nothing");
+  E.addMic(combo, tpt);
+  eq(tpt.inputs[0].source, "Trumpet", "a horn's mic is named for the horn");
+  eq(tpt.pkg, "mic", "…and reads as its individual-mic setup");
+  const before = keys.inputs.length;
+  E.removeMic(combo, keys);
+  eq(keys.inputs.length, before, "− mic leaves a DI alone");
+  const g = E.makeFromParts([["guitar",1],["voice",1]], null, "Duo", "acoustic");
+  E.addMic(g, g.positions[0]); E.addMic(g, g.positions[1]);
+  eq(g.positions[0].inputs[0].notes, "amp mic", "a guitar's mic is an amp mic");
+  eq(g.positions[1].inputs[0].source, "Vocal", "a voice's mic is Vocal");
+  ok(!/data-profile|Mic package|full kit \(7\)|jazz minimal \(4\)/.test(src), "no amplification presets left in the page");
 }
 
 /* ---- 4. building from an instrumentation list ---- */
@@ -325,6 +362,42 @@ for (const t of E.TEMPLATES){
   const tight = E.makeFromTemplate("bigband", { widthFt:16, depthFt:10 });
   ok(tight.positions.concat(tight.items, tight.wedges).every(o => !E.offDeck(o, tight)) || tight.layoutStuck > 0,
      "a cramped deck either fits or says it couldn't (" + (tight.layoutStuck || 0) + " stuck)");
+}
+
+/* ---- 10b. big band seating (William, 2026-09-14) ---- */
+{
+  const p = T("bigband"), L = labelsOf(p), W = p.deck.widthFt * 12;
+  const at = s => p.positions.find(x => L[x.id].short === s);
+  // page left to right is stage right to stage left, which is x falling
+  const leftToRight = names => names.map(at).every((q, i, a) => i === 0 || a[i - 1].x > q.x);
+  const rowY = names => names.map(at).every(q => Math.abs(q.y - at(names[0]).y) < 1);
+  ok(leftToRight(["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]) && rowY(["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]), "trumpets read 2 1 3 4");
+  ok(leftToRight(["Tbn 2","Tbn 1","Tbn 3","Tbn 4"]) && rowY(["Tbn 2","Tbn 1","Tbn 3","Tbn 4"]), "trombones read 2 1 3 4");
+  ok(leftToRight(["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"]) && rowY(["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"]),
+     "front row reads Gtr, Tenor 1, Alto 1, Alto 2, Tenor 2, Bari");
+  ok(Math.abs(at("Alto 1").x - at("Tbn 1").x) < 1 && Math.abs(at("Tbn 1").x - at("Tpt 1").x) < 1, "Alto 1, Tbn 1 and Tpt 1 share a column");
+  ok(Math.abs(at("Tenor 1").x - at("Tpt 2").x) < 1 && Math.abs(at("Tenor 2").x - at("Tpt 4").x) < 1, "…and every chair lines up with the rows behind");
+  ok(at("Tpt 1").y > at("Tbn 1").y && at("Tbn 1").y > at("Alto 1").y, "saxes front, trombones behind, trumpets at the back");
+  const rig = p.items.find(i => i.ref === "bassamp"), kit = at("Drums"), kb = p.items.find(i => i.ref === "kb1");
+  ok(p.items.concat(p.positions).every(o => o === rig || o.x <= rig.x + 1), "the bass rig is the furthest stage-right thing on the deck");
+  ok(rig.y > p.deck.depthFt * 12 * .8, "…in the back corner");
+  ok(kit.x < rig.x && kit.x > at("Tpt 2").x && Math.abs(kit.y - at("Tpt 2").y) < 12, "drums between the bass rig and Tpt 2, in the back row");
+  eq(kb.rot, 90, "the keyboard is turned vertical");
+  ok(kb.y > at("Gtr").y && Math.abs(kb.x - at("Gtr").x) < 60, "…upstage of the guitar");
+  ok(at("Keys").x > kb.x, "…with its player on the wall side");
+  const hits = collisions(p);
+  ok(hits.hard.length === 0, "the big band seating has no overlaps" + (hits.hard.length ? ": " + hits.hard.join("; ") : ""));
+  // a different big band still gets lead-second brass and a lined-up lead column
+  const q = E.makeFromParts([["alto",2],["tenor",2],["bari",1],["trumpet",5],["trombone",3],["btrombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "18", "light");
+  const M = labelsOf(q), by = s => q.positions.find(x => M[x.id].short === s);
+  ok(by("Tpt 2").x > by("Tpt 1").x && by("Tpt 1").x > by("Tpt 5").x, "five trumpets still read 2 1 3 4 5");
+  ok(by("B.Tbn").x < by("Tbn 3").x, "a bass trombone sits at the far end of its row");
+  ok(Math.abs(by("Tpt 1").x - by("Alto 1").x) < 1, "…and the lead column still lines up");
+  ok(q.positions.concat(q.items, q.wedges).every(o => !E.offDeck(o, q)), "…nothing off the deck");
+  ok(collisions(q).hard.length === 0, "…and no overlaps" + (collisions(q).hard.length ? ": " + collisions(q).hard.join("; ") : ""));
+  // a combo is untouched: keyboard flat, in front of its player
+  const c = T("combo"), ckb = c.items.find(i => i.ref === "kb1");
+  eq(ckb.rot, 0, "a combo's keyboard stays flat");
 }
 
 /* ---- 11. deck size ---- */
