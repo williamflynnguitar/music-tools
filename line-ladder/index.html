@@ -39,7 +39,12 @@ button:focus-visible,select:focus-visible,input:focus,textarea:focus{outline:2px
 .tagline{margin:2px 0 0;color:var(--bone-dim);font-size:14px}
 
 .bar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;padding:16px 28px 6px}
-.bar .group{margin:0}
+/* A select is as wide as its longest option — the Progression list's is
+   366px, which widened the whole page on phones. Capping the group (a flex
+   item, whose automatic minimum is otherwise that 366px) and then the select
+   lets it shrink to the bar; the native picker still shows the full names. */
+.bar .group{margin:0;max-width:100%}
+.bar select{max-width:100%}
 .group{margin-bottom:18px}
 .group .lbl{display:block;font-size:13px;color:var(--bone-dim);margin-bottom:5px}
 select,input[type=number],input[type=text],textarea{background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:7px 10px;color:var(--bone)}

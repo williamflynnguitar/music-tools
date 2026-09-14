@@ -56,6 +56,8 @@ button,rect[data-cs]{touch-action:manipulation}
   .title .key { font-family: var(--mono); font-size: 36px; font-weight: 500; letter-spacing: -.02em; }
   .title .name { font-size: 20px; }
   .title .shape { font-family: var(--mono); font-size: 15px; color: var(--bone-dim); margin-left: auto; text-align: right; }
+  /* "B♭maj7#5 augmented major 7th 1-octave" can't share one row on a phone card; unwrapped it widened the page to 425px */
+  @media (max-width: 480px) { .title { flex-wrap: wrap; row-gap: 0; } }
   .sub { margin: 0 0 12px; color: var(--bone-dim); font-size: 14px; }
   .card svg { width: 100%; height: auto; display: block; max-height: 260px; }
   .ly { color: var(--bone); margin: 14px 0 4px; }
@@ -100,7 +102,8 @@ button,rect[data-cs]{touch-action:manipulation}
   .neck g.nd.hl .w { fill: var(--brass); }
   .neck g.nd.hl .o { stroke: var(--brass); }
   .neckmsg { font-family: var(--mono); font-size: 12.5px; color: var(--bone-dim); padding: 30px 18px; margin: 0; }
-  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
+  /* min(): below a 340px grid (phones) one card takes the full width instead of overflowing the page */
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 14px; margin-top: 16px; align-items: start; }
   .cardgrid .card.hlc { box-shadow: inset 0 0 0 1.5px var(--brass); }
   .cardgrid .grouphead { grid-column: 1 / -1; font-family: var(--mono); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--brass); margin: 14px 0 0; }
   .csw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
