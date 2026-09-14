@@ -31,6 +31,16 @@ not looked up. Rules from "Shell Voicings 101":
 - Requested extensions replace the slot in their family (9-family or
   5-family) at the nearest fret to the root (`nearestFret`). This reproduces
   the B/E mobilization tables without storing them.
+- Stand-ins (ported from Shell Builder, Sep 2026): when a written tension
+  is outside the B string's family and sounds nowhere else in the grip, the
+  B slot takes b13 for b9, b9 for b13 or #5, 9 for #11, or 13 for #11 where
+  the 9 is out of reach. A written note that can sound always wins. It only
+  applies to styles that play the B string (`rootless` or `size>=4`), so
+  Four-to-the-bar keeps its root-3rd-7th shell. On a 16-chord test chart only
+  Bossa nova changed: F7(b9), G7(b9) and A7(b9) went from R b7 3 13 to
+  R b7 3 b13, and C7(b13), E7(b13) and D7(#5) went from R 3 b7 9 5 to
+  R 3 b7 b9 5, with no position moves. #9 has no stand-in yet. The
+  b13-into-minor and tritone-sub-naturals defaults are **not** ported.
 - Bossa style adds an "alt bass" marker (dashed ring) on the 6th string for
   5R chords, using the chord's actual fifth degree.
 

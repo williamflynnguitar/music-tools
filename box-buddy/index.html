@@ -354,8 +354,28 @@ function shellCandidates(chord, style, log){
       const eSlotDefault = rs===6 ? 'R' : q.fifth;
       const bFam = rs===6 ? FIVE_FAM : NINE_FAM;
       const eFam = rs===6 ? NINE_FAM : FIVE_FAM;
-      const bDeg = bSlotDefault==='b3' ? 'b3' : pickExt(bSlotDefault, bFam, chord, q, log);
+      let bDeg = bSlotDefault==='b3' ? 'b3' : pickExt(bSlotDefault, bFam, chord, q, log);
       const eDeg = pickExt(eSlotDefault, eFam, chord, q, log);
+      /* Shell Builder's stand-in rulings, ported (William, Sep 2026). From a 6th-string root the B
+         string reaches only the 5th/13th family, from a 5th only the 9th family, so a written
+         tension outside that family fell back to the default in silence: Bossa nova voiced F7(b9)
+         as R b7 3 13. Now the slot takes the ruled stand-in -- "b13 for b9", "b9 for b13" (and
+         #5), "9 for #11" or "13 for #11" where the 9 is out of reach -- but only where the style
+         actually plays the B string (Four-to-the-bar is a deliberate root-3rd-7th shell and gets
+         no extension at all), the slot fell back to its default, and the written tension sounds
+         nowhere else in the voicing, since a rootless shape can carry it on the E string. #9 has
+         no ruled stand-in yet. */
+      const bPlayed = style.rootless || style.size>=4;
+      if(bPlayed && bSlotDefault!=='b3' && !chord.ext.some(e=>bFam.includes(e)&&q.allowed.includes(e))){
+        const heard = style.rootless ? [bDeg, eDeg] : [bDeg];
+        const hears = (...ds) => ds.some(d => heard.includes(d));
+        const has = e => chord.ext.includes(e);
+        const standIn = has('b9') && !hears('b9') ? 'b13'
+          : (has('b13')||has('#5')) && !hears('b13','#5') ? 'b9'
+          : has('#11') && !hears('#11','b5') ? (bFam.includes('9') ? '9' : '13')
+          : null;
+        if(standIn && bFam.includes(standIn) && q.allowed.includes(standIn)) bDeg = standIn;
+      }
 
       if(!style.rootless){
         place(rs,'R');

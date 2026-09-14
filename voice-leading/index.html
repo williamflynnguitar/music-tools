@@ -328,8 +328,28 @@ function shellCandidates(chord, rootless){
       const dimish=chord.quality==='m7b5'||chord.quality==='dim7';
       const bDef = rs===6 ? (q.dom?'13':q.fifth) : (dimish ? (rootless?(chord.quality==='m7b5'?'11':'9'):'b3') : '9');
       const eDef = rs===6 ? 'R' : q.fifth;
-      const bDeg = bDef==='b3'?'b3':pick(bDef, rs===6?FIVE_FAM:NINE_FAM);
+      let bDeg = bDef==='b3'?'b3':pick(bDef, rs===6?FIVE_FAM:NINE_FAM);
       const eDeg = pick(eDef, rs===6?NINE_FAM:FIVE_FAM);
+      /* Shell Builder's stand-in rulings, ported (William, Sep 2026). The B string reaches only the
+         5th/13th family from a 6th-string root and only the 9th family from a 5th, so a written
+         tension outside that family used to fall back to the default in silence: a rooted 6R G7b9
+         played R b7 3 13 under a chart reading G7b9, and the b13, #5 and #11 cases did the same (the
+         port changed 72 rooted-shell chords across the library). Now the slot takes the ruled stand-in: "b13 for b9", "b9 for b13" (and #5),
+         and "9 for #11", or "13 for #11" where the 9 is out of reach. Only where the slot fell back
+         to its default AND the written tension sounds nowhere else -- a rootless shape can carry it
+         on the E string -- so a written note that can sound still always wins. #9 has no ruled
+         stand-in yet and is left alone. */
+      const bFam = rs===6?FIVE_FAM:NINE_FAM;
+      if(bDef!=='b3' && !chord.ext.some(e=>bFam.includes(e)&&q.allowed.includes(e))){
+        const heard = rootless ? [bDeg, eDeg] : [bDeg];
+        const hears = (...ds) => ds.some(d => heard.includes(d));
+        const has = e => chord.ext.includes(e);
+        const standIn = has('b9') && !hears('b9') ? 'b13'
+          : (has('b13')||has('#5')) && !hears('b13','#5') ? 'b9'
+          : has('#11') && !hears('#11','b5') ? (bFam.includes('9') ? '9' : '13')
+          : null;
+        if(standIn && bFam.includes(standIn) && q.allowed.includes(standIn)) bDeg = standIn;
+      }
       if(!rootless){ place(rs,'R'); if(rs===6){place(4,q.seventh);place(3,q.third);} else {place(4,q.third);place(3,q.seventh);} place(2,bDeg); }
       else { if(rs===6){place(4,q.seventh);place(3,q.third);} else {place(4,q.third);place(3,q.seventh);} place(2,bDeg); place(1,eDeg); }
       const fs=notes.map(n=>n.f); if(Math.max(...fs)-Math.min(...fs)>5) continue;

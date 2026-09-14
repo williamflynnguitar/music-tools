@@ -52,6 +52,22 @@ standard jazz-blues layout (Eb7 | Eb7 | Bb7 | D-7 G7b9).
 ## Architecture
 - `shellCandidates` (Box Buddy) and `dropCandidates` (Inversion Drill) are
   copied in; keep the three in sync. `candidates(chord, family)` dispatches.
+- Stand-in rulings (ported from Shell Builder, Sep 2026). From a 6th-string
+  root the B string reaches only the 5th/13th family, and from a 5th-string
+  root only the 9th family, so a written tension outside that family used to
+  fall back to the default without a word: G7b9 on 6R played R b7 3 13. Now
+  `shellCandidates` gives the slot the ruled stand-in: b13 for b9, b9 for
+  b13 or #5, 9 for #11, or 13 for #11 where the 9 is out of reach. It only
+  does this when no written tension fits the slot and the written tension
+  sounds nowhere else in the grip (a rootless shape can carry it on the E
+  string), so a written note that can sound always wins. #9 on a 6th-string
+  root has no ruling yet and still falls back to the 13 (2 chords in Blue
+  Bossa). The rootless `shell` family came out identical on all 54 tunes.
+  The rooted `shellR` family changed 72 chords at the B string, and 14 more
+  in "Tonal progressions around the cycle" moved position because the new
+  top note changed what the nearest move was (widest rerouted grip 2 frets).
+  The drop families don't use this path. The b13-into-minor and
+  tritone-sub-naturals defaults from Shell Builder are **not** ported.
 - `cost(prev, next)`: |top-note motion in semitones| × 1 + |position
   difference| × 0.25. Top-note motion dominates on purpose: that's what the
   ear follows. For the first chord, lean toward the middle of the neck.
