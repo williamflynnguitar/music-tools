@@ -772,8 +772,12 @@ function pickOffsets(ch, rs, rf, struct, ctx){
   /* Into a minor chord the sixth degree defaults to the b13, which is the
      target's own minor third; the natural 13 is that target's MAJOR third and
      belongs to a major resolution (William, 2026-09-12: "default to b13 on
-     minor ii-V"). This only declines the natural 13 — it never pushes a
-     natural 5 aside — and a symbol that names its own sixth still wins. */
+     minor ii-V"). On an altered dominant this only declines the natural 13.
+     A plain dominant reaches for the b13 outright (below), and on the
+     5th-string root's 4-note rootless shape that puts it on the E string in
+     place of the natural 5: 3 b7 9 b13, not 3 b7 9 5. William played both on
+     the 19 library chords this affects and kept the b13 (2026-09-14). A
+     symbol that names its own sixth still wins. */
   const pinsSixth = wants(8) || wants(9);
   let best = {off:{2:0,1:0}, extScore:0}, bs = -1e9;
   for(const c of cands){

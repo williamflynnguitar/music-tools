@@ -67,10 +67,17 @@ standard jazz-blues layout (Eb7 | Eb7 | Bb7 | D-7 G7b9).
     it on the E string), so a written note that can sound always wins. The
     code also carries Shell Builder's "13 for #11", but it can't fire on a
     dominant here: a 6R B string reaches the #11 itself.
-  - **b13 into a minor V–i** (ruled 2026-09-12, ported 2026-09-14). A plain
-    `7` whose root falls a perfect fifth into a chord with a minor third
-    defaults its 6R B string to the b13 instead of the 13. The b13 is the
-    target's own minor third. G7 to Gm7, or G7 to Em7 (where the 13 is Em7's
+  - **b13 into a minor V–i** (ruled 2026-09-12, ported 2026-09-14). A `7`
+    chord (not 7sus4) whose root falls a perfect fifth into a chord with a
+    minor third defaults its 6R B string to the b13 instead of the 13. The b13
+    is the target's own minor third. On the 5th-string root the rootless shape
+    has no sixth slot, so a `7` with no written extension tops out on the b13
+    in place of the natural 5, `3 b7 9 b13` (ruled 2026-09-14, "Keep the b13",
+    after William played both on Shell Builder's 19 library chords). That
+    changed 19 rootless chords here, all in place, and Voice Leading and Shell
+    Builder now agree on the top string of every dominant they voice at the
+    same root and fret (they differed on 18). A written extension keeps the 5,
+    as in Shell Builder. G7 to Gm7, or G7 to Em7 (where the 13 is Em7's
     root), is not a resolution and keeps the 13. Any written tension that
     fits the slot (13, b13, #5, #11, b5) still wins, and 7sus4 is left alone
     (no b13 on its list). The target is the literal next chord, as in Shell

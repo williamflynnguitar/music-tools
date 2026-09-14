@@ -338,7 +338,11 @@ function shellCandidates(chord, rootless, heading){
       const place=(s,deg)=>notes.push({s,f:nearestFret(s,(rootPc+DEG[deg])%12,rf),deg});
       const dimish=chord.quality==='m7b5'||chord.quality==='dim7';
       const bDef = rs===6 ? (q.dom?(minorTarget?'b13':'13'):q.fifth) : (dimish ? (rootless?(chord.quality==='m7b5'?'11':'9'):'b3') : '9');
-      const eDef = rs===6 ? 'R' : q.fifth;
+      /* The same b13 on the 5th-string root's rootless shape, where the sixth has no slot of its own:
+         a plain dominant resolving to minor tops out on the b13 in place of the natural 5 (3 b7 9 b13),
+         as Shell Builder's structure 4 does. William played both on the 19 library chords and kept the
+         b13 (2026-09-14). A dominant with any written extension keeps its 5, as it does there. */
+      const eDef = rs===6 ? 'R' : (rootless && minorTarget && !chord.ext.length ? 'b13' : q.fifth);
       let bDeg = bDef==='b3'?'b3':pick(bDef, rs===6?FIVE_FAM:NINE_FAM);
       const eDeg = pick(eDef, rs===6?NINE_FAM:FIVE_FAM);
       /* Shell Builder's stand-in rulings, ported (William, Sep 2026). The B string reaches only the

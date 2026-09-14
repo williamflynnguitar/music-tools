@@ -211,8 +211,16 @@ there is no inversion or string-set state in this app.
   that `progVoiceLead` derives from the *next sounding chord*, not from the ii
   before it — the b13 earns its place by being the target's own minor third,
   and the natural 13 is that target's major third, so the target decides. The
-  rule only declines a natural 13; it never pushes a natural 5 aside, and a
-  symbol naming its own sixth (`13b9`, `7b13`) still wins. Scope: **plain
+  rule declines a natural 13, and a symbol naming its own sixth (`13b9`,
+  `7b13`) still wins. On an altered dominant that is all it does; nothing
+  displaces a natural 5. A plain dominant reaches for the b13 outright (next
+  sentences), and on the 5th-string root's 4-note rootless shape that puts the
+  b13 on the E string in place of the natural 5: `3 b7 9 b13`, not
+  `3 b7 9 5`, on 19 chords in the library (Am7 D7 Gm7 in six of them).
+  **RULED 2026-09-14, "Keep the b13"**, after William played both on all 19;
+  this sentence used to claim the 5 was never pushed aside. Voice Leading's
+  rootless shells follow it; Box Buddy keeps the 5 there under its own 13
+  default. Scope: **plain
   dominants too, extended 2026-09-12** on his say-so. That is the one place
   the default overrides "a plain dominant is open to everything" — that ruling
   governs what the picker *offers*, this governs only what the generator
