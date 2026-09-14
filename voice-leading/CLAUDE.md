@@ -52,22 +52,51 @@ standard jazz-blues layout (Eb7 | Eb7 | Bb7 | D-7 G7b9).
 ## Architecture
 - `shellCandidates` (Box Buddy) and `dropCandidates` (Inversion Drill) are
   copied in; keep the three in sync. `candidates(chord, family)` dispatches.
-- Stand-in rulings (ported from Shell Builder, Sep 2026). From a 6th-string
-  root the B string reaches only the 5th/13th family, and from a 5th-string
-  root only the 9th family, so a written tension outside that family used to
-  fall back to the default without a word: G7b9 on 6R played R b7 3 13. Now
-  `shellCandidates` gives the slot the ruled stand-in: b13 for b9, b9 for
-  b13 or #5, 9 for #11, or 13 for #11 where the 9 is out of reach. It only
-  does this when no written tension fits the slot and the written tension
-  sounds nowhere else in the grip (a rootless shape can carry it on the E
-  string), so a written note that can sound always wins. #9 on a 6th-string
-  root has no ruling yet and still falls back to the 13 (2 chords in Blue
-  Bossa). The rootless `shell` family came out identical on all 54 tunes.
-  The rooted `shellR` family changed 72 chords at the B string, and 14 more
-  in "Tonal progressions around the cycle" moved position because the new
-  top note changed what the nearest move was (widest rerouted grip 2 frets).
-  The drop families don't use this path. The b13-into-minor and
-  tritone-sub-naturals defaults from Shell Builder are **not** ported.
+- Shell Builder's rulings, ported (Sep 2026). `shellCandidates` applies them,
+  on the B string only, so the drop families never see them. The two that
+  depend on where a chord is heading get that from `voiceLead`, which stores
+  it on each voiced chord as `heading`.
+  - **Stand-ins** (ruled 2026-09-12 and 09-13, ported 2026-09-14). From a
+    6th-string root the B string reaches only the 5th/13th family, and from a
+    5th-string root only the 9th family, so a written tension outside that
+    family used to fall back to the default without a word: G7b9 on 6R played
+    R b7 3 13. The slot now takes the ruled stand-in: b13 for b9, **#5 for
+    #9** (ruled 2026-09-14: "the rule is sharp 5 for sharp 9"), b9 for b13
+    or #5, or 9 for #11. Only when no written tension fits the slot and the
+    written one sounds nowhere else in the grip (a rootless shape can carry
+    it on the E string), so a written note that can sound always wins. The
+    code also carries Shell Builder's "13 for #11", but it can't fire on a
+    dominant here: a 6R B string reaches the #11 itself.
+  - **b13 into a minor V–i** (ruled 2026-09-12, ported 2026-09-14). A plain
+    `7` whose root falls a perfect fifth into a chord with a minor third
+    defaults its 6R B string to the b13 instead of the 13. The b13 is the
+    target's own minor third. G7 to Gm7, or G7 to Em7 (where the 13 is Em7's
+    root), is not a resolution and keeps the 13. Any written tension that
+    fits the slot (13, b13, #5, #11, b5) still wins, and 7sus4 is left alone
+    (no b13 on its list). The target is the literal next chord, as in Shell
+    Builder, and a repeat sign parses to a copy of its chord, so
+    `Bb7 | % | Ebm7` gives the first Bb7 the 13 and the second the b13.
+  - **Tritone subs stay natural** (ruled 2026-09-12, ported 2026-09-14).
+    Root down a semitone is a sub, and a sub is kept off that b13. In this
+    engine that changes nothing, and can't: a sub and a minor V–i read the
+    same next chord at different intervals, so no chord is ever both, and
+    every other default is already natural (13, 9, root, 5th). The gate is
+    there so the precedence matches Shell Builder if a default ever changes.
+    A written alteration on a sub still wins, and so does its stand-in.
+  - Choose mode builds its options with the voiced chord's `heading`. If it
+    didn't, 168 path voicings in the library would be missing from the
+    options it offers; `candidates` without a heading builds every chord as
+    if it were heading nowhere.
+  - What the #9 stand-in and the b13 default changed, against 1217231, with
+    the seven key-transposable presets in all 12 keys. Rootless shells: 142
+    chords 13 to b13, no position moves. Rooted shells: 24 chords 13 to b13
+    and Blue Bossa's two G7#9 13 to #5, all in place, and 16 chords of Have
+    You Met Miss Jones moved. Its first D7 into Gm7 now tops out on the b13,
+    the same 3 semitones from the Fmaj7 as the old 5th-string 9 but a fret
+    closer, so the greedy path climbs: bars 2–17 run at root frets 6–12
+    instead of 1–5 and rejoin at the Abm7 in bar 18. Over the chart the top
+    line moves 53 semitones instead of 55 and the hand travels 57 frets
+    instead of 55; no grip spans more than 2 frets. Drop families: 0.
 - `cost(prev, next)`: |top-note motion in semitones| × 1 + |position
   difference| × 0.25. Top-note motion dominates on purpose: that's what the
   ear follows. For the first chord, lean toward the middle of the neck.

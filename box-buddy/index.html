@@ -337,9 +337,19 @@ function pickExt(defaultDeg, family, chord, q, log){
 }
 
 /* ---- shell voicings ---- */
-function shellCandidates(chord, style, log){
+function shellCandidates(chord, style, log, heading){
   const q = QUAL[chord.quality];
   const out = [];
+  /* Where the chord is heading, from voiceProgression (Shell Builder's rulings, William,
+     2026-09-12). A plain dominant resolving to a minor chord -- root down a perfect fifth --
+     defaults its sixth to the b13, the target's own minor third; the natural 13 is that target's
+     MAJOR third. A tritone substitution (root down a semitone) is a lydian dominant and takes only
+     natural extensions, so it never gets that b13. No chord can read as both (they are different
+     intervals to the same next chord), so the gate only keeps Shell Builder's precedence.
+     Every other default here is already natural (13, 9, root, 5th), so gating the b13 is the
+     whole of the sub rule in this engine. A written tension still beats both, and so does the
+     stand-in for a written alteration. 7sus4 is left alone: its list has no b13. */
+  const minorTarget = !!(heading && heading.intoMinor && !heading.isSub) && chord.quality==='7';
   for(const rs of [6,5]){
     let f = ((chord.pc - OPEN[rs]) % 12 + 12) % 12;
     if(f===0) f = 12;
@@ -350,7 +360,7 @@ function shellCandidates(chord, style, log){
       const notes = [];
       const place = (s, deg) => notes.push({s, f:nearestFret(s,(rootPc+DEG[deg])%12, rf), label:deg});
       const dimish = chord.quality==='m7b5'||chord.quality==='dim7';
-      const bSlotDefault = rs===6 ? (q.dom ? '13' : q.fifth) : (dimish ? (style.rootless ? (chord.quality==='m7b5' ? '11' : '9') : 'b3') : '9');
+      const bSlotDefault = rs===6 ? (q.dom ? (minorTarget ? 'b13' : '13') : q.fifth) : (dimish ? (style.rootless ? (chord.quality==='m7b5' ? '11' : '9') : 'b3') : '9');
       const eSlotDefault = rs===6 ? 'R' : q.fifth;
       const bFam = rs===6 ? FIVE_FAM : NINE_FAM;
       const eFam = rs===6 ? NINE_FAM : FIVE_FAM;
@@ -360,17 +370,19 @@ function shellCandidates(chord, style, log){
          string reaches only the 5th/13th family, from a 5th only the 9th family, so a written
          tension outside that family fell back to the default in silence: Bossa nova voiced F7(b9)
          as R b7 3 13. Now the slot takes the ruled stand-in -- "b13 for b9", "b9 for b13" (and
-         #5), "9 for #11" or "13 for #11" where the 9 is out of reach -- but only where the style
+         #5), "9 for #11" or "13 for #11" where the 9 is out of reach (not on a dominant: a 6R B string
+         reaches the #11 itself) -- but only where the style
          actually plays the B string (Four-to-the-bar is a deliberate root-3rd-7th shell and gets
          no extension at all), the slot fell back to its default, and the written tension sounds
-         nowhere else in the voicing, since a rootless shape can carry it on the E string. #9 has
-         no ruled stand-in yet. */
+         nowhere else in the voicing, since a rootless shape can carry it on the E string. "#5 for
+         #9" joined them on 2026-09-14: a 6th-string root cannot reach the #9 on the B string. */
       const bPlayed = style.rootless || style.size>=4;
       if(bPlayed && bSlotDefault!=='b3' && !chord.ext.some(e=>bFam.includes(e)&&q.allowed.includes(e))){
         const heard = style.rootless ? [bDeg, eDeg] : [bDeg];
         const hears = (...ds) => ds.some(d => heard.includes(d));
         const has = e => chord.ext.includes(e);
         const standIn = has('b9') && !hears('b9') ? 'b13'
+          : has('#9') && !hears('#9') ? '#5'
           : (has('b13')||has('#5')) && !hears('b13','#5') ? 'b9'
           : has('#11') && !hears('#11','b5') ? (bFam.includes('9') ? '9' : '13')
           : null;
@@ -444,12 +456,20 @@ function voiceProgression(bars, style, log){
   let prev = null;                 // previous anchor fret
   let prevChord = null;
   const result = [];
+  /* Where each chord is heading: the next chord written, skipping repeat signs, which reuse the
+     voicing of the chord they repeat -- so G7 | % | Cm7 is one G7 resolving, and both bars get the
+     b13. Minor resolution = root down a perfect fifth into a chord with a minor third (G7 to Gm7,
+     or G7 to Em7 where the natural 13 is Em7's root, is not one); substitution = root down a
+     semitone. */
+  const chords = bars.flat().filter(t=>t.kind==='chord'), headingOf = new Map();
+  chords.forEach((c,i)=>{ const n = chords[i+1]; if(!n) return; const dn = ((n.pc-c.pc)%12+12)%12;
+    headingOf.set(c, {intoMinor: QUAL[n.quality].third==='b3' && dn===5, isSub: dn===11}); });
   bars.forEach(bar=>{
     const vb = [];
     bar.forEach(tok=>{
       if(tok.kind==='repeat'){ vb.push({tok, voicing:prevChord ? prevChord.voicing : null, chord:prevChord ? prevChord.chord : null, repeat:true}); return; }
       if(tok.kind!=='chord'){ vb.push({tok}); return; }
-      const cands = style.family==='drop2' ? drop2Candidates(tok, log) : shellCandidates(tok, style, log);
+      const cands = style.family==='drop2' ? drop2Candidates(tok, log) : shellCandidates(tok, style, log, headingOf.get(tok));
       if(!cands.length){ log.push(tok.raw+': no playable voicing found'); vb.push({tok}); return; }
       const target = prev===null ? (style.family==='drop2' ? 7 : 5) : prev;
       let best = null, bestScore = 1e9;
@@ -585,11 +605,30 @@ function render(){
   renderChips(bars);
   const voiced = voiceProgression(bars, style, log); lastVoiced = voiced;
 
-  // legend: unique (chord label + voicing tag)
+  /* legend: unique (chord label + voicing tag). A label and position used to pin the notes, but
+     since Sep 2026 a plain dominant's sixth depends on the next chord: G7 at 6R 3fr is R b7 3 b13
+     into Cm7 and R b7 3 13 into Cmaj7. Keyed on label and tag alone, the legend kept the first of
+     them and the chart pointed both chords at it. Where one label and tag carry more than one
+     voicing, the tag now names the highest note that differs ("6R 3fr · b13"). */
+  const sigOf = v => v.notes.map(n=>n.s+':'+n.f).join(' ');
+  const variants = new Map();
+  voiced.forEach(bar=>bar.forEach(item=>{
+    if(!item.voicing || item.repeat) return;
+    const k = chordLabel(item.chord) + '|' + item.voicing.tag, list = variants.get(k) || [];
+    if(!list.some(v=>sigOf(v)===sigOf(item.voicing))) list.push(item.voicing);
+    variants.set(k, list);
+  }));
+  const tagOf = item => {
+    const v = item.voicing, list = variants.get(chordLabel(item.chord) + '|' + v.tag);
+    if(!list || list.length<2) return v.tag;
+    const differs = v.notes.filter(n=>list.some(o=>{ const m = o.notes.find(x=>x.s===n.s); return !m || m.f!==n.f; }));
+    const n = differs.sort((a,b)=>a.s-b.s)[0] || v.notes[0];
+    return v.tag + ' · ' + n.label;
+  };
   const legend = new Map();
   voiced.forEach(bar=>bar.forEach(item=>{
     if(!item.voicing || item.repeat) return;
-    const key = chordLabel(item.chord) + '|' + item.voicing.tag;
+    const key = chordLabel(item.chord) + '|' + tagOf(item);
     if(!legend.has(key)) legend.set(key, item);
   }));
 
@@ -601,7 +640,7 @@ function render(){
   } else if(layout==='legend'){
     h += '<h2>The chords</h2><div class="legend">';
     legend.forEach(item=>{
-      h += `<div class="dia"><div class="nm">${esc(chordLabel(item.chord))}</div>${diagramSVG(item.voicing, showLabels)}<div class="pos">${item.voicing.tag}</div></div>`;
+      h += `<div class="dia"><div class="nm">${esc(chordLabel(item.chord))}</div>${diagramSVG(item.voicing, showLabels)}<div class="pos">${tagOf(item)}</div></div>`;
     });
     h += '</div><h2>The chart</h2><div class="chart">';
     voiced.forEach(bar=>{
@@ -609,7 +648,7 @@ function render(){
       bar.forEach(item=>{
         if(item.repeat) h += '<span class="rep">%</span>';
         else if(item.tok.kind==='nc') h += '<span class="ch">N.C.</span>';
-        else if(item.voicing) h += `<span class="ch">${esc(chordLabel(item.chord))}<small>${item.voicing.tag}</small></span>`;
+        else if(item.voicing) h += `<span class="ch">${esc(chordLabel(item.chord))}<small>${tagOf(item)}</small></span>`;
         else h += `<span class="ch" style="color:#b33">${esc(item.tok.raw)}?</span>`;
       });
       h += '</div>';
@@ -623,7 +662,7 @@ function render(){
       h += '<div class="bar">';
       bar.forEach(item=>{
         if(item.repeat) h += '<span class="rep">%</span>';
-        else if(item.voicing) h += `<div class="dia"><div class="nm">${esc(chordLabel(item.chord))}</div>${diagramSVG(item.voicing, showLabels)}<div class="pos">${item.voicing.tag}</div></div>`;
+        else if(item.voicing) h += `<div class="dia"><div class="nm">${esc(chordLabel(item.chord))}</div>${diagramSVG(item.voicing, showLabels)}<div class="pos">${tagOf(item)}</div></div>`;
         else h += `<span class="ch">${esc(item.tok.raw)}</span>`;
       });
       h += '</div>';

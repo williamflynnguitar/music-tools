@@ -317,8 +317,19 @@ function parseInput(text){
 function label(tok){ const q=QUAL[tok.quality]; let s=tok.rootName+q.sym; const ex=tok.ext.filter(e=>q.allowed.includes(e)); return ex.length? s+ex.join(''): s; }
 
 /* shells (Box Buddy engine) */
-function shellCandidates(chord, rootless){
+function shellCandidates(chord, rootless, heading){
   const q=QUAL[chord.quality], out=[];
+  /* Where the chord is heading, from voiceLead (Shell Builder's rulings, William, 2026-09-12).
+     A plain dominant resolving to a minor chord -- root down a perfect fifth -- defaults its
+     sixth to the b13, the target's own minor third; the natural 13 is that target's MAJOR third.
+     A tritone substitution (root down a semitone) is a lydian dominant and takes only natural
+     extensions, so it never gets that b13. No chord can read as both (they are different intervals
+     to the same next chord), so the gate only keeps Shell Builder's precedence. Every
+     other default in this engine is already natural (13, 9, root, 5th), so gating the b13 is the
+     whole of the sub rule here. A written tension still beats both, and so does the stand-in for
+     a written alteration. 7sus4 is left alone: its list has no b13, and Shell Builder does not
+     read a sus chord as a dominant for this rule. */
+  const minorTarget = !!(heading && heading.intoMinor && !heading.isSub) && chord.quality==='7';
   const pick=(def,fam)=>{ for(const e of chord.ext) if(fam.includes(e)&&q.allowed.includes(e)) return e; return def; };
   for(const rs of [6,5]){
     let f=((chord.pc-OPEN[rs])%12+12)%12; if(f===0) f=12;
@@ -326,7 +337,7 @@ function shellCandidates(chord, rootless){
       const rootMidi=OPEN[rs]+rf, rootPc=rootMidi%12, notes=[];
       const place=(s,deg)=>notes.push({s,f:nearestFret(s,(rootPc+DEG[deg])%12,rf),deg});
       const dimish=chord.quality==='m7b5'||chord.quality==='dim7';
-      const bDef = rs===6 ? (q.dom?'13':q.fifth) : (dimish ? (rootless?(chord.quality==='m7b5'?'11':'9'):'b3') : '9');
+      const bDef = rs===6 ? (q.dom?(minorTarget?'b13':'13'):q.fifth) : (dimish ? (rootless?(chord.quality==='m7b5'?'11':'9'):'b3') : '9');
       const eDef = rs===6 ? 'R' : q.fifth;
       let bDeg = bDef==='b3'?'b3':pick(bDef, rs===6?FIVE_FAM:NINE_FAM);
       const eDeg = pick(eDef, rs===6?NINE_FAM:FIVE_FAM);
@@ -334,17 +345,19 @@ function shellCandidates(chord, rootless){
          5th/13th family from a 6th-string root and only the 9th family from a 5th, so a written
          tension outside that family used to fall back to the default in silence: a rooted 6R G7b9
          played R b7 3 13 under a chart reading G7b9, and the b13, #5 and #11 cases did the same (the
-         port changed 72 rooted-shell chords across the library). Now the slot takes the ruled stand-in: "b13 for b9", "b9 for b13" (and #5),
-         and "9 for #11", or "13 for #11" where the 9 is out of reach. Only where the slot fell back
+         port changed 72 rooted-shell chords in place, with the key-transposable presets in C). Now the slot takes the ruled stand-in: "b13 for b9", "b9 for b13" (and #5),
+         and "9 for #11", or "13 for #11" where the 9 is out of reach (not on a dominant here: a 6R B
+         string reaches the #11 itself). Only where the slot fell back
          to its default AND the written tension sounds nowhere else -- a rootless shape can carry it
-         on the E string -- so a written note that can sound still always wins. #9 has no ruled
-         stand-in yet and is left alone. */
+         on the E string -- so a written note that can sound still always wins. "#5 for #9"
+         joined them on 2026-09-14: a 6th-string root cannot reach the #9 on the B string either. */
       const bFam = rs===6?FIVE_FAM:NINE_FAM;
       if(bDef!=='b3' && !chord.ext.some(e=>bFam.includes(e)&&q.allowed.includes(e))){
         const heard = rootless ? [bDeg, eDeg] : [bDeg];
         const hears = (...ds) => ds.some(d => heard.includes(d));
         const has = e => chord.ext.includes(e);
         const standIn = has('b9') && !hears('b9') ? 'b13'
+          : has('#9') && !hears('#9') ? '#5'
           : (has('b13')||has('#5')) && !hears('b13','#5') ? 'b9'
           : has('#11') && !hears('#11','b5') ? (bFam.includes('9') ? '9' : '13')
           : null;
@@ -386,9 +399,9 @@ function dropCandidates(chord, setKey){
   }
   return out;
 }
-function candidates(chord, family){
-  if(family==='shellR') return shellCandidates(chord,false);
-  if(family==='shell') return shellCandidates(chord,true);
+function candidates(chord, family, heading){
+  if(family==='shellR') return shellCandidates(chord,false,heading);
+  if(family==='shell') return shellCandidates(chord,true,heading);
   return dropCandidates(chord, family);
 }
 const topOf = v => { const n=[...v.notes].sort((a,b)=>a.s-b.s)[0]; return {midi:OPEN[n.s]+n.f, deg:n.deg}; };
@@ -402,11 +415,19 @@ function cost(a, b){
   return dTop*1.0 + Math.abs(a.pos-b.pos)*0.25 + (same?0:0);
 }
 function voiceLead(bars, family){
+  /* Where each chord is heading, read from the next chord as Shell Builder's progVoiceLead does:
+     a minor resolution is root down a perfect fifth into a chord with a minor third (a same-root
+     G7 to Gm7, or G7 to Em7 where the natural 13 is Em7's root, is not one), and a substitution
+     is root down a semitone. A repeat sign parses to a copy of its chord, so G7 | % | Cm7 reads
+     the first G7 as heading to G7 and only the second as resolving -- the same in both tools. */
+  const flat=bars.flat(), headingOf=new Map();
+  flat.forEach((c,i)=>{ const n=flat[i+1]; if(!n) return; const dn=((n.pc-c.pc)%12+12)%12;
+    headingOf.set(c, {intoMinor: QUAL[n.quality].third==='b3' && dn===5, isSub: dn===11}); });
   let prev=null; const out=[];
   bars.forEach(bar=>{ const vb=[]; bar.forEach(ch=>{
-    const cs=candidates(ch, family); if(!cs.length){ vb.push({ch, v:null}); return; }
+    const heading=headingOf.get(ch), cs=candidates(ch, family, heading); if(!cs.length){ vb.push({ch, v:null, heading}); return; }
     let best=null, bc=1e9; cs.forEach(c=>{ const k=cost(prev,c); if(k<bc){bc=k;best=c;} });
-    vb.push({ch, v:best, from:prev}); prev=best; }); out.push(vb); });
+    vb.push({ch, v:best, from:prev, heading}); prev=best; }); out.push(vb); });
   return out;
 }
 
@@ -746,7 +767,8 @@ function askChoose(){
     if(bars.length && bars[bars.length-1][0].bi===it.bi) bars[bars.length-1].push(b); else bars.push([b]); });
   bars.push([{ch:item.ch, v:null, idx:-1, hidden:true, veil:'?'}]);
   el('sofar').innerHTML = chartSystems(bars,{labels:el('labels').checked, unit:11}).join('');
-  const cs=candidates(item.ch, st.family); if(!cs.length){ ch.i++; return askChoose(); }
+  /* the same heading voiceLead used, or Choose would offer a 13 where Show and Reveal play the b13 */
+  const cs=candidates(item.ch, st.family, item.heading); if(!cs.length){ ch.i++; return askChoose(); }
   const scored=cs.map(c=>({c,k:cost(prev,c)})).sort((a,b)=>a.k-b.k);
   const best=scored[0].k;
   // show up to 4: best plus others spread across inversions/positions
