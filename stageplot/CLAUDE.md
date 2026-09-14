@@ -174,8 +174,8 @@ reinforcement / fully miked) on the Positions tab, a per-player package
 dropdown, and "full kit (7)" / "jazz minimal (4)" buttons on a kit. William
 cut all of them from the page in favour of the two buttons. The machinery
 below is still in the engine, because it decides **what a new plot or a newly
-added player starts with** and it powers the channel-warning suggestions —
-but nothing on screen asks the director to pick a profile any more.
+added player starts with** — but nothing on screen asks the director to pick a
+profile any more.
 
 A role offers **packages** (`PKG_SETS`, chosen per role by `pkgs`), a position
 holds one in `pos.pkg`, and its inputs are generated from it. Sets: `kit`
@@ -205,8 +205,9 @@ stays on the plot, unseen, so a trumpet added to that combo arrives unmiked
 like the horns already there, and one added to a big band arrives with a mic.
 
 Any hand edit — + mic, − mic, an input's × — re-reads the player's package
-with `inferPackage()` and sets `pos.pkgOverride`, so a later suggestion never
-swaps out inputs the director chose.
+with `inferPackage()` and sets `pos.pkgOverride`. Nothing on the page reads
+that flag now that the profile buttons are gone; `applyProfile()` would honour
+it if a plot-wide control ever came back.
 
 **Not miked is printed, not implied.** `notMiked()` lists every position with
 nothing reaching the console — as "Drums (acoustic)", "Sax section" when a
@@ -214,11 +215,11 @@ whole row is silent — under the input list, and each carries a ⊘ on the
 diagram. A fully-miked plot prints no such section. A position covered by its
 row's section mics is not unmiked.
 
-**The channel meter means something**, so it can argue back:
-`reductions()` returns only the cuts available on this stage — "Sax section on
-2 shared mics −3", "Drums to kick, snare + overheads −3", "Keys to a mono DI
-−1" — sorted by what they save, and the warning banner offers the top three as
-one-click buttons.
+**The channel warning states the count and stops there.** Amber past
+`VENUE.warnChannelsAt`, red past the console. It used to offer one-click cuts
+("Sax section on 2 shared mics −3", "Drums to kick, snare + overheads −3");
+William had them removed on 2026-09-14 — the director makes the cuts with
++ mic / − mic and the section-mic setting.
 
 Reading an older file: `inferPackage()` matches a position's inputs against its
 role's packages, so a v1 kit with its seven channels lands on `close` rather
@@ -451,8 +452,7 @@ New in v2:
    under fully miked. One line each. A guitar amp is miked under light
    reinforcement — William's call, 2026-09-14.
 5. Fully miked, the 17-piece big band totals **25** channels — still inside a
-   32-channel console. The reduction suggestions were verified against a plot
-   that does exceed it (that band plus six voices, 31 channels).
+   32-channel console, so it raises no channel warning.
 ## Checks
 
 `node check.js` — 195 assertions: the role library, every template (builds,

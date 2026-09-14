@@ -19,7 +19,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, syncWedgeIds, itemDef,
   diagramGeom, labelBoxes, positionLabelBox, kitInputs,
   PKG_SETS, PROFILES, pkgSet, pkgDef, defaultPkgId, packageInputs, setPackage, applyProfile,
-  inferPackage, notMiked, unmiked, reductions, applyReduction, pkgChannels,
+  inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
@@ -200,19 +200,17 @@ for (const t of E.TEMPLATES){
   ok(chOf(bb) > light, "fully miked costs more than light reinforcement (" + light + " → " + chOf(bb) + ")");
   ok(bb.positions.find(x => x.roleId === "drums").pkg === "close", "…kit on full close-mic");
 
-  // over the ceiling, the suggestions are specific and name what they save
+  // over the headroom line the warning says so, and suggests nothing (William, 2026-09-14)
   const big = T("bigband");
   for (let i = 0; i < 6; i++) E.addPosition(big, "voice");
   E.applyProfile(big, "full", true);
   ok(chOf(big) > E.VENUE.warnChannelsAt, "a 17-piece plus six voices is over the headroom line (" + chOf(big) + " ch)");
   const warn = E.warnings(big).find(w => /channel/.test(w.text));
-  ok(warn && warn.fixes && warn.fixes.length, "the warning carries reductions");
-  ok(warn.fixes.some(f => /Sax section/.test(f.label)), "…naming the sax row: " + warn.fixes.map(f => f.label + " −" + f.saves).join("; "));
-  ok(warn.fixes.some(f => /Drums/.test(f.label)), "…and the drums");
-  ok(warn.fixes.every(f => f.saves > 0), "…each with the channels it saves");
-  const was = chOf(big);
-  E.applyReduction(big, warn.fixes[0].id);
-  eq(chOf(big), was - warn.fixes[0].saves, "applying one saves exactly what it said");
+  ok(warn && warn.level === "amber", "…and the channel warning still fires");
+  ok(!("fixes" in warn), "…with no suggested cuts");
+  for (let i = 0; i < 4; i++) E.addPosition(big, "voice");
+  ok(E.warnings(big).some(w => w.level === "red" && /channel/.test(w.text)), "over the console it turns red (" + chOf(big) + " ch)");
+  ok(!/data-cut|function reductions|applyReduction/.test(src), "no channel-warning suggestions left in the page");
 
   // and a fully-miked plot prints no Not miked section at all
   eq(E.notMiked(T("rock")).length, 0, "the rock template has nothing unmiked");

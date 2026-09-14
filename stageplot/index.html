@@ -60,7 +60,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .warn{display:flex;align-items:baseline;gap:10px;padding:7px 16px;font-size:14px;border-bottom:1px solid var(--line)}
 .warn.amber{background:rgba(216,166,64,.13);color:#f0d79a}
 .warn.red{background:rgba(212,113,95,.15);color:#f3b8ac}
-.warn .btn{border-color:currentColor;font-size:13px;padding:2px 9px}
 
 /* ---------- three regions ---------- */
 .app{display:grid;grid-template-columns:290px minmax(360px,1fr) minmax(320px,460px);align-items:start;min-height:0}
@@ -1279,44 +1278,6 @@ function notMiked(plot){
   }
   return out;
 }
-/* When the console is the constraint, say what would actually help here —
-   the reductions available given what is on this stage, and what each saves. */
-function pkgChannels(plot, role, id){
-  return packageInputs(plot, role, id).reduce((n, i) => n + (i.type === "stereo-di" ? 2 : 1), 0);
-}
-function reductions(plot){
-  const out = [], rows = sectionRows(plot), sec = plot.sections || {};
-  for (const row of Object.keys(rows)){
-    const list = rows[row].filter(p => p.inputs.some(i => i.type === "mic" && ownInput(plot, p, i)));
-    const mics = (sec[row] && sec[row].mics) || 2;
-    if (!(sec[row] && sec[row].on) && list.length > mics)
-      out.push({ id:"sec:" + row, label:SEC_LABEL[row] + " on " + mics + " shared mics", saves:list.length - mics });
-  }
-  const swap = (roleIds, from, to, label) => {
-    const list = plot.positions.filter(p => roleIds.includes(roleOf(plot, p).id) && p.pkg === from);
-    if (!list.length) return;
-    const saves = list.reduce((n, p) => n + pkgChannels(plot, roleOf(plot, p), from) - pkgChannels(plot, roleOf(plot, p), to), 0);
-    if (saves > 0) out.push({ id:"pkg:" + roleIds.join(",") + ":" + from + ":" + to, label, saves });
-  };
-  swap(["drums"], "close", "kick-sn-oh", "Drums to kick, snare + overheads");
-  swap(["drums"], "kick-sn-hat-oh", "kick-oh", "Drums to kick + overheads");
-  swap(["drums"], "kick-sn-oh", "kick-oh", "Drums to kick + overheads");
-  swap(["guitar","bass","upright","acoustic","violin","cello"], "di-mic", "di", "Amps and pickups to DI only");
-  swap(["guitar"], "mic", "none", "Guitar amp unmiked");
-  swap(["keys","organ","dj","playback"], "stereo", "mono", "Keys to a mono DI");
-  return out.sort((a, b) => b.saves - a.saves);
-}
-function applyReduction(plot, id){
-  if (id.slice(0, 4) === "sec:"){
-    const row = id.slice(4);
-    plot.sections[row] = Object.assign(plot.sections[row] || { mics:2 }, { on:true, manual:true });
-    return;
-  }
-  const [, roleIds, from, to] = id.split(":");
-  for (const p of plot.positions)
-    if (roleIds.split(",").includes(roleOf(plot, p).id) && p.pkg === from) setPackage(plot, p, to, true);
-}
-
 function warnings(plot){
   const out = [];
   if (plot.wedges.length > VENUE.monitorMixes)
@@ -1326,11 +1287,11 @@ function warnings(plot){
   const empty = mon.rows.filter(r => r.empty).map(r => r.n);
   if (empty.length) out.push({ level:"amber", text:"Wedge " + empty.join(", ") + ": no one assigned." });
   if (mon.unassigned.length) out.push({ level:"amber", text:mon.unassigned.length + " on stage with no wedge: " + mon.unassigned.join(", ") + "." });
-  const ch = channelCount(plot), cuts = reductions(plot);
+  const ch = channelCount(plot);
   if (ch > VENUE.consoleChannels)
-    out.push({ level:"red", text:ch + " channels — the console has " + VENUE.consoleChannels + ".", fixes:cuts });
+    out.push({ level:"red", text:ch + " channels — the console has " + VENUE.consoleChannels + "." });
   else if (ch > VENUE.warnChannelsAt)
-    out.push({ level:"amber", text:ch + " channels of " + VENUE.consoleChannels + " — little headroom for talkback or a spare.", fixes:cuts });
+    out.push({ level:"amber", text:ch + " channels of " + VENUE.consoleChannels + " — little headroom for talkback or a spare." });
   for (const h of houseNeeds(plot)) if (h.over)
     out.push({ level:"amber", text:h.need + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.have + "." });
   const off = plot.positions.concat(plot.items, plot.wedges).filter(o => offDeck(o, plot)).length;
@@ -1814,10 +1775,7 @@ function renderTabs(){
 }
 function renderWarnings(p){
   const w = warnings(p);
-  $("warns").innerHTML = w.map(x => '<div class="warn ' + x.level + '"><span>' + esc(x.text) + '</span>' +
-    (x.fixes || []).slice(0, 3).map(f => '<button class="btn" data-cut="' + esc(f.id) + '">' + esc(f.label) +
-      ' <b>−' + f.saves + '</b></button>').join("") + '</div>').join("");
-  $("warns").querySelectorAll("[data-cut]").forEach(b => b.onclick = () => commit(() => applyReduction(plot(), b.dataset.cut)));
+  $("warns").innerHTML = w.map(x => '<div class="warn ' + x.level + '"><span>' + esc(x.text) + '</span></div>').join("");
 }
 function renderCanvas(p){
   $("canvashead").innerHTML = '<span>' + esc(p.name) + '</span><span>' + p.positions.length + ' positions</span>' +
