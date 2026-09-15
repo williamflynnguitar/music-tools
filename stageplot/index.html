@@ -1877,7 +1877,7 @@ function changeoverHTML(co){
       (co.wedges.leave.length ? '<tr><td colspan="4">Wedge ' + co.wedges.leave.join(", ") + " struck</td></tr>" : "") +
       '</tbody></table>';
   }
-  h += '<p class="foot">Positions are DS/CS/US (downstage, centre, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
+  h += '<p class="foot">Positions are DS/CS/US (downstage, center, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
   return h;
 }
 
@@ -2012,9 +2012,13 @@ function renderPanel(p){
       '<button class="btn sm" id="bBulk">Paste names…</button></div>');
 
     if (hasDrums && hasBass && horns < LAYOUT.hornsForBigBand){
+      /* The labels read "center"; the values stay "drums-centre"/"bass-centre".
+         plot.rhythmPlan is written into every saved file and share link, so
+         respelling the value would quietly flip an old bass-centre plot back
+         to drums. Spell the label, never the value. */
       H.push('<h3>Rhythm section</h3><div class="seg2">' +
-        '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums centre<span>bass to the side</span></button>' +
-        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass centre<span>drums to the side</span></button></div>' +
+        '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums center<span>bass to the side</span></button>' +
+        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass center<span>drums to the side</span></button></div>' +
         '<p class="note">The side is stage left: the performer\'s left, printed on the right of the page. Anything you have dragged stays where it is.</p>');
     }
 
