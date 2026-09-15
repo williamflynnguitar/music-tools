@@ -37,10 +37,10 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
   await page.waitForFunction(() => typeof window.sheetHTML === "function" && typeof window.makeFromTemplate === "function");
   const v1 = JSON.parse(fs.readFileSync(path.join(__dirname, "samples", "v1", "example-v1.json"), "utf8"));
 
-  /* Page counts measured on main before the contact line went in (2026-09-15),
-     so a plot is allowed to stay where it was and nothing more. The templates
-     all sat around 900px of the 960 a page holds; the migrated v1 example was
-     already two pages at 1109px, because it is a fully miked band with names. */
+  /* Page counts measured on main on 2026-09-15, so a plot is allowed to stay
+     where it was and nothing more. The templates all sat around 900px of the
+     960 a page holds; the migrated v1 example was already two pages at 1109px,
+     because it is a fully miked band with names. */
   const WANT = [
     { name:"Jazz combo",            was:897,  maxPages:1 },
     { name:"Big band (17)",         was:913,  maxPages:1 },
@@ -72,8 +72,8 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
       const p = build[name]();
       sheet.innerHTML = sheetHTML(p);
       out.push({ name, h:sheet.scrollHeight, pages:Math.max(1, Math.ceil((sheet.scrollHeight - 4) / (10 * 96))),
-                 sheetHasContact:sheet.textContent.includes(PLOT_CONTACT.email),
-                 mailHasContact:emailText(p).includes(PLOT_CONTACT.email) });
+                 deliverLine:/Please deliver to timothy\.shade@wichita\.edu as far in advance as possible\./.test(sheet.textContent),
+                 noContactLine:!/Contact:|Ensemble director/.test(sheet.textContent + emailText(p)) });
       sheet.innerHTML = "";
     }
     return out;
@@ -83,8 +83,8 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
     const want = WANT.find(w => w.name === r.name) || { maxPages:1 };
     ok(r.pages <= want.maxPages, r.name + " prints on " + want.maxPages + " page" + (want.maxPages > 1 ? "s" : "") +
        " as it did before (" + r.h + "px of " + PAGE_H + (want.was ? ", was " + want.was + "px" : "") + ", " + r.pages + " pages)");
-    ok(r.sheetHasContact, r.name + ": the printed page carries the fixed contact");
-    ok(r.mailHasContact, r.name + ": the email text carries the fixed contact");
+    ok(r.deliverLine, r.name + ": the page ends with the delivery line to Tim Shade");
+    ok(r.noContactLine, r.name + ": no contact line at the top, no \"Ensemble director\"");
   }
   const singles = plots.filter(r => (WANT.find(w => w.name === r.name) || {}).maxPages === 1);
   const tallest = singles.reduce((a, b) => (a.h > b.h ? a : b), singles[0]);

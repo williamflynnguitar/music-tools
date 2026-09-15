@@ -142,7 +142,6 @@ svg.deck .hit:active{cursor:grabbing}
 .sheet .pagerule span{position:absolute;right:0;top:2px;font-family:var(--psans);font-size:7pt;color:#999}
 .sheet h1{font-size:14pt;font-weight:400;margin:0 0 2px;line-height:1.12}
 .sheet .subhead{font-family:var(--psans);font-size:9pt;margin:0 0 4px}
-.sheet .contact{font-family:var(--psans);font-size:9pt;margin:0 0 2px}
 .sheet .meta{font-family:var(--mono);font-size:8.5pt;color:#222;margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
 .sheet .rule{border:0;border-top:1.25pt solid #000;margin:4px 0 5px}
 .sheet h2{font-family:var(--psans);font-size:9pt;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px;padding-bottom:1px;border-bottom:.75pt solid #000;break-after:avoid}
@@ -350,7 +349,7 @@ const VENUE = {
   name: "Somewhere Works — The Lot",
   shortName: "Somewhere Works",   // the short form of name, for prose
   address: "235 N Emporia, Wichita KS 67202",
-  deliverTo: "somewhereworks@wichita.edu",   // ASSUMED — confirm with tech
+  deliverTo: "timothy.shade@wichita.edu",    // William, 2026-09-15: every plot goes to Tim Shade; the mailto goes there too
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
   deck: { widthFt: 24, depthFt: 12 },        // ASSUMED — tech is checking real dimensions
   monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
@@ -387,20 +386,6 @@ const VENUE = {
     audienceLabel: "AUDIENCE",
   }
 };
-
-/* ------------------------------------------------------------------ *
- * PLOT_CONTACT — printed on every plot and in every email text, and not
- * editable anywhere in the UI. The tech needs one person to call about
- * any plot that arrives from the School of Music, whoever built it; a
- * student-typed contact is the wrong answer to that. The ensemble's own
- * director is a separate, optional field (Plot.director).
- * ------------------------------------------------------------------ */
-const PLOT_CONTACT = {
-  name: "Tim Shade",
-  title: "Director, WSU School of Music",
-  email: "Timothy.Shade@wichita.edu"
-};
-const contactLine = () => PLOT_CONTACT.name + ", " + PLOT_CONTACT.title + " \u00b7 " + PLOT_CONTACT.email;
 
 /* ---- house backline by category ------------------------------------ *
  * A role asks for a KIND of house gear, not one named amp: two guitarists
@@ -1788,8 +1773,7 @@ function sheetHTML(p){
         byo = byoList(p), di = diSources(p), ch = channelCount(p), labels = positionLabels(p), H = [];
   H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
-  H.push('<p class="contact">Contact: ' + esc(contactLine()) + '</p>');
-  H.push('<p class="meta">' + (p.director ? '<span>Ensemble director: ' + esc(p.director) + '</span>' : "") +
+  H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     '<span>' + (p.date ? "Performance: " + esc(p.date) : "Performance: —") + '</span>' +
     '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
@@ -2096,12 +2080,10 @@ function renderPanel(p){
   }
   if (S.tab === "details"){
     H.push('<div class="fld"><label>Act / ensemble</label><input type="text" id="fEns"></div>' +
-      '<div class="fld"><label>Ensemble director</label><input type="text" id="fDir"></div>' +
+      '<div class="fld"><label>Band leader/director</label><input type="text" id="fDir"></div>' +
       '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
       '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
-      '<h3>Contact on every plot</h3><p class="note">' + esc(PLOT_CONTACT.name) + ' — ' + esc(PLOT_CONTACT.title) +
-      '<br>' + esc(PLOT_CONTACT.email) + '<br>Printed on every plot and in the email text. Not editable here.</p>' +
       '<h3>Deck (this plot)</h3><div class="insprow"><input type="text" id="fW" style="width:70px"> ft wide <input type="text" id="fD" style="width:70px"> ft deep</div>' +
       '<p class="note">New plots start at ' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′ (VENUE.deck). This plot keeps the size saved with it.</p>' +
       '<h3>Songs</h3>');
@@ -2422,8 +2404,7 @@ async function decodeHash(hash){
 function emailText(p){
   const mon = monitorTable(p), rows = channelRows(p), needs = houseNeeds(p), byo = byoList(p), di = diSources(p), L = [];
   L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
-  L.push("Contact: " + contactLine());
-  if (p.director) L.push("Ensemble director: " + p.director);
+  if (p.director) L.push("Band leader/director: " + p.director);
   if (p.date) L.push("Performance: " + p.date);
   L.push("Channels " + channelCount(p) + "/" + VENUE.consoleChannels + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");

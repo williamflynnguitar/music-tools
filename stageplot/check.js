@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   PKG_SETS, pkgSet, pkgDef, startPkgId, packageInputs, setPackage,
   inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
-  PLOT_CONTACT, contactLine, BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
+  BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
@@ -635,18 +635,16 @@ for (const t of E.TEMPLATES){
   ok(!/S\.plots/.test(src.slice(A, B)), "the engine cannot see the other plots in the session, so nothing can cross-check them");
 }
 
-/* ---- 18. the fixed contact, and no mics with the house gear ---- */
+/* ---- 18. where the plot goes, who leads the band, and no mics with the house gear ---- */
 {
-  eq(E.PLOT_CONTACT.email, "Timothy.Shade@wichita.edu", "the plot contact is Tim Shade");
-  eq(E.contactLine(), "Tim Shade, Director, WSU School of Music · Timothy.Shade@wichita.edu", "the contact line reads in full");
-  eq((src.match(/const PLOT_CONTACT/g) || []).length, 1, "PLOT_CONTACT is declared once");
-  ok(!/PLOT_CONTACT\.\w+\s*=[^=]/.test(src), "nothing assigns to it");
-  ok(!/(bindText|value=|<input)[^\n]*PLOT_CONTACT/.test(src), "no input in the UI is bound to it");
-  ok(/class="contact">Contact: ' \+ esc\(contactLine\(\)\)/.test(src), "the printed page carries it under the show name");
-  ok(/L\.push\("Contact: " \+ contactLine\(\)\)/.test(src), "the email text carries it");
-  ok(/Ensemble director<\/label>/.test(src), "the Details tab calls p.director the ensemble director");
-  ok(/Ensemble director: ' \+ esc\(p\.director\)/.test(src) && !/"Director: \u2014"|Director: —/.test(src),
-     "…and the meta row prints it only when it is filled in");
+  eq(E.VENUE.deliverTo, "timothy.shade@wichita.edu", "every plot is delivered to Tim Shade");
+  ok(!/ASSUMED[^\n]*$/m.test(src.split("\n").find(l => /deliverTo:/.test(l)) || ""), "…and that is no longer marked ASSUMED");
+  ok(!/PLOT_CONTACT|contactLine/.test(src), "no separate fixed contact: the delivery line is the contact");
+  ok(/Band leader\/director<\/label>/.test(src), "the Details tab calls p.director the band leader/director");
+  ok(/Band leader\/director: ' \+ esc\(p\.director\)/.test(src) && !/"Director: \u2014"|Director: —|Ensemble director/.test(src),
+     "…the meta row prints it under that name, and only when it is filled in");
+  ok(/L\.push\("Band leader\/director: " \+ p\.director\)/.test(src), "…and so does the email text");
+  ok(/"mailto:" \+ VENUE\.deliverTo/.test(src), "the Email button addresses the same place the page says to deliver to");
   // the mics in the photos stay in the rehearsal rooms
   for (const h of E.VENUE.house.filter(h => h.bcat)){
     ok(!h.inputs, h.label + " brings no inputs");

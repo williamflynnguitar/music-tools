@@ -77,7 +77,7 @@ counts and the deck are still placeholders.
 | Value | Status | Notes |
 |---|---|---|
 | `deck: {widthFt:24, depthFt:12}` | **ASSUMED** | tech is measuring. See "Changing the deck" |
-| `deliverTo: somewhereworks@wichita.edu` | **ASSUMED** | confirm with the tech. Not the same thing as `PLOT_CONTACT` |
+| `deliverTo: timothy.shade@wichita.edu` | confirmed | William, 2026-09-15. Prints in the delivery line at the foot of every page, and the Email button addresses it. This is the plot's one fixed contact |
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
 | `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
 | `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
@@ -139,39 +139,21 @@ old plots come out exactly as they did.
   cannot go wrong by accident: `warnings()` lives in the engine block, which
   has no access to `S.plots` at all.
 
-## PLOT_CONTACT — one contact on every plot
+## Where a plot goes, and who leads the band
 
-```js
-const PLOT_CONTACT = { name:"Tim Shade", title:"Director, WSU School of Music",
-                       email:"Timothy.Shade@wichita.edu" };
-```
+Every plot is delivered to Tim Shade: the foot of every printed page reads
+*Please deliver to timothy.shade@wichita.edu as far in advance as possible*
+(`deliverLine()`, off `VENUE.deliverTo` and `leadDays`), and the Email button
+opens a `mailto:` to the same address. That line is the plot's fixed contact.
+There is deliberately **no separate contact block at the top of the page** —
+the first cut of this (2026-09-15) printed *Contact: Tim Shade, Director, WSU
+School of Music* under the ensemble name, which read as though Tim led every
+band. William had it removed the same day.
 
-Printed under the ensemble name on every page and at the top of the email
-text, and **not editable anywhere in the UI**. The tech needs one person to
-call about any plot that arrives from the School of Music, whoever built it,
-and a student-typed contact is the wrong answer to that question. `p.director`
-survives as a separate optional field — relabelled **Ensemble director**, in
-the Details tab and in the meta row, and omitted from the meta row rather than
-printed as a dash when it is empty.
-
-`VENUE.deliverTo` is a different thing and did not change: where the plot is
-sent, not who to ring about it.
-
-Confirmed: 5 wedges / 5 mixes typical with extras possibly from Shocker
-Studios, a 32-channel console, monitors shared for most groups, everything on
-the deck movable, no acoustic piano.
-
-`shortName` is "Somewhere Works" — the short form of `name`, which carries the
-room ("Somewhere Works — The Lot"). It appears in the warning banners, the
-Wedges tab and the email text. The printed house-equipment list deliberately
-does *not* use it: an over-count reads "— house has 8", because that column is
-narrow, the bullets already carry long verbatim model names, and the tech cares
-that the house has 8 rather than what the house is called. Spelling it out
-there wrapped bullets and pushed Group B onto a second page.
-
-Download filenames keep the `SW-plot-…` / `SW-showcase-…` prefixes: nothing
-parses them, they sort together in a Downloads folder, and renaming would only
-affect new saves.
+`p.director` is the **band leader/director** — that wording, in the Details
+tab, the meta row and the email text, because acts from outside the School of
+Music load in here too and "ensemble director" is a school word. It is
+optional, and the meta row omits it rather than printing a dash.
 
 ### Changing the deck
 
@@ -565,7 +547,7 @@ New in v2:
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 337 assertions: the role library, every template (builds,
+`node check.js` — 335 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
@@ -574,25 +556,24 @@ pinning and re-layout, deck re-layout, changeover, the v1 migration against
 backline by category (two guitarists on two amps, five on an amber over-count
 naming 4, Korg and Nord, an organ on the Nord, a swap surviving re-layout, an
 old doubled `gtramp1` settling on load, two plots sharing an amp in silence),
-the fixed contact and that nothing in the UI edits it, no mics on any house
-item, and no storage APIs or student names in `index.html`.
+the delivery address and the band leader/director wording, no mics on any
+house item, and no storage APIs or student names in `index.html`.
 
 `node print-check.js` measures the thing node cannot see: the printed page is
 paginated by *rendered height*, so it drives a headless Chromium through
 Playwright, renders `sheetHTML()` for every template and for the migrated v1
 fixture, and fails if a plot that fitted one page before now runs to two. It
-also confirms the fixed contact is on every page and in every email text.
+also confirms the delivery line to Tim Shade ends every page.
 `check.js` runs it and reports what it found; with no Playwright on the
 machine it exits 2 and check.js says it skipped, the way the local samples do.
 `node print-check.js --shots <dir>` writes the same pages out as PNGs.
 
 **Watch the bottom of the page.** A jazz combo with two guitarists and a long
-director name now measures 960px of the 960px a US Letter page holds — it
-still prints on one page, with nothing to spare. Naming the real amps costs a
-bullet per amp in the house-equipment list, so a band with four guitarists and
-two keyboard players runs to a second page where it used to fit one. That is
-the arithmetic, not a bug; if it starts to bite, the house-equipment column is
-where the room is.
+director name measures 931px of the 960px a US Letter page holds. Naming the
+real amps costs a bullet per amp in the house-equipment list, so a band with
+four guitarists and two keyboard players can run to a second page where it
+used to fit one. That is the arithmetic, not a bug; if it starts to bite, the
+house-equipment column is where the room is.
 
 The migration section always checks `samples/v1/example-v1.json` against
 `example-expected.json` (a golden file). When the real rosters are on the
