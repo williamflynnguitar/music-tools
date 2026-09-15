@@ -96,8 +96,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .prow .role{color:var(--bone-dim);font-size:12px;font-family:var(--mono)}
 .fld{margin-bottom:10px}
 .fld label,.fld .lbl{display:block;font-size:12px;color:var(--bone-dim);margin-bottom:3px}
-.fld input[type=text],.fld input[type=date],.fld select,.fld textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:6px 8px;color:var(--bone);font-size:14px}
+.fld input[type=text],.fld input[type=date],.fld input[type=number],.insprow>input[type=text],.fld select,.fld textarea{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:6px 8px;color:var(--bone);font-size:14px}
 .fld textarea{min-height:60px;resize:vertical}
+.fld input[type=date]{color-scheme:dark}   /* the browser draws the calendar icon; told the field is dark, it draws it light */
 .chk{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--bone);padding:2px 0}
 .chk input{accent-color:var(--brass)}
 .note{font-size:12.5px;color:var(--bone-dim);line-height:1.4;margin:6px 0}
@@ -2203,6 +2204,11 @@ function renderPanel(p){
     bindText($("fShow"), () => p.showName, v => p.showName = v);
     bindText($("fDate"), () => p.date, v => p.date = v);
     bindText($("fCheckDate"), () => p.soundcheckDate, v => p.soundcheckDate = v);
+    /* A click anywhere in a date field opens the calendar, not only the small
+       icon at its edge (William, 2026-09-15). showPicker() needs a user
+       gesture and an up-to-date browser; where it throws, the icon still
+       works and typing a date always did. */
+    for (const id of ["fCheckDate", "fDate"]) $(id).addEventListener("click", () => { try { $(id).showPicker(); } catch (e) {} });
     bindText($("fCheck"), () => p.soundcheck, v => p.soundcheck = v);
     bindText($("fStart"), () => p.startTime, v => p.startTime = v);
     bindText($("fCheckOrder"), () => p.soundcheckOrder == null ? "" : String(p.soundcheckOrder), v => p.soundcheckOrder = orderNum(v));
