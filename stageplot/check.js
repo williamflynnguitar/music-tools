@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline };`)();
+  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -655,7 +655,36 @@ for (const t of E.TEMPLATES){
   eq(E.channelCount(g), 1, "a guitar trio still opens on one channel — the bass DI");
 }
 
-/* ---- 19. the printed page, measured in a browser ---- *
+/* ---- 19. soundcheck time, soundcheck order, set order ---- */
+{
+  const b = E.blankPlot();
+  eq(JSON.stringify([b.soundcheck, b.soundcheckOrder, b.setOrder]), JSON.stringify(["", null, null]), "a new plot has the schedule fields, empty");
+  eq(E.scheduleLines(b).length, 0, "…and prints nothing for them");
+  eq([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(E.ordinal).join(" "), "1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 101st 111th", "ordinals");
+  eq(JSON.stringify(["2", 2, "2nd", "", "0", "-1", 2.7, null, undefined, "abc"].map(E.orderNum)), JSON.stringify([2, 2, 2, null, null, null, 2, null, null, null]),
+     "an order settles to a positive integer or null");
+  b.soundcheck = "5:30 PM"; b.soundcheckOrder = 2; b.setOrder = 3;
+  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 2nd · 5:30 PM", "Set order: 3rd"]), "both lines, in full");
+  b.soundcheckOrder = null;
+  eq(E.scheduleLines(b)[0], "Soundcheck: 5:30 PM", "a time with no order");
+  b.soundcheck = ""; b.soundcheckOrder = 1;
+  eq(E.scheduleLines(b)[0], "Soundcheck: 1st", "an order with no time");
+  b.setOrder = null;
+  eq(E.scheduleLines(b).length, 1, "no set order, no set line");
+  b.soundcheck = "after Combo B"; b.soundcheckOrder = "3"; b.setOrder = 0;
+  const back = E.migratePlot(JSON.parse(JSON.stringify(b)));
+  eq(JSON.stringify([back.soundcheck, back.soundcheckOrder, back.setOrder]), JSON.stringify(["after Combo B", 3, null]), "a saved file settles its orders on load");
+  const old = JSON.parse(JSON.stringify(E.makeFromTemplate("combo")));
+  delete old.soundcheck; delete old.soundcheckOrder; delete old.setOrder;
+  const loaded = E.migratePlot(old);
+  eq(JSON.stringify([loaded.soundcheck, loaded.soundcheckOrder, loaded.setOrder]), JSON.stringify(["", null, null]), "a file from before the fields existed loads with them empty");
+  const v1 = E.migrateV1(JSON.parse(fs.readFileSync(path.join(__dirname, "samples", "v1", "example-v1.json"), "utf8")));
+  eq(JSON.stringify([v1.soundcheck, v1.soundcheckOrder, v1.setOrder]), JSON.stringify(["", null, null]), "…and so does a v1 file");
+  ok(/id="fCheck"/.test(src) && /id="fCheckOrder"/.test(src) && /id="fSetOrder"/.test(src), "the Details tab has all three inputs");
+  ok(/scheduleLines\(p\)\.map/.test(src) && /for \(const l of scheduleLines\(p\)\) L\.push\(l\)/.test(src), "the printed page and the email text both print them, from the same function");
+}
+
+/* ---- 20. the printed page, measured in a browser ---- *
  * Page count comes from rendered height, so node alone cannot see it.
  * print-check.js drives a real browser and exits 2 when there is none. */
 {
