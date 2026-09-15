@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines };`)();
+  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -544,7 +544,7 @@ for (const t of E.TEMPLATES){
   const p = T("rock");
   const text = JSON.stringify(p, null, 1);
   eq(JSON.stringify(E.migratePlot(JSON.parse(text)), null, 1), text, "a saved v2 plot reloads byte-identical");
-  ok(/^SW-plot-rock-pop-band-\d{4}-\d\d-\d\d\.json$/.test(E.plotFileName(p)), "file name: " + E.plotFileName(p));
+  ok(/^SW-plot-rock-pop-band-\d{4}-\d\d-\d\d\.json$/.test(E.plotFileName(p)), "file name stays ISO so it sorts: " + E.plotFileName(p));
 }
 
 /* ---- 16. no browser storage, no network, no rosters in the code ---- */
@@ -667,14 +667,17 @@ for (const t of E.TEMPLATES){
      "an order settles to a positive integer or null");
   b.soundcheckDate = "2026-11-14"; b.soundcheck = "5:30 PM"; b.soundcheckOrder = 2;
   b.date = "2026-11-14"; b.startTime = "7:30 PM"; b.setOrder = 3;
-  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 2026-11-14 \u00b7 5:30 PM \u00b7 2nd up", "Performance: 2026-11-14 \u00b7 7:30 PM \u00b7 3rd up"]),
-     "both lines in full: day, block start, place in the block");
+  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 14/11/2026 \u00b7 5:30 PM \u00b7 2nd up", "Performance: 14/11/2026 \u00b7 7:30 PM \u00b7 3rd up"]),
+     "both lines in full: day, block start, place in the block \u2014 dates DD/MM/YYYY");
+  eq(E.fmtDate("2026-01-05"), "05/01/2026", "a date prints day first, zero-padded");
+  eq(E.fmtDate("after Combo B"), "after Combo B", "free text passes through");
+  eq(E.fmtDate(""), "", "empty stays empty");
   b.soundcheckOrder = null;
-  eq(E.scheduleLines(b)[0], "Soundcheck: 2026-11-14 \u00b7 5:30 PM", "a slot left empty leaves its place");
+  eq(E.scheduleLines(b)[0], "Soundcheck: 14/11/2026 \u00b7 5:30 PM", "a slot left empty leaves its place");
   b.soundcheckDate = ""; b.soundcheck = ""; b.soundcheckOrder = 1;
   eq(E.scheduleLines(b)[0], "Soundcheck: 1st up", "an order alone");
   b.startTime = ""; b.setOrder = null;
-  eq(E.scheduleLines(b)[1], "Performance: 2026-11-14", "the performance line with only its date reads as it always did");
+  eq(E.scheduleLines(b)[1], "Performance: 14/11/2026", "the performance line with only its date");
   b.soundcheck = "after Combo B"; b.soundcheckOrder = "3"; b.setOrder = 0;
   const back = E.migratePlot(JSON.parse(JSON.stringify(b)));
   eq(JSON.stringify([back.soundcheck, back.soundcheckOrder, back.setOrder]), JSON.stringify(["after Combo B", 3, null]), "a saved file settles its orders on load");
