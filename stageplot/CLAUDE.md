@@ -39,6 +39,7 @@ a spot on the deck, and — optionally — one or more names.
 
 ```
 Plot { schemaVersion:2, name, director, date, showName, notes, printNames,
+       soundcheck, soundcheckOrder, setOrder,
        deck, positions[], items[], wedges[], songs[], customRoles[],
        sections{}, sectionsIncludeUnmiked, channelOrder }
 Position { id, roleId, x, y, rot, moved, names[], doubles[], inputs[], notes, byo[], pkg }
@@ -154,6 +155,20 @@ band. William had it removed the same day.
 tab, the meta row and the email text, because acts from outside the School of
 Music load in here too and "ensemble director" is a school word. It is
 optional, and the meta row omits it rather than printing a dash.
+
+### Soundcheck time and the two lineups
+
+Three more per-plot fields (William, 2026-09-15), all optional, all in the
+Details tab: `soundcheck` is free text ("5:30 PM", "after Combo B" — a time
+input would force a format the director doesn't want), `soundcheckOrder` and
+`setOrder` are where the band falls in the soundcheck lineup and in the
+concert, 1 = first. `scheduleLines()` turns them into the lines the meta row
+and the email text both print — *Soundcheck: 2nd · 5:30 PM* and *Set order:
+3rd* — one function for both surfaces so they cannot disagree, and nothing at
+all when a field is empty. `orderNum()` settles whatever a file carries to a
+positive integer or `null` ("2nd" → 2, "0" → null), and `ordinal()` spells
+it, 11th–13th included. Files from before the fields existed load with them
+empty; `check.js` covers the v1 and v2 paths.
 
 ### Changing the deck
 
@@ -547,7 +562,7 @@ New in v2:
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 335 assertions: the role library, every template (builds,
+`node check.js` — 348 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
@@ -556,8 +571,9 @@ pinning and re-layout, deck re-layout, changeover, the v1 migration against
 backline by category (two guitarists on two amps, five on an amber over-count
 naming 4, Korg and Nord, an organ on the Nord, a swap surviving re-layout, an
 old doubled `gtramp1` settling on load, two plots sharing an amp in silence),
-the delivery address and the band leader/director wording, no mics on any
-house item, and no storage APIs or student names in `index.html`.
+the delivery address and the band leader/director wording, the soundcheck
+and lineup fields, no mics on any house item, and no storage APIs or student
+names in `index.html`.
 
 `node print-check.js` measures the thing node cannot see: the printed page is
 paginated by *rendered height*, so it drives a headless Chromium through
@@ -568,8 +584,9 @@ also confirms the delivery line to Tim Shade ends every page.
 machine it exits 2 and check.js says it skipped, the way the local samples do.
 `node print-check.js --shots <dir>` writes the same pages out as PNGs.
 
-**Watch the bottom of the page.** A jazz combo with two guitarists and a long
-director name measures 931px of the 960px a US Letter page holds. Naming the
+**Watch the bottom of the page.** A jazz combo with two guitarists, a long
+director name, a soundcheck time and both lineup orders — the fullest header
+a plot can print — measures 945px of the 960px a US Letter page holds. Naming the
 real amps costs a bullet per amp in the house-equipment list, so a band with
 four guitarists and two keyboard players can run to a second page where it
 used to fit one. That is the arithmetic, not a bug; if it starts to bite, the

@@ -49,6 +49,7 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
     { name:"Duo",                   was:763,  maxPages:1 },
     { name:"Combo, two guitarists", was:913,  maxPages:1 },
     { name:"…with a long director name", was:927, maxPages:1 },
+    { name:"…and soundcheck and set order too", was:927, maxPages:1 },
     { name:"example-v1 migrated",   was:1109, maxPages:2 },
   ];
   const plots = await page.evaluate(v1file => {
@@ -63,6 +64,12 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
         const p = makeFromParts([["voice",1],["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars");
         p.director = "Dr. Wilberforce Hammersmith-Jones";   // long enough to wrap the meta row
         p.date = "2026-11-14";
+        return p;
+      },
+      "…and soundcheck and set order too": () => {
+        const p = makeFromParts([["voice",1],["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars");
+        p.director = "Dr. Wilberforce Hammersmith-Jones"; p.date = "2026-11-14";
+        p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2; p.setOrder = 3;   // the fullest header a plot can print
         return p;
       },
       "example-v1 migrated": () => migratePlot(JSON.parse(JSON.stringify(v1file))),
@@ -103,6 +110,7 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
         const p = eval(expr);
         p.director = "W. Flynn";
         p.date = "2026-11-14";
+        p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2; p.setOrder = 3;
         document.getElementById("sheet").innerHTML = sheetHTML(p);
         /* strip the app chrome so the shot is the paper, not the editor */
         for (const id of ["startDlg", "coDlg"]) document.getElementById(id).hidden = true;

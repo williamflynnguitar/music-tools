@@ -1074,10 +1074,24 @@ function layoutWedges(plot, force){
 let ID_SEQ = 0;
 function nextIdE(pre){ return pre + (++ID_SEQ); }
 function resetIds(){ ID_SEQ = 0; }
+/* Lineup order is a small positive integer or null; anything else a file or
+   a hand could carry ("2nd", "", "0", 2.5) settles to one of those. */
+function orderNum(v){ const n = parseInt(v, 10); return Number.isInteger(n) && n > 0 ? n : null; }
+function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : { 1:"st", 2:"nd", 3:"rd" }[n % 10] || "th"); }
+/* The schedule lines a plot prints in its meta row and its email text — one
+   function for both, so the page and the email cannot say different things.
+   "Soundcheck: 2nd · 5:30 PM" and "Set order: 3rd"; nothing when unset. */
+function scheduleLines(p){
+  const out = [], so = orderNum(p.soundcheckOrder), st = orderNum(p.setOrder), t = String(p.soundcheck || "").trim();
+  if (so || t) out.push("Soundcheck: " + [so ? ordinal(so) : "", t].filter(Boolean).join(" \u00b7 "));
+  if (st) out.push("Set order: " + ordinal(st));
+  return out;
+}
 function blankPlot(deck, name){
   const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
   return { schemaVersion:2, id:nextIdE("plot"), name:name || "New plot", templateId:"",
     director:"", date:"", showName:"", notes:"", printNames:true,
+    soundcheck:"", soundcheckOrder:null, setOrder:null,   // when the band checks, and where it falls in each lineup
     deck:{ widthFt:D.widthFt, depthFt:D.depthFt },
     positions:[], items:[], wedges:[], songs:[], customRoles:[], rhythmPlan:"drums-centre",
     sections:{ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, sectionsIncludeUnmiked:true,
@@ -1505,7 +1519,8 @@ function settleOldSections(plot){
 function migrateV1(p){
   const out = blankPlot(p.deck, p.ensembleName || "Plot");
   out.id = p.id || out.id;
-  for (const k of ["director","date","showName","notes"]) out[k] = p[k] || "";
+  for (const k of ["director","date","showName","notes","soundcheck"]) out[k] = p[k] || "";
+  out.soundcheckOrder = orderNum(p.soundcheckOrder); out.setOrder = orderNum(p.setOrder);
   out.sections = Object.assign(out.sections, p.sections || {});
   out.channelOrder = p.channelOrder || null;
   const people = p.people || [], posOf = {};      // v1 person id -> v2 position
@@ -1572,6 +1587,7 @@ function migratePlot(p){
   p.songs = p.songs || []; p.customRoles = p.customRoles || [];
   p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
   p.printNames = p.printNames !== false;
+  p.soundcheck = p.soundcheck || ""; p.soundcheckOrder = orderNum(p.soundcheckOrder); p.setOrder = orderNum(p.setOrder);
   p.rhythmPlan = p.rhythmPlan === "bass-centre" ? "bass-centre" : "drums-centre";
   p.sections = Object.assign({ sax:{ on:false, mics:2 }, tbn:{ on:false, mics:2 }, tpt:{ on:false, mics:2 } }, p.sections || {});
   delete p.ampProfile;                                // saved while plot-wide mic profiles existed
@@ -1775,6 +1791,7 @@ function sheetHTML(p){
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     '<span>' + (p.date ? "Performance: " + esc(p.date) : "Performance: —") + '</span>' +
+    scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
     '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
@@ -2083,6 +2100,10 @@ function renderPanel(p){
       '<div class="fld"><label>Band leader/director</label><input type="text" id="fDir"></div>' +
       '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
       '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
+      '<div class="fld"><label>Soundcheck time</label><input type="text" id="fCheck" placeholder="5:30 PM"></div>' +
+      '<div class="insprow"><div class="fld" style="flex:1;margin:0"><label>Soundcheck order</label><input type="number" id="fCheckOrder" min="1" step="1" placeholder="1 = first"></div>' +
+      '<div class="fld" style="flex:1;margin:0"><label>Set order</label><input type="number" id="fSetOrder" min="1" step="1" placeholder="1 = first"></div></div>' +
+      '<p class="note">Where this band falls in the soundcheck lineup and in the concert. Prints as \u201cSoundcheck: 2nd \u00b7 5:30 PM\u201d and \u201cSet order: 3rd\u201d.</p>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
       '<h3>Deck (this plot)</h3><div class="insprow"><input type="text" id="fW" style="width:70px"> ft wide <input type="text" id="fD" style="width:70px"> ft deep</div>' +
       '<p class="note">New plots start at ' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′ (VENUE.deck). This plot keeps the size saved with it.</p>' +
@@ -2169,6 +2190,9 @@ function renderPanel(p){
     bindText($("fDir"), () => p.director, v => p.director = v);
     bindText($("fShow"), () => p.showName, v => p.showName = v);
     bindText($("fDate"), () => p.date, v => p.date = v);
+    bindText($("fCheck"), () => p.soundcheck, v => p.soundcheck = v);
+    bindText($("fCheckOrder"), () => p.soundcheckOrder == null ? "" : String(p.soundcheckOrder), v => p.soundcheckOrder = orderNum(v));
+    bindText($("fSetOrder"), () => p.setOrder == null ? "" : String(p.setOrder), v => p.setOrder = orderNum(v));
     bindText($("fNotes"), () => p.notes, v => p.notes = v);
     bindText($("fW"), () => String(p.deck.widthFt), v => { const n = parseFloat(v); if (n > 0) p.deck.widthFt = n; });
     bindText($("fD"), () => String(p.deck.depthFt), v => { const n = parseFloat(v); if (n > 0) p.deck.depthFt = n; });
@@ -2406,6 +2430,7 @@ function emailText(p){
   L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
   if (p.director) L.push("Band leader/director: " + p.director);
   if (p.date) L.push("Performance: " + p.date);
+  for (const l of scheduleLines(p)) L.push(l);
   L.push("Channels " + channelCount(p) + "/" + VENUE.consoleChannels + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");
   for (const r of mon.rows) L.push("  Mix " + r.n + ": " + (r.who.join(", ") || "no one assigned") + (r.request ? " — " + r.request : ""));
