@@ -1078,10 +1078,10 @@ function resetIds(){ ID_SEQ = 0; }
 /* Lineup order is a small positive integer or null; anything else a file or
    a hand could carry ("2nd", "", "0", 2.5) settles to one of those. */
 function orderNum(v){ const n = parseInt(v, 10); return Number.isInteger(n) && n > 0 ? n : null; }
-/* Dates print DD/MM/YYYY (William, 2026-09-15). Stored dates are ISO from the
-   date inputs, filenames stay ISO so they sort; this is the one place the
-   printed order lives — swap the two slots for MM/DD. Free text passes through. */
-function fmtDate(v){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim()); return m ? m[3] + "/" + m[2] + "/" + m[1] : String(v || "").trim(); }
+/* Dates print MM/DD/YYYY, the American order (William, 2026-09-15). Stored
+   dates are ISO from the date inputs and filenames stay ISO so they sort;
+   this is the one place the printed order lives. Free text passes through. */
+function fmtDate(v){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim()); return m ? m[2] + "/" + m[3] + "/" + m[1] : String(v || "").trim(); }
 function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : { 1:"st", 2:"nd", 3:"rd" }[n % 10] || "th"); }
 /* One line each for the soundcheck and the performance, in the order a tech
    reads them: the day, when the block starts, where this band falls in it —

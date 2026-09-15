@@ -667,17 +667,17 @@ for (const t of E.TEMPLATES){
      "an order settles to a positive integer or null");
   b.soundcheckDate = "2026-11-14"; b.soundcheck = "5:30 PM"; b.soundcheckOrder = 2;
   b.date = "2026-11-14"; b.startTime = "7:30 PM"; b.setOrder = 3;
-  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 14/11/2026 \u00b7 5:30 PM \u00b7 2nd up", "Performance: 14/11/2026 \u00b7 7:30 PM \u00b7 3rd up"]),
-     "both lines in full: day, block start, place in the block \u2014 dates DD/MM/YYYY");
-  eq(E.fmtDate("2026-01-05"), "05/01/2026", "a date prints day first, zero-padded");
+  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 11/14/2026 \u00b7 5:30 PM \u00b7 2nd up", "Performance: 11/14/2026 \u00b7 7:30 PM \u00b7 3rd up"]),
+     "both lines in full: day, block start, place in the block \u2014 dates MM/DD/YYYY");
+  eq(E.fmtDate("2026-01-05"), "01/05/2026", "a date prints month first, zero-padded");
   eq(E.fmtDate("after Combo B"), "after Combo B", "free text passes through");
   eq(E.fmtDate(""), "", "empty stays empty");
   b.soundcheckOrder = null;
-  eq(E.scheduleLines(b)[0], "Soundcheck: 14/11/2026 \u00b7 5:30 PM", "a slot left empty leaves its place");
+  eq(E.scheduleLines(b)[0], "Soundcheck: 11/14/2026 \u00b7 5:30 PM", "a slot left empty leaves its place");
   b.soundcheckDate = ""; b.soundcheck = ""; b.soundcheckOrder = 1;
   eq(E.scheduleLines(b)[0], "Soundcheck: 1st up", "an order alone");
   b.startTime = ""; b.setOrder = null;
-  eq(E.scheduleLines(b)[1], "Performance: 14/11/2026", "the performance line with only its date");
+  eq(E.scheduleLines(b)[1], "Performance: 11/14/2026", "the performance line with only its date");
   b.soundcheck = "after Combo B"; b.soundcheckOrder = "3"; b.setOrder = 0;
   const back = E.migratePlot(JSON.parse(JSON.stringify(b)));
   eq(JSON.stringify([back.soundcheck, back.soundcheckOrder, back.setOrder]), JSON.stringify(["after Combo B", 3, null]), "a saved file settles its orders on load");
