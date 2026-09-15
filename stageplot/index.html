@@ -349,7 +349,7 @@ const VENUE = {
   name: "Somewhere Works — The Lot",
   shortName: "Somewhere Works",   // the short form of name, for prose
   address: "235 N Emporia, Wichita KS 67202",
-  deliverTo: "somewhereworks@wichita.edu",   // ASSUMED — confirm with tech
+  deliverTo: "timothy.shade@wichita.edu",    // William, 2026-09-15: every plot goes to Tim Shade; the mailto goes there too
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
   deck: { widthFt: 24, depthFt: 12 },        // ASSUMED — tech is checking real dimensions
   monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
@@ -358,12 +358,19 @@ const VENUE = {
   warnChannelsAt: 28,                        // leave headroom for talkback/spare
   house: [
     // id, label (printed verbatim on the page), short (fits in the diagram),
-    // category, footprint in inches (w across the stage x d upstage), count
-    { id:"kit",     label:"House drum kit (Gretsch 4-pc, hats/ride/2 crash)", short:"House kit",  cat:"drums",  w:72, d:60 },  // ASSUMED model — tech's example said Yamaha; confirm
-    { id:"bassamp", label:"House bass rig (Ampeg 8×10 + head)",               short:"Bass rig",   cat:"amp",    w:26, d:20 },  // ASSUMED model
-    { id:"gtramp1", label:"House guitar amp (model TBD)",                     short:"Gtr amp",    cat:"amp",    w:26, d:12 },  // ASSUMED
-    { id:"kb1",     label:"House keyboard 1 (model TBD)",                     short:"Keyboard 1", cat:"keys",   w:54, d:16 },  // ASSUMED
-    { id:"kb2",     label:"House keyboard 2 (model TBD)",                     short:"Keyboard 2", cat:"keys",   w:54, d:16 },  // ASSUMED
+    // category, footprint in inches (w across the stage x d upstage), count.
+    // bcat marks backline a role can be given: the order within a bcat is the
+    // order the app hands them out, so the Korg goes before the Nord and the
+    // Voxes before the Deluxe Reverbs. No house item names a mic — the mics in
+    // the photos live in the rehearsal rooms and do not come with the gear.
+    { id:"kit",     label:"House drum kit (Gretsch 4-pc, hats/ride/2 crash)", short:"House kit",  cat:"drums",  bcat:"kit",    w:72, d:60 },  // ASSUMED model — tech's example said Yamaha; confirm
+    { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Markbass rig", cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
+    { id:"gtramp1", label:"Vox AC combo (black)",                             short:"Vox (black)", cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
+    { id:"gtramp2", label:"Vox AC combo (red)",                               short:"Vox (red)",  cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
+    { id:"gtramp3", label:"Fender Deluxe Reverb (1)",                         short:"Deluxe Reverb 1", cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
+    { id:"gtramp4", label:"Fender Deluxe Reverb (2)",                         short:"Deluxe Reverb 2", cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
+    { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg SV-2S", cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
+    { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord Stage 4", cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
     { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
     { id:"micstand",label:"Mic stand (boom)", short:"Mic",     cat:"stand",   w:12, d:12, count:8 },   // ASSUMED count
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
@@ -380,20 +387,94 @@ const VENUE = {
   }
 };
 
+/* ---- house backline by category ------------------------------------ *
+ * A role asks for a KIND of house gear, not one named amp: two guitarists
+ * get the two Voxes rather than one amp booked twice. VENUE.house order is
+ * the preference order within a category.
+ * ------------------------------------------------------------------ */
+const BACKLINE_CATS = { gtramp:"House guitar amp", keys:"House keyboard", bass:"House bass rig", kit:"House drum kit" };
+function houseCat(cat){ return VENUE.house.filter(h => h.bcat === cat); }
+/* A role's backline is a category id; tolerate a house id (an old custom role). */
+function backlineCat(role){
+  if (!role || !role.backline) return null;
+  if (BACKLINE_CATS[role.backline]) return role.backline;
+  const h = VENUE.house.find(x => x.id === role.backline);
+  return h ? h.bcat : null;
+}
+function refCat(ref){ const h = VENUE.house.find(x => x.id === ref); return h ? h.bcat : null; }
+/* A stance:"object" role (the kit) IS its gear, so it has no item to carry an
+   id; resolve its category to the one house item in it. */
+function objectRef(role){ const c = houseCat(backlineCat(role)); return c.length ? c[0].id : null; }
+/* Which house items this plot has already spoken for. */
+function houseTaken(plot){
+  const s = new Set();
+  for (const it of plot.items) if (it.kind === "house" && it.ref) s.add(it.ref);
+  for (const pos of plot.positions){
+    const r = roleOf(plot, pos);
+    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) s.add(ref); }
+  }
+  return s;
+}
+/* The item already standing in for this player's backline. Matched on OWNER
+   and CATEGORY, never on the exact id — otherwise a re-layout would undo a
+   swap by not recognising the amp the director chose. */
+function findBackline(plot, pos, role){
+  const cat = backlineCat(role);
+  return plot.items.find(i => i.kind === "house" && (i.ownerPositionIds || []).includes(pos.id) && refCat(i.ref) === cat) || null;
+}
+/* The first item of the role's category the plot isn't already using. When the
+   category is exhausted (a fifth guitarist) it falls back to the first, and
+   houseNeeds() raises the over-count. */
+function pickBackline(plot, role){
+  const items = houseCat(backlineCat(role));
+  if (!items.length) return null;
+  const taken = houseTaken(plot);
+  if (role.backlinePrefer && items.some(h => h.id === role.backlinePrefer) && !taken.has(role.backlinePrefer))
+    return role.backlinePrefer;
+  const free = items.find(h => !taken.has(h.id));
+  return (free || items[0]).id;
+}
+/* Two players on one physical amp is always a mistake — every file saved
+   before backline went by category put both guitarists on gtramp1. Move the
+   later one onto the next free item of its category; leave it alone if the
+   category really is full, so a genuine over-count still prints. Only gear
+   that belongs to someone is touched: an extra amp placed by hand from the
+   House tab is a deliberate ask and keeps the box it names. */
+function settleBackline(plot){
+  const seen = new Set();
+  for (const pos of plot.positions){
+    const r = roleOf(plot, pos);
+    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) seen.add(ref); }
+  }
+  for (const it of plot.items){
+    if (it.kind !== "house" || !it.ref || !(it.ownerPositionIds || []).length) continue;
+    const cat = refCat(it.ref), items = cat ? houseCat(cat) : [];
+    if (items.length < 2 || !seen.has(it.ref)){ seen.add(it.ref); continue; }
+    const free = items.find(h => !seen.has(h.id));
+    if (free) it.ref = free.id;
+    seen.add(it.ref);
+  }
+  return plot;
+}
+
 /* Drawing constants — not venue facts, so they live outside VENUE. */
 const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8 };   // the bottom holds the PA stacks and AUDIENCE
 
-/* Bring-your-own palette. Free-text description prints after "BYO:". */
+/* Bring-your-own palette. Free-text description prints after "BYO:".
+   No inputs here: a BYO item arrives with none (addByo writes inputs:[]) and
+   its channels come from the position that owns it. The old byo-gtramp amp
+   mic was dead data that contradicted "nothing starts miked" — removed
+   2026-09-15 rather than left to be copied into a live path by mistake. */
 const BYO_KINDS = [
-  { id:"byo-gtramp",  label:"Guitar amp",    cat:"amp",   w:26, d:12, inputs:[{source:"Guitar", type:"mic", notes:"amp mic"}] },
-  { id:"byo-bassamp", label:"Bass amp",      cat:"amp",   w:26, d:20, inputs:[{source:"Bass", type:"di"}] },
-  { id:"byo-keys",    label:"Keyboard",      cat:"keys",  w:54, d:16, inputs:[{source:"Keys", type:"stereo-di"}] },
-  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:72, d:60, inputs:null /* kit set */ },
-  { id:"byo-pedals",  label:"Pedalboard",    cat:"misc",  w:24, d:12, inputs:[] },
-  { id:"byo-laptop",  label:"Laptop",        cat:"keys",  w:16, d:12, inputs:[{source:"Laptop", type:"stereo-di"}] },
-  { id:"byo-acoustic",label:"Acoustic guitar",cat:"guitar",w:18, d:10, inputs:[{source:"Acoustic guitar", type:"di"}] },
-  { id:"byo-upright", label:"Upright bass",  cat:"bass",  w:24, d:24, inputs:[{source:"Upright bass", type:"di"}] },
-  { id:"byo-misc",    label:"Misc",          cat:"misc",  w:18, d:18, inputs:[] },
+  { id:"byo-gtramp",  label:"Guitar amp",    cat:"amp",   w:26, d:12 },
+  { id:"byo-bassamp", label:"Bass amp",      cat:"amp",   w:26, d:20 },
+  { id:"byo-keys",    label:"Keyboard",      cat:"keys",  w:54, d:16 },
+  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:72, d:60 },
+  { id:"byo-pedals",  label:"Pedalboard",    cat:"misc",  w:24, d:12 },
+  { id:"byo-laptop",  label:"Laptop",        cat:"keys",  w:16, d:12 },
+  { id:"byo-acoustic",label:"Acoustic guitar",cat:"guitar",w:18, d:10 },
+  { id:"byo-upright", label:"Upright bass",  cat:"bass",  w:24, d:24 },
+  { id:"byo-misc",    label:"Misc",          cat:"misc",  w:18, d:18 },
 ];
 
 /* Kit mic sets. Console order, not the order they were listed in the brief. */
@@ -413,8 +494,12 @@ function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()
  *
  *   grp/sub   where its channels sort (see the channel-ordering rule)
  *   stance    "standing" | "seated" | "object" (the gear is the marker)
- *   backline  a VENUE.house id this role implies; Somewhere Works has no acoustic
- *             piano, so piano and organ mean a house keyboard
+ *   backline  a BACKLINE_CATS category this role implies ("gtramp", "keys",
+ *             "bass", "kit"). The plot takes the first item of that category
+ *             it is not already using, so a second guitarist gets the second
+ *             amp; backlinePrefer names one to take first when it is free.
+ *             Somewhere Works has no acoustic piano, so piano and organ mean
+ *             a house keyboard
  *   gearSide  which side of the player the backline sits: "up" behind
  *             (amps), "down" in front (keyboards)
  *   zone      where the layout engine wants it (see LAYOUT)
@@ -424,13 +509,13 @@ const ROLES = [
   // voice
   { id:"voice",     label:"Voice",            short:"Vox",   family:"voice",  grp:"vocals", sub:0, stance:"standing", w:22, d:22, zone:"front-center", pkgs:"voice", start:"none", inputs:MIC("Vocal") },
   // rhythm section
-  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp1", gearSide:"up", pkgs:"amp", start:"none", inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
-  { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"amp", start:"di", inputs:[{ source:"Bass", type:"di", phantom:false }] },
-  { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bassamp", gearSide:"up", pkgs:"pickup", start:"di", inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
+  { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp", gearSide:"up", pkgs:"amp", start:"none", inputs:[{ source:"Guitar", type:"mic", phantom:false, notes:"amp mic" }] },
+  { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bass", gearSide:"up", pkgs:"amp", start:"di", inputs:[{ source:"Bass", type:"di", phantom:false }] },
+  { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bass", gearSide:"up", pkgs:"pickup", start:"di", inputs:[{ source:"Upright bass", type:"di", phantom:false }] },
   { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit", pkgs:"kit", start:"none", inputs:null /* KIT_FULL */ },
   { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:36, d:30, zone:"rhythm", pkgs:"simple", start:"none", inputs:MIC("Percussion") },
-  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"kb1", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Keys", type:"stereo-di", phantom:false }] },
-  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"kb2", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Organ", type:"stereo-di", phantom:false }] },
+  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Keys", type:"stereo-di", phantom:false }] },
+  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"kb2", gearSide:"down", pkgs:"keys", start:"mono", inputs:[{ source:"Organ", type:"stereo-di", phantom:false }] },
   { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", pkgs:"line", start:"stereo", inputs:[{ source:"DJ / laptop", type:"stereo-di", phantom:false }] },
   { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", pkgs:"line", start:"stereo", inputs:[{ source:"Playback", type:"stereo-di", phantom:false }] },
   // saxes and other woodwinds — one row
@@ -836,9 +921,11 @@ function autoLayout(plot, opt){
   for (const p of plot.positions){
     const r = roleOf(plot, p);
     if (!r.backline || r.stance === "object") continue;
-    let it = plot.items.find(i => i.kind === "house" && i.ref === r.backline && (i.ownerPositionIds || []).includes(p.id));
+    let it = findBackline(plot, p, r);
     if (!it){
-      it = { id:nextIdE("i"), kind:"house", ref:r.backline, label:"", x:p.x, y:p.y, rot:0, moved:false, ownerPositionIds:[p.id], inputs:[], notes:"" };
+      const ref = pickBackline(plot, r);
+      if (!ref) continue;
+      it = { id:nextIdE("i"), kind:"house", ref:ref, label:"", x:p.x, y:p.y, rot:0, moved:false, ownerPositionIds:[p.id], inputs:[], notes:"" };
       plot.items.push(it);
     }
     if (pinned(it)) continue;
@@ -1205,18 +1292,31 @@ function houseNeeds(plot){
   for (const it of plot.items) if (it.kind === "house") counts[it.ref] = (counts[it.ref] || 0) + 1;
   for (const pos of plot.positions){                    // a kit is the position, not a separate item
     const r = roleOf(plot, pos);
-    if (r.backline && r.stance === "object") counts[r.backline] = (counts[r.backline] || 0) + 1;
+    if (r.backline && r.stance === "object"){ const ref = objectRef(r); if (ref) counts[ref] = (counts[ref] || 0) + 1; }
   }
   if (plot.wedges.length) counts.wedge = plot.wedges.length;
   const di = units.reduce((n, u) => n + (u.type === "di" ? 1 : u.type === "stereo-di" ? 2 : 0), 0);
   if (di) counts.di = di;
   const stands = units.filter(u => u.stand).length;
   if (stands) counts.micstand = stands;
-  return VENUE.house.filter(h => counts[h.id]).map(h => ({
+  /* Each item prints by name so the tech knows which amp to put where. Where a
+     category holds more than one (four guitar amps, two keyboards) the
+     over-count is a fact about the category, not about one amp, so it is one
+     extra row: "5 × House guitar amp — house has 4". */
+  const multi = h => h.bcat && houseCat(h.bcat).length > 1;
+  const out = VENUE.house.filter(h => counts[h.id]).map(h => ({
     id:h.id, label:h.label, need:counts[h.id], have:h.count === undefined ? 1 : h.count,
-    over:counts[h.id] > (h.count === undefined ? 1 : h.count),
+    over:multi(h) ? false : counts[h.id] > (h.count === undefined ? 1 : h.count),
     derived:h.id === "di" || h.id === "micstand",
   }));
+  for (const cat of Object.keys(BACKLINE_CATS)){
+    const items = houseCat(cat);
+    if (items.length < 2) continue;
+    const need = items.reduce((n, h) => n + (counts[h.id] || 0), 0);
+    if (need > items.length)
+      out.push({ id:"cat:" + cat, label:BACKLINE_CATS[cat], need:need, have:items.length, over:true, derived:false, category:true });
+  }
+  return out;
 }
 function diSources(plot){
   return inputUnits(plot).filter(u => u.type === "di" || u.type === "stereo-di").map(u => {
@@ -1317,8 +1417,10 @@ function indexItems(plot){
   for (const pos of plot.positions){              // a kit is gear as well as a chair
     const r = roleOf(plot, pos);
     if (r.stance !== "object" || !r.backline) continue;
-    const base = "house:" + r.backline, n = (seen[base] = (seen[base] || 0) + 1);
-    m.set(base + "#" + n, Object.assign({ kind:"house", ref:r.backline, ownerPositionIds:[pos.id] }, { x:pos.x, y:pos.y, rot:pos.rot }));
+    const ref = objectRef(r);
+    if (!ref) continue;
+    const base = "house:" + ref, n = (seen[base] = (seen[base] || 0) + 1);
+    m.set(base + "#" + n, Object.assign({ kind:"house", ref:ref, ownerPositionIds:[pos.id] }, { x:pos.x, y:pos.y, rot:pos.rot }));
   }
   return m;
 }
@@ -1459,6 +1561,7 @@ function migrateV1(p){
   for (const pos of out.positions) pos.pkg = inferPackage(out, pos);   // v1 miked everything; its inputs come across as they were
   delete out.sectionsIncludeUnmiked;
   settleOldSections(out);
+  settleBackline(out);             // v1 gave every guitarist gtramp1; the house has four amps
   syncWedgeIds(out);
   return out;
 }
@@ -1479,6 +1582,7 @@ function migratePlot(p){
   }
   settleOldSections(p);
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; it.inputs = it.inputs || []; }
+  settleBackline(p);               // a file saved when every guitarist got gtramp1
   for (const w of p.wedges) w.assignees = w.assignees || [];
   syncWedgeIds(p);
   return p;
@@ -1669,7 +1773,7 @@ function sheetHTML(p){
         byo = byoList(p), di = diSources(p), ch = channelCount(p), labels = positionLabels(p), H = [];
   H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
-  H.push('<p class="meta"><span>' + (p.director ? "Director: " + esc(p.director) : "Director: —") + '</span>' +
+  H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     '<span>' + (p.date ? "Performance: " + esc(p.date) : "Performance: —") + '</span>' +
     '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
@@ -1757,7 +1861,7 @@ function changeoverHTML(co){
       (co.wedges.leave.length ? '<tr><td colspan="4">Wedge ' + co.wedges.leave.join(", ") + " struck</td></tr>" : "") +
       '</tbody></table>';
   }
-  h += '<p class="foot">Positions are DS/CS/US (downstage, centre, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
+  h += '<p class="foot">Positions are DS/CS/US (downstage, center, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
   return h;
 }
 
@@ -1836,7 +1940,7 @@ function renderRailTabs(){
 }
 function placedCount(p, ref){
   return p.items.filter(i => i.kind === "house" && i.ref === ref).length +
-         p.positions.filter(pos => { const r = roleOf(p, pos); return r.stance === "object" && r.backline === ref; }).length +
+         p.positions.filter(pos => { const r = roleOf(p, pos); return r.stance === "object" && objectRef(r) === ref; }).length +
          (ref === "wedge" ? p.wedges.length : 0);
 }
 function freeSpot(p, n){ const D = deckIn(p); return { x:D.w / 2 + ((n % 5) - 2) * 14, y:D.d / 2 - ((n % 3) - 1) * 14 }; }
@@ -1892,9 +1996,13 @@ function renderPanel(p){
       '<button class="btn sm" id="bBulk">Paste names…</button></div>');
 
     if (hasDrums && hasBass && horns < LAYOUT.hornsForBigBand){
+      /* The labels read "center"; the values stay "drums-centre"/"bass-centre".
+         plot.rhythmPlan is written into every saved file and share link, so
+         respelling the value would quietly flip an old bass-centre plot back
+         to drums. Spell the label, never the value. */
       H.push('<h3>Rhythm section</h3><div class="seg2">' +
-        '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums centre<span>bass to the side</span></button>' +
-        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass centre<span>drums to the side</span></button></div>' +
+        '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums center<span>bass to the side</span></button>' +
+        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass center<span>drums to the side</span></button></div>' +
         '<p class="note">The side is stage left: the performer\'s left, printed on the right of the page. Anything you have dragged stays where it is.</p>');
     }
 
@@ -1927,12 +2035,12 @@ function renderPanel(p){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push("</div><p class='note'>Backline is added automatically: a guitar gets an amp, piano gets a house keyboard. Use these buttons only for an extra.</p>");
+    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two Voxes. Select an amp or keyboard on the canvas to swap it for another. These buttons are only for an extra. No mics come with the house gear.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
     for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + '</span></button>');
-    H.push("</div><p class='note'>Select a placed item to name it: “Fender Deluxe Reverb” prints as <i>BYO: Fender Deluxe Reverb</i>. Its channels come from the position that owns it.</p>");
+    H.push("</div><p class='note'>Select a placed item to name it: “Fender Twin Reverb” prints as <i>BYO: Fender Twin Reverb</i>. Its channels come from the position that owns it.</p>");
   }
   if (S.tab === "wedges"){
     H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Mixes are listed by position, not by name.</p>");
@@ -1972,7 +2080,7 @@ function renderPanel(p){
   }
   if (S.tab === "details"){
     H.push('<div class="fld"><label>Act / ensemble</label><input type="text" id="fEns"></div>' +
-      '<div class="fld"><label>Director / contact</label><input type="text" id="fDir"></div>' +
+      '<div class="fld"><label>Band leader/director</label><input type="text" id="fDir"></div>' +
       '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
       '<div class="fld"><label>Performance date</label><input type="date" id="fDate"></div>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
@@ -2095,6 +2203,20 @@ function renderInspector(p){
     H.push('<h3>' + esc(def ? def.label : "Label") + '<span>' + posText(sel, p) + '</span></h3>');
     if (sel.kind === "byo" || sel.kind === "label")
       H.push('<div class="fld"><label>' + (sel.kind === "label" ? "Text" : "What is it (prints after “BYO:”)") + '</label><input type="text" id="iLabel"></div>');
+    /* Swap one house amp or keyboard for another of the same kind. Picking one
+       another player has takes theirs and gives them this one, so no two
+       players are ever sent to the same box. */
+    if (sel.kind === "house" && def && def.bcat && houseCat(def.bcat).length > 1){
+      const mine = houseCat(def.bcat);
+      H.push('<div class="fld"><label>Which one (' + VENUE.shortName + ' has ' + mine.length + ')</label>' +
+        '<select id="iSwap" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
+        mine.map(h => {
+          const other = p.items.find(o => o.id !== sel.id && o.kind === "house" && o.ref === h.id);
+          return '<option value="' + h.id + '"' + (h.id === sel.ref ? " selected" : "") + '>' + esc(h.label) +
+                 (other ? " — in use" : "") + '</option>';
+        }).join("") + '</select>' +
+        '<p class="note">Keeps the player, the spot on the deck and anything you dragged.</p></div>');
+    }
     if (sel.kind !== "label"){
       H.push('<div class="fld"><span class="lbl">Belongs to</span>');
       for (const pos of p.positions) H.push('<label class="chk"><input type="checkbox" data-owner="' + pos.id + '"' +
@@ -2146,6 +2268,13 @@ function renderInspector(p){
   if ($("bAddDbl")) $("bAddDbl").onclick = () => mut(() => {
     const q = plot(), pos = find(q, sel.id);
     (pos.doubles = pos.doubles || []).push({ roleId:$("dblRole").value, input:false });
+  });
+  if ($("iSwap")) $("iSwap").onchange = () => mut(() => {
+    const q = plot(), it = find(q, sel.id), want = $("iSwap").value, was = it.ref;
+    if (want === was) return;
+    const other = q.items.find(o => o.id !== it.id && o.kind === "house" && o.ref === want);
+    if (other) other.ref = was;
+    it.ref = want;
   });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
     sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);
@@ -2275,7 +2404,8 @@ async function decodeHash(hash){
 function emailText(p){
   const mon = monitorTable(p), rows = channelRows(p), needs = houseNeeds(p), byo = byoList(p), di = diSources(p), L = [];
   L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
-  L.push((p.director ? "Contact: " + p.director + "  " : "") + (p.date ? "Performance: " + p.date : ""));
+  if (p.director) L.push("Band leader/director: " + p.director);
+  if (p.date) L.push("Performance: " + p.date);
   L.push("Channels " + channelCount(p) + "/" + VENUE.consoleChannels + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");
   for (const r of mon.rows) L.push("  Mix " + r.n + ": " + (r.who.join(", ") || "no one assigned") + (r.request ? " — " + r.request : ""));

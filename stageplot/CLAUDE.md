@@ -70,36 +70,90 @@ Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
 
 ## VENUE — the one place venue facts live
 
-Unchanged from v1, `ASSUMED` markers included. Everything reads from it:
-templates, warnings, the house-equipment list, the delivery line.
+Everything reads from it: templates, warnings, the house-equipment list, the
+delivery line. The backline was read off the real gear in September 2026; the
+counts and the deck are still placeholders.
 
 | Value | Status | Notes |
 |---|---|---|
 | `deck: {widthFt:24, depthFt:12}` | **ASSUMED** | tech is measuring. See "Changing the deck" |
-| `deliverTo: somewhereworks@wichita.edu` | **ASSUMED** | confirm with the tech |
+| `deliverTo: timothy.shade@wichita.edu` | confirmed | William, 2026-09-15. Prints in the delivery line at the foot of every page, and the Email button addresses it. This is the plot's one fixed contact |
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
+| `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
+| `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
+| `gtramp3`, `gtramp4` — Fender Deluxe Reverb (1) and (2) | confirmed | ≈25″ × 10″ |
+| `bassamp` head — Markbass Little Mark Tube 800 | confirmed | ≈24″ × 20″ with the cab |
+| `gtramp1`, `gtramp2` — Vox AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart |
+| `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
 | `kit` label — Gretsch 4-pc | **ASSUMED** | the photo says Gretsch, the tech's example said Yamaha |
-| `bassamp` — Ampeg 8×10 | **ASSUMED** | |
-| `gtramp1`, `kb1`, `kb2` — "model TBD" | **ASSUMED** | left as written; they print verbatim, so do not invent models |
 | `micstand` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
 | `riser` count 0 | **ASSUMED** | unknown whether Somewhere Works owns any |
 | `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
 
-Confirmed: 5 wedges / 5 mixes typical with extras possibly from Shocker
-Studios, a 32-channel console, monitors shared for most groups, everything on
-the deck movable, no acoustic piano.
+Footprints are approximate on purpose: they only have to draw at a sensible
+size on a 24′ deck, and the tech is not measuring off this page.
 
-`shortName` is "Somewhere Works" — the short form of `name`, which carries the
-room ("Somewhere Works — The Lot"). It appears in the warning banners, the
-Wedges tab and the email text. The printed house-equipment list deliberately
-does *not* use it: an over-count reads "— house has 8", because that column is
-narrow, the bullets already carry long verbatim model names, and the tech cares
-that the house has 8 rather than what the house is called. Spelling it out
-there wrapped bullets and pushed Group B onto a second page.
+**No mics come with the house gear** (2026-09-15). The mics on the amps in the
+photos live in the rehearsal rooms and do not travel to the deck, so no house
+item carries `inputs`, none names a mic, and the printed house-equipment list
+never implies one. A player is miked the same way everything else is miked:
+by hand, with **+ mic** in the Positions tab. `BYO_KINDS` carried a dead
+`inputs` field from v1 — `byo-gtramp` "arrived" with an amp mic that nothing
+ever read, since `addByo()` always writes `inputs:[]`. It is gone rather than
+left to be wired up by mistake.
 
-Download filenames keep the `SW-plot-…` / `SW-showcase-…` prefixes: nothing
-parses them, they sort together in a Downloads folder, and renaming would only
-affect new saves.
+### Backline is a kind, not a named amp
+
+A role's `backline` names a **category** — `gtramp`, `keys`, `bass`, `kit`, the
+keys of `BACKLINE_CATS` — and each house item carries the category it belongs
+to as `bcat`. `pickBackline()` hands out the first item of that category the
+plot is not already using, so two guitarists get the black Vox and the red Vox
+rather than one amp booked twice, and two keys players get the Korg and the
+Nord. **The order inside `VENUE.house` is the preference order**: Korg before
+Nord, the Voxes before the Deluxe Reverbs. `organ` additionally carries
+`backlinePrefer:"kb2"`, so an organ still takes the Nord when it is free and
+old plots come out exactly as they did.
+
+- **The swap.** Select a house amp or keyboard and the inspector offers the
+  others of its kind. The swap keeps the owner, the spot on the deck and the
+  pinned state; picking one another player already has exchanges the two
+  rather than sending both to the same box. Re-layout leaves it alone because
+  `findBackline()` matches on **owner and category, never on the id** —
+  matching on the id is what would silently undo the director's choice.
+- **The over-count is about the category.** Five guitarists exhaust four amps,
+  so the fifth doubles up and the warning reads "5 × House guitar amp needed;
+  Somewhere Works has 4" — one fact about the category rather than an
+  argument about one amp. Categories holding a single item (the kit, the bass
+  rig) keep the old per-item wording.
+- **Migration.** `settleBackline()` runs on load, on both the v1 and v2 paths.
+  A file that put two guitarists on `gtramp1` — which every file saved before
+  this change did — comes back as `gtramp1` + `gtramp2` and stops printing an
+  over-count that is no longer true. Ids are unchanged otherwise, so saved
+  plots and share links still open and simply pick up the real labels. Only
+  gear that belongs to a player is settled: an extra amp placed by hand from
+  the House tab is a deliberate ask and keeps the box it names.
+- **House gear is shared between sets and never conflict-checked.** Two plots
+  in one session on the same Deluxe Reverb is normal at Somewhere Works and
+  raises nothing; the changeover sheet treats an amp that stays in place as
+  staying, whichever ensembles the two plots belong to. Structurally this
+  cannot go wrong by accident: `warnings()` lives in the engine block, which
+  has no access to `S.plots` at all.
+
+## Where a plot goes, and who leads the band
+
+Every plot is delivered to Tim Shade: the foot of every printed page reads
+*Please deliver to timothy.shade@wichita.edu as far in advance as possible*
+(`deliverLine()`, off `VENUE.deliverTo` and `leadDays`), and the Email button
+opens a `mailto:` to the same address. That line is the plot's fixed contact.
+There is deliberately **no separate contact block at the top of the page** —
+the first cut of this (2026-09-15) printed *Contact: Tim Shade, Director, WSU
+School of Music* under the ensemble name, which read as though Tim led every
+band. William had it removed the same day.
+
+`p.director` is the **band leader/director** — that wording, in the Details
+tab, the meta row and the email text, because acts from outside the School of
+Music load in here too and "ensemble director" is a school word. It is
+optional, and the meta row omits it rather than printing a dash.
 
 ### Changing the deck
 
@@ -120,7 +174,7 @@ instrument, add a row; nothing else in the file enumerates instruments.
   grp:"horn", sub:10,            // where its channels sort
   stance:"seated",               // "standing" | "seated" | "object" (the gear is the marker)
   w:22, d:22,                    // footprint in inches
-  backline:"gtramp1",            // a VENUE.house id this role implies (optional)
+  backline:"gtramp",             // a BACKLINE_CATS category this role implies (optional)
   gearSide:"up",                 // "up" = amp behind the player, "down" = keyboard in front
   zone:"front",                  // "front" | "front-center" | "rhythm" | "mid"
   pkgs:"horn",                   // which PKG_SETS entry names its setups
@@ -131,9 +185,11 @@ instrument, add a row; nothing else in the file enumerates instruments.
   `other`); `grp`/`sub` drive channel order; they are deliberately separate.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
-- **Backline is implied, not placed by hand**: guitar → house amp, bass and
-  upright → house rig, keys → house keyboard 1, organ → keyboard 2 (Somewhere Works
-  has no acoustic piano, so piano *is* a house keyboard), drums → the house kit. A
+- **Backline is implied, not placed by hand**: guitar → a house guitar amp,
+  bass and upright → the house rig, keys and organ → a house keyboard (Somewhere
+  Works has no acoustic piano, so piano *is* a house keyboard), drums → the
+  house kit. The role asks for a *kind* and the plot hands out one it isn’t
+  already using — see "Backline is a kind, not a named amp". A
   `stance:"object"` role like the kit *is* its gear: the position draws as the
   kit and no separate item exists, which is why two drummers on one kit give
   one set of channels. `kitPieces()` draws the kit in plan view inside that
@@ -318,7 +374,13 @@ block above `LAYOUT` and are meant to be argued with:
   bass out at the stage-left edge) and `"bass-centre"` (the two swapped,
   `LAYOUT.rhythmSwapped`). The toggle is on the Positions tab and only shows
   for a band that has both and isn't a big band. Flipping it unpins the
-  rhythm players so they move, and leaves everything else alone.
+  rhythm players so they move, and leaves everything else alone. **The two
+  buttons read "Drums center" and "Bass center"; the values keep the British
+  spelling.** `rhythmPlan` is written into every saved file and share link,
+  so respelling the value would quietly flip an old `bass-centre` plot back
+  to drums — spell the label, never the value. UI text is American (William,
+  2026-09-15); the changeover sheet's footer, the only other user-visible
+  "centre", reads center too.
 - Amps sit behind their player, keyboards in front of theirs — except the
   big band's vertical keyboard, above.
 - Wedges land downstage of the group they serve; a group parked upstage would
@@ -472,8 +534,10 @@ New in v2:
    had it, to stage right. He described the trumpets once as "4, 3, 2, 1" and
    once as "2, 1, 3, 4" left to right; the engine uses 2 1 3 4, which also
    puts Tpt 1 in line with Alto 1 and Tbn 1 as he asked.
-3. **Upright bass implies the house bass rig** — change the role's `backline`
-   if uprights usually go straight to a DI at Somewhere Works.
+3. **Upright bass implies the house bass rig** — clear the role's `backline`
+   if uprights usually go straight to a DI at Somewhere Works. (The Vox models
+   and the Markbass cab are the other things still to read off the gear; they
+   are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 4. **Which sources start on a DI** (`start` on each role) is my reading:
    bass, upright, acoustic guitar, violin and cello start on their DI or
    pickup; keys and organ on a mono DI; DJ and playback on a stereo DI.
@@ -483,13 +547,33 @@ New in v2:
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 286 assertions: the role library, every template (builds,
+`node check.js` — 335 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
-`samples/v1/expected.json`, the shipped samples, save/load round trip, and no
-storage APIs or student names in `index.html`.
+`samples/v1/expected.json`, the shipped samples, save/load round trip,
+backline by category (two guitarists on two amps, five on an amber over-count
+naming 4, Korg and Nord, an organ on the Nord, a swap surviving re-layout, an
+old doubled `gtramp1` settling on load, two plots sharing an amp in silence),
+the delivery address and the band leader/director wording, no mics on any
+house item, and no storage APIs or student names in `index.html`.
+
+`node print-check.js` measures the thing node cannot see: the printed page is
+paginated by *rendered height*, so it drives a headless Chromium through
+Playwright, renders `sheetHTML()` for every template and for the migrated v1
+fixture, and fails if a plot that fitted one page before now runs to two. It
+also confirms the delivery line to Tim Shade ends every page.
+`check.js` runs it and reports what it found; with no Playwright on the
+machine it exits 2 and check.js says it skipped, the way the local samples do.
+`node print-check.js --shots <dir>` writes the same pages out as PNGs.
+
+**Watch the bottom of the page.** A jazz combo with two guitarists and a long
+director name measures 931px of the 960px a US Letter page holds. Naming the
+real amps costs a bullet per amp in the house-equipment list, so a band with
+four guitarists and two keyboard players can run to a second page where it
+used to fit one. That is the arithmetic, not a bug; if it starts to bite, the
+house-equipment column is where the room is.
 
 The migration section always checks `samples/v1/example-v1.json` against
 `example-expected.json` (a golden file). When the real rosters are on the
