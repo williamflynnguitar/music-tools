@@ -265,9 +265,13 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
     <div class="toolrow"><p class="prompt">Harmonic major melody</p>
       <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span></button></div>
   </div>
-  <div class="card" data-id="alphabet-pitches" data-tool="alpha">
-    <div class="toolrow"><p class="prompt">Letters and numbers as pitches: Pat Martino alphabet exercise; map the alphabet to notes and write a melody from a name or phrase; map digits to notes and hear what your phone number, birthday, etc. &ldquo;sounds like&rdquo;</p>
+  <div class="card" data-id="alphabet-melody" data-tool="alpha">
+    <div class="toolrow"><p class="prompt">Alphabet melody: map the letters to pitches and write a melody from a word, name, or phrase</p>
       <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Alphabet Mapper</button></div>
+  </div>
+  <div class="card" data-id="number-melody" data-tool="number">
+    <div class="toolrow"><p class="prompt">Number melody: map digits to pitches and write a melody from a phone number, birthday, or address</p>
+      <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Number Mapper</button></div>
   </div>
 </div>
 
@@ -342,7 +346,7 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 <h2 class="sechead">Groove</h2>
 <div class="cards">
   <div class="card" data-id="groove" data-tool="playlist">
-    <div class="toolrow"><p class="prompt">find a tune with a compelling groove and build your own tune out of it</p>
+    <div class="toolrow"><p class="prompt">Find a tune with a compelling groove and build your own tune out of it</p>
       <button class="expand" type="button" aria-expanded="false"><span class="chev">&#9656;</span> Playlist</button></div>
   </div>
 </div>
@@ -420,8 +424,7 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
 
 <div class="tool" id="tool-alpha" hidden>
   <div class="trow">
-    <input type="text" id="alphaText" placeholder="a name, a phrase, a phone number&hellip;" style="flex:1;min-width:200px" autocomplete="off">
-    <span><span class="tlbl">Key for digits</span> <select id="alphaKey"></select></span>
+    <input type="text" id="alphaText" placeholder="a word, a name, a phrase&hellip;" style="flex:1;min-width:200px" autocomplete="off">
   </div>
   <div class="pitches" id="alphaNames"></div>
   <div class="staffbox" id="alphaStaff"></div>
@@ -432,10 +435,28 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
   </div>
   <details class="mapper" id="alphaMapper">
     <summary>Edit mapping</summary>
-    <p class="thint">Letters map to pitches; digits map to scale degrees of the key above. Everything else is ignored.</p>
-    <div class="maptable" id="alphaLetterMap"></div>
-    <div class="maptable" id="alphaDigitMap"></div>
+    <p class="thint">Letters map to pitches. Everything else is ignored.</p>
+    <div class="maptable" id="alphaMap"></div>
     <button class="btn quiet" id="alphaReset" type="button">Reset mapping</button>
+  </details>
+</div>
+
+<div class="tool" id="tool-number" hidden>
+  <div class="trow">
+    <input type="text" id="numberText" placeholder="a phone number, a birthday, an address&hellip;" style="flex:1;min-width:200px" autocomplete="off" inputmode="numeric">
+  </div>
+  <div class="pitches" id="numberNames"></div>
+  <div class="staffbox" id="numberStaff"></div>
+  <div class="trow">
+    <button class="btn quiet" id="numberPlay" type="button">Play</button>
+    <label class="check"><input type="checkbox" id="numberLoop">loop</label>
+    <button class="btn quiet" id="numberCopy" type="button">Copy pitches</button>
+  </div>
+  <details class="mapper" id="numberMapper">
+    <summary>Edit mapping</summary>
+    <p class="thint">Digits map to pitches. Everything else is ignored.</p>
+    <div class="maptable" id="numberMap"></div>
+    <button class="btn quiet" id="numberReset" type="button">Reset mapping</button>
   </details>
 </div>
 
@@ -464,7 +485,7 @@ details.mapper summary{cursor:pointer;font-family:var(--mono);font-size:13px;col
       <option value="4/4" selected>4/4</option><option value="3/4">3/4</option><option value="5/4">5/4</option></select></span>
     <span class="tlbl" id="twobarCount"></span>
   </div>
-  <p class="thint">Every placement of two onsets in one bar, grouped by their spacing counted through the loop &mdash; some placements wrap the barline, and the tie shows it. Click a bar to loop it.</p>
+  <p class="thint">These are all the placements of two onsets in one bar, grouped by how far apart they sit within the bar. Some wrap the barline, and the tie shows it. Click a bar to loop it.</p>
   <div id="twobarGroups"></div>
 </div>
 
@@ -556,28 +577,30 @@ function majorScale(key){
   return out;
 }
 
-/* ---- alphabet mapper (editable at runtime) ----
+/* ---- alphabet + number mappers (editable at runtime) ----
    Letters walk the chromatic scale from A (A=A, B=A#/Bb, C=B, D=C … Z=A#) —
    William's ruling 2026-09-09: chromatic, not diatonic; all 12 pcs reachable.
-   Digits stay scale degrees of the chosen key (open decision 2, reconfirmed
-   in rev 1.1). */
+   Digits walk the chromatic scale from C (0=C, 1=C#/Db, 2=D … 9=A) —
+   William's ruling 2026-09-14: both mappings chromatic, no key involved.
+   This supersedes open decision 2 (digits as scale degrees of a chosen key),
+   which rev 1.1 had reconfirmed. The two tools are separate panels over
+   the same engine: the Alphabet Mapper reads letters only, the Number
+   Mapper digits only; everything else is ignored by both. Each map is
+   index → pitch class; spelling follows the header toggle. */
 const LETTER_DEFAULT=[...Array(26)].map((_,i)=>mod12(9+i));
-const DIGIT_DEFAULT=['rest','1','2','3','4','5','6','7','1+8','2+8'];   // index = digit
-function mapText(text, letterMap, digitMap, key, flats){
-  const scale=majorScale(key), out=[];
+const DIGIT_DEFAULT=[...Array(10)].map((_,i)=>i);                     // index = digit
+function mapChars(text, map, first, count, flats){
+  const out=[];
   for(const ch of (text||'').toUpperCase()){
-    if(ch>='A'&&ch<='Z'){
-      const pc=letterMap[ch.charCodeAt(0)-65];
-      out.push({pc, midi:60+pc, name:pcName(pc,flats), label:ch});
-    } else if(ch>='0'&&ch<='9'){
-      const d=digitMap[+ch];
-      if(d==='rest'){ out.push({rest:true, label:ch}); continue; }
-      const deg=+d[0], up=d.includes('+8'), n=scale[deg-1];
-      out.push({pc:n.pc, midi:(up?72:60)+n.pc, name:n.name, label:ch});
-    }                                   // everything else is ignored
+    const i=ch.charCodeAt(0)-first.charCodeAt(0);
+    if(i<0||i>=count) continue;             // everything outside the range is ignored
+    const pc=map[i];
+    out.push({pc, midi:60+pc, name:pcName(pc,flats), label:ch});
   }
   return out;
 }
+const mapLetters=(text, letterMap, flats)=>mapChars(text, letterMap, 'A', 26, flats);
+const mapDigits=(text, digitMap, flats)=>mapChars(text, digitMap, '0', 10, flats);
 
 /* ---- tone row matrix: P forms as rows, I as columns, P0 = the row as entered ---- */
 function rowMatrix(row){
@@ -961,7 +984,7 @@ const st={
   row:Array(12).fill(null), rowActive:0, rowForm:null, rowView:'staff',
   rowChain:[], rowFrom:'P0',
   penta:[], pentaHome:null,
-  letterMap:[...LETTER_DEFAULT], digitMap:[...DIGIT_DEFAULT], alphaKey:'C',
+  letterMap:[...LETTER_DEFAULT], digitMap:[...DIGIT_DEFAULT],
   motifCells:Array(8).fill(false), motifMeter:'4/4', motifGrid:8, motifSel:0,
   twobarMeter:'4/4', twobarSel:null,
   psRoot:0, psType:'maj', psOrder:[],
@@ -987,22 +1010,23 @@ function copyText(btn, text, label){
 const ABOUT={
   'contrafact':"Write a new melody over the chord changes of an existing tune. The changes are the constraint; the melody, phrasing, and rhythm are yours. Pick changes you already know well so you can hear the harmony without the original melody in the way.",
   'tone-row-melody':"Order all twelve pitch classes into a row, then build a melody that uses them in that order, cycling through the row and its transformations (inversion, retrograde, retrograde inversion, transpositions). Rhythm, register, and repetition of the current pitch are free. The exercise is about finding lyricism inside a strict pitch order.",
-  'two-notes-per-bar':"Two pitch attacks per bar, no more. Everything you’d normally do with notes has to be done with placement, duration, and space. Listen for how much the rhythm of two notes can say.",
+  'two-notes-per-bar':"Use two pitch attacks per bar and no more. Everything you’d normally do with notes has to be done with placement, duration, and space. Listen for how much the rhythm of two notes can say.",
   'pentatonic-melody':"Write a tune using one pentatonic collection over changes of your choosing. With only five pitches, contour and rhythm carry the melody; notice which chords make the same five notes sound consonant, colorful, or wrong.",
   'invent-pentatonic':"Choose any five pitch classes, treat them as a scale, and write a tune with them. Decide which note feels like home, then find or write chords that support the collection. Use the lab to hear the scale and its rotations before you commit.",
-  'colorful-chord-tone':"Four-bar phrases, each one reaching for a more colorful chord tone than the last: roots, thirds, and fifths in the first phrase; sevenths in the second; ninths in the third; elevenths and thirteenths in the fourth. Land the target on a long note or strong beat so the color is audible.",
+  'colorful-chord-tone':"Write four-bar phrases, each one reaching for a more colorful chord tone than the last: roots, thirds, and fifths in the first phrase; sevenths in the second; ninths in the third; elevenths and thirteenths in the fourth. Land the target on a long note or strong beat so the color is audible.",
   'cell-melody':"Choose a short cell of three to five notes and build the whole melody from it: transposed, inverted, reversed, stretched, displaced. Every phrase should be traceable back to the cell.",
   'diatonic-over-chromatic':"Keep the melody inside one key while the chords move chromatically underneath. The interest comes from the same plain notes turning into ♯11s, ♭13s, and ♭9s as the harmony shifts. Write the chords first.",
   'harmonic-major':"Harmonic major is the major scale with a lowered sixth. Write a melody from it and let the ♭6 do the work; find the chords the scale implies and use them.",
-  'alphabet-pitches':"Map the alphabet to pitches and turn a name or phrase into a note sequence; map digits to scale degrees and hear a phone number or birthday. The sequence is raw material: add rhythm, register, and repetition to make it a melody.",
+  'alphabet-melody':"Map each letter of the alphabet to a pitch and turn a word, name, or phrase into a note sequence. The mapping is chromatic and stays out of any key. This is another way of arriving at a random collection of pitches, except that the collection means something to you, because you can hear what your own name or a phrase you care about sounds like. I first saw this exercise broken down by Pat Martino in a clinic he gave at the University of North Texas. The sequence is raw material; add rhythm, register, and repetition to make it a melody.",
+  'number-melody':"Map the ten digits to pitches and turn a number into a note sequence. The mapping is chromatic and stays out of any key. The pitches are as random as the alphabet exercise's, and they mean something for the same reason: you already know what the number is, so you can hear what it sounds like. Treat the sequence as raw material and build the melody from it with rhythm, register, and repetition.",
   'reharm-ladder':"Work through the four steps in order. Start with Happy Birthday, placing chords so each melody note becomes a 9th, 11th, or 13th of the chord under it. Then a folk tune, then a blues, then a standard. Each step is the same skill on harder material.",
   'tone-row-harmony':"Use a twelve-tone row as a sequence of chord roots, or as a bass line under chords of your choice. The row fixes the order of roots or bass notes; quality, inversion, and rhythm are free.",
   'chord-qualities':"Write a tune where every chord is the same quality, or one of two. With quality held constant, root motion and voice leading become the entire harmonic story.",
   'form-32-modulations':"Write in a standard 32-bar form (AABA or ABAC) and include modulations to ii, iii, IV, and vi somewhere in the form, plus a backdoor ii–V (iv–♭VII7 resolving to I). Plan the key map before writing the chords.",
   'ten-bar-blues':"Take the functions of a 12-bar blues and fit them into ten bars. Decide which phrases compress and which stay intact.",
   'head-blowing-changes':"Write the chords the band will solo on first. Then write a head whose harmony obscures those changes: substitutions, pedals, delayed resolutions. The melody has to work over both.",
-  'harmonic-rhythm':"Chords that last four bars, then two, then one, then two beats — or the reverse. The rate of change is the form.",
-  'odd-phrases':"Five- or seven-bar phrases throughout. The odd bar is the point: decide whether it extends the phrase or cuts it short, and keep that consistent.",
+  'harmonic-rhythm':"Write chords that last four bars, then two, then one, then two beats, or run the same series the other way. The rate of change is the form.",
+  'odd-phrases':"Use five- or seven-bar phrases throughout. The odd bar is the point: decide whether it extends the phrase or cuts it short, and keep that consistent.",
   'motif-displaced':"Choose one bar of rhythm and build the tune by shifting it to different positions in the bar. Use the displacer to hear every position before choosing which ones to use.",
   'rhythm-first':"Write the entire melody as rhythm on one line, phrase by phrase, and don’t touch pitch until the rhythm stands on its own. Then add pitches to the rhythm you already have.",
   'hidden-meter':"Write in 3/4 or 5/4 and keep the listener from feeling the downbeat: long notes and chord changes off the downbeat, accents that suggest a different grouping. Then decide whether the reveal comes at the end or never.",
@@ -1058,7 +1082,7 @@ el('spellSeg').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   st.flats=b.dataset.v==='f';
   el('spellSeg').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
-  renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps();
+  renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderNumber(); renderNumberMaps();
   renderPSRoot(); renderPS(); renderCell();
 });
 
@@ -1263,52 +1287,48 @@ TOOL_PRIMARY.penta=playPenta;
 el('pentaPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('pentaPlay')?Player.stop():playPenta(); });
 el('pentaLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('pentaPlay')) Player.prog.loop=el('pentaLoop').checked; });
 
-/* =============== Alphabet Mapper =============== */
-function alphaSeq(){ return mapText(el('alphaText').value, st.letterMap, st.digitMap, st.alphaKey, st.flats); }
-function renderAlpha(){
-  const seq=alphaSeq();
-  el('alphaNames').textContent=seq.map(n=>n.rest?'·':disp(n.name)).join('  ');
-  el('alphaStaff').innerHTML=seq.length?pitchStaff(seq,{slot:3.2,perRow:12}):'';
-  el('alphaPlay').disabled=el('alphaCopy').disabled=!seq.some(n=>!n.rest);
-}
-function renderAlphaMaps(){
-  el('alphaLetterMap').innerHTML=[...Array(26).keys()].map(i=>{
-    const ch=String.fromCharCode(65+i);
-    return `<label>${ch}<select data-i="${i}">${[...Array(12).keys()].map(pc=>
-      `<option value="${pc}" ${st.letterMap[i]===pc?'selected':''}>${disp(pcName(pc,st.flats))}</option>`).join('')}</select></label>`;
-  }).join('');
-  const DIGOPTS=['1','2','3','4','5','6','7','1+8','2+8','3+8','4+8','5+8','6+8','7+8','rest'];
-  el('alphaDigitMap').innerHTML=[...Array(10).keys()].map(d=>
-    `<label>${d}<select data-d="${d}">${DIGOPTS.map(o=>
-      `<option value="${o}" ${st.digitMap[d]===o?'selected':''}>${o==='rest'?'rest':'deg '+o.replace('+8',' ↑')}</option>`).join('')}</select></label>`).join('');
-}
-el('alphaLetterMap').addEventListener('change',e=>{
-  const s=e.target.closest('select'); if(!s) return;
-  st.letterMap[+s.dataset.i]=+s.value; renderAlpha();
-});
-el('alphaDigitMap').addEventListener('change',e=>{
-  const s=e.target.closest('select'); if(!s) return;
-  st.digitMap[+s.dataset.d]=s.value; renderAlpha();
-});
-el('alphaReset').addEventListener('click',()=>{
-  st.letterMap=[...LETTER_DEFAULT]; st.digitMap=[...DIGIT_DEFAULT];
-  renderAlphaMaps(); renderAlpha();
-});
-el('alphaText').addEventListener('input',renderAlpha);
-el('alphaKey').addEventListener('change',e=>{ st.alphaKey=e.target.value; renderAlpha(); });
-function playAlpha(){                     // even quarters at the header tempo
-  const seq=alphaSeq(); if(!seq.some(n=>!n.rest)) return;
-  Player.start({
-    steps:seq.map((n,i)=>({t:i, fn:(at,spb)=>{ if(!n.rest) tone(n.midi,at,spb*0.9); }})),
-    total:seq.length, loop:el('alphaLoop').checked, mark:el('alphaPlay'),
+/* =============== Alphabet Mapper + Number Mapper ===============
+   Two panels over one engine (mapChars): letters-only and digits-only,
+   both chromatic with an index → pitch-class map edited in place. */
+function mapperTool(id, mapKey, labels, mapFn, DEFAULT){
+  const seq=()=>mapFn(el(id+'Text').value, st[mapKey], st.flats);
+  function render(){
+    const s=seq();
+    el(id+'Names').textContent=s.map(n=>disp(n.name)).join('  ');
+    el(id+'Staff').innerHTML=s.length?pitchStaff(s,{slot:3.2,perRow:12}):'';
+    el(id+'Play').disabled=el(id+'Copy').disabled=!s.length;
+  }
+  function renderMaps(){
+    el(id+'Map').innerHTML=labels.map((ch,i)=>
+      `<label>${ch}<select data-i="${i}">${[...Array(12).keys()].map(pc=>
+        `<option value="${pc}" ${st[mapKey][i]===pc?'selected':''}>${disp(pcName(pc,st.flats))}</option>`).join('')}</select></label>`).join('');
+  }
+  el(id+'Map').addEventListener('change',e=>{
+    const s=e.target.closest('select'); if(!s) return;
+    st[mapKey][+s.dataset.i]=+s.value; render();
   });
+  el(id+'Reset').addEventListener('click',()=>{ st[mapKey]=[...DEFAULT]; renderMaps(); render(); });
+  el(id+'Text').addEventListener('input',render);
+  function play(){                        // even quarters at the header tempo
+    const s=seq(); if(!s.length) return;
+    Player.start({
+      steps:s.map((n,i)=>({t:i, fn:(at,spb)=>tone(n.midi,at,spb*0.9)})),
+      total:s.length, loop:el(id+'Loop').checked, mark:el(id+'Play'),
+    });
+  }
+  el(id+'Play').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el(id+'Play')?Player.stop():play(); });
+  el(id+'Loop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el(id+'Play')) Player.prog.loop=el(id+'Loop').checked; });
+  el(id+'Copy').addEventListener('click',()=>{
+    copyText(el(id+'Copy'), seq().map(n=>disp(n.name)).join(' '), 'Copy pitches');
+  });
+  return {render, renderMaps, play};
 }
-TOOL_PRIMARY.alpha=playAlpha;
-el('alphaPlay').addEventListener('click',()=>{ Player.prog&&Player.prog.mark===el('alphaPlay')?Player.stop():playAlpha(); });
-el('alphaLoop').addEventListener('change',()=>{ if(Player.prog&&Player.prog.mark===el('alphaPlay')) Player.prog.loop=el('alphaLoop').checked; });
-el('alphaCopy').addEventListener('click',()=>{
-  copyText(el('alphaCopy'), alphaSeq().map(n=>n.rest?'·':disp(n.name)).join(' '), 'Copy pitches');
-});
+const alphaTool=mapperTool('alpha','letterMap',[...Array(26).keys()].map(i=>String.fromCharCode(65+i)),mapLetters,LETTER_DEFAULT);
+const numberTool=mapperTool('number','digitMap',[...Array(10).keys()].map(String),mapDigits,DIGIT_DEFAULT);
+const renderAlpha=alphaTool.render, renderAlphaMaps=alphaTool.renderMaps;
+const renderNumber=numberTool.render, renderNumberMaps=numberTool.renderMaps;
+TOOL_PRIMARY.alpha=alphaTool.play;
+TOOL_PRIMARY.number=numberTool.play;
 
 /* =============== Motif Displacer =============== */
 function motifSpec(){ return meterSpec(st.motifMeter, st.motifGrid); }
@@ -1567,8 +1587,7 @@ document.querySelectorAll('.card[data-id]').forEach(card=>{   // About under eac
   const p=document.createElement('p'); p.className='about'; p.textContent=t;
   card.appendChild(p);
 });
-el('alphaKey').innerHTML=KEYS.map(k=>`<option value="${k}">${disp(k)} major</option>`).join('');
-renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderMotif(); syncRowView();
+renderRow(); renderPenta(); renderAlpha(); renderAlphaMaps(); renderNumber(); renderNumberMaps(); renderMotif(); syncRowView();
 renderTwobar(); renderPSRoot(); psReset(); renderCell();
 </script>
 </body>

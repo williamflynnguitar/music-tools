@@ -4,7 +4,7 @@ Stand-alone app (not handbook-tied): a page of composition assignments for
 William's composition students. Six sections of prompt cards; every card is
 a disclosure with About copy, and several carry an inline seed-material tool
 (Row Builder, Two Onsets, Pentatonic Shuffle, Pentatonic Lab, Cell Lab,
-Alphabet Mapper, Motif Displacer) with the Groove card embedding a Spotify
+Alphabet Mapper, Number Mapper, Motif Displacer) with the Groove card embedding a Spotify
 playlist. No melody/chord/score entry in this version — the writing happens
 on paper. Build brief: `BRIEF.md` in this folder.
 
@@ -46,13 +46,15 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
 
 ## Decisions taken where the brief left room (flag to William)
 
-- **Digit spelling comes from the key, not the toggle.** Degrees of the
-  chosen key spell diatonically (degree 3 of E is G♯ even in flats mode;
-  degree 4 of G♭ is C♭). The header toggle governs pitch-class spelling
-  (rows, pentatonics, edited letter mappings). The brief's "applies
-  everywhere" read literally would misspell scale degrees.
-- **Digits 8/9 escape the C4–B4 octave.** "Degree 1/2 up an octave" places
-  them C5–B5; the one-octave rule holds for letters and plain degrees.
+- **Digits are chromatic too, and there is no key** (William's 2026-09-14
+  ruling, superseding the brief's scale-degree digits and the key selector
+  that served them). 0=C, 1=C♯/D♭ … 9=A, one octave C4–A4, spelling from
+  the header toggle like everything else. The former "Alphabet Mapper"
+  card is now two cards under Melody, `alphabet-melody` and
+  `number-melody`, each opening its own panel (`tool-alpha` reads letters
+  only, `tool-number` digits only; both ignore everything else). One
+  factory, `mapperTool`, builds both panels over the shared `mapChars`
+  engine; `majorScale` is no longer called by the mappers.
 - **Accidental rule on the unmeasured pitch staffs**: altered notes always
   carry their accidental; a natural sign appears only when the same
   letter+octave was altered earlier in the line.
@@ -134,9 +136,9 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
 - **Alphabet letters walk the chromatic scale from A** (A=A, B=A♯/B♭, C=B,
   D=C … Z=A♯) — William's 2026-09-09 ruling: "chromatic, not diatonic",
   replacing the brief's wrap-the-naturals default. All 12 pcs are reachable
-  from text; spelling follows the header toggle. Digits stay scale degrees
-  of the chosen key (reconfirmed in the rev 1.1 About copy). Reset restores
-  the chromatic default.
+  from text; spelling follows the header toggle. Digits walk it from C
+  (see the 2026-09-14 ruling above). Reset restores each panel's chromatic
+  default.
 
 ## Open items
 
@@ -146,9 +148,9 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
   offline story; the iframe src is set only when the card opens.
 - The rev 1.1 About copy shipped as William's draft — he edits it in the
   `ABOUT` table.
-- Digit default and sharps default are implemented per the original brief;
-  William to confirm. If Pat Martino's published mapping differs from the
-  chromatic walk, it's a `LETTER_DEFAULT` edit.
+- Sharps default is implemented per the original brief; William to confirm.
+  If Pat Martino's published mapping differs from the chromatic walk, it's a
+  `LETTER_DEFAULT` edit (digits: `DIGIT_DEFAULT`).
 
 ## Deferred (do not build until asked)
 
