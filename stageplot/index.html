@@ -1078,6 +1078,10 @@ function resetIds(){ ID_SEQ = 0; }
 /* Lineup order is a small positive integer or null; anything else a file or
    a hand could carry ("2nd", "", "0", 2.5) settles to one of those. */
 function orderNum(v){ const n = parseInt(v, 10); return Number.isInteger(n) && n > 0 ? n : null; }
+/* Dates print MM/DD/YYYY, the American order (William, 2026-09-15). Stored
+   dates are ISO from the date inputs and filenames stay ISO so they sort;
+   this is the one place the printed order lives. Free text passes through. */
+function fmtDate(v){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim()); return m ? m[2] + "/" + m[3] + "/" + m[1] : String(v || "").trim(); }
 function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : { 1:"st", 2:"nd", 3:"rd" }[n % 10] || "th"); }
 /* One line each for the soundcheck and the performance, in the order a tech
    reads them: the day, when the block starts, where this band falls in it —
@@ -1088,7 +1092,7 @@ function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : 
    nothing at all in it reads "—". */
 function slotLine(label, date, time, order){
   const n = orderNum(order);
-  const parts = [String(date || "").trim(), String(time || "").trim(), n ? ordinal(n) + " up" : ""].filter(Boolean);
+  const parts = [fmtDate(date), String(time || "").trim(), n ? ordinal(n) + " up" : ""].filter(Boolean);
   return label + ": " + (parts.length ? parts.join(" \u00b7 ") : "\u2014");
 }
 function scheduleLines(p){
@@ -1792,7 +1796,7 @@ function deliverLine(p){
   if (!VENUE.leadDays) return "Please deliver to " + VENUE.deliverTo + " as far in advance as possible.";
   if (!p.date) return "Please deliver to " + VENUE.deliverTo + " at least " + VENUE.leadDays + " days ahead.";
   const d = new Date(p.date + "T12:00:00"); d.setDate(d.getDate() - VENUE.leadDays);
-  return "Please deliver to " + VENUE.deliverTo + " by " + d.toISOString().slice(0, 10) + ".";
+  return "Please deliver to " + VENUE.deliverTo + " by " + fmtDate(d.toISOString().slice(0, 10)) + ".";
 }
 function sheetHTML(p){
   const units = inputUnits(p), rows = channelRows(p), mon = monitorTable(p), needs = houseNeeds(p),
@@ -1801,7 +1805,7 @@ function sheetHTML(p){
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
-    '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
+    '<span>Prepared ' + fmtDate(todayISO()) + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
@@ -2107,7 +2111,7 @@ function renderPanel(p){
   if (S.tab === "details"){
     H.push('<div class="fld"><label>Act / ensemble</label><input type="text" id="fEns"></div>' +
       '<div class="fld"><label>Band leader/director</label><input type="text" id="fDir"></div>' +
-      '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
+      '<div class="fld"><label>Concert / event name</label><input type="text" id="fShow" placeholder="Fall Jazz Showcase"></div>' +
       '<h3>Soundcheck</h3><div class="insprow">' +
       '<div class="fld" style="flex:1.4;margin:0"><label>Date</label><input type="date" id="fCheckDate"></div>' +
       '<div class="fld" style="flex:1;margin:0"><label>Block starts</label><input type="text" id="fCheck" placeholder="5:30 PM"></div>' +
@@ -2647,7 +2651,7 @@ $("bShare").onclick = async () => {
 $("bEmail").onclick = async () => {
   const p = plot(), text = emailText(p);
   await copyText(text);
-  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + p.date : ""));
+  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + fmtDate(p.date) : ""));
   const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
   toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
   location.href = mail;
