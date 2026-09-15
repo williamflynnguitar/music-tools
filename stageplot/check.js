@@ -655,33 +655,42 @@ for (const t of E.TEMPLATES){
   eq(E.channelCount(g), 1, "a guitar trio still opens on one channel — the bass DI");
 }
 
-/* ---- 19. soundcheck time, soundcheck order, set order ---- */
+/* ---- 19. the soundcheck and the performance: day, block start, place in the block ---- */
 {
   const b = E.blankPlot();
-  eq(JSON.stringify([b.soundcheck, b.soundcheckOrder, b.setOrder]), JSON.stringify(["", null, null]), "a new plot has the schedule fields, empty");
-  eq(E.scheduleLines(b).length, 0, "…and prints nothing for them");
+  eq(JSON.stringify([b.soundcheckDate, b.soundcheck, b.soundcheckOrder, b.date, b.startTime, b.setOrder]),
+     JSON.stringify(["", "", null, "", "", null]), "a new plot has all six schedule fields, empty");
+  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: \u2014", "Performance: \u2014"]),
+     "\u2026and prints both lines anyway, so the tech sees what is missing");
   eq([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(E.ordinal).join(" "), "1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 101st 111th", "ordinals");
   eq(JSON.stringify(["2", 2, "2nd", "", "0", "-1", 2.7, null, undefined, "abc"].map(E.orderNum)), JSON.stringify([2, 2, 2, null, null, null, 2, null, null, null]),
      "an order settles to a positive integer or null");
-  b.soundcheck = "5:30 PM"; b.soundcheckOrder = 2; b.setOrder = 3;
-  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 2nd · 5:30 PM", "Set order: 3rd"]), "both lines, in full");
+  b.soundcheckDate = "2026-11-14"; b.soundcheck = "5:30 PM"; b.soundcheckOrder = 2;
+  b.date = "2026-11-14"; b.startTime = "7:30 PM"; b.setOrder = 3;
+  eq(JSON.stringify(E.scheduleLines(b)), JSON.stringify(["Soundcheck: 2026-11-14 \u00b7 5:30 PM \u00b7 2nd up", "Performance: 2026-11-14 \u00b7 7:30 PM \u00b7 3rd up"]),
+     "both lines in full: day, block start, place in the block");
   b.soundcheckOrder = null;
-  eq(E.scheduleLines(b)[0], "Soundcheck: 5:30 PM", "a time with no order");
-  b.soundcheck = ""; b.soundcheckOrder = 1;
-  eq(E.scheduleLines(b)[0], "Soundcheck: 1st", "an order with no time");
-  b.setOrder = null;
-  eq(E.scheduleLines(b).length, 1, "no set order, no set line");
+  eq(E.scheduleLines(b)[0], "Soundcheck: 2026-11-14 \u00b7 5:30 PM", "a slot left empty leaves its place");
+  b.soundcheckDate = ""; b.soundcheck = ""; b.soundcheckOrder = 1;
+  eq(E.scheduleLines(b)[0], "Soundcheck: 1st up", "an order alone");
+  b.startTime = ""; b.setOrder = null;
+  eq(E.scheduleLines(b)[1], "Performance: 2026-11-14", "the performance line with only its date reads as it always did");
   b.soundcheck = "after Combo B"; b.soundcheckOrder = "3"; b.setOrder = 0;
   const back = E.migratePlot(JSON.parse(JSON.stringify(b)));
   eq(JSON.stringify([back.soundcheck, back.soundcheckOrder, back.setOrder]), JSON.stringify(["after Combo B", 3, null]), "a saved file settles its orders on load");
   const old = JSON.parse(JSON.stringify(E.makeFromTemplate("combo")));
-  delete old.soundcheck; delete old.soundcheckOrder; delete old.setOrder;
+  for (const k of ["soundcheckDate","soundcheck","soundcheckOrder","startTime","setOrder"]) delete old[k];
   const loaded = E.migratePlot(old);
-  eq(JSON.stringify([loaded.soundcheck, loaded.soundcheckOrder, loaded.setOrder]), JSON.stringify(["", null, null]), "a file from before the fields existed loads with them empty");
+  eq(JSON.stringify([loaded.soundcheckDate, loaded.soundcheck, loaded.soundcheckOrder, loaded.startTime, loaded.setOrder]),
+     JSON.stringify(["", "", null, "", null]), "a file from before the fields existed loads with them empty");
   const v1 = E.migrateV1(JSON.parse(fs.readFileSync(path.join(__dirname, "samples", "v1", "example-v1.json"), "utf8")));
-  eq(JSON.stringify([v1.soundcheck, v1.soundcheckOrder, v1.setOrder]), JSON.stringify(["", null, null]), "…and so does a v1 file");
-  ok(/id="fCheck"/.test(src) && /id="fCheckOrder"/.test(src) && /id="fSetOrder"/.test(src), "the Details tab has all three inputs");
-  ok(/scheduleLines\(p\)\.map/.test(src) && /for \(const l of scheduleLines\(p\)\) L\.push\(l\)/.test(src), "the printed page and the email text both print them, from the same function");
+  eq(JSON.stringify([v1.soundcheckDate, v1.soundcheck, v1.soundcheckOrder, v1.startTime, v1.setOrder]),
+     JSON.stringify(["", "", null, "", null]), "\u2026and so does a v1 file");
+  for (const id of ["fCheckDate","fCheck","fCheckOrder","fDate","fStart","fSetOrder"])
+    ok(new RegExp('id="' + id + '"').test(src), "the Details tab has " + id);
+  ok(/scheduleLines\(p\)\.map/.test(src) && /for \(const l of scheduleLines\(p\)\) L\.push\(l\)/.test(src),
+     "the printed page and the email text both print them, from the same function");
+  ok(!/"Performance: " \+ esc\(p\.date\)|"Performance: " \+ p\.date/.test(src), "\u2026and nothing prints the performance date on its own any more");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *
