@@ -69,7 +69,8 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
       "…and soundcheck and set order too": () => {
         const p = makeFromParts([["voice",1],["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars");
         p.director = "Dr. Wilberforce Hammersmith-Jones"; p.date = "2026-11-14";
-        p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2; p.setOrder = 3;   // the fullest header a plot can print
+        p.soundcheckDate = "2026-11-14"; p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2;   // the fullest header a plot can print
+        p.startTime = "7:30 PM"; p.setOrder = 3;
         return p;
       },
       "example-v1 migrated": () => migratePlot(JSON.parse(JSON.stringify(v1file))),
@@ -80,7 +81,8 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
       sheet.innerHTML = sheetHTML(p);
       out.push({ name, h:sheet.scrollHeight, pages:Math.max(1, Math.ceil((sheet.scrollHeight - 4) / (10 * 96))),
                  deliverLine:/Please deliver to timothy\.shade@wichita\.edu as far in advance as possible\./.test(sheet.textContent),
-                 noContactLine:!/Contact:|Ensemble director/.test(sheet.textContent + emailText(p)) });
+                 noContactLine:!/Contact:|Ensemble director/.test(sheet.textContent + emailText(p)),
+                 bothLines:/Soundcheck: /.test(sheet.textContent) && /Performance: /.test(sheet.textContent) });
       sheet.innerHTML = "";
     }
     return out;
@@ -92,6 +94,7 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
        " as it did before (" + r.h + "px of " + PAGE_H + (want.was ? ", was " + want.was + "px" : "") + ", " + r.pages + " pages)");
     ok(r.deliverLine, r.name + ": the page ends with the delivery line to Tim Shade");
     ok(r.noContactLine, r.name + ": no contact line at the top, no \"Ensemble director\"");
+    ok(r.bothLines, r.name + ": a Soundcheck line and a Performance line, filled or not");
   }
   const singles = plots.filter(r => (WANT.find(w => w.name === r.name) || {}).maxPages === 1);
   const tallest = singles.reduce((a, b) => (a.h > b.h ? a : b), singles[0]);
@@ -110,7 +113,8 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
         const p = eval(expr);
         p.director = "W. Flynn";
         p.date = "2026-11-14";
-        p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2; p.setOrder = 3;
+        p.soundcheckDate = "2026-11-14"; p.soundcheck = "5:30 PM"; p.soundcheckOrder = 2;
+        p.startTime = "7:30 PM"; p.setOrder = 3;
         document.getElementById("sheet").innerHTML = sheetHTML(p);
         /* strip the app chrome so the shot is the paper, not the editor */
         for (const id of ["startDlg", "coDlg"]) document.getElementById(id).hidden = true;
