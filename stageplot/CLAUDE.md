@@ -573,7 +573,7 @@ New in v2:
    32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 348 assertions: the role library, every template (builds,
+`node check.js` — 354 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, channel order and freezing, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
