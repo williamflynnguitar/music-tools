@@ -20,7 +20,9 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   diagramGeom, labelBoxes, positionLabelBox, kitInputs,
   PKG_SETS, pkgSet, pkgDef, startPkgId, packageInputs, setPackage,
   inferPackage, notMiked, unmiked,
-  addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys };`)();
+  addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
+  PLOT_CONTACT, contactLine, BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
+  pickBackline, findBackline, settleBackline };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -561,6 +563,109 @@ for (const t of E.TEMPLATES){
   }
   const leaked = [...names].filter(n => src.includes(n));
   ok(leaked.length === 0, "no real names in index.html" + (leaked.length ? ": " + leaked.join(", ") : " (checked " + names.size + ")"));
+}
+
+/* ---- 17. house backline: a category, not one named amp ---- */
+{
+  const two = E.makeFromParts([["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars");
+  const ampsOf = q => q.items.filter(i => i.kind === "house" && E.refCat(i.ref) === "gtramp").map(i => i.ref).sort();
+  eq(ampsOf(two).join(", "), "gtramp1, gtramp2", "two guitarists get the two Voxes, not one amp booked twice");
+  ok(!E.houseNeeds(two).some(n => n.over), "…and nothing is over-counted");
+  ok(!E.warnings(two).some(w => /amp/i.test(w.text)), "…and no amber warning about amps");
+  for (const it of two.items.filter(i => E.refCat(i.ref) === "gtramp"))
+    eq(it.ownerPositionIds.length, 1, "…each amp belongs to one guitarist");
+
+  const five = E.makeFromParts([["guitar",5],["bass",1],["drums",1]], null, "Five guitars");
+  const over = E.warnings(five).find(w => /House guitar amp/.test(w.text));
+  ok(over && over.level === "amber", "five guitar amps raise an amber over-count");
+  ok(over && / has 4\./.test(over.text), "…naming what the house has: " + (over ? over.text : "no warning"));
+  ok(E.houseNeeds(five).some(n => n.id === "cat:gtramp" && n.need === 5 && n.have === 4),
+     "…and the printed list says 5 needed of 4");
+  ok(!E.houseNeeds(five).some(n => n.id === "gtramp1" && n.over),
+     "…as a fact about the category, not a second warning about one amp");
+
+  const keys2 = E.makeFromParts([["keys",2],["bass",1],["drums",1]], null, "Two keys");
+  eq(keys2.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2",
+     "two keys players get the Korg and the Nord");
+  const organ = E.makeFromParts([["organ",1],["bass",1],["drums",1]], null, "Organ trio");
+  eq(organ.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).join(", "), "kb2",
+     "organ with no other keys still takes the Nord, as it always did");
+  const both = E.makeFromParts([["keys",1],["organ",1],["bass",1],["drums",1]], null, "Keys and organ");
+  eq(both.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2",
+     "keys and organ take one each");
+
+  // a swap sticks: the lookup matches on owner and category, never on the id
+  const sw = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Swap");
+  const amp = sw.items.find(i => E.refCat(i.ref) === "gtramp");
+  const owner = amp.ownerPositionIds[0];
+  amp.ref = "gtramp3"; amp.moved = true;
+  const where = [amp.x, amp.y];
+  E.autoLayout(sw, { force:true });
+  const after = sw.items.filter(i => E.refCat(i.ref) === "gtramp");
+  eq(after.length, 1, "a swap doesn't grow a second amp on re-layout");
+  eq(after[0].ref, "gtramp3", "…the Deluxe Reverb stays chosen");
+  eq(after[0].ownerPositionIds[0], owner, "…keeps its owner");
+  eq(JSON.stringify([after[0].x, after[0].y]), JSON.stringify(where), "…and keeps the spot it was pinned to");
+
+  // an old file that booked gtramp1 twice
+  const old = JSON.parse(JSON.stringify(two));
+  for (const it of old.items) if (E.refCat(it.ref) === "gtramp") it.ref = "gtramp1";
+  const loaded = E.migratePlot(old);
+  eq(ampsOf(loaded).join(", "), "gtramp1, gtramp2", "a saved file with both guitarists on gtramp1 loads onto two amps");
+  ok(!E.warnings(loaded).some(w => /amp/i.test(w.text)), "…and stops printing an over-count that is no longer true");
+  eq(JSON.stringify(loaded.items.map(i => [i.x, i.y])), JSON.stringify(old.items.map(i => [i.x, i.y])),
+     "…without moving anything");
+
+  // the same on the v1 path
+  const v1 = JSON.parse(fs.readFileSync(path.join(__dirname, "samples", "v1", "example-v1.json"), "utf8"));
+  const dup = JSON.parse(JSON.stringify(v1));
+  const src1 = dup.items.find(i => i.kind === "house" && i.ref === "gtramp1");
+  dup.items.push(Object.assign({}, src1, { id:"i99", x:src1.x - 40 }));
+  E.resetIds();
+  eq(ampsOf(E.migrateV1(dup)).join(", "), "gtramp1, gtramp2", "a v1 file with two of the same amp lands on two real amps");
+
+  // house gear is shared between sets and never conflict-checked
+  const a = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Set one");
+  const b = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Set two");
+  for (const q of [a, b]) q.items.find(i => E.refCat(i.ref) === "gtramp").ref = "gtramp3";
+  ok(!E.warnings(a).length && !E.warnings(b).length,
+     "two plots on the same Deluxe Reverb warn about nothing (" + E.warnings(a).concat(E.warnings(b)).map(w => w.text).join("; ") + ")");
+  ok(E.changeover(a, b).items.stay.some(x => /Deluxe Reverb \(1\)/.test(x)),
+     "…and the changeover sheet says the amp stays put");
+  ok(!/S\.plots/.test(src.slice(A, B)), "the engine cannot see the other plots in the session, so nothing can cross-check them");
+}
+
+/* ---- 18. the fixed contact, and no mics with the house gear ---- */
+{
+  eq(E.PLOT_CONTACT.email, "Timothy.Shade@wichita.edu", "the plot contact is Tim Shade");
+  eq(E.contactLine(), "Tim Shade, Director, WSU School of Music · Timothy.Shade@wichita.edu", "the contact line reads in full");
+  eq((src.match(/const PLOT_CONTACT/g) || []).length, 1, "PLOT_CONTACT is declared once");
+  ok(!/PLOT_CONTACT\.\w+\s*=[^=]/.test(src), "nothing assigns to it");
+  ok(!/(bindText|value=|<input)[^\n]*PLOT_CONTACT/.test(src), "no input in the UI is bound to it");
+  ok(/class="contact">Contact: ' \+ esc\(contactLine\(\)\)/.test(src), "the printed page carries it under the show name");
+  ok(/L\.push\("Contact: " \+ contactLine\(\)\)/.test(src), "the email text carries it");
+  ok(/Ensemble director<\/label>/.test(src), "the Details tab calls p.director the ensemble director");
+  ok(/Ensemble director: ' \+ esc\(p\.director\)/.test(src) && !/"Director: \u2014"|Director: —/.test(src),
+     "…and the meta row prints it only when it is filled in");
+  // the mics in the photos stay in the rehearsal rooms
+  for (const h of E.VENUE.house.filter(h => h.bcat)){
+    ok(!h.inputs, h.label + " brings no inputs");
+    ok(!/\bmic/i.test(h.label + " " + h.short), h.label + " names no mic");
+  }
+  ok(!E.BYO_KINDS.some(b => b.inputs), "no bring-your-own item arrives miked either");
+  const g = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Nothing miked");
+  eq(E.channelCount(g), 1, "a guitar trio still opens on one channel — the bass DI");
+}
+
+/* ---- 19. the printed page, measured in a browser ---- *
+ * Page count comes from rendered height, so node alone cannot see it.
+ * print-check.js drives a real browser and exits 2 when there is none. */
+{
+  const r = require("child_process").spawnSync(process.execPath, [path.join(__dirname, "print-check.js")], { encoding:"utf8" });
+  const out = (r.stdout || "") + (r.stderr || "");
+  process.stdout.write(out.replace(/^/gm, "  ").replace(/\s*$/, "\n"));
+  if (r.status === 2) say("page fit and the printed contact were not measured — see above");
+  else ok(r.status === 0, "print-check.js: every plot prints on the pages it printed on before, with the contact on each");
 }
 
 /* ---- samples: the fall 2026 ensembles, migrated out of the code ---- */
