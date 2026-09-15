@@ -392,7 +392,13 @@ block above `LAYOUT` and are meant to be argued with:
   bass out at the stage-left edge) and `"bass-centre"` (the two swapped,
   `LAYOUT.rhythmSwapped`). The toggle is on the Positions tab and only shows
   for a band that has both and isn't a big band. Flipping it unpins the
-  rhythm players so they move, and leaves everything else alone.
+  rhythm players so they move, and leaves everything else alone. **The two
+  buttons read "Drums center" and "Bass center"; the values keep the British
+  spelling.** `rhythmPlan` is written into every saved file and share link,
+  so respelling the value would quietly flip an old `bass-centre` plot back
+  to drums — spell the label, never the value. UI text is American (William,
+  2026-09-15); the changeover sheet's footer, the only other user-visible
+  "centre", reads center too.
 - Amps sit behind their player, keyboards in front of theirs — except the
   big band's vertical keyboard, above.
 - Wedges land downstage of the group they serve; a group parked upstage would
