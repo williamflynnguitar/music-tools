@@ -376,6 +376,15 @@ block above `LAYOUT` and are meant to be argued with:
 
 Same instrumentation always yields the same layout; `check.js` asserts it.
 
+## Removing things (A4)
+
+Tim could not find out how to delete anything. Three ways now, all through
+`removeObject()`: the ⊗ drawn off the top-right corner of the selected object
+on the canvas (screen only, never printed), the inspector's delete button,
+and Delete / Backspace on a selection. A position takes the gear that belongs
+to it — amp, DI box, mics. "clear stage" beside re-layout empties the deck
+behind a confirm; undo brings everything back.
+
 ## Monitor wedges
 
 **A wedge is a placeable object and nothing more** (Tim Shade, 2026-09-16):
@@ -525,7 +534,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 387 assertions: the role library, every template (builds,
+`node check.js` — 393 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

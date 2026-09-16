@@ -735,6 +735,16 @@ for (const t of E.TEMPLATES){
   ok(/data-wnum=/.test(src) && /id="iWedgeNum"/.test(src), "the number is editable on the Wedges tab and in the inspector");
 }
 
+/* ---- 19h. deleting is visible (A4, Tim Shade 2026-09-16) ---- */
+{
+  ok(/data-del="' \+ obj\.id/.test(src) && /class="delx"/.test(src), "the selected object carries an ⊗ on the canvas");
+  ok(/id="bClear"/.test(src) && /function clearStage/.test(src) && /confirm\("Clear the stage\?/.test(src), "a clear-stage button, behind a confirm");
+  eq((src.match(/removeObject\(/g) || []).length, 4, "the ⊗, the inspector button and the Delete key share one delete routine (definition + 3 calls)");
+  ok(/e\.key === "Delete" \|\| e\.key === "Backspace"/.test(src), "…and the keyboard shortcut stays");
+  ok(/click its ⊗ or press Delete/.test(src), "…and the note under the canvas says so");
+  ok(!/print/.test(src.slice(src.indexOf("if (!print && S.sel){"), src.indexOf("if (!print && S.sel){") + 40).replace("!print", "")), "the ⊗ is never printed");
+}
+
 /* ---- 20. the printed page, measured in a browser ---- *
  * Page count comes from rendered height, so node alone cannot see it.
  * print-check.js drives a real browser and exits 2 when there is none. */

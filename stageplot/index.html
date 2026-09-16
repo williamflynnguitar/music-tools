@@ -121,6 +121,8 @@ svg.deck .hit{cursor:grab}
 svg.deck g.sel rect,svg.deck g.sel circle,svg.deck g.sel path{stroke:var(--brass);stroke-width:2.4}
 svg.deck g.sel text{fill:var(--brass)}
 svg.deck .hit:active{cursor:grabbing}
+svg.deck .delx{cursor:pointer}
+svg.deck .delx:hover circle{fill:#d4715f}
 .inspector{margin-top:12px;border:1px solid var(--line);border-radius:5px;padding:10px 12px}
 .inspector h3{margin:0 0 8px;font-size:15px;font-weight:400}
 .inspector h3 span{font-family:var(--mono);font-size:11px;color:var(--bone-dim);margin-left:8px}
@@ -1625,6 +1627,19 @@ function diagramSVG(plot, opt){
     }
     labelled(pos, px, py, inner);
   }
+  /* A delete control on the selected object (A4, Tim Shade 2026-09-16): a
+     small ⊗ off its top-right corner, on screen only. Delete and Backspace
+     still work; this is for the people who never find that out. */
+  if (!print && S.sel){
+    const obj = find(plot, S.sel);
+    if (obj){
+      const r = obj.kind === "label" ? { x0:obj.x - 24, y1:obj.y + 8 } : rectOf(obj, plot);
+      const cx = g.sx(r.x0) + 6, cy = g.sy(r.y1) - 6, rr = 5.5;
+      P.push('<g class="delx" data-del="' + obj.id + '"><title>remove from the stage (Delete)</title>' +
+        '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + rr + '" fill="#0d232b" stroke="#c9a24a" stroke-width="1.3"/>' +
+        '<path d="M' + (cx - 2.6).toFixed(1) + ',' + (cy - 2.6).toFixed(1) + 'l5.2,5.2M' + (cx + 2.6).toFixed(1) + ',' + (cy - 2.6).toFixed(1) + 'l-5.2,5.2" stroke="#e8e1d1" stroke-width="1.4" stroke-linecap="round"/></g>');
+    }
+  }
   return '<svg viewBox="0 0 ' + g.vbW.toFixed(0) + ' ' + g.vbH.toFixed(0) + '" xmlns="http://www.w3.org/2000/svg"' +
          (print ? ' style="width:' + g.widthIn.toFixed(2) + 'in;height:auto"' : "") + '>' + P.join("") + '</svg>';
 }
@@ -1754,16 +1769,17 @@ function renderCanvas(p){
   $("canvashead").innerHTML = '<span>' + esc(p.name) + '</span><span>' + p.positions.length + ' positions</span>' +
     '<span>' + micsOn(p).length + ' mics · ' + disOn(p).length + ' DIs · ' + p.wedges.length + ' mixes</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
     (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>' +
-      '<button class="btn sm" id="bRelayout">re-layout</button>');
+      '<button class="btn sm" id="bRelayout">re-layout</button><button class="btn sm" id="bClear" title="take everything off the stage">clear stage</button>');
   if (!S.readOnly){
     $("bSnap").onclick = () => { S.snap = !S.snap; render(); };
+    $("bClear").onclick = clearStage;
     $("bRelayout").onclick = () => {
       if (!confirm("Lay this plot out again from scratch?\n\nAnything you have dragged goes back to where the engine puts it.")) return;
       commit(() => { const q = plot(); q.positions.concat(q.items, q.wedges).forEach(o => o.moved = false); autoLayout(q, { force:true }); });
     };
   }
   $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
-  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back), Delete removes.";
+  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
   if (!S.readOnly) wireCanvas();
 }
 function renderSheet(p){
@@ -2134,20 +2150,31 @@ function renderInspector(p){
     sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);
   }));
   $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 45) % 360; sel.moved = true; });
-  $("bDel").onclick = () => mut(() => {
-    const q = plot();
-    q.positions = q.positions.filter(o => o.id !== sel.id);
-    q.items = q.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
-    q.wedges = q.wedges.filter(w => w.id !== sel.id);
-    S.sel = null;
-  });
+  $("bDel").onclick = () => mut(() => removeObject(plot(), sel.id));
   $("bDesel").onclick = () => { S.sel = null; render(); };
 }
 
 /* ================= canvas interaction ================= */
+/* Removing something from the stage — the ⊗ on the canvas, the inspector's
+   delete button and the Delete key all come here. A position takes the gear
+   that belongs to it (its amp, its DI box, its mics). */
+function removeObject(p, id){
+  p.positions = p.positions.filter(o => o.id !== id);
+  p.items = p.items.filter(o => o.id !== id && !(o.ownerPositionIds || []).includes(id));
+  p.wedges = p.wedges.filter(w => w.id !== id);
+  if (S.sel === id) S.sel = null;
+}
+function clearStage(){
+  const p = plot(), n = p.positions.length + p.items.length + p.wedges.length;
+  if (!n) return;
+  if (!confirm("Clear the stage?\n\nEvery position, piece of gear, mic and wedge comes off. Undo brings them back.")) return;
+  commit(() => { const q = plot(); q.positions = []; q.items = []; q.wedges = []; S.sel = null; });
+}
 function wireCanvas(){
   const svg = $("deck");
   svg.addEventListener("pointerdown", e => {
+    const del = e.target.closest("g[data-del]");
+    if (del){ e.preventDefault(); commit(() => removeObject(plot(), del.dataset.del)); return; }
     const g = e.target.closest("g[data-id]");
     if (!g){ if (S.sel){ S.sel = null; render(); } return; }
     const p = plot(), id = g.dataset.id, obj = find(p, id);
@@ -2196,15 +2223,8 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowUp")    nudge(0, step);
   else if (e.key === "ArrowDown")  nudge(0, -step);
   else if (e.key.toLowerCase() === "r") commit(() => { sel.rot = (((sel.rot || 0) + (e.shiftKey ? -45 : 45)) % 360 + 360) % 360; sel.moved = true; });
-  else if (e.key === "Delete" || e.key === "Backspace"){
-    e.preventDefault();
-    commit(() => {
-      p.positions = p.positions.filter(o => o.id !== sel.id);
-      p.items = p.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
-      p.wedges = p.wedges.filter(w => w.id !== sel.id);
-      S.sel = null;
-    });
-  } else if (e.key === "Escape"){ S.sel = null; render(); }
+  else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); commit(() => removeObject(p, sel.id)); }
+  else if (e.key === "Escape"){ S.sel = null; render(); }
 });
 
 /* ================= files, links, print ================= */
