@@ -34,17 +34,16 @@ sample files are on the machine and fails if one appears in the source.
 
 ## The model: positions first, names optional
 
-A plot is a list of **positions**. Each position holds a role, its own inputs,
-a spot on the deck, and — optionally — one or more names.
+A plot is a list of **positions**. Each position holds a role, a spot on the
+deck, and — optionally — one or more names.
 
 ```
 Plot { schemaVersion:2, name, director, date, showName, notes, printNames,
        soundcheckDate, soundcheck, soundcheckOrder, startTime, setOrder,
-       deck, positions[], items[], wedges[], songs[], customRoles[],
-       sections{}, sectionsIncludeUnmiked, channelOrder }
-Position { id, roleId, x, y, rot, moved, names[], doubles[], inputs[], notes, byo[], pkg }
+       deck, positions[], items[], wedges[], songs[], customRoles[] }
+Position { id, roleId, x, y, rot, moved, names[], doubles[], notes, byo[], kit, kitLabel }
 Item     { id, kind:"house"|"byo"|"label", ref, label, x, y, rot, moved,
-           ownerPositionIds[], inputs[] }   // inputs only on migrated v1 gear
+           ownerPositionIds[] }
 Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
 ```
 
@@ -58,8 +57,8 @@ Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
   Wedges reference positions, so a monitor row reads `Mix 2 — Alto, Tenor 1`
   whether or not anyone has been named.
 - More than one name on a position is a **shared chair** (two drummers on one
-  kit, rotating vocalists on one mic): one set of inputs, one wedge, both
-  names printed.
+  kit, rotating vocalists on one mic): one chair, one wedge, both names
+  printed.
 - `moved:true` means a human dragged it. The layout engine never touches it
   again until someone hits re-layout.
 - On the canvas a label carries the same `data-id` as the thing it names, so
@@ -197,18 +196,17 @@ instrument, add a row; nothing else in the file enumerates instruments.
 
 ```js
 { id:"trumpet", label:"Trumpet", short:"Tpt", family:"brass",
-  grp:"horn", sub:10,            // where its channels sort
+  grp:"horn", sub:10,            // how its family orders itself in a row
   stance:"seated",               // "standing" | "seated" | "object" (the gear is the marker)
   w:22, d:22,                    // footprint in inches
   backline:"gtramp",             // a BACKLINE_CATS category this role implies (optional)
   gearSide:"up",                 // "up" = amp behind the player, "down" = keyboard in front
   zone:"front",                  // "front" | "front-center" | "rhythm" | "mid"
-  pkgs:"horn",                   // which PKG_SETS entry names its setups
-  start:"none" }                 // the package a new player gets — never one with a mic
+  di:true }                      // reaches the console on a DI box (bass, keys, DJ…)
 ```
 
 - `family` drives row packing (`voice`, `sax`, `brass`, `rhythm`, `strings`,
-  `other`); `grp`/`sub` drive channel order; they are deliberately separate.
+  `other`); `grp`/`sub` order a row; they are deliberately separate.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → a house guitar amp,
@@ -229,117 +227,30 @@ instrument, add a row; nothing else in the file enumerates instruments.
 - Custom roles: the Positions tab's "custom role…" writes into
   `plot.customRoles`, so an odd instrument travels inside the saved file and
   needs no code change. `roleDef()` looks there first.
-- Doubles are generic: `position.doubles = [{roleId, input}]`. They print on
-  the diagram (`Alto / Flute`) and add channels only when `input` is true. A
-  double's channel sorts under the double's own role, not the position's.
+- Doubles are generic: `position.doubles = [{roleId}]` or `[{label}]`. They
+  print on the diagram (`Alto / Flute`) and nothing more.
 
 `ROLE_MATCH` turns free text into a role id ("Sam — bass trombone"), most
 specific pattern first. It is used by bulk name entry and the v1 migration.
 
-## Mics: set by hand, per player
+## No input list (B1, Tim Shade 2026-09-16)
 
-**Amplification is a choice, not an assumption.** v1 miked everything it could:
-place a kit, get seven channels. That inflated the count, made the console
-warnings meaningless, and put things on the tech's list nobody was going to
-patch. Worse, a source missing from the input list was ambiguous — acoustic by
-decision, or forgotten?
+The app used to carry a per-player input list — mics and DIs as attributes of
+a position, packages, section mics, a frozen channel order, and a numbered
+Input list on the page with a channel count in the header. Tim's sound team
+never read it and no act was going to fill it in, so it is gone: the page
+says where things go, and what reaches the console is counted from the mic
+and DI objects placed on the deck (see "Mics and DI boxes", C1/C3). Nothing
+carries `inputs`, `pkg`, `sections` or `channelOrder` any more, and a file
+that has them loads without them — except a position's `inputs`, which ride
+along untouched so the mic placement can turn them into objects on the deck.
+`role.di` marks the instruments that reach the console on a DI box (bass,
+upright, keys, organ, DJ, playback, acoustic guitar, violin, cello). Doubles
+are a label on the diagram (`Alto / Flute`) and nothing more.
 
-**The director sets mics by hand** (William, 2026-09-14). Every row in the
-Positions tab's On stage list carries **+ mic** and **− mic**, and says what the
-player has ("2 mics · DI", "not miked"). `addMic()` names the new mic the way
-the role's own setups name it — a kit fills in Kick, Snare, Hi-hat, Tom 1… in
-order; a guitar's is an amp mic; a voice's is Vocal — and `removeMic()` takes
-the player's last mic away, never a DI. Renaming a mic, adding a DI or removing
-a specific input is in the inspector (edit), one row per input with ×.
-
-**Nothing starts miked** (William, 2026-09-14). No template, no blank plot and
-no player added later — an unrecognised "Other" included — arrives with a mic, and no horn row starts on section
-mics. A DI source keeps its DI — keys, organ, bass, upright, acoustic guitar,
-violin, cello, DJ and playback — because an electric instrument with nothing plugged
-in isn't a choice anyone is making. Every template therefore opens at a
-couple of channels (the jazz combo and the big band are both **2**: keys and
-bass) with everything else listed under Not miked, and the director builds the
-input list up from there.
-
-Where this came from, so it isn't rebuilt by accident: the amplification
-amendment gave the plot three profiles (acoustic-leaning / light
-reinforcement / fully miked), let each template pick one, and put the profile
-buttons on the Positions tab, a per-player package dropdown in the inspector,
-and "full kit (7)" / "jazz minimal (4)" buttons on a kit. William removed all
-of it in one afternoon in favour of + mic / − mic, then removed the channel
-warning's suggested cuts, then the templates' starting mics. `PROFILES`,
-`applyProfile()`, `role.pkgDefaults`, `plot.ampProfile` and `pos.pkgOverride`
-are gone; `migratePlot()` strips the last two from files saved while they
-existed.
-
-What survives is the **package** vocabulary, because it still names a
-player's setup. A role offers packages (`PKG_SETS`, chosen per role by `pkgs`)
-and a position records the one its inputs amount to in `pos.pkg`. Sets: `kit`
-(none / kick / kick+OH / kick+snare+OH / +hat / full close-mic), `amp`
-(none / amp mic / DI / DI+mic), `keys` (none / mono / stereo), `horn`
-(none / individual mic), `voice`, `pickup` (none / DI / mic / both), `simple`,
-`section`, `line`. Packages are how `inferPackage()` reads an old file, how the
-Not miked section words its reason ("acoustic", "amp not miked"), and what
-`addMic()` borrows its mic names from. `role.start` is the package a new
-player gets — `none`, or the DI package for a DI source (keys start **mono**,
-which William kept). Any hand edit re-reads `pos.pkg` with `inferPackage()`;
-it is `null` when the inputs match no package, and nothing depends on it.
-
-A double ticked "own channel" gets `doubleInputs()`: the DI the role would
-start with, or one mic. Ticking the box is the director asking for the
-channel, so that one is not a starting mic; the duo template's acoustic
-guitar double brings only its DI.
-
-A shared **section** mic is a row-level thing — `plot.sections` — because it
-covers a group, not a position. A row is every horn of that kind on stage,
-miked or not (`sectionRows()`), so ticking "Sax section" on the Inputs tab is
-how an unmiked row gets two shared mics. A section folds away only the mics of
-players *in* that row: a vocalist doubling tenor on their own channel keeps
-it when the sax section is ticked.
-
-Files saved before 2026-09-14 were written when a row held only horns with a
-mic, so a ticked section on a row the director had unmiked by hand printed
-nothing. `settleOldSections()` clears those ticks on load, so the file prints
-what it printed before, and marks the plot `sectionsIncludeUnmiked: true`.
-
-**Not miked is printed, not implied.** `notMiked()` lists every position with
-nothing reaching the console — "Drums (acoustic)", "Vox (not miked)" — under
-the input list on the page and in the email text, and each carries a ⊘ on the
-diagram. A fully-miked plot prints no such section. A position covered by its
-row's section mics is not unmiked. Two or more silent players collapse to
-"Sax section (acoustic)" only when the row is a real section (`SEC_CORE`:
-saxes; trombones; trumpets and flugelhorn) and nobody in it has any input — a
-flute and a clarinet, or a row where someone's double has a mic, are named one
-by one.
-
-**The channel warning states the count and stops there.** Amber past
-`VENUE.warnChannelsAt`, red past the console. It used to offer one-click cuts
-("Sax section on 2 shared mics −3", "Drums to kick, snare + overheads −3");
-William had them removed on 2026-09-14 — the director makes the cuts with
-+ mic / − mic and the section-mic setting.
-
-Reading an older file: `inferPackage()` matches a position's inputs against its
-role's packages, so a v1 kit with its seven channels lands on `close` rather
-than a broken state. A v1 plot keeps every input it had — nothing about
-starting mics touches a file that already has inputs.
-
-## Channel ordering
-
-Auto-assigned in this order, and this is the rule to keep: **drums, bass,
-guitars, keys, horns, strings, vocals**, then anything else. Horns run low to
-high: bari, tenor, alto, soprano, clarinet, flute, tuba, bass trombone,
-trombones, horn section, trumpets. Within a group, position order.
-
-- One **unit** = one input as the director edits it. A stereo DI is one unit
-  that eats two channels and prints as two rows (Keys L / Keys R).
-- Reordering (↑/↓ in the Inputs tab) freezes the order into
-  `plot.channelOrder`; new inputs land at the end; "reset to automatic order"
-  clears it.
-- Drum mics are in console order — kick, snare, hat, tom 1, tom 2, OH L, OH R.
-  "Jazz minimal" is kick, snare, 2 OH.
-- Everything else on the page derives from the input list too: DI count (a
-  stereo DI counts as 2 boxes), boom stands (one per mic that isn't a rhythm
-  role's — amp and drum mics are the tech's own choice), and the header total.
+`VENUE.consoleChannels` (32) and `warnChannelsAt` (28) stay on record for
+William to confirm with Mary Elliott (D3); the only thing that reads them now
+is the count of placed mics and DIs.
 
 ## Templates
 
@@ -450,27 +361,26 @@ each.
 `schemaVersion: 2`. `migratePlot()` reads anything: a v2 file passes through
 normalised, a v1 file (no `schemaVersion`) goes through `migrateV1()`.
 
-v1 stored named people plus items that carried the inputs; v2 stores positions
-that carry their own. The migration walks the v1 **items in order** so channel
-numbers come out identical, and:
+v1 stored named people plus items that carried the inputs; v2 stores
+positions. The migration walks the v1 **items in order**, and:
 
-- a v1 person marker becomes a position, keeping its exact x/y and inputs;
+- a v1 person marker becomes a position, keeping its exact x/y; its v1
+  inputs ride along on the position for mic placement to pick up (C1);
 - a chair item everybody rode (the kit) becomes one position with every
   occupant's name on it;
-- gear owned by someone (amp, keyboard) stays an item and hands its inputs to
-  its owner's position, tagged with the role they belong to, so "keys/vocals"
-  still sorts Keys L, Keys R, Vocal exactly as v1 printed it;
-- orphan gear keeps its own inputs (`item.inputs` still counts);
-- wedges, requests, songs and `channelOrder` come across by id.
+- gear owned by someone (amp, keyboard) stays an item and hands its v1 inputs
+  to its owner's position, tagged with the role they belong to;
+- wedges, requests and songs come across by id.
 
 Everything migrated is marked `moved:true` — a v1 plot was laid out by hand, so
 the engine leaves it exactly where it was drawn. v1 **share links** open the
 same way: the hash decodes to plot JSON and goes through the same migration.
 
 `samples/v1/` holds the original v1 files as migration fixtures plus
-`expected.json` (channel list, monitors, house needs captured from v1 before
-the refactor). `check.js` re-derives all of it after migrating and fails on any
-difference — that is the "renders identically" guarantee.
+`expected.json` (monitors and house needs captured from v1 before the
+refactor; the channel lists in it are history now). `check.js` re-derives the
+rest after migrating and fails on any difference — that is the "renders
+identically" guarantee.
 
 ## URL-hash encoding — decision
 
@@ -499,8 +409,8 @@ through Load, and dropping a file on the page works anywhere.
 ## What prints
 
 One US Letter portrait page where it fits — every sample plot but the big
-bands does, and the big bands run to two, which the brief allows. Header, diagram, a key, two columns (monitors, house equipment, musicians
-provide, DI boxes on the left; input list on the right), then personnel by song
+bands does, and the big bands run to two, which the brief allows. Header, diagram, a key, two columns (monitors and house equipment on the
+left; musicians provide on the right), then personnel by song
 if any, notes, and the delivery line. Body text is 10 pt and diagram labels are
 12 pt **at any deck size** — type sizes are computed back through the print
 scale, so changing `VENUE.deck` never shrinks names below the tech's
@@ -509,8 +419,7 @@ legibility line.
 **The key** (added 2026-09-14, when William pointed out nobody would read ⊘)
 sits under the diagram on the page and under the canvas on screen. It lists
 only what this plot draws — `legendKeys()` decides, `legendHTML()` draws the
-swatches — so a fully miked band's key never mentions not miked and a plot
-with no band-brought gear has no dashed box. Labelled things (DRAPE, PA,
+swatches — so a plot with no band-brought gear has no dashed box. Labelled things (DRAPE, PA,
 AUDIENCE, the names) aren't keyed; they already say what they are. Keep an
 entry's words short: the key has to stay on one line on a big band's page.
 
@@ -524,14 +433,13 @@ browser's own pagination — a good guide, not gospel.
 
 ## Deferred — not built, on purpose
 
-From the v1 brief, still deferred: per-person monitor requests for IEMs; mic
-model selection per input (techs choose their own); lighting and video-capture
+From the v1 brief, still deferred: per-person monitor requests for IEMs;
+lighting and video-capture
 areas; importing rosters from the ensemble Airtable base; a venue-editor UI for
 `VENUE` (editing the object is fine).
 
 Decided during v1, still true: drag from the palette onto the canvas (click
-drops it centre-deck instead); drag to reorder the input list (↑/↓ buttons,
-which also work on a touchscreen); automatic mic and music stands on the
+drops it centre-deck instead); automatic music stands on the
 diagram (counted, not drawn); print-all-plots in one go; reordering changeover
 transitions other than by moving tabs.
 
@@ -555,32 +463,20 @@ New in v2:
 
 ## Open questions for William
 
-1. **Big band channels.** 17 players with individual horn mics comes to
-   **24** channels (7 drums + 1 bass + 1 guitar + 2 keys + 13 horns) — it never
-   reaches the amber line at 28, let alone red at 32. The v1 brief expected it
-   to. Nothing starts miked now, so this is only a note on the arithmetic: a
-   big band that wants doubles mics or solo mics adds them by hand.
-2. **Big band seating** — settled by William, 2026-09-14 (see the layout
+1. **Big band seating** — settled by William, 2026-09-14 (see the layout
    engine). It moved the rhythm section from stage left, where the v1 brief
    had it, to stage right. He described the trumpets once as "4, 3, 2, 1" and
    once as "2, 1, 3, 4" left to right; the engine uses 2 1 3 4, which also
    puts Tpt 1 in line with Alto 1 and Tbn 1 as he asked.
-3. **Upright bass implies the house bass rig** — clear the role's `backline`
+2. **Upright bass implies the house bass rig** — clear the role's `backline`
    if uprights usually go straight to a DI at Somewhere Works. (The Vox models
    and the Markbass cab are the other things still to read off the gear; they
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
-4. **Which sources start on a DI** (`start` on each role) is my reading:
-   bass, upright, acoustic guitar, violin and cello start on their DI or
-   pickup; keys and organ on a mono DI; DJ and playback on a stereo DI.
-   Everything else starts with nothing. One line each.
-5. Miked the way the old "fully miked" profile did it (`FULLY_MIKED` in
-   `check.js`), the 17-piece big band totals **25** channels — still inside a
-   32-channel console, so it raises no channel warning.
 ## Checks
 
-`node check.js` — 354 assertions: the role library, every template (builds,
+`node check.js` — 316 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
-names, building from counts, channel order and freezing, names on/off, bulk
+names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,

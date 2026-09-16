@@ -11,16 +11,14 @@ const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const A = src.indexOf("/* ===== stage plot engine"), B = src.indexOf("/* ===== end stage plot engine ===== */");
 if (A < 0 || B < 0) throw new Error("engine markers not found in index.html");
-const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT, TEMPLATES, BYO_KINDS, KIT_FULL, KIT_MIN,
-  roleDef, roleOf, doubleInputs, roleIdFromText, positionLabels, posText2, posShortLines, posNames,
+const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT, TEMPLATES, BYO_KINDS,
+  roleDef, roleOf, roleIdFromText, positionLabels, posText2, posShortLines, posNames,
   blankPlot, addPosition, makeFromParts, makeFromTemplate, autoLayout, monitorGroups, resetIds,
-  parseNameList, applyNameList, migratePlot, migrateV1, inputUnits, channelRows, channelCount,
-  monitorTable, houseNeeds, diSources, byoList, warnings, sectionRows, changeover,
+  parseNameList, applyNameList, migratePlot, migrateV1,
+  monitorTable, houseNeeds, byoList, warnings, changeover,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, syncWedgeIds, itemDef,
-  diagramGeom, labelBoxes, positionLabelBox, kitInputs,
-  PKG_SETS, pkgSet, pkgDef, startPkgId, packageInputs, setPackage,
-  inferPackage, notMiked, unmiked,
-  addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
+  diagramGeom, labelBoxes, positionLabelBox,
+  bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine };`)();
 
@@ -54,16 +52,9 @@ let fails = 0, checks = 0;
 const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m); } };
 const eq = (a, b, m) => ok(a === b, m + "  (got " + JSON.stringify(a) + ", want " + JSON.stringify(b) + ")");
 const T = id => E.makeFromTemplate(id);
-const chOf = p => E.channelCount(p);
 const say = (...a) => console.log("     ", ...a);
 const labelsOf = p => E.positionLabels(p);
 const readSample = f => JSON.parse(fs.readFileSync(path.join(__dirname, "samples", f), "utf8"));
-/* The page starts every player with no mics. Tests that need a band with
-   channels on it mic it up here — this is what the old "fully miked" profile
-   gave each role, kept so the channel counts below stay comparable. */
-const FULLY_MIKED = { voice:"mic", guitar:"mic", bass:"di-mic", upright:"di-mic", drums:"close", perc:"mic", keys:"stereo", organ:"stereo", dj:"stereo", playback:"stereo", bari:"mic", tenor:"mic", alto:"mic", soprano:"mic", clarinet:"mic", flute:"mic", tuba:"mic", btrombone:"mic", trombone:"mic", hornsection:"two", trumpet:"mic", flugel:"mic", acoustic:"di-mic", violin:"di-mic", cello:"di-mic", harmonica:"mic" };
-const mike = p => { for (const x of p.positions){ const id = FULLY_MIKED[x.roleId]; if (id) E.setPackage(p, x, id); } return p; };
-
 /* ---- 1. the role library ---- */
 {
   const ids = E.ROLES.map(r => r.id);
@@ -114,13 +105,12 @@ for (const t of E.TEMPLATES){
   ok(b2.x > E.deckIn(combo).w / 2 - 40 && d2.x < E.deckIn(combo).w / 3, "…and the kit took the stage-left side (" + Math.round(d2.x) + "″ from the stage-left edge)");
 
   // add a vocalist, then drop them again — what the buttons on the main page do
-  const q = T("combo"), before = chOf(q), n = q.positions.length;
+  const q = T("combo"), n = q.positions.length;
   const mixesBefore = q.wedges.length;
   const assignedBefore = JSON.stringify(q.wedges.map(w => w.assignees.slice().sort()));
   const added = E.addPosition(q, "voice");
   E.autoLayout(q, { force:false });
   eq(q.positions.length, n + 1, "adding a vocalist adds a position");
-  eq(chOf(q), before, "…and no channel until someone gives them a mic");
   ok(!E.offDeck(added, q) && collisions(q).hard.length === 0, "…placed clear of everyone else");
   eq(q.wedges.length, mixesBefore, "…and no wedge appears on its own");
   eq(JSON.stringify(q.wedges.map(w => w.assignees.slice().sort())), assignedBefore, "…nor is anyone else's mix redealt");
@@ -139,7 +129,6 @@ for (const t of E.TEMPLATES){
   q.positions = q.positions.filter(x => x.id !== added.id);
   for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== added.id);
   E.autoLayout(q, { force:false });
-  eq(chOf(q), before, "dropping them again leaves the channel count where it was");
   ok(collisions(q).hard.length === 0, "…and the row closes up cleanly");
 }
 
@@ -167,180 +156,69 @@ for (const t of E.TEMPLATES){
   const shorts = p.positions.map(x => labels[x.id].short);
   ok(shorts.includes("Tpt 1") && shorts.includes("Tpt 4"), "duplicated roles number themselves: " + shorts.filter(s => /Tpt/.test(s)).join(", "));
   ok(shorts.includes("Bari") && !shorts.includes("Bari 1"), "a solitary role drops the number");
-  ok(E.channelRows(p).every(r => r.who !== undefined), "every channel says which position it is");
-  eq(Object.keys(E.sectionRows(p)).sort().join(","), "sax,tbn,tpt", "three horn rows");
 }
 
-/* ---- 3b. amplification is a choice: nothing starts miked ---- */
+/* ---- 3b. the input list is gone (B1, Tim Shade 2026-09-16) ---- *
+ * The sheet says where things go; what reaches the console is counted from
+ * the mics and DI boxes placed on the deck (C1/C3), never from a per-player
+ * attribute. Nothing carries inputs, packages, section mics or a channel
+ * order any more, and a file that has them loads without them — except the
+ * inputs themselves, which ride along for mic placement to turn into objects. */
 {
-  // no template, and no player added later, arrives with a mic (William, 2026-09-14)
   for (const t of E.TEMPLATES){
     const p = T(t.id);
-    const mics = p.positions.filter(x => x.inputs.some(i => i.type === "mic"));
-    eq(mics.length, 0, t.name + " starts with no mics" + (mics.length ? " (" + mics.map(x => E.positionLabels(p)[x.id].short).join(", ") + ")" : ""));
-    ok(Object.values(p.sections).every(sec => !sec.on), t.name + " starts with no section mics");
-    ok(!("ampProfile" in p), t.name + " carries no mic profile");
+    ok(p.positions.every(x => !("inputs" in x) && !("pkg" in x)), t.name + ": no position carries inputs or a mic package");
+    ok(!("sections" in p) && !("channelOrder" in p), t.name + ": no section mics, no channel order");
   }
   const blank = E.blankPlot();
   for (const r of E.ROLES.map(r => r.id)) E.addPosition(blank, r);
-  eq(blank.positions.filter(x => x.inputs.some(i => i.type === "mic")).length, 0, "no role in the library arrives with a mic (" + E.ROLES.length + " tried)");
-  ok(!/pkgDefaults|PROFILES|applyProfile|ampProfile:"/.test(src), "no mic profiles left in the page");
-
-  // DI sources keep their DI
-  const combo = T("combo");
-  const kit = combo.positions.find(x => x.roleId === "drums"), keys = combo.positions.find(x => x.roleId === "keys");
-  eq(keys.pkg, "mono", "keys start on a mono DI");
-  eq(combo.positions.find(x => x.roleId === "bass").pkg, "di", "bass starts on its DI");
-  eq(chOf(combo), 2, "the jazz combo is 2 channels: keys DI and bass DI");
-  eq(chOf(T("bigband")), 2, "so is the big band until someone adds mics");
-  const bbSilent = E.notMiked(T("bigband")).map(x => x.label + " (" + x.why + ")");
-  ok(["Sax section (acoustic)","Trombone section (acoustic)","Trumpet section (acoustic)"].every(l => bbSilent.includes(l)),
-     "an unmiked horn row prints as one line: " + bbSilent.join(", "));
-  const secOn = T("bigband"); secOn.sections.sax.on = true;
-  ok(E.migratePlot(JSON.parse(JSON.stringify(secOn))).sections.sax.on, "a ticked section on an unmiked row survives save and reload");
-  eq(chOf(secOn), 4, "ticking the sax section on an unmiked row gives it its 2 shared mics");
-  ok(!E.notMiked(secOn).some(x => /Sax/.test(x.label)), "…and the row leaves Not miked");
-  const duo = T("duo");
-  eq(duo.positions[0].inputs.map(i => i.type + ":" + i.source).join(","), "di:Acoustic guitar", "the duo's acoustic double brings its DI and nothing else");
-
-  // unmiked is printed, not implied
-  eq(kit.inputs.length, 0, "the kit brings no channels");
-  const silent = E.notMiked(combo);
-  ok(silent.some(x => /Drums/.test(x.label) && x.why === "acoustic"), "…and prints as Drums (acoustic): " + silent.map(x => x.label + " (" + x.why + ")").join(", "));
-  ok(E.unmiked(combo, kit), "…and carries the no-mic marker on the diagram");
-  const rock = T("rock");
-  ok(E.notMiked(rock).some(x => /Vox/.test(x.label)), "a vocalist with no mic prints under Not miked too");
-  eq(E.notMiked(mike(T("rock"))).length, 0, "a fully miked plot prints no Not miked section at all");
-
-  // channel warnings: count only, no suggested cuts (William, 2026-09-14)
-  const bb = mike(T("bigband"));
-  say("big band fully miked: " + chOf(bb) + " channels of " + E.VENUE.consoleChannels);
-  eq(E.warnings(bb).filter(w => /channel/.test(w.text)).length, 0, "the big band fully miked raises no channel warning");
-  const big = T("bigband");
-  for (let i = 0; i < 6; i++) E.addPosition(big, "voice");
-  mike(big);
-  ok(chOf(big) > E.VENUE.warnChannelsAt, "a 17-piece plus six voices is over the headroom line (" + chOf(big) + " ch)");
-  const warn = E.warnings(big).find(w => /channel/.test(w.text));
-  ok(warn && warn.level === "amber", "…and the channel warning still fires");
-  ok(!("fixes" in warn), "…with no suggested cuts");
-  for (let i = 0; i < 4; i++) E.addMic(big, E.addPosition(big, "voice"));
-  ok(E.warnings(big).some(w => w.level === "red" && /channel/.test(w.text)), "over the console it turns red (" + chOf(big) + " ch)");
-  ok(!/data-cut|function reductions|applyReduction/.test(src), "no channel-warning suggestions left in the page");
-}
-
-/* ---- 3b-2. what the review of this change turned up (2026-09-14) ---- */
-{
-  // a section folds only its own players' mics; a double on someone outside the row keeps its channel
-  const p = E.makeFromParts([[{ roleId:"voice", doubles:[{ roleId:"tenor", input:true }] },1],["alto",1],["tenor",1],["keys",1],["bass",1]], null, "Dbl");
-  const vox = p.positions.find(x => x.roleId === "voice");
-  E.addMic(p, vox);
-  const before = E.channelRows(p).map(r => r.source);
-  ok(before.includes("Tenor sax"), "the vocalist's tenor double has a channel: " + before.join(", "));
-  p.sections.sax.on = true;
-  const after = E.channelRows(p);
-  ok(after.some(r => r.source === "Tenor sax" && /Vox/.test(r.who || "")), "ticking the sax section keeps the vocalist's tenor channel: " + after.map(r => r.source).join(", "));
-  eq(after.filter(r => /Sax section/.test(r.source)).length, 2, "…and adds the two section mics for the sax row");
-
-  // Not miked says "Sax section" only for a real, wholly silent section
-  const fc = E.makeFromParts([["flute",1],["clarinet",1],["keys",1]], null, "Woodwinds");
-  const fcSilent = E.notMiked(fc).map(x => x.label);
-  ok(!fcSilent.includes("Sax section") && fcSilent.some(l => /Fl/.test(l)) && fcSilent.some(l => /Cl/.test(l)),
-     "a flute and a clarinet are named, not called a sax section: " + fcSilent.join(", "));
-  const mixed = E.makeFromParts([[{ roleId:"alto", doubles:[{ roleId:"flute", input:true }] },1],["tenor",1],["keys",1]], null, "Mixed");
-  const mixedSilent = E.notMiked(mixed).map(x => x.label);
-  ok(!mixedSilent.includes("Sax section"), "a row with a double's mic on it isn't printed as a silent section: " + mixedSilent.join(", "));
-
-  // an unrecognised instrument starts with nothing either
-  const other = E.blankPlot();
-  eq(E.addPosition(other, "no-such-role").inputs.length, 0, "an Other player arrives with no mic");
-
-  // a plot saved before sections counted unmiked horns doesn't gain section mics on reload
-  const old = T("bigband");
-  delete old.sectionsIncludeUnmiked;
-  old.ampProfile = "light";
-  for (const row of ["sax","tbn","tpt"]) old.sections[row] = { on:true, mics:2, manual:false };
-  for (const x of old.positions.filter(x => x.roleId === "alto" || x.roleId === "tenor")) E.addMic(old, x);   // the sax row kept its mics
-  const reread = E.migratePlot(JSON.parse(JSON.stringify(old)));
-  ok(reread.sections.sax.on && !reread.sections.tbn.on && !reread.sections.tpt.on,
-     "old file: the miked sax row keeps its section, the unmiked brass rows don't grow one");
-  eq(chOf(reread), 4, "…so it prints the 4 channels it printed before (bass, keys, 2 sax section mics)");
-  ok(!("manual" in reread.sections.sax), "…and the profile-era flag is gone");
-  ok(reread.sectionsIncludeUnmiked, "…and the file is marked as read under the new rule");
+  ok(blank.positions.every(x => !("inputs" in x)), "no role in the library arrives with inputs (" + E.ROLES.length + " tried)");
+  ok(E.ROLES.every(r => !r.inputs && !r.pkgs && !r.start), "…and no role carries mic packages");
+  eq(E.ROLES.filter(r => r.di).map(r => r.id).join(","), "bass,upright,keys,organ,dj,playback,acoustic,violin,cello",
+     "the DI instruments are marked, for the DI box that goes with them");
+  for (const name of ["inputUnits","channelRows","channelCount","PKG_SETS","addMic","notMiked","unmiked","sectionRows","diSources","settleOldSections"])
+    ok(!new RegExp("function " + name + "\\(|const " + name + " =").test(src), "no " + name + " left in the page");
+  ok(!/\["inputs","Inputs"\]/.test(src), "no Inputs tab");
+  ok(!/Input list<\/h2>|Not miked<\/h2>|DI boxes needed<\/h2>|INPUT LIST|NOT MIKED/.test(src), "the page and the email print no input list, not-miked or DI section");
+  ok(!/Channels ' \+|"Channels " \+/.test(src), "…and no channel count");
+  ok(!/\+ mic|− mic|own channel|48V/.test(src), "no per-player mic controls");
+  eq(E.VENUE.consoleChannels, 32, "the console's channel count stays on record (D3)");
+  const old = JSON.parse(JSON.stringify(T("combo")));
+  old.sections = { sax:{ on:true, mics:2 } }; old.channelOrder = ["x"]; old.ampProfile = "light";
+  old.positions[0].inputs = [{ id:"in1", source:"Tenor sax", type:"mic", phantom:false, notes:"" }]; old.positions[0].pkg = "mic";
+  old.positions[0].doubles = [{ roleId:"flute", input:true }];
+  const p = E.migratePlot(old);
+  ok(!("sections" in p) && !("channelOrder" in p) && !("ampProfile" in p), "an old file drops sections, channel order and profile on load");
+  ok(!("pkg" in p.positions[0]) && !("input" in p.positions[0].doubles[0]), "…and packages and a double's own-channel tick");
+  eq(p.positions[0].inputs.length, 1, "…while the inputs themselves ride along for mic placement to pick up");
 }
 
 /* ---- 3d. the diagram's key lists what the diagram draws ---- */
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,unmiked,wedge,house,drummer,truss", "the jazz combo's key: " + ids(combo));
-  ok(!/unmiked/.test(ids(mike(T("rock")))), "a fully miked plot's key doesn't mention not miked");
+  eq(ids(combo), "player,wedge,house,drummer,truss", "the jazz combo's key: " + ids(combo));
   const blank = E.blankPlot();
   eq(ids(blank), "truss", "an empty deck's key has only the truss");
   E.addPosition(blank, "keys");
   ok(!/drummer|wedge|byo/.test(ids(blank)), "…and never lists a symbol that isn't drawn: " + ids(blank));
-  const byo = T("combo"); byo.items.push({ id:"b1", kind:"byo", ref:"byo-pedals", label:"", x:40, y:40, rot:0, moved:true, ownerPositionIds:[], inputs:[] });
+  const byo = T("combo"); byo.items.push({ id:"b1", kind:"byo", ref:"byo-pedals", label:"", x:40, y:40, rot:0, moved:true, ownerPositionIds:[] });
   ok(/byo/.test(ids(byo)), "band-brought gear adds the dashed box to the key");
   ok(E.legendKeys(combo).every(k => k.text && !/⊘/.test(k.text)), "every key entry is words, not another symbol");
   ok(/class="legend"/.test(src) && /id="canvaslegend"/.test(src), "the key is on the printed page and under the canvas");
 }
 
-/* ---- 3c. mics by hand ---- */
-{
-  const combo = T("combo");
-  const kit = combo.positions.find(x => x.roleId === "drums"), tpt = combo.positions.find(x => x.roleId === "trumpet");
-  const keys = combo.positions.find(x => x.roleId === "keys");
-  eq(E.micSummary(combo, kit), "not miked", "an acoustic kit reads as not miked in the list");
-  E.addMic(combo, kit); E.addMic(combo, kit);
-  eq(kit.inputs.map(i => i.source).join(","), "Kick,Snare", "+ mic on a kit fills in the kit pieces in order");
-  eq(E.micSummary(combo, kit), "2 mics", "…and the list says so");
-  ok(!E.notMiked(combo).some(x => /Drums/.test(x.label)), "…and the kit leaves the Not miked section");
-  eq(chOf(combo), 4, "…two more channels");
-  E.removeMic(combo, kit);
-  eq(kit.inputs.map(i => i.source).join(","), "Kick", "− mic takes the last one away");
-  E.removeMic(combo, kit);
-  ok(E.unmiked(combo, kit), "…down to none, and it is not miked again");
-  E.removeMic(combo, kit);
-  eq(kit.inputs.length, 0, "− mic on a player with no mic does nothing");
-  E.addMic(combo, tpt);
-  eq(tpt.inputs[0].source, "Trumpet", "a horn's mic is named for the horn");
-  eq(tpt.pkg, "mic", "…and reads as its individual-mic setup");
-  const before = keys.inputs.length;
-  E.removeMic(combo, keys);
-  eq(keys.inputs.length, before, "− mic leaves a DI alone");
-  const g = E.makeFromParts([["guitar",1],["voice",1]], null, "Duo");
-  E.addMic(g, g.positions[0]); E.addMic(g, g.positions[1]);
-  eq(g.positions[0].inputs[0].notes, "amp mic", "a guitar's mic is an amp mic");
-  eq(g.positions[1].inputs[0].source, "Vocal", "a voice's mic is Vocal");
-  ok(!/data-profile|Mic package|full kit \(7\)|jazz minimal \(4\)/.test(src), "no amplification presets left in the page");
-}
-
 /* ---- 4. building from an instrumentation list ---- */
 {
-  const p = mike(E.makeFromParts([["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Five piece"));
+  const p = E.makeFromParts([["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Five piece");
   eq(p.positions.length, 5, "a five-piece builds from counts");
-  eq(chOf(p), 13, "…and totals 13 channels fully miked");
   eq(p.wedges.length, 5, "…and five mixes");
   const needs = Object.fromEntries(E.houseNeeds(p).map(n => [n.id, n.need]));
   eq(needs.kit, 1, "the drums position implies the house kit");
   eq(needs.gtramp1, 1, "the guitar implies a house amp");
   eq(needs.kb1, 1, "keys implies a house keyboard — SW has no acoustic piano");
   eq(needs.bassamp, 1, "the bass implies the house rig");
-  eq(needs.di, 3, "keys stereo DI (2) + bass DI (1); the bass amp mic is a mic, not a DI");
-  eq(needs.micstand, 1, "one boom stand: the vocal");
-}
-
-/* ---- 5. channel ordering ---- */
-{
-  const p = mike(E.makeFromParts([["bari",1],["tenor",1],["alto",1],["trombone",1],["trumpet",2],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Little big band"));
-  const order = ["drums","bass","guitar","keys","horn","strings","vocals","other"];
-  const idx = E.inputUnits(p).map(u => order.indexOf(u.grp));
-  ok(idx.every((v, i) => i === 0 || v >= idx[i - 1]), "drums, bass, guitars, keys, horns, strings, vocals");
-  const horns = E.inputUnits(p).filter(u => u.grp === "horn").map(u => u.source);
-  eq(horns.join(" | "), "Bari sax | Tenor sax | Alto sax | Trombone | Trumpet | Trumpet", "horns run low to high");
-  const q = T("rock"), keys = E.inputUnits(q).map(u => u.key);
-  q.channelOrder = [keys[keys.length - 1]].concat(keys.slice(0, -1));
-  eq(E.inputUnits(q)[0].key, keys[keys.length - 1], "a frozen order is honoured");
-  eq(chOf(q), chOf(T("rock")), "freezing does not change the count");
+  ok(!("di" in needs) && !("micstand" in needs), "nothing is counted from an input list any more");
 }
 
 /* ---- 6. names are optional, and never load-bearing ---- */
@@ -375,18 +253,11 @@ for (const t of E.TEMPLATES){
 
 /* ---- 8. doubles and shared chairs ---- */
 {
-  const p = mike(E.makeFromParts([["alto",1],["drums",1]], null, "Doubles"));
+  const p = E.makeFromParts([["alto",1],["drums",1]], null, "Doubles");
   const alto = p.positions.find(x => x.roleId === "alto"), drums = p.positions.find(x => x.roleId === "drums");
-  const before = chOf(p);
-  alto.doubles = [{ roleId:"flute", input:false }];
-  eq(chOf(p), before, "a double with no channel of its own costs nothing");
-  ok(/Flute/.test(E.posShortLines(p, alto).map(l => l.text).join(" ")), "…and still prints on the diagram");
-  alto.inputs.push(Object.assign({ id:"dbl1", role:"flute" }, E.doubleInputs(E.roleDef(p, "flute"))[0]));
-  eq(chOf(p), before + 1, "a double that needs its own channel adds one");
-  const fl = E.inputUnits(p).find(u => u.source === "Flute");
-  ok(fl && fl.grp === "horn", "the double's channel sorts with the horns");
+  alto.doubles = [{ roleId:"flute" }];
+  ok(/Flute/.test(E.posShortLines(p, alto).map(l => l.text).join(" ")), "a double prints on the diagram");
   drums.names = ["Jo Fischer", "Riley Nunez"];
-  eq(E.inputUnits(p).filter(u => u.grp === "drums").length, 7, "two occupants, one set of drum channels");
   ok(/Jo Fischer \/ Riley Nunez/.test(E.posText2(p, drums)), "both names print: " + E.posText2(p, drums));
   eq(E.houseNeeds(p).find(n => n.id === "kit").need, 1, "and one house kit, not two");
   eq(p.wedges.filter(w => w.assignees.includes(drums.id)).length, 1, "one chair, one wedge");
@@ -394,17 +265,13 @@ for (const t of E.TEMPLATES){
 
 /* ---- 9. a custom role behaves like any other ---- */
 {
-  const p = mike(E.makeFromParts([["voice",1],["drums",1]], null, "Custom"));
+  const p = E.makeFromParts([["voice",1],["drums",1]], null, "Custom");
   p.customRoles.push({ id:"custom-steelpan", label:"Steel pan", short:"Pan", family:"other", grp:"other", sub:9,
-    stance:"standing", w:36, d:36, zone:"front", inputs:[{ source:"Steel pan", type:"mic", phantom:false }] });
-  const before = chOf(p);
+    stance:"standing", w:36, d:36, zone:"front" });
   const pos = E.addPosition(p, "custom-steelpan");
   E.autoLayout(p, { force:true });
-  eq(chOf(p), before + 1, "a custom role brings its channel");
-  eq(E.positionLabels(p)[pos.id].short, "Pan", "…labels itself");
+  eq(E.positionLabels(p)[pos.id].short, "Pan", "a custom role labels itself");
   ok(!E.offDeck(pos, p), "…is placed on the deck");
-  ok(E.channelRows(p).some(r => r.source === "Steel pan"), "…and prints in the input list");
-  eq(E.houseNeeds(p).find(n => n.id === "micstand").need, 2, "…and asks for a stand");
 }
 
 /* ---- 10. the layout engine ---- */
@@ -494,11 +361,9 @@ for (const t of E.TEMPLATES){
   const compare = (name, v1, want) => {
     const p = E.migratePlot(v1);
     eq(p.schemaVersion, 2, name + ": migrates to v2");
-    eq(chOf(p), want.channels, name + ": same channel count after migration");
-    const rows = E.channelRows(p).map(r => [r.ch, r.source, r.type, r.phantom ? 1 : 0]);
-    eq(JSON.stringify(rows), JSON.stringify(want.rows.map(r => [r[0], r[1], r[3], r[4]])), name + ": same input list, channel for channel");
     eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.n)), JSON.stringify(want.monitors.map(m => m[0])), name + ": same wedges");
-    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need])), JSON.stringify(want.house.map(h => [h[0], h[1]])), name + ": same house equipment");
+    const houseWant = want.house.filter(h => h[0] !== "di" && h[0] !== "micstand");   // those two were counted off the input list
+    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need])), JSON.stringify(houseWant.map(h => [h[0], h[1]])), name + ": same house equipment");
     ok(p.positions.every(x => !E.offDeck(x, p)), name + ": migrated positions stay where they were drawn");
     return p;
   };
@@ -506,16 +371,13 @@ for (const t of E.TEMPLATES){
   eq(ex.positions.length, 5, "six v1 people become five positions — the two drummers share the kit");
   const drums = ex.positions.find(x => x.roleId === "drums");
   eq(E.posNames(drums).join(" / "), "Jo Fischer / Riley Nunez", "both occupants keep their names");
-  eq(E.inputUnits(ex).filter(u => u.grp === "drums").length, 7, "…and one set of drum channels");
-  eq(drums.pkg, "close", "a v1 kit lands on the full close-mic package, not a broken state");
-  ok(!("ampProfile" in ex) && !("pkgOverride" in drums), "…with no mic-profile fields on the migrated plot");
+  eq(drums.inputs.filter(i => i.type === "mic").length, 7, "…and the kit's seven v1 mics ride along on the position");
+  ok(!("ampProfile" in ex) && !("pkg" in drums) && !("sections" in ex), "…with no mic-profile, package or section fields on the migrated plot");
   const old = T("combo"); old.ampProfile = "light"; old.positions[0].pkgOverride = true;
   const reread = E.migratePlot(JSON.parse(JSON.stringify(old)));
   ok(!("ampProfile" in reread) && !reread.positions.some(x => "pkgOverride" in x), "a plot saved with the old profile fields loads without them");
-  eq(chOf(reread), chOf(old), "…and keeps its inputs exactly");
   const keys = ex.positions.find(x => x.roleId === "keys");
-  eq(E.inputUnits(ex).filter(u => u.posId === keys.id).length, 2, "the keys/vocals player keeps both of their inputs");
-  eq(E.channelRows(ex).filter(r => r.source === "Vocal")[0].ch, 13, "…and the vocal still sorts last, as v1 printed it");
+  eq(keys.inputs.length, 2, "the keys/vocals player keeps both of their v1 inputs for mic placement");
   ok(ex.items.some(i => i.ref === "kb1") && ex.items.some(i => i.kind === "byo"), "owned gear and BYO items come across");
   eq(ex.wedges[0].request, "more me, less kick", "wedge requests survive");
   eq(ex.songs[0].onstage.length, 5, "song personnel remap onto positions (the two drummers collapse to one chair)");
@@ -535,7 +397,7 @@ for (const t of E.TEMPLATES){
   for (const f of files){
     const p = E.migratePlot(readSample(f));
     eq(p.schemaVersion, 2, "samples/" + f + " loads as a v2 plot");
-    ok(p.positions.length > 0 && chOf(p) > 0, "samples/" + f + ": " + p.positions.length + " positions, " + chOf(p) + " channels");
+    ok(p.positions.length > 0, "samples/" + f + ": " + p.positions.length + " positions");
   }
 }
 
@@ -651,8 +513,6 @@ for (const t of E.TEMPLATES){
     ok(!/\bmic/i.test(h.label + " " + h.short), h.label + " names no mic");
   }
   ok(!E.BYO_KINDS.some(b => b.inputs), "no bring-your-own item arrives miked either");
-  const g = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Nothing miked");
-  eq(E.channelCount(g), 1, "a guitar trio still opens on one channel — the bass DI");
 }
 
 /* ---- 19. the soundcheck and the performance: day, block start, place in the block ---- */
