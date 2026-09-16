@@ -788,6 +788,7 @@ for (const t of E.TEMPLATES){
 /* ---- 19k. quick help (E3) ---- */
 {
   ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How this works button on New plot");
+  ok(/id="bPrint" title="[^"]*Save as PDF[^"]*">Print \/ PDF<\/button>/.test(src), "the one-click export is Print / PDF, and says so (E4)");
   for (const topic of ["Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF"])
     ok(src.indexOf(topic) !== -1, "the help covers: " + topic);
   ok(/#helpDlg\{display:none!important\}|,#helpDlg\{display:none!important\}/.test(src), "…and never prints");

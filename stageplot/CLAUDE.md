@@ -403,6 +403,17 @@ sit inboard of the stairs, and DI boxes are placed after the de-overlap pass
 so they follow their gear's final spot. `check.js` lays every template out
 and fails if anything lands on a fixture.
 
+## Help and export (E1, E3, E4)
+
+The inspector has rotate ⟳ (R) and rotate ⟲ (⇧R). A "?" in the top bar and
+a "How this works" button on the New plot dialog open `openHelp()`: select
+and drag, arrows, the two rotations, ⊗ and Delete, which way the kit faces,
+adding and labelling a mic, wedge numbers, and how to send it. Nothing opens
+itself on load — with no browser storage it would open on every load. The
+one-click export is **Print / PDF**: the stage and the equipment sheet on one
+Letter page, saved as PDF from the print dialog. Save (.json), Share link and
+Email text are the other three; there is no PNG.
+
 ## Removing things (A4)
 
 Tim could not find out how to delete anything. Three ways now, all through
@@ -561,7 +572,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 399 assertions: the role library, every template (builds,
+`node check.js` — 433 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
