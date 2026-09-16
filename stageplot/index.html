@@ -944,6 +944,23 @@ function wedgeSpot(plot, list){
    monitor group, downstage of the players in it, numbered in priority order.
    Adding an instrument later does NOT conjure a wedge or move the existing
    ones; a blank plot has none until you ask for them. */
+/* Mix numbers are the tech's priority order, top to bottom (Tim Shade,
+   2026-09-16), so they are set by hand: give a wedge the number another one
+   holds and the two swap, so numbers stay unique. A new wedge takes the
+   lowest number nobody has. */
+function setWedgeNumber(plot, w, n){
+  n = Math.round(+n);
+  if (!(n >= 1) || n === w.number) return w;     // blank, zero, nonsense: leave it alone
+  const other = plot.wedges.find(o => o !== w && o.number === n);
+  if (other) other.number = w.number;
+  w.number = n;
+  return w;
+}
+function nextWedgeNumber(plot){
+  const used = new Set(plot.wedges.map(w => w.number));
+  let n = 1; while (used.has(n)) n++;
+  return n;
+}
 function layoutWedges(plot, force){
   if (!force) return;                           // only creation and re-layout deal wedges
   const groups = monitorGroups(plot);
@@ -1809,7 +1826,7 @@ function addHouse(ref){
     }
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
-      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true });
+      p.wedges.push({ id:nextId("w"), number:nextWedgeNumber(p), x:spot.x, y:spot.y, rot:0, moved:true });
       S.sel = p.wedges[p.wedges.length - 1].id; return;
     }
     const spot = freeSpot(p, p.items.length);
@@ -1890,10 +1907,11 @@ function renderPanel(p){
   if (S.tab === "wedges"){
     H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
-      H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><span class="role">' + esc(posText(w, p)) + '</span><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
+      H.push('<div class="wedgecard"><header><b>Mix</b><input type="number" min="1" step="1" data-wnum="' + w.id + '" value="' + w.number + '" title="mix number — give it another wedge\'s number and they swap" style="width:52px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 5px;font-family:var(--mono)">' +
+        '<span class="role">' + esc(posText(w, p)) + '</span><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
         '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header></div>');
     }
-    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>');
+    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>' + (p.wedges.length ? '<p class="note">Mix 1 is the tech\'s first priority. Type a number to renumber; give a wedge another one\'s number and the two swap.</p>' : ""));
   }
   if (S.tab === "mics"){
     const sel = find(p, S.sel), selPos = isPosition(sel) ? sel : null, selItem = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
@@ -1983,6 +2001,7 @@ function renderPanel(p){
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
   el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => commit(() => { const q = plot(); q.items = q.items.filter(i => i.id !== b.dataset.idel); if (S.sel === b.dataset.idel) S.sel = null; }));
   el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); }));
+  el.querySelectorAll("[data-wnum]").forEach(i => i.onchange = () => commit(() => { const q = plot(), w = find(q, i.dataset.wnum); if (w) setWedgeNumber(q, w, i.value); }));
   const pn = $("cPrintNames"); if (pn) pn.onchange = () => commit(() => { plot().printNames = pn.checked; });
   const bi = $("bInstr"); if (bi) bi.onclick = () => openInstrumentation(plot());
   const bb = $("bBulk"); if (bb) bb.onclick = () => openBulkNames();
@@ -2029,6 +2048,8 @@ function renderInspector(p){
   const isWedge = !sel.kind && !isPosition(sel);
   if (isWedge){
     H.push('<h3>Mix ' + sel.number + '<span>' + posText(sel, p) + '</span></h3>');
+    H.push('<div class="insprow"><div class="fld" style="margin:0"><label>Mix number</label><input type="number" min="1" step="1" id="iWedgeNum" value="' + sel.number + '" style="width:80px"></div>' +
+      '<p class="note" style="margin:14px 0 0">1 is the tech\'s first priority. Give it another wedge\'s number and the two swap.</p></div>');
   } else if (isPosition(sel)){
     H.push('<h3>' + esc(labels[sel.id].full) + '<span>' + posText(sel, p) + '</span></h3>');
     H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
@@ -2086,6 +2107,7 @@ function renderInspector(p){
   if ($("iByo")) bindText($("iByo"), () => (sel.byo || []).join(", "), v => sel.byo = v.split(",").map(s => s.trim()).filter(Boolean));
   if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
   if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
+  if ($("iWedgeNum")) $("iWedgeNum").onchange = () => mut(() => { const q = plot(), w = find(q, sel.id); if (w) setWedgeNumber(q, w, $("iWedgeNum").value); });
   el.querySelectorAll("[data-kit]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); pos.kit = b.dataset.kit; }));
   if ($("iKitLabel")) bindText($("iKitLabel"), () => sel.kitLabel, v => sel.kitLabel = v);
   if ($("iRole")) $("iRole").onchange = () => mut(() => {

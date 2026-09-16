@@ -399,6 +399,14 @@ records the grouping afterwards; the number is the mix and the diagram is
 where it stands. The printed Monitors table is mix number and location
 (`posText()`), one row per wedge.
 
+**Numbers are the tech's priority order and are set by hand** (A1). A
+number field on each Wedges-tab card and in the wedge inspector writes
+through `setWedgeNumber()`: give a wedge another one's number and the two
+swap, so numbers stay unique; a number nobody holds is simply taken. A new
+wedge takes the lowest free number (`nextWedgeNumber()`), so deleting mix 2
+and adding a wedge gives you mix 2 back, not mix 6. Before this there was no
+control at all — Tim tried to renumber and nothing took.
+
 ## Schema and migration
 
 `schemaVersion: 2`. `migratePlot()` reads anything: a v2 file passes through
@@ -517,7 +525,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 378 assertions: the role library, every template (builds,
+`node check.js` — 387 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

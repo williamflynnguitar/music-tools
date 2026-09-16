@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount };`)();
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -712,6 +712,27 @@ for (const t of E.TEMPLATES){
   ok(/gearList\("Microphones", mics\)/.test(src) && /gearList\("DI boxes", dis\)/.test(src), "the page prints Microphones and DI boxes as separate sections");
   ok(/"MICROPHONES \(" \+ mics\.length/.test(src) && /"DI BOXES \(" \+ dis\.length/.test(src), "…and so does the email");
   ok(/'<span>Mics ' \+ mics\.length \+ ' · DI boxes ' \+ dis\.length/.test(src), "the meta row carries the one derived count");
+}
+
+/* ---- 19g. renumbering wedges (A1, Tim Shade 2026-09-16) ---- */
+{
+  const p = T("rock"), byNum = n => p.wedges.find(w => w.number === n);
+  const w3 = byNum(3), w1 = byNum(1);
+  E.setWedgeNumber(p, w3, 1);
+  ok(w3.number === 1 && w1.number === 3, "giving wedge 3 the number 1 swaps the two");
+  eq(p.wedges.map(w => w.number).sort().join(","), "1,2,3,4,5", "…and every number is still unique");
+  eq(E.monitorTable(p).rows[0].id, w3.id, "…and the Monitors table lists it first");
+  E.setWedgeNumber(p, w3, 9);
+  eq(w3.number, 9, "a number nobody holds is simply taken");
+  E.setWedgeNumber(p, w3, "0"); E.setWedgeNumber(p, w3, "abc");
+  eq(w3.number, 9, "zero and nonsense are ignored");
+  E.setWedgeNumber(p, w3, "2.6");
+  ok(w3.number === 3 && byNum(2).number === 2 && p.wedges.filter(w => w.number === 3).length === 1, "a typed decimal rounds and still swaps");
+  p.wedges = p.wedges.filter(w => w.number !== 2);        // now 9, 3, 4, 5
+  eq(E.nextWedgeNumber(p), 1, "a new wedge takes the lowest number nobody has");
+  p.wedges.push({ id:"wx", number:1, x:0, y:0, rot:0, moved:true });
+  eq(E.nextWedgeNumber(p), 2, "…the next lowest after that");
+  ok(/data-wnum=/.test(src) && /id="iWedgeNum"/.test(src), "the number is editable on the Wedges tab and in the inspector");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *
