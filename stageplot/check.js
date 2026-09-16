@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs };`)();
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -224,8 +224,8 @@ for (const t of E.TEMPLATES){
   eq(needs.gtramp1, 1, "the guitar implies a house amp");
   eq(needs.kb1, 1, "keys implies a house keyboard — SW has no acoustic piano");
   eq(needs.bassamp, 1, "the bass implies the house rig");
-  eq(needs.di, 2, "two DI boxes on the deck — keys and bass — counted from the objects, not from an input list");
-  ok(!("micstand" in needs) && !("mic" in needs), "…and no mic until someone places one");
+  eq(E.diList(p).map(d => d.label).sort().join(","), "Bass,Keys", "two DI boxes on the deck — keys and bass — counted from the objects, not from an input list");
+  ok(!("micstand" in needs) && !("mic" in needs) && !("di" in needs), "…and neither mics nor DIs are in the house-equipment list: they have their own sections");
 }
 
 /* ---- 6. names are optional, and never load-bearing ---- */
@@ -656,7 +656,7 @@ for (const t of E.TEMPLATES){
   mic.label = ""; ok(/Tpt/.test(E.micText(combo, mic)), "…an unlabelled mic reads as its owner's chair: " + E.micText(combo, mic));
   const keys = E.legendKeys(combo).map(k => k.id);
   ok(keys.includes("mic") && keys.includes("di"), "the key lists mics and DI boxes when they are drawn: " + keys.join(","));
-  eq(E.houseNeeds(combo).find(n => n.id === "mic").need, 1, "…and the house is asked for one mic");
+  eq(E.micList(combo).length, 1, "…and the page lists one microphone");
   const two = E.makeFromParts([["trumpet",2],["bass",1],["drums",1]], null, "Two tpts");
   const t = two.positions.filter(x => x.roleId === "trumpet");
   E.addMicItem(two, { x:(t[0].x + t[1].x) / 2, y:t[0].y - 21 }, "tpt 1+2", t.map(x => x.id), true);
@@ -688,6 +688,30 @@ for (const t of E.TEMPLATES){
   ok(/\["mics","Mics & DIs"\]/.test(src), "the Mics & DIs tab exists");
   ok(/"tpt 1\+2" : "keys L"/.test(src), "a mic's label is edited in the inspector");
   ok(!/\["stand","di","power","riser"\]/.test(src), "the Misc tab no longer offers a stand or a DI");
+}
+
+/* ---- 19f. the page lists mics and DI boxes, counted from the deck (C3) ---- */
+{
+  const p = E.makeFromParts([["guitar",1],["acoustic",1],["bass",1],["drums",1]], null, "Mic'd and DI'd");
+  const gtr = p.positions.find(x => x.roleId === "guitar"), amp = p.items.find(i => E.refCat(i.ref) === "gtramp");
+  E.addMicItem(p, { x:amp.x, y:amp.y - 12 }, "gtr amp", [gtr.id], true);
+  eq(JSON.stringify(E.micList(p)), JSON.stringify([{ label:"gtr amp", who:"Gtr" }]), "the electric guitar is miked: one microphone, at the amp, for the guitarist");
+  eq(E.diList(p).map(d => d.label + " — " + d.who).join(" | "), "Acoustic guitar — Ac gtr | Bass — Bass", "the acoustic and the bass are DI'd: two DI boxes, each for its player");
+  eq(E.consoleCount(p), 3, "three channels' worth on the deck");
+  ok(!E.houseNeeds(p).some(n => n.id === "mic" || n.id === "di"), "…and none of it in the house-equipment list");
+  ok(!E.warnings(p).some(w => w.level === "red"), "no red warning at three");
+  const big = E.blankPlot(); big.deck = { widthFt:40, depthFt:30 };
+  for (let i = 0; i < 33; i++) E.addMicItem(big, { x:20 + i * 12, y:100 }, "m" + i, [], true);
+  const red = E.warnings(big).find(w => w.level === "red");
+  ok(red && /33 mics and DI boxes/.test(red.text) && /32 channels/.test(red.text), "past the console's 32 it turns red: " + (red ? red.text : "no warning"));
+  const many = E.blankPlot();
+  for (let i = 0; i < 9; i++) E.addMicItem(many, { x:20 + i * 12, y:100 }, "", [], true);
+  ok(E.warnings(many).some(w => w.level === "amber" && /9 × Mic \(on stand\) needed; Somewhere Works has 8/.test(w.text)), "nine mics: amber, the house has eight");
+  const unl = E.blankPlot(); const v = E.addPosition(unl, "voice"); E.addMicItem(unl, { x:v.x, y:v.y - 21 }, "", [v.id], true);
+  eq(JSON.stringify(E.micList(unl)[0]), JSON.stringify({ label:"Vox", who:"" }), "an unlabelled mic lists as its owner's chair");
+  ok(/gearList\("Microphones", mics\)/.test(src) && /gearList\("DI boxes", dis\)/.test(src), "the page prints Microphones and DI boxes as separate sections");
+  ok(/"MICROPHONES \(" \+ mics\.length/.test(src) && /"DI BOXES \(" \+ dis\.length/.test(src), "…and so does the email");
+  ok(/'<span>Mics ' \+ mics\.length \+ ' · DI boxes ' \+ dis\.length/.test(src), "the meta row carries the one derived count");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

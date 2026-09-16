@@ -276,6 +276,15 @@ adds it, owned by the player and labelled for the instrument; `placeDI()`
 puts it on the stage-left side of the player's backline (or of the player)
 until someone drags it. Mics never arrive on their own.
 
+**The page counts them and nothing else counts them** (C3). Microphones — N
+and DI boxes — N are two sections in the right column, one line per object
+with the chair it belongs to (`micList()` / `diList()`), and the same two
+blocks are in the email. They are not in the house-equipment list. The meta
+row carries the one derived number, "Mics 3 · DI boxes 2", and
+`consoleCount()` — one channel each — turns the banner red past
+`VENUE.consoleChannels`; more mics than the house owns is amber. A mic'd amp
+and a DI'd amp are told apart by which object stands at the amp.
+
 **Migration** (`placeInputs()`, schema 2 → 3): a file that carried inputs on
 its positions gets them back as objects — each mic 10″ downstage of its
 player, spread 14″ apart, labelled as the input was; each DI beside the
@@ -444,7 +453,7 @@ through Load, and dropping a file on the page works anywhere.
 
 One US Letter portrait page where it fits — every sample plot but the big
 bands does, and the big bands run to two, which the brief allows. Header, diagram, a key, two columns (monitors and house equipment on the
-left; musicians provide on the right), then personnel by song
+left; microphones, DI boxes and musicians provide on the right), then personnel by song
 if any, notes, and the delivery line. Body text is 10 pt and diagram labels are
 12 pt **at any deck size** — type sizes are computed back through the print
 scale, so changing `VENUE.deck` never shrinks names below the tech's
@@ -508,7 +517,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 367 assertions: the role library, every template (builds,
+`node check.js` — 378 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

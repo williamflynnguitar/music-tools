@@ -421,6 +421,19 @@ function kitIsByo(plot, pos){ return backlineCat(roleOf(plot, pos)) === "kit" &&
 function micsOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "mic"); }
 function disOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "di"); }
 function ownerOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).find(Boolean) || null; }
+/* What the page prints for them: one line per object, in the order they were
+   placed, with the chair it belongs to. Counted from the deck, nowhere else. */
+function micList(plot){
+  const labels = positionLabels(plot);
+  return micsOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim();
+    return { label:t || (own ? posText2(plot, own, labels) : "Mic"), who:own && t ? posText2(plot, own, labels) : "" }; });
+}
+function diList(plot){
+  const labels = positionLabels(plot);
+  return disOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim();
+    return { label:t || (own ? posText2(plot, own, labels) : "DI"), who:own && t ? posText2(plot, own, labels) : "" }; });
+}
+function consoleCount(plot){ return micsOn(plot).length + disOn(plot).length; }   // one channel each; the only channel arithmetic left
 function micText(plot, it, labels){          // "tpt 1+2" or, unlabelled, the owner's chair, or just "Mic"
   const def = houseDef(it.ref), own = ownerOf(plot, it);
   const t = String(it.label || "").trim();
@@ -447,7 +460,7 @@ function placeDI(plot, it){
   const own = ownerOf(plot, it); if (!own) return;
   const gear = plot.items.find(i => i !== it && i.kind === "house" && i.ref !== "di" && i.ref !== "mic" && (i.ownerPositionIds || []).includes(own.id));
   const anchor = gear || own, r = rectOf(anchor, plot), D = deckIn(plot), f = footprintOf(it, plot);
-  it.x = clampIn(r.x0 - 4 - f.w / 2, f.w / 2, D.w - f.w / 2);     // x falls toward stage left
+  it.x = clampIn(r.x0 - 14 - f.w / 2, f.w / 2, D.w - f.w / 2);    // x falls toward stage left; far enough that its label clears the gear
   it.y = clampIn(anchor.y, f.d / 2, D.d - f.d / 2);
 }
 function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
@@ -1119,7 +1132,7 @@ function monitorTable(plot){                    // one row per wedge, in mix ord
 }
 function houseNeeds(plot){
   const counts = {};
-  for (const it of plot.items) if (it.kind === "house") counts[it.ref] = (counts[it.ref] || 0) + 1;
+  for (const it of plot.items) if (it.kind === "house" && it.ref !== "mic" && it.ref !== "di") counts[it.ref] = (counts[it.ref] || 0) + 1;   // mics and DIs print in their own sections
   const kitLabels = [];
   for (const pos of plot.positions){                    // a kit is the position, not a separate item
     const r = roleOf(plot, pos);
@@ -1182,6 +1195,13 @@ function warnings(plot){
   if (plot.wedges.length > VENUE.monitorMixes)
     out.push({ level:"amber", text:plot.wedges.length + " wedges placed; " + VENUE.shortName + " normally runs " + VENUE.monitorMixes +
       ". Extras may be available from " + VENUE.extraWedgesFrom + " — ask the tech." });
+  const ch = consoleCount(plot);
+  if (ch > VENUE.consoleChannels)
+    out.push({ level:"red", text:ch + " mics and DI boxes on the deck — the console has " + VENUE.consoleChannels + " channels." });
+  for (const [ref, n] of [["mic", micsOn(plot).length], ["di", disOn(plot).length]]){
+    const h = houseDef(ref);
+    if (h && h.count !== undefined && n > h.count) out.push({ level:"amber", text:n + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.count + "." });
+  }
   for (const h of houseNeeds(plot)) if (h.over)
     out.push({ level:"amber", text:h.need + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.have + "." });
   const off = plot.positions.concat(plot.items, plot.wedges).filter(o => offDeck(o, plot)).length;
@@ -1197,7 +1217,8 @@ function itemLabelFor(it, plot){
   if (it.kind === "label") return "Label “" + (it.label || "") + "”";
   const def = itemDef(it), labels = positionLabels(plot);
   const who = (it.ownerPositionIds || []).map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean).join(" / ");
-  return (def ? def.label : "Item") + (it.kind === "byo" && it.label ? " — " + it.label : "") + (who ? " (" + who + ")" : "");
+  const named = it.kind === "byo" || (it.kind === "house" && (it.ref === "mic" || it.ref === "di"));
+  return (def ? def.label : "Item") + (named && it.label ? " — " + it.label : "") + (who ? " (" + who + ")" : "");
 }
 function indexItems(plot){
   const m = new Map(), seen = {};
@@ -1599,12 +1620,13 @@ function deliverLine(p){
   return "Please deliver to " + VENUE.deliverTo + " by " + fmtDate(d.toISOString().slice(0, 10)) + ".";
 }
 function sheetHTML(p){
-  const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), labels = positionLabels(p), H = [];
+  const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), labels = positionLabels(p), H = [];
   H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
     '<span>Prepared ' + fmtDate(todayISO()) + '</span>' +
+    '<span>Mics ' + mics.length + ' · DI boxes ' + dis.length + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
@@ -1625,6 +1647,13 @@ function sheetHTML(p){
     left.push('</ul>');
   }
 
+  const gearList = (title, list) => {              // Microphones — 3, one line each, counted from the deck
+    right.push('<h2>' + title + ' — ' + list.length + '</h2>');
+    if (!list.length) right.push('<p class="empty" style="margin:1px 0">None on the deck.</p>');
+    else right.push('<ul>' + list.map(m => '<li>' + esc(m.label) + (m.who ? ' <span style="color:#555">— ' + esc(m.who) + '</span>' : "") + '</li>').join("") + '</ul>');
+  };
+  gearList("Microphones", mics);
+  gearList("DI boxes", dis);
   right.push('<h2>Musicians provide</h2><ul>');
   if (!byo.length) right.push('<li class="empty">Nothing — all house gear.</li>');
   for (const b of byo) right.push('<li>' + esc(b.what) + (b.who ? " — " + esc(b.who) : "") + '</li>');
@@ -1706,7 +1735,7 @@ function renderWarnings(p){
 function renderCanvas(p){
   $("canvaslegend").innerHTML = legendHTML(p, false);
   $("canvashead").innerHTML = '<span>' + esc(p.name) + '</span><span>' + p.positions.length + ' positions</span>' +
-    '<span>' + p.wedges.length + ' mixes</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
+    '<span>' + micsOn(p).length + ' mics · ' + disOn(p).length + ' DIs · ' + p.wedges.length + ' mixes</span><span>' + p.deck.widthFt + '′ × ' + p.deck.depthFt + '′</span>' +
     (S.readOnly ? "" : '<button class="btn sm" id="bSnap" aria-pressed="' + S.snap + '">snap 6″ ' + (S.snap ? "on" : "off") + '</button>' +
       '<button class="btn sm" id="bRelayout">re-layout</button>');
   if (!S.readOnly){
@@ -1770,7 +1799,7 @@ function addHouse(ref){
       if (ref === "di" && owner){ it = addDI(p, owner, pos ? labels[pos.id].short : (itemDef(gear) || {}).short); placeDI(p, it); it.moved = true; }
       else {
         const anchor = pos || gear, f = anchor ? footprintOf(anchor, p) : null;
-        const at = anchor ? { x:anchor.x, y:anchor.y - (gear ? 0 : f.d / 2 + 10) } : freeSpot(p, p.items.length);
+        const at = anchor ? { x:anchor.x, y:anchor.y - f.d / 2 - (gear ? 7 : 10) } : freeSpot(p, p.items.length);   // an amp mic stands in front of the amp
         const label = pos ? labels[pos.id].short : gear ? (owner ? labels[owner.id].short + " amp" : (itemDef(gear) || {}).short) : "";
         if (ref === "mic") it = addMicItem(p, at, label, owner ? [owner.id] : [], true);
         else { it = { id:nextId("i"), kind:"house", ref, label:"", x:at.x, y:at.y, rot:0, moved:true, ownerPositionIds:[] }; p.items.push(it); }
@@ -2197,13 +2226,19 @@ async function decodeHash(hash){
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 function emailText(p){
-  const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), L = [];
+  const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), L = [];
   L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
   if (p.director) L.push("Band leader/director: " + p.director);
   for (const l of scheduleLines(p)) L.push(l);
-  L.push("Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
+  L.push("Mics " + mics.length + "  ·  DI boxes " + dis.length + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");
   for (const r of mon.rows) L.push("  Mix " + r.n + ": " + r.where);
+  L.push("", "MICROPHONES (" + mics.length + ")");
+  for (const m of mics) L.push("  " + m.label + (m.who ? " — " + m.who : ""));
+  if (!mics.length) L.push("  None on the deck.");
+  L.push("", "DI BOXES (" + dis.length + ")");
+  for (const m of dis) L.push("  " + m.label + (m.who ? " — " + m.who : ""));
+  if (!dis.length) L.push("  None on the deck.");
   if (needs.length){
     L.push("", "HOUSE EQUIPMENT NEEDED");
     for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
