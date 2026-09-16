@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle };`)();
+  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -737,6 +737,29 @@ for (const t of E.TEMPLATES){
   const dot = /<circle cx="-?[\d.]+" cy="-?[\d.]+" r="([\d.]+)" fill="#000"/.exec(kit);
   ok(stem && dot && +stem[1] > +dot[1] * 1.5, "the drummer's stem clears the dot by most of a radius (" + (stem ? stem[1] : "?") + " on r " + (dot ? dot[1] : "?") + ")");
   ok(/drummer: drummerMark\(/.test(src) && /drummerMark\(2 \* kx/.test(src), "the key and the kit draw the drummer with the same function");
+}
+
+/* ---- 19d. the kit: the house's or the band's (A3, Tim Shade 2026-09-16) ---- */
+{
+  const p = T("combo"), kit = p.positions.find(x => x.roleId === "drums");
+  eq(E.VENUE.house.find(h => h.id === "kit").label, "House drum kit", "the house kit names no model — the house has several");
+  ok(!E.kitIsByo(p, kit), "a kit starts as the house kit");
+  ok(E.houseNeeds(p).some(n => n.id === "kit" && n.label === "House drum kit"), "…and is asked of the house");
+  kit.kitLabel = "the Yamaha";
+  ok(E.houseNeeds(p).some(n => n.id === "kit" && n.label === "House drum kit — the Yamaha"), "a house kit carries its label on the house line");
+  kit.kit = "byo"; kit.kitLabel = "Yamaha Stage Custom";
+  ok(E.kitIsByo(p, kit), "Bring your own is recorded on the position");
+  ok(!E.houseNeeds(p).some(n => n.id === "kit"), "…and the house is not asked for a kit");
+  const byo = E.byoList(p).find(b => /Drum kit/.test(b.what));
+  ok(byo && byo.what === "Drum kit — Yamaha Stage Custom" && /Drums/.test(byo.who), "…it prints under Musicians provide: " + (byo ? byo.what + " — " + byo.who : "missing"));
+  ok(E.legendKeys(p).some(k => k.id === "byo"), "…and the key says the band brings it");
+  const q = E.migratePlot(JSON.parse(JSON.stringify(p)));
+  ok(E.kitIsByo(q, q.positions.find(x => x.roleId === "drums")), "the choice survives save and load");
+  const co = E.changeover(T("combo"), p);
+  ok(co.items.arrive.some(s => /^Drum kit — Yamaha Stage Custom/.test(s)) && co.items.leave.some(s => /^House drum kit/.test(s)),
+     "changeover: the house kit comes off and the band's kit comes on");
+  const none = E.blankPlot();
+  eq(E.houseNeeds(none).length, 0, "a blank plot asks the house for nothing");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

@@ -364,7 +364,7 @@ const VENUE = {
     // order the app hands them out, so the Korg goes before the Nord and the
     // Voxes before the Deluxe Reverbs. No house item names a mic — the mics in
     // the photos live in the rehearsal rooms and do not come with the gear.
-    { id:"kit",     label:"House drum kit (Gretsch 4-pc, hats/ride/2 crash)", short:"House kit",  cat:"drums",  bcat:"kit",    w:72, d:60 },  // ASSUMED model — tech's example said Yamaha; confirm
+    { id:"kit",     label:"House drum kit",                                   short:"House kit",  cat:"drums",  bcat:"kit",    w:72, d:60 },  // no model: the house has several kits (Tim Shade, 2026-09-16)
     { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Markbass rig", cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
     { id:"gtramp1", label:"Vox AC combo (black)",                             short:"Vox (black)", cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
     { id:"gtramp2", label:"Vox AC combo (red)",                               short:"Vox (red)",  cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
@@ -406,6 +406,14 @@ function refCat(ref){ const h = VENUE.house.find(x => x.id === ref); return h ? 
 /* A stance:"object" role (the kit) IS its gear, so it has no item to carry an
    id; resolve its category to the one house item in it. */
 function objectRef(role){ const c = houseCat(backlineCat(role)); return c.length ? c[0].id : null; }
+/* The kit is the one piece of backline an act may bring itself (Tim Shade,
+   2026-09-16). A drums position records which: pos.kit is "house" — the
+   default, and what every file saved before this reads as — or "byo", and
+   pos.kitLabel is free text ("Yamaha Stage Custom", "the Gretsch") printed
+   after whichever line the kit lands on. A BYO kit is drawn dashed, is not
+   asked of the house, and prints under Musicians provide. */
+function kitIsByo(plot, pos){ return backlineCat(roleOf(plot, pos)) === "kit" && pos.kit === "byo"; }
+function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
 /* Which house items this plot has already spoken for. */
 function houseTaken(plot){
   const s = new Set();
@@ -1331,9 +1339,13 @@ function monitorTable(plot){
 function houseNeeds(plot){
   const counts = {}, units = inputUnits(plot);
   for (const it of plot.items) if (it.kind === "house") counts[it.ref] = (counts[it.ref] || 0) + 1;
+  const kitLabels = [];
   for (const pos of plot.positions){                    // a kit is the position, not a separate item
     const r = roleOf(plot, pos);
-    if (r.backline && r.stance === "object"){ const ref = objectRef(r); if (ref) counts[ref] = (counts[ref] || 0) + 1; }
+    if (r.backline && r.stance === "object" && !kitIsByo(plot, pos)){
+      const ref = objectRef(r); if (ref) counts[ref] = (counts[ref] || 0) + 1;
+      if (backlineCat(r) === "kit" && kitLine(pos)) kitLabels.push(kitLine(pos).slice(3));
+    }
   }
   if (plot.wedges.length) counts.wedge = plot.wedges.length;
   const di = units.reduce((n, u) => n + (u.type === "di" ? 1 : u.type === "stereo-di" ? 2 : 0), 0);
@@ -1346,7 +1358,8 @@ function houseNeeds(plot){
      extra row: "5 × House guitar amp — house has 4". */
   const multi = h => h.bcat && houseCat(h.bcat).length > 1;
   const out = VENUE.house.filter(h => counts[h.id]).map(h => ({
-    id:h.id, label:h.label, need:counts[h.id], have:h.count === undefined ? 1 : h.count,
+    id:h.id, label:h.label + (h.bcat === "kit" && kitLabels.length ? " — " + kitLabels.join(" / ") : ""),
+    need:counts[h.id], have:h.count === undefined ? 1 : h.count,
     over:multi(h) ? false : counts[h.id] > (h.count === undefined ? 1 : h.count),
     derived:h.id === "di" || h.id === "micstand",
   }));
@@ -1372,6 +1385,8 @@ function byoList(plot){
     const who = (it.ownerPositionIds || []).map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean).join(" / ");
     out.push({ what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who });
   }
+  for (const p of plot.positions) if (kitIsByo(plot, p))
+    out.push({ what:"Drum kit" + kitLine(p), who:posText2(plot, p, labels) });
   for (const p of plot.positions) for (const b of (p.byo || [])) if (String(b).trim())
     out.push({ what:String(b).trim(), who:posText2(plot, p, labels) });
   return out;
@@ -1390,7 +1405,7 @@ function legendKeys(plot){
   has("unmiked", "not miked", pos.some(p => unmiked(plot, p)));
   has("wedge",   "wedge, numbered by mix", plot.wedges.length);
   has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
-  has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo"));
+  has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo") || pos.some(p => kitIsByo(plot, p)));
   has("drummer", "drummer, facing the audience", pos.some(p => roleOf(plot, p).id === "drums"));
   has("truss",   "truss post", VENUE.context.trussCorners);
   has("off",     "over the deck edge", pos.concat(plot.items, plot.wedges).some(o => offDeck(o, plot)));
@@ -1460,8 +1475,9 @@ function indexItems(plot){
     if (r.stance !== "object" || !r.backline) continue;
     const ref = objectRef(r);
     if (!ref) continue;
-    const base = "house:" + ref, n = (seen[base] = (seen[base] || 0) + 1);
-    m.set(base + "#" + n, Object.assign({ kind:"house", ref:ref, ownerPositionIds:[pos.id] }, { x:pos.x, y:pos.y, rot:pos.rot }));
+    const gear = kitIsByo(plot, pos) ? { kind:"byo", ref:"byo-kit", label:String(pos.kitLabel || "").trim() } : { kind:"house", ref:ref };
+    const base = itemKeyFor(gear), n = (seen[base] = (seen[base] || 0) + 1);
+    m.set(base + "#" + n, Object.assign(gear, { ownerPositionIds:[pos.id], x:pos.x, y:pos.y, rot:pos.rot }));
   }
   return m;
 }
@@ -1673,10 +1689,11 @@ function drummerMark(cx, cy, r, col){
          '<path d="M' + cx.toFixed(1) + ',' + cy.toFixed(1) + 'v' + (r * 1.9).toFixed(1) + '" stroke="' + col +
          '" stroke-width="' + Math.max(1.2, r * .3).toFixed(1) + '" stroke-linecap="round" fill="none"/>';
 }
-function kitPieces(f, col, dim, fill){
+function kitPieces(f, col, dim, fill, dashed){
   const kx = f.w / 72, ky = f.d / 60, kr = Math.min(kx, ky);
+  const dash = dashed ? ' stroke-dasharray="4 3"' : "";      // the band's own kit, dashed like everything else it brings
   const piece = (x, y, r, thin) => '<circle cx="' + (x * kx).toFixed(1) + '" cy="' + (y * ky).toFixed(1) +
-    '" r="' + (r * kr).toFixed(1) + '" fill="none" stroke="' + (thin ? dim : col) + '" stroke-width="' + (thin ? .8 : 1.2) + '"/>';
+    '" r="' + (r * kr).toFixed(1) + '" fill="none" stroke="' + (thin ? dim : col) + '" stroke-width="' + (thin ? .8 : 1.2) + '"' + dash + '/>';
   return [
     piece(-17, -8, 7, true), piece(20, -4, 5, true),    // ride, hats
     piece(-20, 8, 7), piece(-10, -3, 4.5), piece(-3, -5, 4.5), piece(8, -1, 6),  // floor tom, rack toms, snare
@@ -1777,12 +1794,15 @@ function diagramSVG(plot, opt){
     let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
       (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
+    const kitItem = it.kind === "byo" && it.ref === "byo-kit";   // drawn as a kit, dashed, so its name sits under it
+    if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    const ang = labelAngle(it.rot);                  // the label lies along the item, never upside down
-    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim",
+    const ang = kitItem ? 0 : labelAngle(it.rot);    // the label lies along the item, never upside down
+    const ly = kitItem ? py + f.d/2 + g.pt(DRAW.smallPt) * 1.1 : py + g.pt(DRAW.smallPt) * .35;
+    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, ly, DRAW.smallPt, "dim",
       ang ? ' transform="rotate(' + ang + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
-    if (it.kind === "byo" && it.label) gl += ts(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    if (it.kind === "byo" && it.label) gl += ts(it.label, px, (kitItem ? ly : py + f.d/2) + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
     labelled(it, px, py, gl);
   }
   // positions
@@ -1790,9 +1810,11 @@ function diagramSVG(plot, opt){
     const role = roleOf(plot, pos), f = footprintOf(pos, plot), px = g.sx(pos.x), py = g.sy(pos.y);
     const lines = posShortLines(plot, pos, labels);
     if (role.stance === "object"){
-      let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' + houseFill +
-        '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>';
-      if (role.id === "drums") body += kitPieces(f, stroke(pos), dim, print ? "#fff" : "#0d232b");
+      const byo = kitIsByo(plot, pos);               // the band's own kit: dashed, like everything else the band brings
+      let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
+        (byo ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' +
+        (byo ? ' stroke-dasharray="6 4"' : "") + bad(pos) + '/>';
+      if (role.id === "drums") body += kitPieces(f, stroke(pos), dim, print ? "#fff" : "#0d232b", byo);
       draw(pos, body);
     } else {
       draw(pos, '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>');
@@ -1847,12 +1869,13 @@ function sheetHTML(p){
   left.push('</tbody></table>');
   if (mon.unassigned.length) left.push('<p class="flag" style="margin:3px 0 0"><b>No wedge assigned:</b> ' + esc(mon.unassigned.join(", ")) + '</p>');
 
-  left.push('<h2>House equipment needed</h2><ul>');
-  if (!needs.length) left.push('<li class="empty">Nothing from the house.</li>');
-  for (const n of needs) left.push('<li>' + (n.need > 1 ? n.need + " × " : "") + esc(n.label) +
-    (n.derived ? ' <span style="font-size:8pt;color:#555">(from the input list)</span>' : "") +
-    (n.over ? ' <b>— house has ' + n.have + '</b>' : "") + '</li>');
-  left.push('</ul>');
+  if (needs.length){                              // nothing from the house: no section at all (Tim Shade, 2026-09-16)
+    left.push('<h2>House equipment needed</h2><ul>');
+    for (const n of needs) left.push('<li>' + (n.need > 1 ? n.need + " × " : "") + esc(n.label) +
+      (n.derived ? ' <span style="font-size:8pt;color:#555">(from the input list)</span>' : "") +
+      (n.over ? ' <b>— house has ' + n.have + '</b>' : "") + '</li>');
+    left.push('</ul>');
+  }
 
   left.push('<h2>Musicians provide</h2><ul>');
   if (!byo.length) left.push('<li class="empty">Nothing — all house gear.</li>');
@@ -2073,7 +2096,7 @@ function renderPanel(p){
     for (const pos of p.positions){
       const w = p.wedges.find(w => w.assignees.includes(pos.id));
       H.push('<div class="prow pcard"><div class="pline"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
-        '<span class="role">' + esc(labels[pos.id].role.label) + '</span></span>' +
+        '<span class="role">' + esc(labels[pos.id].role.label) + (kitIsByo(p, pos) ? " · BYO kit" : "") + '</span></span>' +
         '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
         '<button class="btn sm" data-psel="' + pos.id + '" title="select on the canvas">edit</button>' +
         '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>' +
@@ -2263,6 +2286,13 @@ function renderInspector(p){
     H.push('<h3>' + esc(labels[sel.id].full) + '<span>' + posText(sel, p) + '</span></h3>');
     H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
       roleOptions(p, sel.roleId) + '</select></div></div>');
+    if (backlineCat(roleOf(p, sel)) === "kit"){
+      const byo = sel.kit === "byo";
+      H.push('<div class="fld"><span class="lbl">Kit</span><div class="seg2">' +
+        '<button class="btn sm" data-kit="house" aria-pressed="' + !byo + '">House kit<span>' + esc(VENUE.shortName) + ' provides it</span></button>' +
+        '<button class="btn sm" data-kit="byo" aria-pressed="' + byo + '">Bring your own<span>drawn dashed, listed under Musicians provide</span></button></div></div>');
+      H.push('<div class="fld"><label>Kit — optional</label><input type="text" id="iKitLabel" placeholder="' + (byo ? "Yamaha Stage Custom, 18″ kick" : "which house kit, if it matters") + '"></div>');
+    }
     H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
     H.push('<div class="fld"><span class="lbl">Doubles</span>');
     (sel.doubles || []).forEach((d, i) => H.push('<div class="inputrow" style="grid-template-columns:1fr auto auto"><span>' +
@@ -2322,6 +2352,8 @@ function renderInspector(p){
   if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
   if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
   if ($("bMicAdd")) $("bMicAdd").onclick = () => mut(() => { const q = plot(); addMic(q, find(q, sel.id)); });
+  el.querySelectorAll("[data-kit]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); pos.kit = b.dataset.kit; }));
+  if ($("iKitLabel")) bindText($("iKitLabel"), () => sel.kitLabel, v => sel.kitLabel = v);
   if ($("iRole")) $("iRole").onchange = () => mut(() => {
     const q = plot(), pos = find(q, sel.id), old = roleOf(q, pos);
     pos.roleId = $("iRole").value;
@@ -2487,8 +2519,10 @@ function emailText(p){
   for (const r of rows) L.push("  " + String(r.ch).padStart(2) + ". " + r.source + (r.who ? " (" + r.who + ")" : "") + " [" + r.type + (r.phantom ? ", 48V" : "") + "]");
   const silent = notMiked(p);
   if (silent.length) L.push("", "NOT MIKED", "  " + silent.map(x => x.label + " (" + x.why + ")").join(", "));
-  L.push("", "HOUSE EQUIPMENT NEEDED");
-  for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
+  if (needs.length){
+    L.push("", "HOUSE EQUIPMENT NEEDED");
+    for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
+  }
   L.push("", "MUSICIANS PROVIDE");
   if (!byo.length) L.push("  Nothing — all house gear.");
   for (const b of byo) L.push("  " + b.what + (b.who ? " — " + b.who : ""));

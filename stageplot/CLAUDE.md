@@ -86,7 +86,7 @@ counts and the deck are still placeholders.
 | `bassamp` head — Markbass Little Mark Tube 800 | confirmed | ≈24″ × 20″ with the cab |
 | `gtramp1`, `gtramp2` — Vox AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart |
 | `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
-| `kit` label — Gretsch 4-pc | **ASSUMED** | the photo says Gretsch, the tech's example said Yamaha |
+| `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
 | `micstand` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
 | `riser` count 0 | **ASSUMED** | unknown whether Somewhere Works owns any |
 | `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
