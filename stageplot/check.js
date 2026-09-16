@@ -584,7 +584,7 @@ for (const t of E.TEMPLATES){
   // box is honest about that, and the page says so rather than hiding it
   const q = band(), kit = q.positions.find(x => x.roleId === "drums"), kb = q.items.find(i => E.refCat(i.ref) === "keys");
   kit.rot = 45; kit.moved = true;
-  ok(E.offDeck(kit, q), "a kit turned 45° where the engine put it hangs over the upstage edge (its box grew from 72×60 to 93×93)");
+  ok(E.offDeck(kit, q), "a kit turned 45° where the engine put it hangs over the upstage edge (its box grew from 54×52 to 75×75)");
   ok(E.warnings(q).some(w => /deck edge/.test(w.text)), "…and the warning says so");
   // rotate, then drag it clear: what the director actually does
   kit.y = E.deckIn(q).d / 2; kb.rot = 45; kb.moved = true; kb.x = 230; kb.y = 45;
@@ -606,7 +606,7 @@ for (const t of E.TEMPLATES){
   const stem = /<path d="M-?[\d.]+,-?[\d.]+v([\d.]+)" stroke="#000" stroke-width="[\d.]+" stroke-linecap="round"/.exec(kit);
   const dot = /<circle cx="-?[\d.]+" cy="-?[\d.]+" r="([\d.]+)" fill="#000"/.exec(kit);
   ok(stem && dot && +stem[1] > +dot[1] * 1.5, "the drummer's stem clears the dot by most of a radius (" + (stem ? stem[1] : "?") + " on r " + (dot ? dot[1] : "?") + ")");
-  ok(/drummer: drummerMark\(/.test(src) && /drummerMark\(2 \* kx/.test(src), "the key and the kit draw the drummer with the same function");
+  ok(/drummer: drummerMark\(/.test(src) && /drummerMark\(3 \* kx/.test(src), "the key and the kit draw the drummer with the same function");
 }
 
 /* ---- 19d. the kit: the house's or the band's (A3, Tim Shade 2026-09-16) ---- */
@@ -743,6 +743,20 @@ for (const t of E.TEMPLATES){
   ok(/e\.key === "Delete" \|\| e\.key === "Backspace"/.test(src), "…and the keyboard shortcut stays");
   ok(/click its ⊗ or press Delete/.test(src), "…and the note under the canvas says so");
   ok(!/print/.test(src.slice(src.indexOf("if (!print && S.sel){"), src.indexOf("if (!print && S.sel){") + 40).replace("!print", "")), "the ⊗ is never printed");
+}
+
+/* ---- 19i. the kit is the kit, no rug (B3, Tim Shade 2026-09-16) ---- */
+{
+  const p = T("combo"), kit = p.positions.find(x => x.roleId === "drums"), f = E.footprintOf(kit, p);
+  eq(f.w + "×" + f.d, "54×52", "the drums footprint is the kit itself");
+  eq(E.BYO_KINDS.find(b => b.id === "byo-kit").w + "×" + E.BYO_KINDS.find(b => b.id === "byo-kit").d, "54×52", "…and so is the band's own kit");
+  const K = new Function(src.slice(src.indexOf("function drummerMark("), src.indexOf("function wedgePath(")) + "; return { drummerMark, kitPieces };")();
+  const kick = /<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)" fill="#eee" stroke="#000" stroke-width="1.2"\/>(?=<text)/.exec(K.kitPieces({ w:54, d:52 }, "#000", "#555", "#eee"));
+  ok(kick && Math.abs(+kick[2] + +kick[3] - 26) < .6, "the kick's front edge is the footprint's front edge (" + (kick ? (+kick[2] + +kick[3]).toFixed(1) : "?") + " of 26)");
+  ok(!/rx="2" fill="' \+[\s\S]{0,120}kitPieces\(f, stroke\(pos\)/.test(src), "the kit position draws no filled rectangle under the drums");
+  const w = p.wedges[0]; w.x = kit.x; w.y = kit.y - 26 - 9; w.rot = 0; w.moved = true;   // a wedge touching the kick, throw face at the drummer
+  E.autoLayout(p, { force:false });
+  ok(Math.abs(w.y - (kit.y - 35)) < .01 && Math.abs(w.x - kit.x) < .01, "a wedge dragged to the kick stays where it was put");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

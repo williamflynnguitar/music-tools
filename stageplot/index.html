@@ -366,7 +366,7 @@ const VENUE = {
     // order the app hands them out, so the Korg goes before the Nord and the
     // Voxes before the Deluxe Reverbs. No house item names a mic — the mics in
     // the photos live in the rehearsal rooms and do not come with the gear.
-    { id:"kit",     label:"House drum kit",                                   short:"House kit",  cat:"drums",  bcat:"kit",    w:72, d:60 },  // no model: the house has several kits (Tim Shade, 2026-09-16)
+    { id:"kit",     label:"House drum kit",                                   short:"House kit",  cat:"drums",  bcat:"kit",    w:54, d:52 },  // no model: the house has several kits (Tim Shade, 2026-09-16)
     { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Markbass rig", cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
     { id:"gtramp1", label:"Vox AC combo (black)",                             short:"Vox (black)", cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
     { id:"gtramp2", label:"Vox AC combo (red)",                               short:"Vox (red)",  cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
@@ -530,7 +530,7 @@ const BYO_KINDS = [
   { id:"byo-gtramp",  label:"Guitar amp",    cat:"amp",   w:26, d:12 },
   { id:"byo-bassamp", label:"Bass amp",      cat:"amp",   w:26, d:20 },
   { id:"byo-keys",    label:"Keyboard",      cat:"keys",  w:54, d:16 },
-  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:72, d:60 },
+  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:54, d:52 },
   { id:"byo-pedals",  label:"Pedalboard",    cat:"misc",  w:24, d:12 },
   { id:"byo-laptop",  label:"Laptop",        cat:"keys",  w:16, d:12 },
   { id:"byo-acoustic",label:"Acoustic guitar",cat:"guitar",w:18, d:10 },
@@ -569,7 +569,7 @@ const ROLES = [
   { id:"guitar",    label:"Guitar",           pick:"Electric guitar", short:"Gtr",   family:"rhythm", grp:"guitar", sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"gtramp", gearSide:"up" },
   { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bass", gearSide:"up", di:true },
   { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:30, d:30, zone:"rhythm", backline:"bass", gearSide:"up", di:true },
-  { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:72, d:60, zone:"rhythm", backline:"kit" },
+  { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:54, d:52, zone:"rhythm", backline:"kit" },   // the kit itself, no rug (B3)
   { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:36, d:30, zone:"rhythm" },
   { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", di:true },
   { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"kb2", gearSide:"down", di:true },
@@ -1462,10 +1462,12 @@ function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migrat
 
 /* ================= the stage diagram ================= */
 /* A drum kit in plan view, drawn to whatever footprint the role carries
-   (authored against 72″ × 60″). Local +y is downstage, so the kick faces
-   the audience and the drummer sits behind it, facing the same way.
-   Cymbals are drawn thinner than drums; dashes are not available, they
-   mean "the band brings it" on this page. */
+   (authored against 54″ × 52″ — the kit itself, with no rug: Tim Shade wants
+   wedges right at the kick, and the old 72″ × 60″ carpet, drawn filled, hid
+   a wedge parked there, 2026-09-16). Local +y is downstage, so the kick
+   faces the audience and its front edge is the footprint's front edge; the
+   drummer sits at the back. Cymbals are drawn thinner than drums; dashes
+   are not available, they mean "the band brings it" on this page. */
 /* The drummer: a solid dot with a stem for which way they face. One glyph,
    drawn to the same proportions in the kit and in the key, so the two read
    as the same mark (William, 2026-09-16 — the kit's stem used to start at
@@ -1477,20 +1479,20 @@ function drummerMark(cx, cy, r, col){
          '" stroke-width="' + Math.max(1.2, r * .3).toFixed(1) + '" stroke-linecap="round" fill="none"/>';
 }
 function kitPieces(f, col, dim, fill, dashed){
-  const kx = f.w / 72, ky = f.d / 60, kr = Math.min(kx, ky);
+  const kx = f.w / 54, ky = f.d / 52, kr = Math.min(kx, ky);
   const dash = dashed ? ' stroke-dasharray="4 3"' : "";      // the band's own kit, dashed like everything else it brings
   const piece = (x, y, r, thin) => '<circle cx="' + (x * kx).toFixed(1) + '" cy="' + (y * ky).toFixed(1) +
-    '" r="' + (r * kr).toFixed(1) + '" fill="none" stroke="' + (thin ? dim : col) + '" stroke-width="' + (thin ? .8 : 1.2) + '"' + dash + '/>';
+    '" r="' + (r * kr).toFixed(1) + '" fill="' + fill + '" stroke="' + (thin ? dim : col) + '" stroke-width="' + (thin ? .8 : 1.2) + '"' + dash + '/>';
   return [
-    piece(-17, -8, 7, true), piece(20, -4, 5, true),    // ride, hats
-    piece(-20, 8, 7), piece(-10, -3, 4.5), piece(-3, -5, 4.5), piece(8, -1, 6),  // floor tom, rack toms, snare
-    piece(0, 12, 10),                                    // kick, resonant head to the audience
+    piece(-16, -5, 7, true), piece(21, -1, 5, true),     // ride, hats
+    piece(-19, 11, 7), piece(-9, 0, 4.5), piece(-2, -2, 4.5), piece(9, 2, 6),   // floor tom, rack toms, snare
+    piece(1, 16, 10),                                     // kick: resonant head to the audience, on the footprint's front edge
     // the kick is the one drum the tech has to find first, so it is named
-    '<text x="0" y="' + (12 * ky + 1.8 * kr).toFixed(1) + '" font-size="' + (5 * kr).toFixed(1) + '" text-anchor="middle" fill="' + col +
+    '<text x="' + (1 * kx).toFixed(1) + '" y="' + (16 * ky + 1.8 * kr).toFixed(1) + '" font-size="' + (5 * kr).toFixed(1) + '" text-anchor="middle" fill="' + col +
       '" font-family="Helvetica, Arial, sans-serif">Kick</text>',
     // the drummer: a solid mark so it cannot be mistaken for another drum,
     // with a stem for which way they face — downstage, at the audience
-    drummerMark(2 * kx, -22 * ky, 6.5 * kr, col),
+    drummerMark(3 * kx, -19 * ky, 6.5 * kr, col),
   ].join("");
 }
 
@@ -1585,15 +1587,14 @@ function diagramSVG(plot, opt){
     if (it.kind === "label"){ draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt); continue; }
     const def = itemDef(it); if (!def) continue;
     const f = footprintOf(it, plot), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
-    const isMic = def.cat === "mic", isDI = def.cat === "di";
-    let body = isMic
-      ? '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" stroke="none" pointer-events="all"' + bad(it) + '/>' +   // the footprint: grabbable, and outlined when over the edge
-        micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
+    const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit";
+    const hitRect = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(it) || ' stroke="none"') + '/>';   // an invisible footprint: grabbable, outlined when over the edge
+    let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
+      : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
         (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
-    const kitItem = it.kind === "byo" && it.ref === "byo-kit";   // drawn as a kit, dashed, so its name sits under it
-    if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);
+    if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);   // drawn as a kit, dashed, no rug; its name sits under it
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
     const below = kitItem || isMic || isDI;          // too small, or too busy, to carry a name inside
@@ -1611,9 +1612,11 @@ function diagramSVG(plot, opt){
     const lines = posShortLines(plot, pos, labels);
     if (role.stance === "object"){
       const byo = kitIsByo(plot, pos);               // the band's own kit: dashed, like everything else the band brings
-      let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
-        (byo ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' +
-        (byo ? ' stroke-dasharray="6 4"' : "") + bad(pos) + '/>';
+      let body = role.id === "drums"
+        ? '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(pos) || ' stroke="none"') + '/>'   // no rug: the footprint is there to grab and to outline
+        : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
+          (byo ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' +
+          (byo ? ' stroke-dasharray="6 4"' : "") + bad(pos) + '/>';
       if (role.id === "drums") body += kitPieces(f, stroke(pos), dim, print ? "#fff" : "#0d232b", byo);
       draw(pos, body);
     } else {

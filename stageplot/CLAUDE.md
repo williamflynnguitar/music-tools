@@ -223,7 +223,12 @@ instrument, add a row; nothing else in the file enumerates instruments.
   a tick for which way they face. Cymbals are thinner than drums rather than
   dashed: dashed means "the band brings it" on this page. The name sits under
   the kit like every other position's, so the drawing has the footprint to
-  itself.
+  itself. **The footprint is the kit itself, 54″ × 52″, with no rug** (B3,
+  Tim Shade 2026-09-16): the old 72″ × 60″ carpet, drawn filled, hid a wedge
+  parked at the kick, which is exactly where he wants one. The kick's front
+  edge is the footprint's front edge, so a wedge can touch it; the footprint
+  is still there, invisible, to grab, and it outlines itself when selected or
+  over the deck edge.
 - Custom roles: the Positions tab's "custom role…" writes into
   `plot.customRoles`, so an odd instrument travels inside the saved file and
   needs no code change. `roleDef()` looks there first.
@@ -534,7 +539,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 393 assertions: the role library, every template (builds,
+`node check.js` — 399 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
