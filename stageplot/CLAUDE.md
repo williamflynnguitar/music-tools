@@ -86,7 +86,7 @@ counts and the deck are still placeholders.
 | `gtramp1`, `gtramp2` — Vox AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart |
 | `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
-| `micstand` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
+| `mic` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
 | `riser` count 0 | **ASSUMED** | unknown whether Somewhere Works owns any |
 | `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
 
@@ -251,6 +251,38 @@ are a label on the diagram (`Alto / Flute`) and nothing more.
 `VENUE.consoleChannels` (32) and `warnChannelsAt` (28) stay on record for
 William to confirm with Mary Elliott (D3); the only thing that reads them now
 is the count of placed mics and DIs.
+
+## Mics and DI boxes are objects on the deck (C1/C2)
+
+**Every microphone is a thing you place** (Tim Shade, 2026-09-16). A mic is
+a house item with `ref:"mic"` — "Mic (on stand)", one object per physical
+stand, so two trumpets sharing a mic is one mic labelled "tpt 1+2" — drawn as
+the standard lollipop (`micGlyph()`) with its label under it. A DI box is
+`ref:"di"`, drawn as a small box labelled "DI · bass". Both carry `label` and,
+optionally, `ownerPositionIds`: an unlabelled mic reads as its owner's chair
+(`micText()`), and gear that belongs to a player goes when the player goes.
+There is no separate mic stand any more; a placed `micstand` in an old file
+loads as a mic.
+
+The **Mics & DIs** tab places them. Select a player or an amp first and the
+mic lands at them, labelled for the chair ("Tpt 2", "Gtr amp"), then drag it
+to where the stand goes; with nothing selected it lands centre-deck. The
+tab's On stage list edits or removes each one. The mic'd-amp / DI'd-amp
+distinction is just which object stands at the amp.
+
+**A DI instrument arrives with its DI box** — `role.di`: bass, upright,
+keys, organ, DJ, playback, acoustic guitar, violin, cello. `addPosition()`
+adds it, owned by the player and labelled for the instrument; `placeDI()`
+puts it on the stage-left side of the player's backline (or of the player)
+until someone drags it. Mics never arrive on their own.
+
+**Migration** (`placeInputs()`, schema 2 → 3): a file that carried inputs on
+its positions gets them back as objects — each mic 10″ downstage of its
+player, spread 14″ apart, labelled as the input was; each DI beside the
+player's gear, a stereo DI as two ("Keys L", "Keys R"); a ticked section as
+its mics 24″ in front of the row, belonging to every player in it. All pinned
+where they land. `migrateV1()` now hands a v2-shaped plot to `migratePlot()`,
+which takes it the rest of the way, so v1 files get the same treatment.
 
 ## Templates
 
@@ -476,7 +508,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 318 assertions: the role library, every template (builds,
+`node check.js` — 367 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

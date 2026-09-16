@@ -373,7 +373,7 @@ const VENUE = {
     { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg SV-2S", cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
     { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord Stage 4", cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
     { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
-    { id:"micstand",label:"Mic stand (boom)", short:"Mic",     cat:"stand",   w:12, d:12, count:8 },   // ASSUMED count
+    { id:"mic",     label:"Mic (on stand)",   short:"Mic",     cat:"mic",     w:12, d:12, count:8 },   // ASSUMED count. One object = one stand, whoever shares it
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
     { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:6,  d:6,  count:8 },   // ASSUMED count
     { id:"power",   label:"Power strip",      short:"Power",   cat:"power",   w:14, d:4,  count:6 },   // ASSUMED count
@@ -413,6 +413,43 @@ function objectRef(role){ const c = houseCat(backlineCat(role)); return c.length
    after whichever line the kit lands on. A BYO kit is drawn dashed, is not
    asked of the house, and prints under Musicians provide. */
 function kitIsByo(plot, pos){ return backlineCat(roleOf(plot, pos)) === "kit" && pos.kit === "byo"; }
+/* Mics and DI boxes are objects on the deck (C1, Tim Shade 2026-09-16) —
+   house items with ref "mic" or "di", a label ("vocal", "tpt 1+2", "snare")
+   and, optionally, the position they belong to, so they go when the player
+   goes. One mic object is one physical stand: two trumpets sharing a mic is
+   one mic labelled for both. Nothing is counted from anywhere else. */
+function micsOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "mic"); }
+function disOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "di"); }
+function ownerOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).find(Boolean) || null; }
+function micText(plot, it, labels){          // "tpt 1+2" or, unlabelled, the owner's chair, or just "Mic"
+  const def = houseDef(it.ref), own = ownerOf(plot, it);
+  const t = String(it.label || "").trim();
+  if (t) return t;
+  return own ? posText2(plot, own, labels) : def.short;
+}
+/* A DI instrument arrives with its DI box, beside its gear — an electric
+   instrument with nothing plugged in isn't a choice anyone is making
+   (William, 2026-09-16, keeping the 2026-09-14 rule). The box belongs to the
+   player: delete the player and it goes; drag it and it stays put. */
+function addDI(plot, pos, label){
+  const it = { id:nextIdE("i"), kind:"house", ref:"di", label:label || "", x:pos.x, y:pos.y, rot:0, moved:false, ownerPositionIds:[pos.id] };
+  plot.items.push(it);
+  return it;
+}
+function addMicItem(plot, at, label, ownerIds, moved){
+  const it = { id:nextIdE("i"), kind:"house", ref:"mic", label:label || "", x:at.x, y:at.y, rot:0, moved:!!moved, ownerPositionIds:ownerIds || [] };
+  plot.items.push(it);
+  return it;
+}
+/* Where a DI box sits when nobody has dragged it: on the stage-left side of
+   the player's backline if they have one, else of the player. */
+function placeDI(plot, it){
+  const own = ownerOf(plot, it); if (!own) return;
+  const gear = plot.items.find(i => i !== it && i.kind === "house" && i.ref !== "di" && i.ref !== "mic" && (i.ownerPositionIds || []).includes(own.id));
+  const anchor = gear || own, r = rectOf(anchor, plot), D = deckIn(plot), f = footprintOf(it, plot);
+  it.x = clampIn(r.x0 - 4 - f.w / 2, f.w / 2, D.w - f.w / 2);     // x falls toward stage left
+  it.y = clampIn(anchor.y, f.d / 2, D.d - f.d / 2);
+}
 function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
 /* Which house items this plot has already spoken for. */
 function houseTaken(plot){
@@ -789,6 +826,8 @@ function autoLayout(plot, opt){
     it.y = clampIn(p.y + (down ? -LAYOUT.gearDown : LAYOUT.gearUp) * DP, 12, DP - 12);
   }
 
+  for (const it of disOn(plot)) if (!pinned(it)) placeDI(plot, it);   // a DI box rides beside its player's gear
+
   layoutWedges(plot, force);
   resolveOverlaps(plot, force);
   plot.layoutNote = notes.length ? notes.join("; ") : "";
@@ -928,7 +967,7 @@ function scheduleLines(p){
 }
 function blankPlot(deck, name){
   const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
-  return { schemaVersion:2, id:nextIdE("plot"), name:name || "New plot", templateId:"",
+  return { schemaVersion:3, id:nextIdE("plot"), name:name || "New plot", templateId:"",
     director:"", date:"", showName:"", notes:"", printNames:true,
     soundcheckDate:"", soundcheck:"", soundcheckOrder:null,   // the soundcheck: day, when the block starts, place in it
     startTime:"", setOrder:null,                                // the performance: date is above; when it starts, place in it
@@ -936,10 +975,11 @@ function blankPlot(deck, name){
     positions:[], items:[], wedges:[], songs:[], customRoles:[], rhythmPlan:"drums-centre" };
 }
 function addPosition(plot, roleId, opts){
-  const o = opts || {};
+  const o = opts || {}, role = roleDef(plot, roleId);
   const pos = { id:nextIdE("pos"), roleId, x:0, y:0, rot:0, moved:false,
     names:o.names || [], doubles:(o.doubles || []).slice(), notes:"" };
   plot.positions.push(pos);
+  if (role.di) addDI(plot, pos, role.label);
   return pos;
 }
 /* parts: [[roleId|{roleId,doubles}, count], ...] */
@@ -1130,6 +1170,8 @@ function legendKeys(plot){
   has("wedge",   "wedge, numbered by mix", plot.wedges.length);
   has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
   has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo") || pos.some(p => kitIsByo(plot, p)));
+  has("mic",     "mic on a stand", micsOn(plot).length);
+  has("di",      "DI box", disOn(plot).length);
   has("drummer", "drummer, facing the audience", pos.some(p => roleOf(plot, p).id === "drums"));
   has("truss",   "truss post", VENUE.context.trussCorners);
   has("off",     "over the deck edge", pos.concat(plot.items, plot.wedges).some(o => offDeck(o, plot)));
@@ -1288,11 +1330,50 @@ function migrateV1(p){
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
   settleBackline(out);             // v1 gave every guitarist gtramp1; the house has four amps
+  out.schemaVersion = 2;           // v2-shaped, inputs still on the positions: migratePlot() takes it the rest of the way
   return out;
+}
+/* Files from before 2026-09-16 carried mics and DIs as inputs on each
+   position (and, for a while, shared section mics on a horn row). They come
+   back as objects on the deck, so nothing a director set up is lost: each mic
+   becomes a mic object just downstage of its player, labelled as the input
+   was; a DI becomes a DI box beside the player's gear (a stereo DI, two); a
+   ticked section becomes its mics in front of that row. All are pinned where
+   they land, like everything else in a hand-laid plot. */
+const SECTION_OF = role => role.family === "sax" ? "sax" : ["tuba","btrombone","trombone"].includes(role.id) ? "tbn" : ["trumpet","flugel"].includes(role.id) ? "tpt" : null;
+const SECTION_NAME = { sax:"sax section", tbn:"trombone section", tpt:"trumpet section" };
+function placeInputs(plot){
+  const labels = positionLabels(plot);
+  for (const pos of plot.positions){
+    const inputs = pos.inputs || [], f = footprintOf(pos, plot);
+    const mics = inputs.filter(i => i.type === "mic"), lines = inputs.filter(i => i.type !== "mic");
+    mics.forEach((inp, i) => addMicItem(plot, { x:pos.x + (i - (mics.length - 1) / 2) * 14, y:pos.y - f.d / 2 - 10 }, inp.source || "", [pos.id], true));
+    for (const inp of lines){
+      const two = inp.type === "stereo-di";
+      for (const side of (two ? [" L", " R"] : [""])){
+        const di = addDI(plot, pos, (inp.source || "") + side);
+        placeDI(plot, di); di.moved = true;
+        if (side === " R") di.x += 10;
+      }
+    }
+    delete pos.inputs;
+  }
+  const sec = plot.sections || {};
+  for (const row of Object.keys(sec)){
+    if (!sec[row] || !sec[row].on) continue;
+    const who = plot.positions.filter(p => SECTION_OF(roleOf(plot, p)) === row);
+    if (!who.length) continue;
+    const n = Math.max(1, (sec[row].mics | 0) || 2);
+    const cx = who.reduce((a, p) => a + p.x, 0) / who.length, y = Math.min.apply(null, who.map(p => p.y)) - 24;
+    for (let i = 0; i < n; i++) addMicItem(plot, { x:cx + (i - (n - 1) / 2) * 36, y }, SECTION_NAME[row] + (n > 1 ? " " + (i + 1) : ""), who.map(p => p.id), true);
+  }
+  for (const it of plot.items) delete it.inputs;
+  for (const it of plot.items) if (it.kind === "house" && it.ref === "micstand") it.ref = "mic";   // a placed stand is a mic now
+  plot.schemaVersion = 3;
 }
 function migratePlot(p){
   if (!p) return blankPlot();
-  if (!p.schemaVersion || p.schemaVersion < 2) return migrateV1(p);
+  if (!p.schemaVersion || p.schemaVersion < 2) p = migrateV1(p);
   p.positions = p.positions || []; p.items = p.items || []; p.wedges = p.wedges || [];
   p.songs = p.songs || []; p.customRoles = p.customRoles || [];
   p.deck = p.deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
@@ -1300,7 +1381,6 @@ function migratePlot(p){
   for (const k of ["soundcheckDate","soundcheck","startTime"]) p[k] = p[k] || "";
   p.soundcheckOrder = orderNum(p.soundcheckOrder); p.setOrder = orderNum(p.setOrder);
   p.rhythmPlan = p.rhythmPlan === "bass-centre" ? "bass-centre" : "drums-centre";
-  for (const k of ["sections","sectionsIncludeUnmiked","channelOrder","ampProfile"]) delete p[k];   // the input list, gone 2026-09-16
   for (const pos of p.positions){
     pos.names = pos.names || []; pos.doubles = pos.doubles || []; pos.rot = pos.rot || 0;
     for (const d of pos.doubles) delete d.input;
@@ -1310,6 +1390,8 @@ function migratePlot(p){
   settleBackline(p);               // a file saved when every guitarist got gtramp1
   for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
   for (const pos of p.positions) delete pos.wedgeId;
+  if (!p.schemaVersion || p.schemaVersion < 3) placeInputs(p);          // per-player inputs become mics and DI boxes on the deck
+  for (const k of ["sections","sectionsIncludeUnmiked","channelOrder","ampProfile"]) delete p[k];   // the input list, gone 2026-09-16
   return p;
 }
 
@@ -1372,6 +1454,12 @@ function kitPieces(f, col, dim, fill, dashed){
   ].join("");
 }
 
+/* A mic on a stand, in plan: the standard stage-plot lollipop — a circle for
+   the capsule with a stem for the boom. Shared by the diagram and the key. */
+function micGlyph(cx, cy, r, ink, fill){
+  return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"/>' +
+         '<path d="M' + (+cx).toFixed(1) + ',' + (cy + r * .6).toFixed(1) + 'v' + (r * 1.4).toFixed(1) + '" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" fill="none"/>';
+}
 function wedgePath(w, d){                              // trapezoid, throw face toward the top
   const x = -w/2, y = -d/2, t = w * .62;
   return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
@@ -1384,6 +1472,8 @@ function legendHTML(plot, print){
     wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
     house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
+    mic:     micGlyph(11, 8, 4.2, ink, fill),
+    di:      '<rect x="7" y="4" width="8" height="8" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     drummer: drummerMark(11, 5.5, 4, ink),
     truss:   '<rect x="5" y="2" width="12" height="12" fill="none" stroke="' + dim + '" stroke-width="1.1"/><path d="M5,2l12,12M17,2l-12,12" stroke="' + dim + '" stroke-width="1"/>',
     off:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="#c0392b" stroke-width="2"/>',
@@ -1455,16 +1545,22 @@ function diagramSVG(plot, opt){
     if (it.kind === "label"){ draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt); continue; }
     const def = itemDef(it); if (!def) continue;
     const f = footprintOf(it, plot), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
-    let body = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
-      (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
+    const isMic = def.cat === "mic", isDI = def.cat === "di";
+    let body = isMic
+      ? '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" stroke="none" pointer-events="all"' + bad(it) + '/>' +   // the footprint: grabbable, and outlined when over the edge
+        micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
+      : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
+        (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     const kitItem = it.kind === "byo" && it.ref === "byo-kit";   // drawn as a kit, dashed, so its name sits under it
     if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    const ang = kitItem ? 0 : labelAngle(it.rot);    // the label lies along the item, never upside down
-    const ly = kitItem ? py + f.d/2 + g.pt(DRAW.smallPt) * 1.1 : py + g.pt(DRAW.smallPt) * .35;
-    let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, ly, DRAW.smallPt, "dim",
+    const below = kitItem || isMic || isDI;          // too small, or too busy, to carry a name inside
+    const ang = below ? 0 : labelAngle(it.rot);      // the label lies along the item, never upside down
+    const ly = below ? py + f.d/2 + g.pt(DRAW.smallPt) * (isDI ? .95 : 1.1) : py + g.pt(DRAW.smallPt) * .35;
+    const name = it.kind === "byo" ? "BYO " + def.label : isMic ? micText(plot, it, labels) : isDI ? "DI" + (String(it.label || "").trim() ? " · " + it.label.trim() : "") : def.short;
+    let gl = ts(name, px, ly, DRAW.smallPt, isMic ? "" : "dim",
       ang ? ' transform="rotate(' + ang + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
     if (it.kind === "byo" && it.label) gl += ts(it.label, px, (kitItem ? ly : py + f.d/2) + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
     labelled(it, px, py, gl);
@@ -1642,7 +1738,7 @@ function renderSheet(p){
 }
 
 /* ================= left rail ================= */
-const RAIL_TABS = [["positions","Positions"],["house","House"],["byo","Bring-own"],["wedges","Wedges"],["misc","Misc"],["details","Details"]];
+const RAIL_TABS = [["positions","Positions"],["house","House"],["byo","Bring-own"],["wedges","Wedges"],["mics","Mics & DIs"],["misc","Misc"],["details","Details"]];
 function renderRailTabs(){
   $("railtabs").innerHTML = RAIL_TABS.map(([k, l]) => '<button data-tab="' + k + '" aria-pressed="' + (S.tab === k) + '">' + l + '</button>').join("");
   $("railtabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderRailTabs(); renderPanel(plot()); });
@@ -1665,7 +1761,23 @@ function roleOptions(p, selected){
 }
 function addHouse(ref){
   commit(() => {
-    const p = plot();
+    const p = plot(), labels = positionLabels(p);
+    if (ref === "mic" || ref === "di"){         // at the selected player or amp, if there is one, else centre-deck
+      const sel = find(p, S.sel), pos = isPosition(sel) ? sel : null;
+      const gear = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
+      const owner = pos || (gear && ownerOf(p, gear)) || null;
+      let it;
+      if (ref === "di" && owner){ it = addDI(p, owner, pos ? labels[pos.id].short : (itemDef(gear) || {}).short); placeDI(p, it); it.moved = true; }
+      else {
+        const anchor = pos || gear, f = anchor ? footprintOf(anchor, p) : null;
+        const at = anchor ? { x:anchor.x, y:anchor.y - (gear ? 0 : f.d / 2 + 10) } : freeSpot(p, p.items.length);
+        const label = pos ? labels[pos.id].short : gear ? (owner ? labels[owner.id].short + " amp" : (itemDef(gear) || {}).short) : "";
+        if (ref === "mic") it = addMicItem(p, at, label, owner ? [owner.id] : [], true);
+        else { it = { id:nextId("i"), kind:"house", ref, label:"", x:at.x, y:at.y, rot:0, moved:true, ownerPositionIds:[] }; p.items.push(it); }
+      }
+      it.id = nextId("i");
+      S.sel = it.id; return;
+    }
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
       p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true });
@@ -1754,13 +1866,31 @@ function renderPanel(p){
     }
     H.push('<button class="btn sm" data-house="wedge">+ wedge</button>');
   }
+  if (S.tab === "mics"){
+    const sel = find(p, S.sel), selPos = isPosition(sel) ? sel : null, selItem = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
+    const at = selPos ? posText2(p, selPos, labels) : selItem ? (itemDef(selItem) || {}).short : null;
+    H.push("<h3>Mics and DI boxes</h3><div class='plist'>");
+    for (const h of VENUE.house.filter(h => ["mic","di"].includes(h.cat))){
+      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
+      H.push('<button class="pitem" data-house="' + h.id + '"><span>+ ' + esc(h.label) + (at ? ' <span class="role">at ' + esc(at) + '</span>' : "") + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
+    }
+    H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. Select a player or an amp first and the mic lands at them; then drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>');
+    const mics = micsOn(p), dis = disOn(p);
+    if (mics.length || dis.length){
+      H.push("<h3>On stage — " + mics.length + " mic" + (mics.length === 1 ? "" : "s") + ", " + dis.length + " DI" + (dis.length === 1 ? "" : "s") + "</h3><div class='plist'>");
+      for (const it of mics.concat(dis))
+        H.push('<div class="prow"><span class="nm">' + (it.ref === "mic" ? "Mic" : "DI") + ' <span class="role">' + esc(it.ref === "mic" ? micText(p, it, labels) : (it.label || "")) + '</span></span>' +
+          '<button class="btn sm" data-wsel="' + it.id + '">edit</button><button class="btn sm x" data-idel="' + it.id + '">×</button></div>');
+      H.push("</div>");
+    }
+  }
   if (S.tab === "misc"){
     H.push("<h3>Stands, power, risers</h3><div class='plist'>");
-    for (const h of VENUE.house.filter(h => ["stand","di","power","riser"].includes(h.cat))){
+    for (const h of VENUE.house.filter(h => ["stand","power","riser"].includes(h.cat))){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push('</div><p class="note">Mic stands and DI boxes are counted from the input list, so you only place them here if you want them drawn.</p>' +
+    H.push('</div><p class="note">Mics and DI boxes have their own tab.</p>' +
       '<div class="plist"><button class="pitem" data-label="1"><span>Text label</span></button></div>');
   }
   if (S.tab === "details"){
@@ -1822,6 +1952,7 @@ function renderPanel(p){
     S.sel = p.items[p.items.length - 1].id;
   }));
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
+  el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => commit(() => { const q = plot(); q.items = q.items.filter(i => i.id !== b.dataset.idel); if (S.sel === b.dataset.idel) S.sel = null; }));
   el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); }));
   const pn = $("cPrintNames"); if (pn) pn.onchange = () => commit(() => { plot().printNames = pn.checked; });
   const bi = $("bInstr"); if (bi) bi.onclick = () => openInstrumentation(plot());
@@ -1893,6 +2024,8 @@ function renderInspector(p){
     H.push('<h3>' + esc(def ? def.label : "Label") + '<span>' + posText(sel, p) + '</span></h3>');
     if (sel.kind === "byo" || sel.kind === "label")
       H.push('<div class="fld"><label>' + (sel.kind === "label" ? "Text" : "What is it (prints after “BYO:”)") + '</label><input type="text" id="iLabel"></div>');
+    if (sel.kind === "house" && (sel.ref === "mic" || sel.ref === "di"))
+      H.push('<div class="fld"><label>' + (sel.ref === "mic" ? "What it is for (vocal, tpt 1+2, snare, gtr amp)" : "What it is for (bass, keys L)") + '</label><input type="text" id="iLabel" placeholder="' + (sel.ref === "mic" ? "tpt 1+2" : "keys L") + '"></div>');
     /* Swap one house amp or keyboard for another of the same kind. Picking one
        another player has takes theirs and gives them this one, so no two
        players are ever sent to the same box. */

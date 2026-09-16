@@ -20,7 +20,8 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   diagramGeom, labelBoxes, positionLabelBox,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine };`)();
+  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -186,23 +187,23 @@ for (const t of E.TEMPLATES){
   ok(!/\["inputs","Inputs"\]/.test(src), "no Inputs tab");
   ok(!/Input list<\/h2>|Not miked<\/h2>|DI boxes needed<\/h2>|INPUT LIST|NOT MIKED/.test(src), "the page and the email print no input list, not-miked or DI section");
   ok(!/Channels ' \+|"Channels " \+/.test(src), "…and no channel count");
-  ok(!/\+ mic|− mic|own channel|48V/.test(src), "no per-player mic controls");
+  ok(!/\+ mic\b|− mic\b|own channel|48V/.test(src), "no per-player mic controls");
   eq(E.VENUE.consoleChannels, 32, "the console's channel count stays on record (D3)");
-  const old = JSON.parse(JSON.stringify(T("combo")));
+  const old = JSON.parse(JSON.stringify(T("combo"))); old.schemaVersion = 2;
   old.sections = { sax:{ on:true, mics:2 } }; old.channelOrder = ["x"]; old.ampProfile = "light";
   old.positions[0].inputs = [{ id:"in1", source:"Tenor sax", type:"mic", phantom:false, notes:"" }]; old.positions[0].pkg = "mic";
   old.positions[0].doubles = [{ roleId:"flute", input:true }];
   const p = E.migratePlot(old);
   ok(!("sections" in p) && !("channelOrder" in p) && !("ampProfile" in p), "an old file drops sections, channel order and profile on load");
   ok(!("pkg" in p.positions[0]) && !("input" in p.positions[0].doubles[0]), "…and packages and a double's own-channel tick");
-  eq(p.positions[0].inputs.length, 1, "…while the inputs themselves ride along for mic placement to pick up");
+  ok(!("inputs" in p.positions[0]) && E.micsOn(p).some(m => m.label === "Tenor sax"), "…while the inputs themselves become mics on the deck");
 }
 
 /* ---- 3d. the diagram's key lists what the diagram draws ---- */
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,wedge,house,drummer,truss", "the jazz combo's key: " + ids(combo));
+  eq(ids(combo), "player,wedge,house,di,drummer,truss", "the jazz combo's key (the keys and bass DI boxes included): " + ids(combo));
   const blank = E.blankPlot();
   eq(ids(blank), "truss", "an empty deck's key has only the truss");
   E.addPosition(blank, "keys");
@@ -223,7 +224,8 @@ for (const t of E.TEMPLATES){
   eq(needs.gtramp1, 1, "the guitar implies a house amp");
   eq(needs.kb1, 1, "keys implies a house keyboard — SW has no acoustic piano");
   eq(needs.bassamp, 1, "the bass implies the house rig");
-  ok(!("di" in needs) && !("micstand" in needs), "nothing is counted from an input list any more");
+  eq(needs.di, 2, "two DI boxes on the deck — keys and bass — counted from the objects, not from an input list");
+  ok(!("micstand" in needs) && !("mic" in needs), "…and no mic until someone places one");
 }
 
 /* ---- 6. names are optional, and never load-bearing ---- */
@@ -364,10 +366,13 @@ for (const t of E.TEMPLATES){
 {
   const compare = (name, v1, want) => {
     const p = E.migratePlot(v1);
-    eq(p.schemaVersion, 2, name + ": migrates to v2");
+    eq(p.schemaVersion, 3, name + ": migrates to the current schema");
     eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.n)), JSON.stringify(want.monitors.map(m => m[0])), name + ": same wedges");
-    const houseWant = want.house.filter(h => h[0] !== "di" && h[0] !== "micstand");   // those two were counted off the input list
-    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need])), JSON.stringify(houseWant.map(h => [h[0], h[1]])), name + ": same house equipment");
+    const gear = h => h[0] !== "di" && h[0] !== "micstand" && h[0] !== "mic";   // stands were counted off the input list; mics and DIs are objects now
+    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need]).filter(gear)), JSON.stringify(want.house.filter(gear).map(h => [h[0], h[1]])), name + ": same house equipment");
+    const diWant = (want.house.find(h => h[0] === "di") || [0, 0])[1];
+    eq(E.disOn(p).length, diWant, name + ": the DI boxes v1 counted are DI boxes on the deck (" + diWant + ")");
+    eq(E.micsOn(p).length, want.rows.filter(r => r[3] === "mic").length, name + ": every v1 mic channel is a mic on the deck");
     ok(p.positions.every(x => !E.offDeck(x, p)), name + ": migrated positions stay where they were drawn");
     return p;
   };
@@ -375,13 +380,14 @@ for (const t of E.TEMPLATES){
   eq(ex.positions.length, 5, "six v1 people become five positions — the two drummers share the kit");
   const drums = ex.positions.find(x => x.roleId === "drums");
   eq(E.posNames(drums).join(" / "), "Jo Fischer / Riley Nunez", "both occupants keep their names");
-  eq(drums.inputs.filter(i => i.type === "mic").length, 7, "…and the kit's seven v1 mics ride along on the position");
+  eq(E.micsOn(ex).filter(m => m.ownerPositionIds.includes(drums.id)).length, 7, "…and the kit's seven v1 mics are seven mics on the deck, belonging to the kit");
   ok(!("ampProfile" in ex) && !("pkg" in drums) && !("sections" in ex), "…with no mic-profile, package or section fields on the migrated plot");
   const old = T("combo"); old.ampProfile = "light"; old.positions[0].pkgOverride = true;
   const reread = E.migratePlot(JSON.parse(JSON.stringify(old)));
   ok(!("ampProfile" in reread) && !reread.positions.some(x => "pkgOverride" in x), "a plot saved with the old profile fields loads without them");
   const keys = ex.positions.find(x => x.roleId === "keys");
-  eq(keys.inputs.length, 2, "the keys/vocals player keeps both of their v1 inputs for mic placement");
+  const keysGear = ex.items.filter(i => (i.ownerPositionIds || []).includes(keys.id) && ["mic","di"].includes(i.ref)).map(i => i.ref + ":" + i.label).sort().join("|");
+  eq(keysGear, "di:Keys L|di:Keys R|mic:Vocal", "the keys/vocals player's v1 inputs are two DI boxes and a vocal mic on the deck");
   ok(ex.items.some(i => i.ref === "kb1") && ex.items.some(i => i.kind === "byo"), "owned gear and BYO items come across");
   ok(!("request" in ex.wedges[0]) && !("assignees" in ex.wedges[0]), "a v1 wedge comes across as a spot and a number");
   eq(ex.songs[0].onstage.length, 5, "song personnel remap onto positions (the two drummers collapse to one chair)");
@@ -400,7 +406,7 @@ for (const t of E.TEMPLATES){
   if (!files.length) say("no sample plots in samples/ — they are local-only, see CLAUDE.md");
   for (const f of files){
     const p = E.migratePlot(readSample(f));
-    eq(p.schemaVersion, 2, "samples/" + f + " loads as a v2 plot");
+    eq(p.schemaVersion, 3, "samples/" + f + " loads at the current schema");
     ok(p.positions.length > 0, "samples/" + f + ": " + p.positions.length + " positions");
   }
 }
@@ -624,6 +630,64 @@ for (const t of E.TEMPLATES){
      "changeover: the house kit comes off and the band's kit comes on");
   const none = E.blankPlot();
   eq(E.houseNeeds(none).length, 0, "a blank plot asks the house for nothing");
+}
+
+/* ---- 19e. mics and DI boxes are objects on the deck (C1/C2, Tim Shade 2026-09-16) ---- */
+{
+  eq(E.VENUE.house.find(h => h.id === "mic").label, "Mic (on stand)", "one mic object, on a stand");
+  ok(!E.VENUE.house.some(h => h.id === "micstand"), "…and no separate mic stand");
+  const combo = T("combo");
+  eq(E.micsOn(combo).length, 0, "nothing starts miked: a template has no mics");
+  const dis = E.disOn(combo);
+  eq(dis.map(d => d.label).sort().join(","), "Bass,Keys", "…and a DI box for each DI instrument, labelled");
+  for (const d of dis){ const own = E.ownerOf(combo, d); ok(own && E.roleOf(combo, own).di, "the " + d.label + " DI belongs to its player"); }
+  const rig = combo.items.find(i => E.refCat(i.ref) === "bass"), bdi = dis.find(d => d.label === "Bass");
+  ok(Math.abs(bdi.y - rig.y) < 1 && bdi.x < rig.x, "the bass DI sits beside the rig, on its stage-left side");
+  ok(collisions(combo).hard.length === 0, "…clear of everything: " + collisions(combo).hard.join("; "));
+  for (const t of E.TEMPLATES){ const p = T(t.id); ok(E.disOn(p).every(d => !E.offDeck(d, p)), t.name + ": its DI boxes are on the deck"); }
+  const blank = E.blankPlot();
+  for (const r of E.ROLES) E.addPosition(blank, r.id);
+  eq(E.disOn(blank).length, E.ROLES.filter(r => r.di).length, "every DI instrument, and only those, arrives with a DI box");
+
+  const tpt = combo.positions.find(x => x.roleId === "trumpet");
+  const mic = E.addMicItem(combo, { x:tpt.x, y:tpt.y - 21 }, "Tpt", [tpt.id], true);
+  eq(E.micsOn(combo).length, 1, "a placed mic is a mic on the deck");
+  eq(E.micText(combo, mic), "Tpt", "…labelled");
+  mic.label = ""; ok(/Tpt/.test(E.micText(combo, mic)), "…an unlabelled mic reads as its owner's chair: " + E.micText(combo, mic));
+  const keys = E.legendKeys(combo).map(k => k.id);
+  ok(keys.includes("mic") && keys.includes("di"), "the key lists mics and DI boxes when they are drawn: " + keys.join(","));
+  eq(E.houseNeeds(combo).find(n => n.id === "mic").need, 1, "…and the house is asked for one mic");
+  const two = E.makeFromParts([["trumpet",2],["bass",1],["drums",1]], null, "Two tpts");
+  const t = two.positions.filter(x => x.roleId === "trumpet");
+  E.addMicItem(two, { x:(t[0].x + t[1].x) / 2, y:t[0].y - 21 }, "tpt 1+2", t.map(x => x.id), true);
+  eq(E.micsOn(two).length, 1, "two trumpets on one mic is one mic, labelled for both");
+
+  // an old file: per-player inputs become objects on the deck
+  const old = JSON.parse(JSON.stringify(T("combo"))); old.schemaVersion = 2;
+  old.items = old.items.filter(i => i.ref !== "di");
+  const kit = old.positions.find(x => x.roleId === "drums"), kp = old.positions.find(x => x.roleId === "keys"), tp = old.positions.find(x => x.roleId === "trumpet");
+  kit.inputs = [{ source:"Kick", type:"mic" }, { source:"Snare", type:"mic" }, { source:"OH L", type:"mic" }];
+  kp.inputs = [{ source:"Keys", type:"stereo-di" }];
+  tp.inputs = [{ source:"Trumpet", type:"mic" }];
+  old.sections = { sax:{ on:true, mics:2 } };
+  const p = E.migratePlot(old);
+  eq(p.schemaVersion, 3, "an old file migrates to schema 3");
+  eq(E.micsOn(p).map(m => m.label).sort().join("|"), "Kick|OH L|Snare|Trumpet|sax section 1|sax section 2", "its mics are mics on the deck, labelled as the inputs were");
+  eq(E.disOn(p).map(d => d.label).sort().join("|"), "Keys L|Keys R", "a stereo DI is two DI boxes");
+  ok(p.positions.every(x => !("inputs" in x)) && !("sections" in p), "…and no position carries inputs, no plot carries sections");
+  ok(E.micsOn(p).concat(E.disOn(p)).every(i => i.moved), "…all pinned where they landed");
+  const kmics = E.micsOn(p).filter(m => m.ownerPositionIds[0] === kit.id);
+  ok(kmics.every(m => m.y < kit.y) && new Set(kmics.map(m => m.x)).size === 3, "the kit's mics sit downstage of it, spread out");
+  const tenor = p.positions.find(x => x.roleId === "tenor");
+  ok(E.micsOn(p).filter(m => /sax section/.test(m.label)).every(m => m.ownerPositionIds.includes(tenor.id)), "section mics belong to the row");
+  const stand = JSON.parse(JSON.stringify(T("combo"))); stand.schemaVersion = 2;
+  stand.items.push({ id:"m1", kind:"house", ref:"micstand", label:"", x:60, y:60, rot:0, moved:true, ownerPositionIds:[] });
+  ok(E.migratePlot(stand).items.some(i => i.ref === "mic" && i.id === "m1"), "a placed mic stand from an old file is a mic now");
+  const again = E.migratePlot(JSON.parse(JSON.stringify(p)));
+  eq(E.micsOn(again).length, E.micsOn(p).length, "a migrated file reloads without growing more mics");
+  ok(/\["mics","Mics & DIs"\]/.test(src), "the Mics & DIs tab exists");
+  ok(/"tpt 1\+2" : "keys L"/.test(src), "a mic's label is edited in the inspector");
+  ok(!/\["stand","di","power","riser"\]/.test(src), "the Misc tab no longer offers a stand or a DI");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *
