@@ -76,7 +76,7 @@ counts and the deck are still placeholders.
 
 | Value | Status | Notes |
 |---|---|---|
-| `deck: {widthFt:24, depthFt:12}` | **ASSUMED** | tech is measuring. See "Changing the deck" |
+| `deck: {widthFt:24, depthFt:20}` | Tim Shade, 2026-09-16 | the published spec says 20 × 20 of 4 × 8 platforms; Tim doesn't think it is square and calls it 24 wide × 20 deep. Other venues: the Details tab edits a plot's own deck. See "Changing the deck" |
 | `deliverTo: timothy.shade@wichita.edu` | confirmed | William, 2026-09-15. Prints in the delivery line at the foot of every page, and the Email button addresses it. This is the plot's one fixed contact |
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
 | `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
@@ -182,7 +182,10 @@ existed load with them empty; `check.js` covers the v1 and v2 paths.
 
 ### Changing the deck
 
-Edit `VENUE.deck` — one line. Templates and the layout engine work in
+Edit `VENUE.deck` — one line. (24 × 12 → 24 × 20 on 2026-09-16, D1: the
+diagram grew from 4.4″ to its 5.3″ cap and the page paid for it with what
+B1 and B2 removed — every template still prints on one page, the big band
+at 873 of 960 px.) Templates and the layout engine work in
 **fractions** of the deck, so every template re-lays out proportionally. Saved
 plots keep their own `deck` and their own inch coordinates, so old files never
 shift; a plot's deck is editable per-plot in the Details tab. Run

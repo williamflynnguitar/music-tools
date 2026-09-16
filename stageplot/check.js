@@ -335,11 +335,14 @@ for (const t of E.TEMPLATES){
 
 /* ---- 11. deck size ---- */
 {
-  const a = T("bigband"), big = E.makeFromTemplate("bigband", { widthFt:32, depthFt:16 });
+  eq(E.VENUE.deck.widthFt + "×" + E.VENUE.deck.depthFt, "24×20", "the Somewhere Works deck is 24′ wide × 20′ deep (Tim Shade, 2026-09-16)");
+  const a = T("bigband"), big = E.makeFromTemplate("bigband", { widthFt:32, depthFt:28 });
   const ka = a.positions.find(x => x.roleId === "drums"), kb = big.positions.find(x => x.roleId === "drums");
   ok(Math.abs(ka.x / (24 * 12) - kb.x / (32 * 12)) < .02, "templates re-lay out proportionally on a bigger deck");
   ok(kb.y > ka.y, "a deeper deck puts the kit further upstage in inches");
-  eq(JSON.parse(JSON.stringify(a)).deck.widthFt, 24, "a saved plot keeps the deck it was drawn on");
+  eq(JSON.parse(JSON.stringify(a)).deck.widthFt + "×" + JSON.parse(JSON.stringify(a)).deck.depthFt, "24×20", "a saved plot keeps the deck it was drawn on");
+  const shallow = E.makeFromTemplate("combo", { widthFt:24, depthFt:12 });
+  eq(shallow.deck.depthFt, 12, "…and another venue's deck is still a per-plot choice");
 }
 
 /* ---- 12. changeover ---- */
@@ -580,9 +583,10 @@ for (const t of E.TEMPLATES){
   eq(JSON.stringify(box(135)), JSON.stringify(box(45)), "135° covers the same box as 45°");
   amp.rot = 0;
   eq([0, 45, 90, 135, 180, 225, 270, 315].map(E.labelAngle).join(" "), "0 45 -90 -45 0 45 -90 -45", "labels lie along the item and never read upside down");
-  // a kit laid out against the drape and turned 45° pokes over the edge — the
-  // box is honest about that, and the page says so rather than hiding it
-  const q = band(), kit = q.positions.find(x => x.roleId === "drums"), kb = q.items.find(i => E.refCat(i.ref) === "keys");
+  // a kit laid out against the drape of a shallow deck and turned 45° pokes
+  // over the edge — the box is honest about that, and the page says so
+  const q = E.makeFromParts([["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]], { widthFt:24, depthFt:12 }, "Turned, shallow");
+  const kit = q.positions.find(x => x.roleId === "drums"), kb = q.items.find(i => E.refCat(i.ref) === "keys");
   kit.rot = 45; kit.moved = true;
   ok(E.offDeck(kit, q), "a kit turned 45° where the engine put it hangs over the upstage edge (its box grew from 54×52 to 75×75)");
   ok(E.warnings(q).some(w => /deck edge/.test(w.text)), "…and the warning says so");
