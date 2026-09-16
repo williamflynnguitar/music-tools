@@ -600,6 +600,7 @@ for (const t of E.TEMPLATES){
   eq(kit.rot + "/" + kb.rot, "45/45", "…and re-layout left the pinned angles alone");
   ok(!/\+ 90\) % 360/.test(src) && /\+ 45\) % 360/.test(src), "the rotate button steps 45°");
   ok(/e\.shiftKey \? -45 : 45/.test(src), "shift-R steps back");
+  ok(/id="bRotL"[^>]*>rotate ⟲ \(⇧R\)/.test(src) && /id="bRot"[^>]*>rotate ⟳ \(R\)/.test(src), "both directions have a button in the inspector, naming their key (E1)");
 }
 
 /* ---- 19c. the drummer mark and the kick label ---- */

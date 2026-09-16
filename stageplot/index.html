@@ -2161,7 +2161,7 @@ function renderInspector(p){
     }
   }
   if (isPosition(sel)) H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
-  H.push('<div class="insprow"><button class="btn sm" id="bRot">rotate 45° (R)</button><button class="btn sm" id="bDel">delete</button>' +
+  H.push('<div class="insprow"><button class="btn sm" id="bRot" title="clockwise 45° — R">rotate ⟳ (R)</button><button class="btn sm" id="bRotL" title="counter-clockwise 45° — shift-R">rotate ⟲ (⇧R)</button><button class="btn sm" id="bDel">delete</button>' +
     '<button class="btn sm" id="bDesel">done</button></div>');
   el.innerHTML = H.join("");
 
@@ -2197,6 +2197,7 @@ function renderInspector(p){
     sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);
   }));
   $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 45) % 360; sel.moved = true; });
+  $("bRotL").onclick = () => mut(() => { sel.rot = (((sel.rot || 0) - 45) % 360 + 360) % 360; sel.moved = true; });
   $("bDel").onclick = () => mut(() => removeObject(plot(), sel.id));
   $("bDesel").onclick = () => { S.sel = null; render(); };
 }
