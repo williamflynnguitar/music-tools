@@ -1078,6 +1078,10 @@ function resetIds(){ ID_SEQ = 0; }
 /* Lineup order is a small positive integer or null; anything else a file or
    a hand could carry ("2nd", "", "0", 2.5) settles to one of those. */
 function orderNum(v){ const n = parseInt(v, 10); return Number.isInteger(n) && n > 0 ? n : null; }
+/* Dates print MM/DD/YYYY, the American order (William, 2026-09-15). Stored
+   dates are ISO from the date inputs and filenames stay ISO so they sort;
+   this is the one place the printed order lives. Free text passes through. */
+function fmtDate(v){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").trim()); return m ? m[2] + "/" + m[3] + "/" + m[1] : String(v || "").trim(); }
 function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : { 1:"st", 2:"nd", 3:"rd" }[n % 10] || "th"); }
 /* One line each for the soundcheck and the performance, in the order a tech
    reads them: the day, when the block starts, where this band falls in it —
@@ -1088,7 +1092,7 @@ function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : 
    nothing at all in it reads "—". */
 function slotLine(label, date, time, order){
   const n = orderNum(order);
-  const parts = [String(date || "").trim(), String(time || "").trim(), n ? ordinal(n) + " up" : ""].filter(Boolean);
+  const parts = [fmtDate(date), String(time || "").trim(), n ? ordinal(n) + " up" : ""].filter(Boolean);
   return label + ": " + (parts.length ? parts.join(" \u00b7 ") : "\u2014");
 }
 function scheduleLines(p){
@@ -1168,10 +1172,24 @@ function footprintOf(o, plot){
   if (!o.kind){ const w = houseDef("wedge"); return { w:w.w, d:w.d }; }   // a wedge
   const def = itemDef(o); return def ? { w:def.w, d:def.d } : { w:18, d:18 };
 }
+/* Rotation is in 45° steps (William, 2026-09-16; it was 90° until then), so
+   the box an object covers is the axis-aligned bounds of its rotated
+   footprint. At 0/90/180/270 that is the old width–depth swap exactly; at 45°
+   a 27×11 amp covers 27×27. cos and sin of a right angle come back as 1e-17,
+   so they are snapped, and every footprint stays deterministic. */
 function rectOf(o, plot){
-  const f = footprintOf(o, plot), rot = ((o.rot || 0) % 360 + 360) % 360;
-  const w = (rot === 90 || rot === 270) ? f.d : f.w, d = (rot === 90 || rot === 270) ? f.w : f.d;
+  const f = footprintOf(o, plot), r = (o.rot || 0) * Math.PI / 180;
+  const snap = v => Math.round(Math.abs(v) * 1e9) / 1e9, c = snap(Math.cos(r)), sn = snap(Math.sin(r));
+  const w = f.w * c + f.d * sn, d = f.w * sn + f.d * c;
   return { x0:o.x - w/2, x1:o.x + w/2, y0:o.y - d/2, y1:o.y + d/2, w, d };
+}
+/* The angle an item's label is drawn at: along the item's own axis, folded so
+   the text never reads upside down. 90 and 270 come out as -90, which is how
+   the big band's vertical keyboard always read. */
+function labelAngle(rot){
+  let a = ((rot || 0) % 360 + 360) % 360;
+  if (a >= 90 && a < 270) a -= 180; else if (a >= 270) a -= 360;
+  return a;
 }
 function offDeck(o, plot){
   if (o.kind === "label") return false;
@@ -1645,6 +1663,16 @@ function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migrat
    the audience and the drummer sits behind it, facing the same way.
    Cymbals are drawn thinner than drums; dashes are not available, they
    mean "the band brings it" on this page. */
+/* The drummer: a solid dot with a stem for which way they face. One glyph,
+   drawn to the same proportions in the kit and in the key, so the two read
+   as the same mark (William, 2026-09-16 — the kit's stem used to start at
+   the dot's centre and barely cleared its edge). The stem runs from the centre
+   to just under two radii, pointing +y: downstage, at the audience. */
+function drummerMark(cx, cy, r, col){
+  return '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + col + '"/>' +
+         '<path d="M' + cx.toFixed(1) + ',' + cy.toFixed(1) + 'v' + (r * 1.9).toFixed(1) + '" stroke="' + col +
+         '" stroke-width="' + Math.max(1.2, r * .3).toFixed(1) + '" stroke-linecap="round" fill="none"/>';
+}
 function kitPieces(f, col, dim, fill){
   const kx = f.w / 72, ky = f.d / 60, kr = Math.min(kx, ky);
   const piece = (x, y, r, thin) => '<circle cx="' + (x * kx).toFixed(1) + '" cy="' + (y * ky).toFixed(1) +
@@ -1653,11 +1681,12 @@ function kitPieces(f, col, dim, fill){
     piece(-17, -8, 7, true), piece(20, -4, 5, true),    // ride, hats
     piece(-20, 8, 7), piece(-10, -3, 4.5), piece(-3, -5, 4.5), piece(8, -1, 6),  // floor tom, rack toms, snare
     piece(0, 12, 10),                                    // kick, resonant head to the audience
+    // the kick is the one drum the tech has to find first, so it is named
+    '<text x="0" y="' + (12 * ky + 1.8 * kr).toFixed(1) + '" font-size="' + (5 * kr).toFixed(1) + '" text-anchor="middle" fill="' + col +
+      '" font-family="Helvetica, Arial, sans-serif">Kick</text>',
     // the drummer: a solid mark so it cannot be mistaken for another drum,
-    // with a tick for which way they face — downstage, at the audience
-    '<circle cx="' + (2 * kx).toFixed(1) + '" cy="' + (-22 * ky).toFixed(1) + '" r="' + (6.5 * kr).toFixed(1) + '" fill="' + col + '"/>',
-    '<path d="M' + (2 * kx).toFixed(1) + ',' + (-22 * ky).toFixed(1) + 'v' + (7 * ky).toFixed(1) +
-      '" stroke="' + col + '" stroke-width="1.2" fill="none"/>',
+    // with a stem for which way they face — downstage, at the audience
+    drummerMark(2 * kx, -22 * ky, 6.5 * kr, col),
   ].join("");
 }
 
@@ -1674,7 +1703,7 @@ function legendHTML(plot, print){
     wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
     house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
-    drummer: '<circle cx="11" cy="6" r="4" fill="' + ink + '"/><path d="M11,6v7" stroke="' + ink + '" stroke-width="1.2"/>',
+    drummer: drummerMark(11, 5.5, 4, ink),
     truss:   '<rect x="5" y="2" width="12" height="12" fill="none" stroke="' + dim + '" stroke-width="1.1"/><path d="M5,2l12,12M17,2l-12,12" stroke="' + dim + '" stroke-width="1"/>',
     off:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="#c0392b" stroke-width="2"/>',
   };
@@ -1750,9 +1779,9 @@ function diagramSVG(plot, opt){
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y);
-    const turned = (it.rot || 0) % 180 === 90;       // a vertical keyboard reads along its length
+    const ang = labelAngle(it.rot);                  // the label lies along the item, never upside down
     let gl = ts(it.kind === "byo" ? "BYO " + def.label : def.short, px, py + g.pt(DRAW.smallPt) * .35, DRAW.smallPt, "dim",
-      turned ? ' transform="rotate(-90 ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
+      ang ? ' transform="rotate(' + ang + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
     if (it.kind === "byo" && it.label) gl += ts(it.label, px, py + f.d/2 + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
     labelled(it, px, py, gl);
   }
@@ -1792,7 +1821,7 @@ function deliverLine(p){
   if (!VENUE.leadDays) return "Please deliver to " + VENUE.deliverTo + " as far in advance as possible.";
   if (!p.date) return "Please deliver to " + VENUE.deliverTo + " at least " + VENUE.leadDays + " days ahead.";
   const d = new Date(p.date + "T12:00:00"); d.setDate(d.getDate() - VENUE.leadDays);
-  return "Please deliver to " + VENUE.deliverTo + " by " + d.toISOString().slice(0, 10) + ".";
+  return "Please deliver to " + VENUE.deliverTo + " by " + fmtDate(d.toISOString().slice(0, 10)) + ".";
 }
 function sheetHTML(p){
   const units = inputUnits(p), rows = channelRows(p), mon = monitorTable(p), needs = houseNeeds(p),
@@ -1801,7 +1830,7 @@ function sheetHTML(p){
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
-    '<span>Prepared ' + todayISO() + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
+    '<span>Prepared ' + fmtDate(todayISO()) + '</span><span>Channels ' + ch + " / " + VENUE.consoleChannels + '</span>' +
     '<span>Monitor mixes ' + p.wedges.length + " / " + VENUE.monitorMixes + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
@@ -1938,7 +1967,7 @@ function renderCanvas(p){
     };
   }
   $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
-  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates, Delete removes.";
+  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back), Delete removes.";
   if (!S.readOnly) wireCanvas();
 }
 function renderSheet(p){
@@ -2107,7 +2136,7 @@ function renderPanel(p){
   if (S.tab === "details"){
     H.push('<div class="fld"><label>Act / ensemble</label><input type="text" id="fEns"></div>' +
       '<div class="fld"><label>Band leader/director</label><input type="text" id="fDir"></div>' +
-      '<div class="fld"><label>Show</label><input type="text" id="fShow"></div>' +
+      '<div class="fld"><label>Concert / event name</label><input type="text" id="fShow" placeholder="Fall Jazz Showcase"></div>' +
       '<h3>Soundcheck</h3><div class="insprow">' +
       '<div class="fld" style="flex:1.4;margin:0"><label>Date</label><input type="date" id="fCheckDate"></div>' +
       '<div class="fld" style="flex:1;margin:0"><label>Block starts</label><input type="text" id="fCheck" placeholder="5:30 PM"></div>' +
@@ -2282,7 +2311,7 @@ function renderInspector(p){
       '<button class="btn sm" data-iadd="stereo-di">+ stereo DI</button></div></div>');
     H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
   }
-  H.push('<div class="insprow"><button class="btn sm" id="bRot">rotate (R)</button><button class="btn sm" id="bDel">delete</button>' +
+  H.push('<div class="insprow"><button class="btn sm" id="bRot">rotate 45° (R)</button><button class="btn sm" id="bDel">delete</button>' +
     '<button class="btn sm" id="bDesel">done</button></div>');
   el.innerHTML = H.join("");
 
@@ -2329,7 +2358,7 @@ function renderInspector(p){
   const handSet = () => { const q = plot(), pos = find(q, sel.id); if (pos) pos.pkg = inferPackage(q, pos); };
   el.querySelectorAll("[data-idel]").forEach(b => b.onclick = () => mut(() => { sel.inputs.splice(+b.dataset.idel, 1); handSet(); }));
   el.querySelectorAll("[data-iadd]").forEach(b => b.onclick = () => mut(() => { sel.inputs.push({ id:nextId("in"), source:titleCase(roleOf(plot(), sel).label), type:b.dataset.iadd, phantom:false, notes:"" }); handSet(); }));
-  $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
+  $("bRot").onclick = () => mut(() => { sel.rot = ((sel.rot || 0) + 45) % 360; sel.moved = true; });
   $("bDel").onclick = () => mut(() => {
     const q = plot();
     q.positions = q.positions.filter(o => o.id !== sel.id);
@@ -2392,7 +2421,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowRight") nudge(-step, 0);
   else if (e.key === "ArrowUp")    nudge(0, step);
   else if (e.key === "ArrowDown")  nudge(0, -step);
-  else if (e.key.toLowerCase() === "r") commit(() => { sel.rot = ((sel.rot || 0) + 90) % 360; sel.moved = true; });
+  else if (e.key.toLowerCase() === "r") commit(() => { sel.rot = (((sel.rot || 0) + (e.shiftKey ? -45 : 45)) % 360 + 360) % 360; sel.moved = true; });
   else if (e.key === "Delete" || e.key === "Backspace"){
     e.preventDefault();
     commit(() => {
@@ -2647,7 +2676,7 @@ $("bShare").onclick = async () => {
 $("bEmail").onclick = async () => {
   const p = plot(), text = emailText(p);
   await copyText(text);
-  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + p.date : ""));
+  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + fmtDate(p.date) : ""));
   const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
   toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
   location.href = mail;

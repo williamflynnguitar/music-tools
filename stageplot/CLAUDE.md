@@ -544,7 +544,12 @@ New in v2:
   can grazes the row in front (`check.js` prints these as "label crossings",
   currently 3–11″ overlaps). The white halo keeps them readable. A proper fix
   is per-row label sides, or leader lines.
-- **No arbitrary rotation** — still 90° steps.
+- **Rotation is 45° steps, not arbitrary** (was 90° until 2026-09-16, when
+  William wanted the kit and the keyboard angled). R and the rotate button add
+  45°, shift-R takes it back. `rectOf()` is the axis-aligned bounds of the
+  rotated footprint — exact at right angles, the diagonal at 45° — so the
+  overlap and off-deck checks stay honest; item labels lie along the item at
+  `labelAngle()`, folded so they never read upside down.
 - **The instrumentation form doesn't reorder positions**; a role added later
   numbers after the existing ones.
 
