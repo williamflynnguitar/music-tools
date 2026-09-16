@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   inferPackage, notMiked, unmiked,
   addMic, removeMic, ownMics, micSummary, bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate };`)();
+  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -694,6 +694,49 @@ for (const t of E.TEMPLATES){
   ok(/scheduleLines\(p\)\.map/.test(src) && /for \(const l of scheduleLines\(p\)\) L\.push\(l\)/.test(src),
      "the printed page and the email text both print them, from the same function");
   ok(!/"Performance: " \+ esc\(p\.date\)|"Performance: " \+ p\.date/.test(src), "\u2026and nothing prints the performance date on its own any more");
+}
+
+/* ---- 19b. rotation in 45° steps ---- */
+{
+  const band = () => E.makeFromParts([["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Turned");
+  const p = band(), amp = p.items.find(i => E.refCat(i.ref) === "gtramp"), f = E.footprintOf(amp, p);
+  const box = r => { amp.rot = r; const b = E.rectOf(amp, p); return [Math.round(b.w * 100) / 100, Math.round(b.d * 100) / 100]; };
+  eq(JSON.stringify(box(0)), JSON.stringify([f.w, f.d]), "at 0° the box is the footprint");
+  eq(JSON.stringify(box(90)), JSON.stringify([f.d, f.w]), "at 90° it is exactly the swap it always was");
+  eq(JSON.stringify(box(180)), JSON.stringify([f.w, f.d]), "180° exact");
+  eq(JSON.stringify(box(270)), JSON.stringify([f.d, f.w]), "270° exact");
+  const h = Math.round((f.w + f.d) * Math.SQRT1_2 * 100) / 100;
+  eq(JSON.stringify(box(45)), JSON.stringify([h, h]), "at 45° the box is the diagonal both ways (" + h + "″)");
+  eq(JSON.stringify(box(135)), JSON.stringify(box(45)), "135° covers the same box as 45°");
+  amp.rot = 0;
+  eq([0, 45, 90, 135, 180, 225, 270, 315].map(E.labelAngle).join(" "), "0 45 -90 -45 0 45 -90 -45", "labels lie along the item and never read upside down");
+  // a kit laid out against the drape and turned 45° pokes over the edge — the
+  // box is honest about that, and the page says so rather than hiding it
+  const q = band(), kit = q.positions.find(x => x.roleId === "drums"), kb = q.items.find(i => E.refCat(i.ref) === "keys");
+  kit.rot = 45; kit.moved = true;
+  ok(E.offDeck(kit, q), "a kit turned 45° where the engine put it hangs over the upstage edge (its box grew from 72×60 to 93×93)");
+  ok(E.warnings(q).some(w => /deck edge/.test(w.text)), "…and the warning says so");
+  // rotate, then drag it clear: what the director actually does
+  kit.y = E.deckIn(q).d / 2; kb.rot = 45; kb.moved = true; kb.x = 230; kb.y = 45;
+  E.autoLayout(q, { force:false });
+  const hits = collisions(q);
+  ok(hits.hard.length === 0, "dragged to the middle, a 45° kit and keyboard sit clear of everything else:\n        " + hits.hard.join("\n        "));
+  ok(q.positions.concat(q.items, q.wedges).every(o => !E.offDeck(o, q)), "…and everything is on the deck");
+  eq(kit.rot + "/" + kb.rot, "45/45", "…and re-layout left the pinned angles alone");
+  ok(!/\+ 90\) % 360/.test(src) && /\+ 45\) % 360/.test(src), "the rotate button steps 45°");
+  ok(/e\.shiftKey \? -45 : 45/.test(src), "shift-R steps back");
+}
+
+/* ---- 19c. the drummer mark and the kick label ---- */
+{
+  // the kit is drawn outside the engine block, so lift just those two functions
+  const K = new Function(src.slice(src.indexOf("function drummerMark("), src.indexOf("function wedgePath(")) + "; return { drummerMark, kitPieces };")();
+  const kit = K.kitPieces({ w:72, d:60 }, "#000", "#555", "#eee");
+  ok(/>Kick<\/text>/.test(kit), "the kick drum is labelled on the kit");
+  const stem = /<path d="M-?[\d.]+,-?[\d.]+v([\d.]+)" stroke="#000" stroke-width="[\d.]+" stroke-linecap="round"/.exec(kit);
+  const dot = /<circle cx="-?[\d.]+" cy="-?[\d.]+" r="([\d.]+)" fill="#000"/.exec(kit);
+  ok(stem && dot && +stem[1] > +dot[1] * 1.5, "the drummer's stem clears the dot by most of a radius (" + (stem ? stem[1] : "?") + " on r " + (dot ? dot[1] : "?") + ")");
+  ok(/drummer: drummerMark\(/.test(src) && /drummerMark\(2 \* kx/.test(src), "the key and the kit draw the drummer with the same function");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *
