@@ -2448,8 +2448,13 @@ $("bPrint").onclick = () => window.print();
 $("bChange").onclick = openChangeover;
 $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bEditCopy").onclick = () => { S.readOnly = false; history.replaceState(null, "", location.pathname + location.search); render(); };
-window.addEventListener("dragover", e => { e.preventDefault(); });
+/* The page is a drop target for .json files and nothing else. Accepting
+   every drag made a stray text-selection drag inside a list show a "drop
+   here" cursor and then do nothing (A2, Tim Shade 2026-09-16). */
+const fileDrag = e => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+window.addEventListener("dragover", e => { if (fileDrag(e)) e.preventDefault(); });
 window.addEventListener("drop", e => {
+  if (!fileDrag(e)) return;
   e.preventDefault(); const f = e.dataTransfer.files[0];
   if (f) f.text().then(t => loadJSON(t, f.name));
 });
