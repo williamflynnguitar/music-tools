@@ -785,6 +785,15 @@ for (const t of E.TEMPLATES){
   ok(/pointer-events="none"><rect/.test(src), "…and the fixtures cannot be grabbed");
 }
 
+/* ---- 19k. quick help (E3) ---- */
+{
+  ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How this works button on New plot");
+  for (const topic of ["Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF"])
+    ok(src.indexOf(topic) !== -1, "the help covers: " + topic);
+  ok(/#helpDlg\{display:none!important\}|,#helpDlg\{display:none!important\}/.test(src), "…and never prints");
+  ok(!/openHelp\(\);\s*\}\)\(\);/.test(src), "…and nothing opens it on load");
+}
+
 /* ---- 20. the printed page, measured in a browser ---- *
  * Page count comes from rendered height, so node alone cannot see it.
  * print-check.js drives a real browser and exits 2 when there is none. */

@@ -183,6 +183,10 @@ table.prev{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
 table.prev th{text-align:left;font-family:var(--mono);font-size:11px;color:var(--bone-dim);font-weight:400;border-bottom:1px solid var(--line);padding:3px 0}
 table.prev td{padding:3px 0;border-bottom:1px solid rgba(42,84,97,.4)}
 .dlg p{font-size:14px;color:var(--bone-dim);margin:0 0 14px}
+.help dl{margin:0 0 6px;font-size:14px;line-height:1.45}
+.help dt{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin:12px 0 2px}
+.help dd{margin:0;color:var(--bone)}
+.help kbd{font-family:var(--mono);font-size:12px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:1px 5px;color:var(--bone)}
 .pickgrid{display:grid;gap:6px}
 .pickgrid button{text-align:left}
 .pickgrid .sub{display:block;font-size:12px;color:var(--bone-dim);font-family:var(--mono)}
@@ -201,7 +205,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
 @media print{
   @page{size:letter portrait;margin:.5in}
   html,body{background:#fff;color:#000}
-  .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#startDlg{display:none!important}
+  .sp-menu,.top,.tabs,.warnbar,.rail,.canvaswrap,.pagehead,.toast,#startDlg,#helpDlg{display:none!important}
   .app{display:block;padding:0}
   .pagerail{display:block;border:0;padding:0;max-width:none;overflow:visible}
   .sheetbox{overflow:visible;padding:0;background:none;height:auto!important}
@@ -307,6 +311,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
     <button class="btn" id="bPrint">Print</button>
     <button class="btn sm" id="bUndo" title="Undo (⌘Z)">undo</button>
     <button class="btn sm" id="bRedo" title="Redo (⇧⌘Z)">redo</button>
+    <button class="btn sm" id="bHelp" title="how this works">?</button>
     <button class="btn" id="bEditCopy" hidden>Edit a copy</button>
   </div>
   <input type="file" id="fileIn" accept=".json,application/json" hidden>
@@ -336,6 +341,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
 </div>
 
 <div class="overlay" id="startDlg" hidden></div>
+<div class="overlay" id="helpDlg" hidden></div>
 <div class="overlay" id="coDlg" hidden></div>
 
 <script>
@@ -1784,7 +1790,7 @@ function render(opt){
   const p = plot();
   $("venueLine").innerHTML = esc(VENUE.name) + "<br>" + esc(VENUE.address);
   document.body.classList.toggle("ro", S.readOnly);
-  for (const id of ["bNew","bSave","bShare","bEmail","bUndo","bRedo","bLoad"]) $(id).hidden = S.readOnly && id !== "bSave";
+  for (const id of ["bNew","bSave","bShare","bEmail","bUndo","bRedo","bLoad","bHelp"]) $(id).hidden = S.readOnly && id !== "bSave";
   $("bEditCopy").hidden = !S.readOnly;
   $("bChange").hidden = S.plots.length < 2;
   $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
@@ -2259,6 +2265,7 @@ function wireCanvas(){
   });
 }
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !$("helpDlg").hidden){ $("helpDlg").hidden = true; return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ""));
   const meta = e.metaKey || e.ctrlKey;
   if (meta && e.key.toLowerCase() === "z"){ e.preventDefault(); if (e.target.blur) e.target.blur(); e.shiftKey ? redo() : undo(); return; }
@@ -2347,6 +2354,28 @@ async function copyText(t){
   }
 }
 
+/* ================= quick help (E3) ================= */
+/* For an act that has never seen this. A "?" in the top bar and a button on
+   the New plot dialog; nothing shows itself on load, because with no browser
+   storage it would show on every load. */
+function openHelp(){
+  const dlg = $("helpDlg"), k = t => '<kbd>' + t + '</kbd>';
+  dlg.innerHTML = '<div class="dlg wide help"><h2>How this works</h2>' +
+    '<p>The sound team needs one thing from this page: where every object and every microphone goes. Put things where they will really be, then print.</p><dl>' +
+    '<dt>Moving things</dt><dd>Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s.</dd>' +
+    '<dt>Turning things</dt><dd>' + k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.</dd>' +
+    '<dt>Removing things</dt><dd>Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.</dd>' +
+    '<dt>The drum kit</dt><dd>The kick faces the audience and is labelled. The solid dot is the drummer; its stem shows which way they face. Select the kit to say whether it is the house kit or your own.</dd>' +
+    '<dt>Microphones</dt><dd>Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.</dd>' +
+    '<dt>Monitor wedges</dt><dd>Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — type a number on the <b>Wedges</b> tab to renumber. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.</dd>' +
+    '<dt>Sending it</dt><dd><b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.</dd>' +
+    '</dl><div class="insprow" style="margin-top:14px"><button class="btn on" id="bHelpClose">got it</button></div></div>';
+  dlg.hidden = false;
+  $("bHelpClose").onclick = () => { dlg.hidden = true; };
+  dlg.onclick = e => { if (e.target === dlg) dlg.hidden = true; };
+}
+$("bHelp").onclick = openHelp;
+
 /* ================= start screen: template, build, load ================= */
 function openStart(){
   const dlg = $("startDlg");
@@ -2358,7 +2387,8 @@ function openStart(){
     TEMPLATES.map(t => '<button class="btn" data-tpl="' + t.id + '">' + esc(t.name) + '<span class="sub">' + esc(t.note || "") + '</span></button>').join("") +
     '</div>' +
     '<h3 class="dlgh">Open something</h3>' +
-    '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button></div>' +
+    '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button>' +
+    '<button class="btn" id="bStartHelp">How this works<span class="sub">select, drag, rotate, mics, wedges, print</span></button></div>' +
     (S.plots.length ? '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div>' : "") +
     '</div>';
   dlg.hidden = false;
@@ -2369,6 +2399,7 @@ function openStart(){
   });
   $("bStartBuild").onclick = () => { dlg.hidden = true; openInstrumentation(null); };
   $("bStartLoad").onclick = () => $("fileIn").click();
+  $("bStartHelp").onclick = openHelp;
   const cancel = $("bCancelNew"); if (cancel) cancel.onclick = () => { dlg.hidden = true; };
 }
 /* ================= instrumentation form ================= */
