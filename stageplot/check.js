@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber };`)();
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -35,6 +35,7 @@ function drawnBoxes(p){
   }
   for (const it of p.items){ if (it.kind === "label") continue; out.push({ what:(E.itemDef(it) || {}).short || it.kind, box:E.rectOf(it, p) }); }
   for (const w of p.wedges) out.push({ what:"wedge " + w.number, box:E.rectOf(w, p) });
+  for (const f of E.venueFixtures(p)) out.push({ what:"fixture " + f.id, box:E.rectOf(f, p) });
   return out;
 }
 function collisions(p){
@@ -203,9 +204,9 @@ for (const t of E.TEMPLATES){
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,wedge,house,di,drummer,truss", "the jazz combo's key (the keys and bass DI boxes included): " + ids(combo));
+  eq(ids(combo), "player,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (DI boxes and the venue's fixtures included): " + ids(combo));
   const blank = E.blankPlot();
-  eq(ids(blank), "truss", "an empty deck's key has only the truss");
+  eq(ids(blank), "truss,fixture", "an empty deck's key has only the truss and the venue's fixtures");
   E.addPosition(blank, "keys");
   ok(!/drummer|wedge|byo/.test(ids(blank)), "…and never lists a symbol that isn't drawn: " + ids(blank));
   const byo = T("combo"); byo.items.push({ id:"b1", kind:"byo", ref:"byo-pedals", label:"", x:40, y:40, rot:0, moved:true, ownerPositionIds:[] });
@@ -761,6 +762,26 @@ for (const t of E.TEMPLATES){
   const w = p.wedges[0]; w.x = kit.x; w.y = kit.y - 26 - 9; w.rot = 0; w.moved = true;   // a wedge touching the kick, throw face at the drummer
   E.autoLayout(p, { force:false });
   ok(Math.abs(w.y - (kit.y - 35)) < .01 && Math.abs(w.x - kit.x) < .01, "a wedge dragged to the kick stays where it was put");
+}
+
+/* ---- 19j. the venue's own objects on the deck (D2, Tim Shade 2026-09-16) ---- */
+{
+  const p = T("combo"), fx = E.venueFixtures(p);
+  eq(fx.map(f => f.id).join(","), "pa-sl,pa-sr,stairs-sl,stairs-usl", "a Somewhere Works plot has the two PA columns and both stairs");
+  const D = E.deckIn(p);
+  for (const f of fx){ const r = E.rectOf(f, p); ok(r.x0 >= 0 && r.y0 >= 0 && r.x1 <= D.w && r.y1 <= D.d, f.id + " is on the deck"); }
+  const pa = fx.filter(f => /^pa/.test(f.id));
+  ok(pa.every(f => E.rectOf(f, p).y0 === 0), "the PA columns stand at the downstage edge");
+  ok(pa[0].x < D.w / 3 && pa[1].x > D.w * 2 / 3, "…one at each side");
+  ok(E.rectOf(fx.find(f => f.id === "stairs-sl"), p).x0 === 0 && E.rectOf(fx.find(f => f.id === "stairs-usl"), p).y1 === D.d, "the stairs are on the stage-left edge and in the upstage-left corner");
+  for (const t of E.TEMPLATES){
+    const q = T(t.id), hits = collisions(q).hard.filter(h => /fixture/.test(h));
+    ok(hits.length === 0, t.name + ": nothing is laid out on the PA or the stairs" + (hits.length ? ": " + hits.join("; ") : ""));
+  }
+  eq(E.venueFixtures(E.makeFromTemplate("combo", { widthFt:24, depthFt:12 })).length, 0, "another deck size is another room: no fixtures");
+  ok(E.legendKeys(p).some(k => k.id === "fixture"), "the key names them");
+  ok(!/mainsDownstageLR/.test(src), "the old PA boxes outside the deck are gone");
+  ok(/pointer-events="none"><rect/.test(src), "…and the fixtures cannot be grabbed");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

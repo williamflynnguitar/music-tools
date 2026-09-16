@@ -384,11 +384,30 @@ const VENUE = {
   // Fixed context drawn outside the deck, not draggable:
   context: {
     trussCorners: true,          // four corners
-    mainsDownstageLR: true,      // PA stacks outside DS corners
     drapeUpstage: true,
     audienceLabel: "AUDIENCE",
-  }
+  },
+  /* Fixed venue objects ON the deck (D2, Tim Shade 2026-09-16): drawn
+     hatched, never selectable, kept clear by the layout engine, and only on
+     a plot whose deck is this deck. Inches from the stage-left / downstage
+     corner, like everything else. Approximate on purpose — Tim: accuracy
+     "does not need to be 100%" — they exist so acts stop putting gear on
+     top of them. The PA is two ground-stacked columns of three cabinets,
+     on the deck at the downstage edge, a foot inboard of the corner truss
+     posts (his photo). The stairs are from his description. */
+  fixtures: [
+    { id:"pa-sl",      label:"PA",     w:24, d:24, x:24,  y:12 },    // downstage left
+    { id:"pa-sr",      label:"PA",     w:24, d:24, x:264, y:12 },    // downstage right
+    { id:"stairs-sl",  label:"STAIRS", w:36, d:48, x:18,  y:120 },   // along the stage-left edge, mid-depth
+    { id:"stairs-usl", label:"STAIRS", w:48, d:48, x:24,  y:216 },   // the upstage-left corner
+  ],
 };
+/* The fixtures, for this plot: the venue's if the plot is on the venue's
+   deck, none if someone has typed another size — that is another room. */
+function venueFixtures(plot){
+  if (!plot || !plot.deck || plot.deck.widthFt !== VENUE.deck.widthFt || plot.deck.depthFt !== VENUE.deck.depthFt) return [];
+  return VENUE.fixtures.map(f => Object.assign({ rot:0, fixture:true }, f));
+}
 
 /* ---- house backline by category ------------------------------------ *
  * A role asks for a KIND of house gear, not one named amp: two guitarists
@@ -519,7 +538,7 @@ function settleBackline(plot){
 }
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8 };   // the bottom holds the PA stacks and AUDIENCE
+const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2)
 
 /* Bring-your-own palette. Free-text description prints after "BYO:".
    No inputs here: a BYO item arrives with none (addByo writes inputs:[]) and
@@ -696,19 +715,19 @@ const TEMPLATES = [
  * ------------------------------------------------------------------ */
 const LAYOUT = {
   frontY: .26, frontBackY: .58, rowGapMax: .24,   // the front band, where rows live
-  bigBandY: .28, bigBandBackY: .76, bigBandColumn: .465, hornsForBigBand: 8,
+  bigBandY: .28, bigBandBackY: .76, bigBandColumn: .44, hornsForBigBand: 8,   // .465 until D2: the stairs clearance took 36″ from the section rows
   edge: 16,                    // inches kept clear of the deck edge when packing a row
   comfySpacing: 46, minSpacing: 26,
   /* Standard shape, [fx, fy] per role. Two arrangements, because combos
      argue about this one: the kit upstage centre with the bass out at the
      stage-left edge (the default), or the two swapped. fx 0 is the
      stage-left edge, which is the RIGHT of the page — see Coordinates. */
-  rhythm: {                    // drums centre, bass to the side
-    drums:[.50,.80], bass:[.13,.63], upright:[.13,.63], guitar:[.87,.63],
+  rhythm: {                    // drums centre, bass to the side (inboard of the stage-left stairs, D2)
+    drums:[.50,.80], bass:[.21,.58], upright:[.21,.58], guitar:[.87,.63],
     keys:[.74,.40], organ:[.26,.40], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],
   },
-  rhythmSwapped: {             // bass centre, drums to the side
-    drums:[.15,.74], bass:[.52,.62], upright:[.52,.62], guitar:[.87,.63],
+  rhythmSwapped: {             // bass centre, drums to the side (inboard of the stage-left stairs, D2)
+    drums:[.26,.68], bass:[.52,.62], upright:[.52,.62], guitar:[.87,.63],
     keys:[.74,.40], organ:[.26,.40], perc:[.40,.86], dj:[.74,.80], playback:[.62,.90],
   },
   rhythmBig: {                 // big-band shape: the stage-right block (fx near 1 is page left)
@@ -721,6 +740,17 @@ const LAYOUT = {
   stagger: [0, .07, -.07, .14, -.14],
 };
 function clampIn(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+/* How far in from the stage-left edge a row at depth y has to start to clear
+   the venue's fixtures on that edge — the stairs (D2). Nothing else is in a
+   row's way: the PA columns stand at the downstage edge. */
+function slClearance(plot, y, half){
+  let x = 0;
+  for (const f of venueFixtures(plot)){
+    const r = rectOf(f, plot);
+    if (r.x0 <= 1 && r.y1 > y - half && r.y0 < y + half) x = Math.max(x, r.x1 + 4);
+  }
+  return x;
+}
 
 /* Big band chair order for one section row, page left to right (stage
    right to stage left), and which chair is the lead. Brass reads 2 1 3 4;
@@ -772,13 +802,16 @@ function autoLayout(plot, opt){
   // row depths
   const y0 = big ? LAYOUT.bigBandY : LAYOUT.frontY, y1 = big ? LAYOUT.bigBandBackY : LAYOUT.frontBackY;
   const gap = rows.length > 1 ? Math.min(LAYOUT.rowGapMax, (y1 - y0) / (rows.length - 1)) : 0;
-  const xLo = LAYOUT.edge, xHi = W - (big ? LAYOUT.bigBandColumn * W : LAYOUT.edge);
+  const xHi = W - (big ? LAYOUT.bigBandColumn * W : LAYOUT.edge);
+  const rowY = i => (y0 + i * gap) * DP;
+  const xLoAt = i => Math.max(LAYOUT.edge, slClearance(plot, rowY(i), 13));   // stage-left start, clear of the stairs
 
   // big band: the section rows share columns, lead chairs in one line
   let col = null;
   if (seated.length){
     const lo = Math.min.apply(null, seated.map(r => -r.lead)), hi = Math.max.apply(null, seated.map(r => r.order.length - 1 - r.lead));
-    const pLo = LAYOUT.bigBandColumn * W, pHi = W - LAYOUT.edge;   // page-x, measured from stage right
+    const clear = Math.max.apply(null, rows.map((row, i) => seated.some(r => r.row === row) ? xLoAt(i) : 0));
+    const pLo = LAYOUT.bigBandColumn * W, pHi = W - clear;         // page-x, measured from stage right; every section row shares the clearance so the columns stay lined up
     let spacing = hi > lo ? Math.min(LAYOUT.comfySpacing, (pHi - pLo) / (hi - lo)) : 0;
     if (hi > lo && spacing < LAYOUT.minSpacing){ spacing = LAYOUT.minSpacing; notes.push("horn columns are tighter than " + LAYOUT.minSpacing + "″"); }
     const leadPage = (pLo + pHi) / 2 - (lo + hi) / 2 * spacing;
@@ -786,7 +819,7 @@ function autoLayout(plot, opt){
   }
 
   rows.forEach((row, i) => {
-    const fy = y0 + i * gap, span = xHi - xLo;
+    const fy = y0 + i * gap, xLo = xLoAt(i), span = xHi - xLo;
     const seat = col && seated.find(r => r.row === row);
     if (seat){
       seat.order.forEach((p, j) => { if (pinned(p)) return; p.x = clampIn(col.x(j - seat.lead), 12, W - 12); p.y = fy * DP; });
@@ -841,10 +874,10 @@ function autoLayout(plot, opt){
     it.y = clampIn(p.y + (down ? -LAYOUT.gearDown : LAYOUT.gearUp) * DP, 12, DP - 12);
   }
 
-  for (const it of disOn(plot)) if (!pinned(it)) placeDI(plot, it);   // a DI box rides beside its player's gear
-
   layoutWedges(plot, force);
   resolveOverlaps(plot, force);
+  for (const it of disOn(plot)) if (!pinned(it)) placeDI(plot, it);   // a DI box rides beside its player's gear, wherever that settled
+  resolveOverlaps(plot, force);                                        // …and off anything the box itself now touches
   plot.layoutNote = notes.length ? notes.join("; ") : "";
   return plot;
 }
@@ -856,7 +889,7 @@ function resolveOverlaps(plot, force){
   const D = deckIn(plot);
   const all = layoutObjects(plot);
   const order = all.slice().sort((a, b) => (b.o.moved ? 1 : 0) - (a.o.moved ? 1 : 0) || a.rank - b.rank);
-  const placed = [];
+  const placed = venueFixtures(plot).map(f => rectOf(f, plot));   // the PA and the stairs are already there
   const hits = (r, skip) => placed.some(q => Math.min(q.x1, r.x1) - Math.max(q.x0, r.x0) > 1 && Math.min(q.y1, r.y1) - Math.max(q.y0, r.y0) > 1);
   const fits = r => r.x0 >= -0.5 && r.y0 >= -0.5 && r.x1 <= D.w + 0.5 && r.y1 <= D.d + 0.5;
   let stuck = 0;
@@ -1060,6 +1093,7 @@ function deckIn(plot){ return { w:plot.deck.widthFt * 12, d:plot.deck.depthFt * 
 function itemDef(it){ return it.kind === "house" ? houseDef(it.ref) : it.kind === "byo" ? byoDef(it.ref) : null; }
 function isPosition(o){ return !!o && o.roleId !== undefined; }
 function footprintOf(o, plot){
+  if (o.fixture) return { w:o.w, d:o.d };
   if (isPosition(o)){ const r = roleOf(plot, o); return { w:r.w || 22, d:r.d || 22 }; }
   if (o.kind === "label") return { w:0, d:0 };
   if (!o.kind){ const w = houseDef("wedge"); return { w:w.w, d:w.d }; }   // a wedge
@@ -1127,6 +1161,7 @@ function positionLabelBox(plot, pos, g, taken, labels){
   const others = plot.positions.filter(o => o !== pos).map(o => rectOf(o, plot))
     .concat(plot.items.filter(o => o.kind !== "label").map(o => rectOf(o, plot)))
     .concat(plot.wedges.map(wd => rectOf(wd, plot)))
+    .concat(venueFixtures(plot).map(f => rectOf(f, plot)))
     .concat(taken || []);
   const clash = b => others.some(r => Math.min(r.x1, b.x1) - Math.max(r.x0, b.x0) > 1.5 && Math.min(r.y1, b.y1) - Math.max(r.y0, b.y0) > 1.5);
   const down = mk("down");
@@ -1206,6 +1241,7 @@ function legendKeys(plot){
   has("di",      "DI box", disOn(plot).length);
   has("drummer", "drummer, facing the audience", pos.some(p => roleOf(plot, p).id === "drums"));
   has("truss",   "truss post", VENUE.context.trussCorners);
+  has("fixture", "venue: PA, stairs", venueFixtures(plot).length);
   has("off",     "over the deck edge", pos.concat(plot.items, plot.wedges).some(o => offDeck(o, plot)));
   return out;
 }
@@ -1518,6 +1554,7 @@ function legendHTML(plot, print){
     di:      '<rect x="7" y="4" width="8" height="8" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     drummer: drummerMark(11, 5.5, 4, ink),
     truss:   '<rect x="5" y="2" width="12" height="12" fill="none" stroke="' + dim + '" stroke-width="1.1"/><path d="M5,2l12,12M17,2l-12,12" stroke="' + dim + '" stroke-width="1"/>',
+    fixture: '<rect x="2.5" y="3" width="17" height="10.5" fill="' + ground + '" stroke="' + dim + '" stroke-width="1.1"/><path d="M2.5,9l6,-6M2.5,13.5l10.5,-10.5M8,13.5l10.5,-10.5M13.5,13.5l6,-6" stroke="' + dim + '" stroke-width=".8"/>',
     off:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="#c0392b" stroke-width="2"/>',
   };
   return legendKeys(plot).map(k => '<span><svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true">' + sw[k.id] + '</svg>' + esc(k.text) + '</span>').join("");
@@ -1557,15 +1594,22 @@ function diagramSVG(plot, opt){
     P.push('<rect x="' + (cx - 7) + '" y="' + (cy - 7) + '" width="14" height="14" fill="none" stroke="' + dim + '" stroke-width="1.2"/>' +
            '<path d="M' + (cx - 7) + ',' + (cy - 7) + 'l14,14M' + (cx + 7) + ',' + (cy - 7) + 'l-14,14" stroke="' + dim + '" stroke-width="1"/>');
   }
-  if (c.mainsDownstageLR) for (const side of [-1, 1]){      // just outside the downstage corners, below the truss, inside the frame
-    const w = 16, h = 16, x = side < 0 ? 1 : g.vbW - w - 1, y = g.M + D.d + 9;
-    P.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="none" stroke="' + dim + '" stroke-width="1.2"/>');
-    t("PA", x + w / 2, y + h / 2 + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim");
-  }
   t(c.audienceLabel, g.M + D.w/2, g.M + D.d + 20, DRAW.smallPt, "dim", ' letter-spacing="' + (g.pt(DRAW.smallPt) * .3).toFixed(1) + '"');
   t("STAGE RIGHT", g.M - 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(-90 ' + (g.M - 11) + ' ' + (g.M + D.d/2) + ')"');
   t("STAGE LEFT", g.M + D.w + 11, g.M + D.d/2, DRAW.tinyPt, "dim", ' transform="rotate(90 ' + (g.M + D.w + 11) + ' ' + (g.M + D.d/2) + ')"');
   t(plot.deck.widthFt + "′ × " + plot.deck.depthFt + "′", g.M + D.w - 26, g.M - 11, DRAW.tinyPt, "dim");
+  // the venue's own objects on the deck: hatched, labelled, nothing to grab
+  for (const f of venueFixtures(plot)){
+    const r = rectOf(f, plot), x0 = g.sx(r.x1), x1 = g.sx(r.x0), y0 = g.sy(r.y1), y1 = g.sy(r.y0);
+    let hatch = "";
+    for (let k = 8; k < r.w + r.d; k += 8){          // diagonals x + y = k, clipped to the box
+      const ax = Math.max(0, k - r.d), ay = Math.min(k, r.d), bx = Math.min(k, r.w), by = Math.max(0, k - r.w);
+      hatch += "M" + (x0 + ax).toFixed(1) + "," + (y0 + ay).toFixed(1) + "L" + (x0 + bx).toFixed(1) + "," + (y0 + by).toFixed(1);
+    }
+    P.push('<g pointer-events="none"><rect x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + r.w + '" height="' + r.d + '" fill="' + deckFill + '" stroke="' + dim + '" stroke-width="1.2"/>' +
+      '<path d="' + hatch + '" stroke="' + dim + '" stroke-width=".7" opacity=".8"/></g>');
+    t(f.label, (x0 + x1) / 2, (y0 + y1) / 2 + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim");
+  }
 
   const bad = obj => offDeck(obj, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
   const draw = (obj, body) => {

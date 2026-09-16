@@ -384,6 +384,25 @@ block above `LAYOUT` and are meant to be argued with:
 
 Same instrumentation always yields the same layout; `check.js` asserts it.
 
+## The venue's own objects on the deck (D2)
+
+`VENUE.fixtures` — two PA columns, ground-stacked, on the deck at the
+downstage edge a foot inboard of the corner truss posts (Tim's photo), stairs
+along the stage-left edge at mid-depth, and stairs in the upstage-left corner
+(his description; "does not need to be 100%"). They exist so acts stop
+putting gear on top of them. `venueFixtures(plot)` returns them for a plot on
+the venue's deck and nothing for any other size, because another size is
+another room. Drawn hatched with a label, `pointer-events="none"`, keyed as
+"venue: PA, stairs"; the old PA boxes drawn outside the deck are gone.
+
+The layout engine treats them as already placed: `resolveOverlaps()` starts
+with their rectangles, a row starts inboard of any fixture on the stage-left
+edge at its depth (`slClearance()`; the big band's section rows share the
+widest clearance so their columns stay lined up), the bass-side rhythm slots
+sit inboard of the stairs, and DI boxes are placed after the de-overlap pass
+so they follow their gear's final spot. `check.js` lays every template out
+and fails if anything lands on a fixture.
+
 ## Removing things (A4)
 
 Tim could not find out how to delete anything. Three ways now, all through
