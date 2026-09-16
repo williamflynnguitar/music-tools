@@ -21,7 +21,8 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures };`)();
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
+  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -768,13 +769,21 @@ for (const t of E.TEMPLATES){
 /* ---- 19j. the venue's own objects on the deck (D2, Tim Shade 2026-09-16) ---- */
 {
   const p = T("combo"), fx = E.venueFixtures(p);
-  eq(fx.map(f => f.id).join(","), "pa-sl,pa-sr,stairs-sl,stairs-usl", "a Somewhere Works plot has the two PA columns and both stairs");
+  eq(fx.map(f => f.id).join(","), "pa-sl,pa-sr,stairs-dsl,stairs-usr", "a Somewhere Works plot has the two PA columns and both stairs");
   const D = E.deckIn(p);
   for (const f of fx){ const r = E.rectOf(f, p); ok(r.x0 >= 0 && r.y0 >= 0 && r.x1 <= D.w && r.y1 <= D.d, f.id + " is on the deck"); }
   const pa = fx.filter(f => /^pa/.test(f.id));
   ok(pa.every(f => E.rectOf(f, p).y0 === 0), "the PA columns stand at the downstage edge");
   ok(pa[0].x < D.w / 3 && pa[1].x > D.w * 2 / 3, "…one at each side");
-  ok(E.rectOf(fx.find(f => f.id === "stairs-sl"), p).x0 === 0 && E.rectOf(fx.find(f => f.id === "stairs-usl"), p).y1 === D.d, "the stairs are on the stage-left edge and in the upstage-left corner");
+  const dsl = E.rectOf(fx.find(f => f.id === "stairs-dsl"), p), usr = E.rectOf(fx.find(f => f.id === "stairs-usr"), p);
+  ok(dsl.x0 === 0 && dsl.y1 < D.d / 2 && usr.y1 === D.d && usr.x0 > D.w / 2, "the downstage stairs are on the stage-left edge, the upstage stairs on the back edge at stage right");
+  ok(dsl.w <= 12 && usr.d <= 12 && dsl.d >= 36 && usr.w >= 36, "…both a shallow strip, a foot deep and three or four treads wide (update 2)");
+  ok(fx.filter(f => f.steps).length === 2 && /f\.steps/.test(src) && /rotate\(-90 /.test(src.slice(src.lastIndexOf("for (const f of venueFixtures(plot)){"), src.lastIndexOf("for (const f of venueFixtures(plot)){") + 1600)),
+     "…drawn ruled as treads, the vertical one's label reading up its length");
+  const walker = E.addPosition(p, "voice");
+  ok(E.onFixture(p, walker, 6, 63) && E.onFixture(p, walker, 243, 234) && E.onFixture(p, walker, 24, 12), "a player dropped on the stairs or the PA is refused");
+  ok(!E.onFixture(p, walker, 144, 120), "…and the middle of the deck is fine");
+  ok(/onFixture\(p, obj, x, y\)\) return;/.test(src) && /onFixture\(p, sel, sel\.x \+ dx, sel\.y \+ dy\)\) return;/.test(src), "…both the drag and the arrow keys check it");
   for (const t of E.TEMPLATES){
     const q = T(t.id), hits = collisions(q).hard.filter(h => /fixture/.test(h));
     ok(hits.length === 0, t.name + ": nothing is laid out on the PA or the stairs" + (hits.length ? ": " + hits.join("; ") : ""));
@@ -787,12 +796,62 @@ for (const t of E.TEMPLATES){
 
 /* ---- 19k. quick help (E3) ---- */
 {
-  ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How this works button on New plot");
+  ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How it works button on New plot");
   ok(/id="bPrint" title="[^"]*Save as PDF[^"]*">Print \/ PDF<\/button>/.test(src), "the one-click export is Print / PDF, and says so (E4)");
-  for (const topic of ["Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF"])
+  for (const topic of ["Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF", "carries a link to itself", "Edit a copy", "a reprint produces a new link"])
     ok(src.indexOf(topic) !== -1, "the help covers: " + topic);
   ok(/#helpDlg\{display:none!important\}|,#helpDlg\{display:none!important\}/.test(src), "…and never prints");
   ok(!/openHelp\(\);\s*\}\)\(\);/.test(src), "…and nothing opens it on load");
+}
+
+/* ---- 19l. update 2: one help source, numbered steps with a state, the printed link, the venue notice ---- */
+{
+  // help: one source, two entry points
+  ok(/function helpSections\(\)/.test(src) && /function helpHTML\(\)/.test(src) && (src.match(/helpHTML\(\)/g) || []).length >= 2, "the help text has one source, rendered by helpHTML()");
+  eq((src.match(/Click to select, drag to move/g) || []).length, 1, "…and the prose exists once");
+  ok(/\["The seven steps"/.test(src) && /RAIL_TABS\.map\(\(\[id, label\]\)/.test(src), "…opening with the seven steps, read off the same tab list");
+  ok(/id="bStartHelp">How it works/.test(src) && /<h2>How it works<\/h2>/.test(src), "the start screen button and the panel both say How it works");
+  ok(!/Bring-own/.test(src), "Bring-own appears nowhere");
+  // the seven steps
+  ok(/const RAIL_TABS = \[\["positions","Positions"\],\["house","House"\],\["byo","Band brings"\],\["wedges","Wedges"\],\["mics","Mics & DIs"\],\["misc","Misc"\],\["details","Details"\]\]/.test(src), "tabs 1–7: Positions, House, Band brings, Wedges, Mics & DIs, Misc, Details, ids unchanged");
+  ok(/<span class="n">' \+ \(i \+ 1\) \+ '<\/span>/.test(src), "…numbered before the label");
+  const b = E.blankPlot(), ids = ["positions","house","byo","wedges","mics","misc","details"];
+  eq(ids.map(id => E.stepState(b, id)).join(","), "todo,todo,todo,todo,todo,todo,todo", "a fresh plot: seven steps not started");
+  E.addPosition(b, "voice");
+  eq(E.stepState(b, "positions"), "done", "adding a position marks step 1 done");
+  E.setSkipped(b, "byo", true);
+  eq(E.stepState(b, "byo"), "skipped", "nothing here on step 3 marks it skipped");
+  eq(JSON.stringify(b.skipped), '["byo"]', "…stored as plot.skipped");
+  const back = E.migratePlot(JSON.parse(JSON.stringify(b)));
+  eq(E.stepState(back, "byo"), "skipped", "…and it survives save and load");
+  E.setSkipped(b, "positions", true);
+  ok(!("positions" in (b.skipped || [])) && !b.skipped.includes("positions"), "Positions cannot be skipped");
+  E.setSkipped(b, "byo", false);
+  ok(!("skipped" in b), "unticking the last one removes the field, so a fresh save is byte-identical to before");
+  const combo = T("combo");
+  eq(ids.map(id => E.stepState(combo, id)).join(","), "done,done,todo,done,done,todo,todo", "a jazz combo: positions, house, wedges, mics/DIs done; band brings, misc, details to do");
+  combo.name = "Combo A"; combo.date = "2026-11-14";
+  eq(E.stepState(combo, "details"), "done", "a name and a date complete Details");
+  combo.items.push({ id:"lbl", kind:"label", ref:null, label:"riser here", x:100, y:100, rot:0, moved:true, ownerPositionIds:[] });
+  eq(E.stepState(combo, "misc"), "done", "a text label completes Misc");
+  const kit = combo.positions.find(x => x.roleId === "drums"); kit.kit = "byo";
+  eq(E.stepState(combo, "byo"), "done", "a band-brought kit completes Band brings");
+  const old = JSON.parse(JSON.stringify(T("rock"))); old.skipped = "byo";
+  ok(!("skipped" in E.migratePlot(old)), "a malformed skipped field is dropped on load");
+  ok(/data-skip=/.test(src) && /SKIPPABLE\.includes\(S\.tab\)/.test(src), "the nothing-here toggle is drawn on the skippable tabs only");
+  ok(/body\.ro \.rail[^}]*display:none/.test(src), "…and the read-only view hides the rail, toggles included");
+  // the printed link and the notice
+  ok(/View or edit this plot online: <a href="' \+ esc\(link\) \+ '">' \+ esc\(link\) \+ '<\/a>/.test(src), "the page prints the link as an href and in full");
+  const foot = src.slice(src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))"), src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))") + 700);
+  ok(foot.indexOf("deliverLine(p)") < foot.indexOf("View or edit this plot online") && foot.indexOf("View or edit this plot online") < foot.indexOf("VENUE.editNotice"), "…deliver line, link, venue sentence, in that order");
+  eq(E.VENUE.editNotice, "Somewhere Works may adjust placements and monitor assignments to fit the room.", "the venue sentence lives in VENUE");
+  ok(/\.sheet \.foot\.link\{font-family:var\(--mono\);font-size:6\.5pt;word-break:break-all/.test(src), "…monospace, small, wrapping, never truncated");
+  ok(/L\.push\("View or edit this plot online: " \+ link\)/.test(src) && /L\.push\(VENUE\.editNotice\)/.test(src), "the email carries the link and the sentence too");
+  ok(/await ensureLink\(p\); renderSheet\(p\);/.test(src) && /emailText\(p, await ensureLink\(p\)\)/.test(src), "Print and Email wait for the link, so it matches what goes out");
+  ok(/encodeHash\(\[p\], 0\)/.test(src), "the printed link is this one plot, not the whole session");
+  ok(/return "#s=" \+ B64\.enc/.test(src) && /return "#j=" \+ B64\.enc/.test(src) && /\/\^#\(\[sj\]\)=\(\.\+\)\$\//.test(src) && /CompressionStream\("deflate-raw"\)/.test(src),
+     "the hash is deflate-raw + base64url under the s marker; plain base64url JSON under j still decodes");
+  ok(/const APP_URL = "https:\/\/williamflynnguitar\.github\.io\/music-tools\/stageplot\/"/.test(src) && /shareBase\(\)/.test(src), "a file:// preview still prints the live address");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

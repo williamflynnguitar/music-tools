@@ -71,6 +71,13 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .railtabs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
 .railtabs button{background:transparent;border:1px solid var(--line);border-radius:3px;padding:4px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim)}
 .railtabs button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone);border-color:var(--brass)}
+.railtabs button .n{color:var(--brass);margin-right:5px}
+.railtabs button .mark{display:inline-block;min-width:9px;margin-left:6px;text-align:center}
+.railtabs button.st-done .mark{color:var(--brass)}
+.railtabs button.st-skipped{opacity:.65}
+.chk.skip{margin:-2px 0 10px;color:var(--bone-dim);font-size:12.5px}
+.help ol.steps{margin:2px 0 4px;padding-left:22px}
+.help ol.steps li{margin:1px 0}
 .panel h3{font-size:13px;font-weight:400;color:var(--bone-dim);margin:14px 0 6px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .panel h3:first-child{margin-top:0}
 .plist{display:flex;flex-direction:column;gap:5px}
@@ -162,6 +169,9 @@ svg.deck .delx:hover circle{fill:#d4715f}
 .sheet .diagram{break-inside:avoid;margin:3px 0 1px}
 .sheet .diagram svg{display:block;width:100%;height:auto}
 .sheet .foot{font-family:var(--psans);font-size:7.5pt;color:#444;margin-top:4px;border-top:.5pt solid #999;padding-top:3px}
+.sheet .foot.under{border-top:0;margin-top:1px;padding-top:0}
+.sheet .foot.link{font-family:var(--mono);font-size:6.5pt;word-break:break-all;overflow-wrap:anywhere}
+.sheet .foot.link a{color:#000;text-decoration:none}
 .sheet .notes{white-space:pre-wrap}
 .sheet .empty{color:#666;font-style:italic}
 
@@ -360,6 +370,7 @@ const VENUE = {
   address: "235 N Emporia, Wichita KS 67202",
   deliverTo: "timothy.shade@wichita.edu",    // William, 2026-09-15: every plot goes to Tim Shade; the mailto goes there too
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
+  editNotice: "Somewhere Works may adjust placements and monitor assignments to fit the room.",   // printed under the link on every page, and in the email
   deck: { widthFt: 24, depthFt: 20 },        // Tim Shade, 2026-09-16: the published spec says 20 × 20 of 4 × 8 platforms; he doesn't think it is square and calls it 24 wide × 20 deep
   monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
   extraWedgesFrom: "Shocker Studios",        // confirmed: where extra wedges might come from
@@ -400,12 +411,15 @@ const VENUE = {
      "does not need to be 100%" — they exist so acts stop putting gear on
      top of them. The PA is two ground-stacked columns of three cabinets,
      on the deck at the downstage edge, a foot inboard of the corner truss
-     posts (his photo). The stairs are from his description. */
+     posts (his photo). The stairs are shallow: what they take from the deck
+     is a one-foot landing strip on the edge, three or four treads wide, and
+     the steps go down off the deck (William, update 2). Downstage stairs on
+     the stage-left edge; upstage stairs on the back edge, stage right. */
   fixtures: [
-    { id:"pa-sl",      label:"PA",     w:24, d:24, x:24,  y:12 },    // downstage left
-    { id:"pa-sr",      label:"PA",     w:24, d:24, x:264, y:12 },    // downstage right
-    { id:"stairs-sl",  label:"STAIRS", w:36, d:48, x:18,  y:120 },   // along the stage-left edge, mid-depth
-    { id:"stairs-usl", label:"STAIRS", w:48, d:48, x:24,  y:216 },   // the upstage-left corner
+    { id:"pa-sl",      label:"PA",     w:24, d:24, x:24,  y:12 },                 // downstage left
+    { id:"pa-sr",      label:"PA",     w:24, d:24, x:264, y:12 },                 // downstage right
+    { id:"stairs-dsl", label:"stairs", w:12, d:42, x:6,   y:63,  steps:true },    // on the stage-left edge, downstage of the middle
+    { id:"stairs-usr", label:"stairs", w:42, d:12, x:243, y:234, steps:true },    // on the back edge, stage right
   ],
 };
 /* The fixtures, for this plot: the venue's if the plot is on the venue's
@@ -414,6 +428,42 @@ function venueFixtures(plot){
   if (!plot || !plot.deck || plot.deck.widthFt !== VENUE.deck.widthFt || plot.deck.depthFt !== VENUE.deck.depthFt) return [];
   return VENUE.fixtures.map(f => Object.assign({ rot:0, fixture:true }, f));
 }
+/* Would this object, at x/y, sit on a fixture? A drag or a nudge that would
+   put something on the PA or the stairs is refused: they are not floor. */
+function onFixture(plot, obj, x, y){
+  const r = rectOf(Object.assign({}, obj, { x, y }), plot);
+  return venueFixtures(plot).some(f => { const q = rectOf(f, plot);
+    return Math.min(q.x1, r.x1) - Math.max(q.x0, r.x0) > 1 && Math.min(q.y1, r.y1) - Math.max(q.y0, r.y0) > 1; });
+}
+
+/* ---- the checklist: seven steps, each done / skipped / to do -------- *
+ * The sidebar is numbered 1–7 and shows where an act has got to. Done is
+ * derived from the plot (the step has something in it); skipped is the
+ * act's own "nothing here" tick, kept in plot.skipped (absent = nothing
+ * skipped). It is a checklist, not a gate: nothing is ever blocked.
+ * ------------------------------------------------------------------ */
+const SKIPPABLE = ["house","byo","wedges","mics","misc"];     // Positions and Details cannot be skipped
+function isSkipped(plot, id){ return (plot.skipped || []).includes(id); }
+function setSkipped(plot, id, on){
+  const list = (plot.skipped || []).filter(x => x !== id);
+  if (on && SKIPPABLE.includes(id)) list.push(id);
+  if (list.length) plot.skipped = list; else delete plot.skipped;
+}
+function stepDone(plot, id){
+  switch (id){
+    case "positions": return plot.positions.length > 0;
+    case "house":     return plot.items.some(i => i.kind === "house" && !!refCat(i.ref)) ||
+                             plot.positions.some(p => backlineCat(roleOf(plot, p)) === "kit" && !kitIsByo(plot, p));
+    case "byo":       return plot.items.some(i => i.kind === "byo") ||
+                             plot.positions.some(p => kitIsByo(plot, p) || (p.byo || []).some(b => String(b).trim()));
+    case "wedges":    return plot.wedges.length > 0;
+    case "mics":      return micsOn(plot).length + disOn(plot).length > 0;
+    case "misc":      return plot.items.some(i => i.kind === "label" || (i.kind === "house" && ["musicstand","power","riser"].includes(i.ref)));
+    case "details":   return !!(String(plot.name || "").trim() && plot.date);
+  }
+  return false;
+}
+function stepState(plot, id){ return stepDone(plot, id) ? "done" : isSkipped(plot, id) ? "skipped" : "todo"; }
 
 /* ---- house backline by category ------------------------------------ *
  * A role asks for a KIND of house gear, not one named amp: two guitarists
@@ -721,7 +771,7 @@ const TEMPLATES = [
  * ------------------------------------------------------------------ */
 const LAYOUT = {
   frontY: .26, frontBackY: .58, rowGapMax: .24,   // the front band, where rows live
-  bigBandY: .28, bigBandBackY: .76, bigBandColumn: .44, hornsForBigBand: 8,   // .465 until D2: the stairs clearance took 36″ from the section rows
+  bigBandY: .28, bigBandBackY: .76, bigBandColumn: .465, hornsForBigBand: 8,
   edge: 16,                    // inches kept clear of the deck edge when packing a row
   comfySpacing: 46, minSpacing: 26,
   /* Standard shape, [fx, fy] per role. Two arrangements, because combos
@@ -1471,6 +1521,7 @@ function migratePlot(p){
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; }
   settleBackline(p);               // a file saved when every guitarist got gtramp1
   for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
+  if ("skipped" in p){ const list = Array.isArray(p.skipped) ? p.skipped.filter(x => SKIPPABLE.includes(x)) : []; if (list.length) p.skipped = list; else delete p.skipped; }
   for (const pos of p.positions) delete pos.wedgeId;
   if (!p.schemaVersion || p.schemaVersion < 3) placeInputs(p);          // per-player inputs become mics and DI boxes on the deck
   for (const k of ["sections","sectionsIncludeUnmiked","channelOrder","ampProfile"]) delete p[k];   // the input list, gone 2026-09-16
@@ -1607,14 +1658,19 @@ function diagramSVG(plot, opt){
   // the venue's own objects on the deck: hatched, labelled, nothing to grab
   for (const f of venueFixtures(plot)){
     const r = rectOf(f, plot), x0 = g.sx(r.x1), x1 = g.sx(r.x0), y0 = g.sy(r.y1), y1 = g.sy(r.y0);
-    let hatch = "";
-    for (let k = 8; k < r.w + r.d; k += 8){          // diagonals x + y = k, clipped to the box
+    let lines = "";
+    if (f.steps){                                    // treads: rules across the strip, along its long side
+      const along = Math.max(r.w, r.d), n = Math.max(3, Math.round(along / 10.5));
+      for (let i = 1; i < n; i++){ const k = along * i / n;
+        lines += r.d > r.w ? "M" + x0.toFixed(1) + "," + (y0 + k).toFixed(1) + "h" + r.w : "M" + (x0 + k).toFixed(1) + "," + y0.toFixed(1) + "v" + r.d; }
+    } else for (let k = 8; k < r.w + r.d; k += 8){    // hatch: diagonals x + y = k, clipped to the box
       const ax = Math.max(0, k - r.d), ay = Math.min(k, r.d), bx = Math.min(k, r.w), by = Math.max(0, k - r.w);
-      hatch += "M" + (x0 + ax).toFixed(1) + "," + (y0 + ay).toFixed(1) + "L" + (x0 + bx).toFixed(1) + "," + (y0 + by).toFixed(1);
+      lines += "M" + (x0 + ax).toFixed(1) + "," + (y0 + ay).toFixed(1) + "L" + (x0 + bx).toFixed(1) + "," + (y0 + by).toFixed(1);
     }
     P.push('<g pointer-events="none"><rect x="' + x0.toFixed(1) + '" y="' + y0.toFixed(1) + '" width="' + r.w + '" height="' + r.d + '" fill="' + deckFill + '" stroke="' + dim + '" stroke-width="1.2"/>' +
-      '<path d="' + hatch + '" stroke="' + dim + '" stroke-width=".7" opacity=".8"/></g>');
-    t(f.label, (x0 + x1) / 2, (y0 + y1) / 2 + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim");
+      '<path d="' + lines + '" stroke="' + dim + '" stroke-width="' + (f.steps ? 1 : .7) + '" opacity=".8"/></g>');
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, tall = r.d > r.w;   // a vertical strip's label reads up its length
+    t(f.label, cx, cy + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim", tall ? ' transform="rotate(-90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"' : "");
   }
 
   const bad = obj => offDeck(obj, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
@@ -1704,7 +1760,8 @@ function deliverLine(p){
   const d = new Date(p.date + "T12:00:00"); d.setDate(d.getDate() - VENUE.leadDays);
   return "Please deliver to " + VENUE.deliverTo + " by " + fmtDate(d.toISOString().slice(0, 10)) + ".";
 }
-function sheetHTML(p){
+function sheetHTML(p, opt){
+  const link = opt && opt.link;
   const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), labels = positionLabels(p), H = [];
   H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
@@ -1755,6 +1812,11 @@ function sheetHTML(p){
   }
   if (p.notes) H.push('<h2>Notes</h2><p class="notes">' + esc(p.notes) + '</p>');
   H.push('<p class="foot">' + esc(deliverLine(p)) + ' Prepared with the stage plot tool — williamflynnguitar.github.io/music-tools/stageplot/</p>');
+  /* The page carries a link to itself: a read-only snapshot of the plot as
+     printed, from which anyone with the PDF can Edit a copy. A real href, so
+     it survives Save as PDF, and the URL in full, so it survives paper. */
+  if (link) H.push('<p class="foot under link">View or edit this plot online: <a href="' + esc(link) + '">' + esc(link) + '</a></p>');
+  H.push('<p class="foot under">' + esc(VENUE.editNotice) + '</p>');
   return H.join("");
 }
 
@@ -1800,6 +1862,7 @@ function render(opt){
   renderCanvas(p);
   renderSheet(p);
   if (!keepRail){ renderRailTabs(); renderPanel(p); renderInspector(p); }
+  else renderRailTabs();                          // typing a name or a date changes step 7's mark; the tabs are not the panel, so focus is safe
 }
 function renderTabs(){
   const t = $("tabs"); t.hidden = S.plots.length < 2;
@@ -1835,9 +1898,31 @@ function renderCanvas(p){
   $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
   if (!S.readOnly) wireCanvas();
 }
+/* The plot's own read-only link, for the printed page: this one plot, as it
+   is now. Compressing is async, so the sheet renders with the last link
+   built for this exact content and asks for a fresh one when the content
+   has changed; when it arrives the sheet re-renders. Print and Email wait
+   for it (ensureLink), so what goes out always matches what is on the page. */
+const APP_URL = "https://williamflynnguitar.github.io/music-tools/stageplot/";
+function shareBase(){ return /^https?:$/.test(location.protocol) ? location.href.split("#")[0] : APP_URL; }
+async function ensureLink(p){
+  const key = JSON.stringify(p);
+  if (!(S.link && S.link.key === key)) S.link = { key, url:shareBase() + await encodeHash([p], 0) };
+  return S.link.url;
+}
+function plotLink(p){
+  const key = JSON.stringify(p);
+  if (S.link && S.link.key === key) return S.link.url;
+  if (S.linkPending !== key){
+    S.linkPending = key;
+    ensureLink(p).then(() => { if (S.linkPending === key){ S.linkPending = null; if (plot() && JSON.stringify(plot()) === key) renderSheet(plot()); } })
+      .catch(() => { S.linkPending = null; });
+  }
+  return null;
+}
 function renderSheet(p){
   const sheet = $("sheet");
-  sheet.innerHTML = sheetHTML(p);
+  sheet.innerHTML = sheetHTML(p, { link:plotLink(p) });
   const box = $("sheetbox"), pad = parseFloat(getComputedStyle(box).paddingLeft) || 0;
   const avail = Math.min(box.clientWidth, document.documentElement.clientWidth - 8) - 2 * pad;
   const scale = Math.min(1, avail / (7.5 * 96));
@@ -1853,9 +1938,18 @@ function renderSheet(p){
 }
 
 /* ================= left rail ================= */
-const RAIL_TABS = [["positions","Positions"],["house","House"],["byo","Bring-own"],["wedges","Wedges"],["mics","Mics & DIs"],["misc","Misc"],["details","Details"]];
+/* The seven steps, in order. The number is rendered before the label; the
+   id is what the panel switches on and what plot.skipped records, so the ids
+   never change whatever the label says. */
+const RAIL_TABS = [["positions","Positions"],["house","House"],["byo","Band brings"],["wedges","Wedges"],["mics","Mics & DIs"],["misc","Misc"],["details","Details"]];
+const STATE_MARK = { done:"✓", skipped:"–", todo:"○" }, STATE_TEXT = { done:"done", skipped:"skipped — nothing here", todo:"not started" };
 function renderRailTabs(){
-  $("railtabs").innerHTML = RAIL_TABS.map(([k, l]) => '<button data-tab="' + k + '" aria-pressed="' + (S.tab === k) + '">' + l + '</button>').join("");
+  const p = plot();
+  $("railtabs").innerHTML = RAIL_TABS.map(([k, l], i) => {
+    const st = p ? stepState(p, k) : "todo";
+    return '<button data-tab="' + k + '" class="st-' + st + '" aria-pressed="' + (S.tab === k) + '" title="' + STATE_TEXT[st] + '">' +
+      '<span class="n">' + (i + 1) + '</span>' + l + '<span class="mark" aria-label="' + STATE_TEXT[st] + '">' + STATE_MARK[st] + '</span></button>';
+  }).join("");
   $("railtabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderRailTabs(); renderPanel(plot()); });
 }
 function placedCount(p, ref){
@@ -1922,6 +2016,8 @@ function bindText(el, get, set){
 function renderPanel(p){
   const el = $("panel"); if (!p) { el.innerHTML = ""; return; }
   const labels = positionLabels(p), H = [];
+  if (SKIPPABLE.includes(S.tab))                 // the act's own "nothing here" for a step it has no use for
+    H.push('<label class="chk skip"><input type="checkbox" data-skip="' + S.tab + '"' + (isSkipped(p, S.tab) ? " checked" : "") + '> nothing here — skip this step</label>');
 
   if (S.tab === "positions"){
     const hasDrums = p.positions.some(x => roleOf(p, x).id === "drums");
@@ -2037,6 +2133,7 @@ function renderPanel(p){
   }
   el.innerHTML = H.join("");
 
+  el.querySelectorAll("[data-skip]").forEach(c => c.onchange = () => commit(() => setSkipped(plot(), c.dataset.skip, c.checked)));
   el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
   el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
   el.querySelectorAll("[data-psel]").forEach(b => b.onclick = () => { S.sel = b.dataset.psel; render(); });
@@ -2248,6 +2345,7 @@ function wireCanvas(){
       let x = ox + (q.x - start.x), y = oy + (q.y - start.y);
       if (S.snap){ x = Math.round(x / 6) * 6; y = Math.round(y / 6) * 6; }
       if (Math.abs(x - obj.x) < .01 && Math.abs(y - obj.y) < .01) return;
+      if (obj.kind !== "label" && onFixture(p, obj, x, y)) return;   // the PA and the stairs are not floor
       obj.x = x; obj.y = y; moved = true;
       const nx = geo.sx(x), ny = geo.sy(y);
       svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => {
@@ -2272,7 +2370,7 @@ document.addEventListener("keydown", e => {
   if (typing || S.readOnly || !plot()) return;
   const p = plot(), sel = find(p, S.sel); if (!sel) return;
   const step = e.shiftKey ? 12 : (S.snap ? 6 : 1);
-  const nudge = (dx, dy) => { e.preventDefault(); commit(() => { sel.x += dx; sel.y += dy; sel.moved = true; }); };
+  const nudge = (dx, dy) => { e.preventDefault(); if (sel.kind !== "label" && onFixture(p, sel, sel.x + dx, sel.y + dy)) return; commit(() => { sel.x += dx; sel.y += dy; sel.moved = true; }); };
   if (e.key === "ArrowLeft")  nudge(step, 0);          // page left is stage right
   else if (e.key === "ArrowRight") nudge(-step, 0);
   else if (e.key === "ArrowUp")    nudge(0, step);
@@ -2304,8 +2402,11 @@ const B64 = { enc(u8){ let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s
     return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); },
   dec(str){ const s = atob(str.replace(/-/g, "+").replace(/_/g, "/")); const u = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; } };
-async function encodeHash(){
-  const json = JSON.stringify({ plots:S.plots, active:S.active });
+/* The hash carries a version marker: #s= is deflate-raw then base64url,
+   #j= is plain base64url JSON (the fallback for a browser with no
+   CompressionStream, and what the oldest links are). decodeHash reads both. */
+async function encodeHash(plots, active){
+  const json = JSON.stringify({ plots:plots || S.plots, active:active === undefined ? S.active : active });
   const bytes = new TextEncoder().encode(json);
   if (self.CompressionStream){
     const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer();
@@ -2322,7 +2423,7 @@ async function decodeHash(hash){
   }
   return JSON.parse(new TextDecoder().decode(bytes));
 }
-function emailText(p){
+function emailText(p, link){
   const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), L = [];
   L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
   if (p.director) L.push("Band leader/director: " + p.director);
@@ -2344,6 +2445,9 @@ function emailText(p){
   if (!byo.length) L.push("  Nothing — all house gear.");
   for (const b of byo) L.push("  " + b.what + (b.who ? " — " + b.who : ""));
   if (p.notes) L.push("", "NOTES", "  " + p.notes.replace(/\n/g, "\n  "));
+  L.push("", deliverLine(p));
+  if (link) L.push("View or edit this plot online: " + link);
+  L.push(VENUE.editNotice);
   return L.join("\n");
 }
 async function copyText(t){
@@ -2358,18 +2462,33 @@ async function copyText(t){
 /* For an act that has never seen this. A "?" in the top bar and a button on
    the New plot dialog; nothing shows itself on load, because with no browser
    storage it would show on every load. */
-function openHelp(){
-  const dlg = $("helpDlg"), k = t => '<kbd>' + t + '</kbd>';
-  dlg.innerHTML = '<div class="dlg wide help"><h2>How this works</h2>' +
+/* One source for the help text: helpHTML() is what the ? in the top bar and
+   the How it works button on the start screen both render. */
+const STEP_HINT = { positions:"who is playing, and where", house:"the house amps and keyboards (added for you; swap or add)", byo:"gear the band brings",
+  wedges:"monitor wedges, numbered by mix", mics:"every microphone and DI box, where it stands", misc:"music stands, power, a text label", details:"act, dates, notes for the tech" };
+function helpSections(){
+  const k = t => '<kbd>' + t + '</kbd>';
+  return [
+    ["The seven steps", '<ol class="steps">' + RAIL_TABS.map(([id, label]) => '<li><b>' + esc(label) + '</b> — ' + STEP_HINT[id] + '</li>').join("") + '</ol>' +
+      'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist, not a gate — nothing is ever blocked.'],
+    ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
+    ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
+    ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
+    ["The drum kit", 'The kick faces the audience and is labelled. The solid dot is the drummer; its stem shows which way they face. Select the kit to say whether it is the house kit or your own.'],
+    ["Microphones", 'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
+    ["Monitor wedges", 'Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — type a number on the <b>Wedges</b> tab to renumber. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
+    ["Sending it", '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.'],
+  ];
+}
+function helpHTML(){
+  return '<div class="dlg wide help"><h2>How it works</h2>' +
     '<p>The sound team needs one thing from this page: where every object and every microphone goes. Put things where they will really be, then print.</p><dl>' +
-    '<dt>Moving things</dt><dd>Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s.</dd>' +
-    '<dt>Turning things</dt><dd>' + k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.</dd>' +
-    '<dt>Removing things</dt><dd>Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.</dd>' +
-    '<dt>The drum kit</dt><dd>The kick faces the audience and is labelled. The solid dot is the drummer; its stem shows which way they face. Select the kit to say whether it is the house kit or your own.</dd>' +
-    '<dt>Microphones</dt><dd>Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.</dd>' +
-    '<dt>Monitor wedges</dt><dd>Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — type a number on the <b>Wedges</b> tab to renumber. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.</dd>' +
-    '<dt>Sending it</dt><dd><b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.</dd>' +
+    helpSections().map(([title, body]) => '<dt>' + esc(title) + '</dt><dd>' + body + '</dd>').join("") +
     '</dl><div class="insprow" style="margin-top:14px"><button class="btn on" id="bHelpClose">got it</button></div></div>';
+}
+function openHelp(){
+  const dlg = $("helpDlg");
+  dlg.innerHTML = helpHTML();
   dlg.hidden = false;
   $("bHelpClose").onclick = () => { dlg.hidden = true; };
   dlg.onclick = e => { if (e.target === dlg) dlg.hidden = true; };
@@ -2388,7 +2507,7 @@ function openStart(){
     '</div>' +
     '<h3 class="dlgh">Open something</h3>' +
     '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button>' +
-    '<button class="btn" id="bStartHelp">How this works<span class="sub">select, drag, rotate, mics, wedges, print</span></button></div>' +
+    '<button class="btn" id="bStartHelp">How it works<span class="sub">the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
     (S.plots.length ? '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div>' : "") +
     '</div>';
   dlg.hidden = false;
@@ -2536,14 +2655,18 @@ $("bShare").onclick = async () => {
   } catch (err){ toast("Couldn't build the link: " + err.message); }
 };
 $("bEmail").onclick = async () => {
-  const p = plot(), text = emailText(p);
+  const p = plot(), text = emailText(p, await ensureLink(p));
   await copyText(text);
   const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + fmtDate(p.date) : ""));
   const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
   toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
   location.href = mail;
 };
-$("bPrint").onclick = () => window.print();
+$("bPrint").onclick = async () => {
+  const p = plot();
+  if (p){ try { await ensureLink(p); renderSheet(p); } catch (err){} }   // the printed link is the plot as printed
+  window.print();
+};
 $("bChange").onclick = openChangeover;
 $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bEditCopy").onclick = () => { S.readOnly = false; history.replaceState(null, "", location.pathname + location.search); render(); };

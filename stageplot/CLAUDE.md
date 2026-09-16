@@ -387,9 +387,10 @@ Same instrumentation always yields the same layout; `check.js` asserts it.
 ## The venue's own objects on the deck (D2)
 
 `VENUE.fixtures` — two PA columns, ground-stacked, on the deck at the
-downstage edge a foot inboard of the corner truss posts (Tim's photo), stairs
-along the stage-left edge at mid-depth, and stairs in the upstage-left corner
-(his description; "does not need to be 100%"). They exist so acts stop
+downstage edge a foot inboard of the corner truss posts (Tim's photo), and
+two shallow stairs: downstage on the stage-left edge, upstage on the back
+edge at stage right (see "The stairs are shallow"; "does not need to be
+100%"). They exist so acts stop
 putting gear on top of them. `venueFixtures(plot)` returns them for a plot on
 the venue's deck and nothing for any other size, because another size is
 another room. Drawn hatched with a label, `pointer-events="none"`, keyed as
@@ -403,16 +404,69 @@ sit inboard of the stairs, and DI boxes are placed after the de-overlap pass
 so they follow their gear's final spot. `check.js` lays every template out
 and fails if anything lands on a fixture.
 
-## Help and export (E1, E3, E4)
+## Help and export (E1, E3, E4; update 2)
 
 The inspector has rotate ⟳ (R) and rotate ⟲ (⇧R). A "?" in the top bar and
-a "How this works" button on the New plot dialog open `openHelp()`: select
-and drag, arrows, the two rotations, ⊗ and Delete, which way the kit faces,
-adding and labelling a mic, wedge numbers, and how to send it. Nothing opens
-itself on load — with no browser storage it would open on every load. The
-one-click export is **Print / PDF**: the stage and the equipment sheet on one
-Letter page, saved as PDF from the print dialog. Save (.json), Share link and
-Email text are the other three; there is no PNG.
+a "How it works" button on the New plot dialog open the same panel:
+`helpSections()` is the one source of the prose and `helpHTML()` renders it
+for both — never duplicate the text. It opens with the seven steps, read off
+`RAIL_TABS` so the list cannot drift from the sidebar, then select and drag,
+the two rotations, ⊗ and Delete, which way the kit faces, adding and
+labelling a mic, wedge numbers, and sending it — including that the printed
+plot carries a link to itself. Nothing opens itself on load — with no browser
+storage it would open on every load; a guided first-run tour is deferred.
+The one-click export is **Print / PDF**: the stage and the equipment sheet on
+one Letter page, saved as PDF from the print dialog. Save (.json), Share
+link and Email text are the other three; there is no PNG.
+
+## The seven steps (update 2)
+
+The sidebar is `RAIL_TABS`, numbered 1–7 in order: Positions, House, Band
+brings (id `byo`, once labelled Bring-own — ids never change, because the
+panel switches on them and `plot.skipped` records them), Wedges, Mics & DIs,
+Misc, Details. Each tab shows a state from `stepState()`: **done** (○ → ✓,
+brass) when the step has something in it — a position; a house backline
+item or a house kit; a band-brought item, kit or "brings" note; a wedge; a
+mic or DI; a music stand, power strip, riser or text label; a plot name and
+a date — **skipped** (–) when the act ticked "nothing here" at the top of
+tabs 2–6 (`SKIPPABLE`; Positions and Details cannot be skipped), otherwise
+**not started** (○). Skips live in `plot.skipped = ["byo", …]`; absent means
+nothing skipped, and `setSkipped()` removes the field when the last tick
+goes, so a plot that never used it saves byte-identical. It is a checklist,
+not a gate: nothing is ever blocked. The read-only view hides the rail, so
+the toggles with it.
+
+## The page links to itself (update 2)
+
+Under the delivery line the page prints *View or edit this plot online:*
+followed by the plot's own read-only link, as a real `<a href>` (it survives
+Save as PDF) and as the URL in full in a small monospace face that wraps
+(it survives paper); then `VENUE.editNotice`, the one-place sentence that
+Somewhere Works may adjust placements and monitor assignments. The email
+text carries both too. The link is `encodeHash([p], 0)` — this one plot, a
+snapshot as printed; a reprint makes a new link — off `shareBase()`, which
+is the page's own address on http(s) and `APP_URL` on a file:// preview.
+Compressing is async, so `plotLink()` renders the sheet with the last link
+built for exactly this content and asks for a fresh one when the content
+changed; Print and Email `await ensureLink()` first, so what goes out
+matches what is on the page.
+
+**The hash has a version marker.** `#s=` is deflate-raw then base64url, made
+with the browser's own `CompressionStream`; `#j=` is plain base64url JSON,
+the fallback where there is no CompressionStream and the form of the oldest
+links. `decodeHash()` reads both, so every link ever produced still opens;
+a 17-piece big band's link is about 1 KB (2.8 KB uncompressed).
+
+## The stairs are shallow (update 2)
+
+What a staircase takes from the deck is a one-foot landing strip on the
+edge, three or four treads wide; the steps go down off the deck. So
+`stairs-dsl` is 12″ × 42″ on the stage-left edge, downstage of the middle,
+and `stairs-usr` is 42″ × 12″ on the back edge at stage right (`steps:true`
+draws them ruled as treads, the vertical one's label reading up its length).
+`onFixture()` refuses a drag or an arrow nudge that would put anything on a
+fixture — the PA and the stairs are not floor — and the layout engine never
+places there either.
 
 ## Removing things (A4)
 
@@ -532,6 +586,7 @@ browser's own pagination — a good guide, not gospel.
 ## Deferred — not built, on purpose
 
 From the v1 brief, still deferred: per-person monitor requests for IEMs;
+a guided first-run tour (the help panel is the next best thing);
 lighting and video-capture
 areas; importing rosters from the ensemble Airtable base; a venue-editor UI for
 `VENUE` (editing the object is fine).
@@ -572,7 +627,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 433 assertions: the role library, every template (builds,
+`node check.js` — 471 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
