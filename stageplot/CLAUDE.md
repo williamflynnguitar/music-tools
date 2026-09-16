@@ -44,7 +44,7 @@ Plot { schemaVersion:2, name, director, date, showName, notes, printNames,
 Position { id, roleId, x, y, rot, moved, names[], doubles[], notes, byo[], kit, kitLabel }
 Item     { id, kind:"house"|"byo"|"label", ref, label, x, y, rot, moved,
            ownerPositionIds[] }
-Wedge    { id, number, x, y, rot, moved, assignees:[positionId], request }
+Wedge    { id, number, x, y, rot, moved }
 ```
 
 - Labels come from the role and the count: two trumpets are `Tpt 1` and
@@ -335,26 +335,28 @@ block above `LAYOUT` and are meant to be argued with:
 
 Same instrumentation always yields the same layout; `check.js` asserts it.
 
-## Monitor mixes
+## Monitor wedges
 
-**Mixes are dealt once.** `layoutWedges()` builds them when the plot is
+**A wedge is a placeable object and nothing more** (Tim Shade, 2026-09-16):
+a number and a spot on the deck. The app used to record who shared each mix
+(`assignees`, a checkbox list per wedge) and what they wanted in it
+(`request`, "more me, less drums"), and printed both in a Monitors table.
+Nobody submits mix contents ahead of time — that is what soundcheck is for —
+so both are gone, from the Wedges tab, the inspector, the page, the email and
+the changeover sheet. A file that has them loads without them. The one place
+an act can say something ahead of time is the notes on the Details tab.
+
+**Wedges are dealt once.** `layoutWedges()` builds them when the plot is
 created and when the re-layout button runs, and never again on its own.
-Adding an instrument later does not conjure a wedge or redeal the existing
-ones: the new position simply has no mix, and says so in the Positions tab
-and in the "No wedge assigned" line on the printed page. A blank plot stays
-at zero wedges no matter how many instruments go into it — the first
-version of this fix still dealt mixes when a plot had none, which meant
-building a band from blank grew a wedge on the first instrument. That
-line is the feature — who shares a wedge is the director's call, not the
-engine's. Wedges nobody has dragged still follow the players they serve, so
-the drum wedge moves when the rhythm arrangement flips.
-
-`monitorGroups()` builds groups in priority order — voices, drums, bass,
-guitar, keys, sax row, trombones, trumpets, strings, other — then merges the
-smallest adjacent pair until they fit `VENUE.monitorMixes`. Voice groups carry
-a weight so the lead vocal is the last mix anyone is made to share. A big band
-comes out as rhythm / sax / sax / trombones / trumpets; a five-piece gets one
-each.
+Adding an instrument later does not conjure a wedge or move the existing
+ones, and a blank plot stays at zero wedges no matter how many instruments go
+into it. `monitorGroups()` decides how many, their numbers and where: groups
+in priority order — voices, drums, bass, guitar, keys, sax row, trombones,
+trumpets, strings, other — merged smallest-adjacent-pair until they fit
+`VENUE.monitorMixes`, each wedge landing downstage of its group. Nothing
+records the grouping afterwards; the number is the mix and the diagram is
+where it stands. The printed Monitors table is mix number and location
+(`posText()`), one row per wedge.
 
 ## Schema and migration
 
@@ -370,7 +372,7 @@ positions. The migration walks the v1 **items in order**, and:
   occupant's name on it;
 - gear owned by someone (amp, keyboard) stays an item and hands its v1 inputs
   to its owner's position, tagged with the role they belong to;
-- wedges, requests and songs come across by id.
+- wedges and songs come across by id; a v1 wedge's assignees and request are dropped.
 
 Everything migrated is marked `moved:true` — a v1 plot was laid out by hand, so
 the engine leaves it exactly where it was drawn. v1 **share links** open the
@@ -474,7 +476,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 316 assertions: the role library, every template (builds,
+`node check.js` — 318 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

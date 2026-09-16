@@ -830,8 +830,10 @@ function layoutObjects(plot){
   return out;
 }
 
-/* Monitor groups: who shares a mix. Built in priority order, then
-   merged from the back until they fit the wedge count at Somewhere Works. */
+/* Monitor groups: where the wedges land at creation. Built in priority
+   order (the lead voices first), then merged from the back until they fit
+   the wedge count at Somewhere Works. Nothing records the grouping — it
+   only decides how many wedges there are, their numbers, and where. */
 function monitorGroups(plot){
   const labels = positionLabels(plot), groups = [];
   const add = (name, list) => { if (list.length) groups.push({ name, list }); };
@@ -883,38 +885,17 @@ function wedgeSpot(plot, list){
   }
   return { x, y, rot };
 }
-/* Mixes are built once, when the plot is created, and by the re-layout
-   button. They are never built again behind the director's back: adding an
-   instrument later does NOT conjure a wedge or redeal the existing ones —
-   the new position simply has no mix, and says so in the Positions tab and
-   in the "No wedge assigned" line on the page, which is the point. That
-   holds for a blank plot too: no wedges until you ask for them, from the
-   Wedges tab or by re-laying out. Wedges nobody has dragged still follow
-   the players they serve. */
+/* A wedge is a placeable object and nothing more (Tim Shade, 2026-09-16):
+   a number and a spot on the deck. Nobody submits who shares a mix or what
+   goes in it ahead of time — that is what soundcheck is for. Wedges are dealt
+   once, when the plot is created, and by the re-layout button: one per
+   monitor group, downstage of the players in it, numbered in priority order.
+   Adding an instrument later does NOT conjure a wedge or move the existing
+   ones; a blank plot has none until you ask for them. */
 function layoutWedges(plot, force){
-  if (!force){                                  // only creation and re-layout deal mixes
-    for (const w of plot.wedges){
-      if (w.moved) continue;
-      const list = w.assignees.map(id => plot.positions.find(p => p.id === id)).filter(Boolean);
-      if (!list.length) continue;
-      Object.assign(w, wedgeSpot(plot, list));
-    }
-    syncWedgeIds(plot);
-    return;
-  }
+  if (!force) return;                           // only creation and re-layout deal wedges
   const groups = monitorGroups(plot);
-  const keep = plot.wedges.filter(w => w.moved && !force);
-  const fresh = [];
-  groups.forEach((g, i) => {
-    const existing = plot.wedges[i];
-    if (existing && existing.moved && !force){ fresh.push(existing); return; }
-    fresh.push(Object.assign({ id:(existing && existing.id) || nextIdE("w"), number:i + 1, moved:false,
-      assignees:g.list.map(p => p.id), request:(existing && existing.request) || "" }, wedgeSpot(plot, g.list)));
-  });
-  for (const w of keep) if (!fresh.includes(w)) fresh.push(w);
-  fresh.forEach((w, i) => { w.number = i + 1; });
-  plot.wedges = fresh;
-  syncWedgeIds(plot);
+  plot.wedges = groups.map((g, i) => Object.assign({ id:(plot.wedges[i] && plot.wedges[i].id) || nextIdE("w"), number:i + 1, moved:false }, wedgeSpot(plot, g.list)));
 }
 
 /* ---- building a plot ---------------------------------------------- */
@@ -1092,22 +1073,9 @@ function labelBoxes(plot, g){          // place them in order; each dodges the o
 }
 
 /* ---- wedges, house gear, and everything derived from the deck ----- */
-function syncWedgeIds(plot){                    // wedge.assignees is the source of truth
-  for (const w of plot.wedges) w.assignees = [...new Set(w.assignees || [])];
-  const of = {};
-  for (const w of plot.wedges) for (const pid of w.assignees) of[pid] = w.id;
-  for (const p of plot.positions) p.wedgeId = of[p.id] || null;
-}
-function monitorTable(plot){
-  syncWedgeIds(plot);
-  const labels = positionLabels(plot);
-  const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => ({
-    n:w.number, id:w.id,
-    who:w.assignees.map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean),
-    request:w.request || "", empty:w.assignees.length === 0,
-  }));
-  const unassigned = plot.positions.filter(p => !p.wedgeId).map(p => posText2(plot, p, labels));
-  return { rows, unassigned };
+function monitorTable(plot){                    // one row per wedge, in mix order: the number and where it stands
+  const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => ({ n:w.number, id:w.id, where:posText(w, plot) }));
+  return { rows };
 }
 function houseNeeds(plot){
   const counts = {};
@@ -1172,10 +1140,6 @@ function warnings(plot){
   if (plot.wedges.length > VENUE.monitorMixes)
     out.push({ level:"amber", text:plot.wedges.length + " wedges placed; " + VENUE.shortName + " normally runs " + VENUE.monitorMixes +
       ". Extras may be available from " + VENUE.extraWedgesFrom + " — ask the tech." });
-  const mon = monitorTable(plot);
-  const empty = mon.rows.filter(r => r.empty).map(r => r.n);
-  if (empty.length) out.push({ level:"amber", text:"Wedge " + empty.join(", ") + ": no one assigned." });
-  if (mon.unassigned.length) out.push({ level:"amber", text:mon.unassigned.length + " on stage with no wedge: " + mon.unassigned.join(", ") + "." });
   for (const h of houseNeeds(plot)) if (h.over)
     out.push({ level:"amber", text:h.need + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.have + "." });
   const off = plot.positions.concat(plot.items, plot.wedges).filter(o => offDeck(o, plot)).length;
@@ -1246,15 +1210,11 @@ function changeover(a, b){
   }
   for (const o of ob) if (!inA.has(o.key)) out.people.arrive.push({ name:o.name, role:o.role });
 
-  const ma = monitorTable(a), mb = monitorTable(b);
-  const wa = new Map(ma.rows.map(r => [r.n, r])), wb = new Map(mb.rows.map(r => [r.n, r]));
-  for (const [n, r] of wa){
+  const wa = new Map(a.wedges.map(w => [w.number, w])), wb = new Map(b.wedges.map(w => [w.number, w]));
+  for (const [n, wA] of wa){
     if (!wb.has(n)) { out.wedges.leave.push(n); continue; }
-    const s = wb.get(n), before = r.who.join(", ") || "—", after = s.who.join(", ") || "—";
-    const wA = a.wedges.find(w => w.number === n), wB = b.wedges.find(w => w.number === n);
-    const moved = Math.abs(wA.x - wB.x) > SAME || Math.abs(wA.y - wB.y) > SAME;
-    if (before !== after || moved) out.wedges.change.push({ n, before, after, moved,
-      from:posText(wA, a), to:posText(wB, b), request:s.request });
+    const wB = wb.get(n);
+    if (Math.abs(wA.x - wB.x) > SAME || Math.abs(wA.y - wB.y) > SAME) out.wedges.change.push({ n, from:posText(wA, a), to:posText(wB, b) });
   }
   for (const [n] of wb) if (!wa.has(n)) out.wedges.arrive.push(n);
   return out;
@@ -1324,12 +1284,10 @@ function migrateV1(p){
     const pos = makePos([person], 0, 0, 0, []);
     pos.moved = false;
   }
-  out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true,
-    assignees:[...new Set((w.assignees || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))], request:w.request || "" }));
+  out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true }));
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
   settleBackline(out);             // v1 gave every guitarist gtramp1; the house has four amps
-  syncWedgeIds(out);
   return out;
 }
 function migratePlot(p){
@@ -1350,8 +1308,8 @@ function migratePlot(p){
   }
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; }
   settleBackline(p);               // a file saved when every guitarist got gtramp1
-  for (const w of p.wedges) w.assignees = w.assignees || [];
-  syncWedgeIds(p);
+  for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
+  for (const pos of p.positions) delete pos.wedgeId;
   return p;
 }
 
@@ -1559,13 +1517,10 @@ function sheetHTML(p){
     '<div class="legend">' + legendHTML(p, true) + '</div>');
 
   const left = [], right = [];
-  left.push('<h2>Monitors</h2><table><thead><tr><th style="width:10%">Mix</th><th style="width:46%">Who</th><th>What they want</th></tr></thead><tbody>');
-  if (!mon.rows.length) left.push('<tr><td colspan="3" class="empty">No wedges placed.</td></tr>');
-  for (const r of mon.rows)
-    left.push('<tr><td class="num">' + r.n + '</td><td>' + (r.who.length ? esc(r.who.join(", ")) : '<span class="empty">no one assigned</span>') +
-      '</td><td>' + (r.request ? esc(r.request) : '<span class="empty">—</span>') + '</td></tr>');
+  left.push('<h2>Monitors</h2><table><thead><tr><th style="width:12%">Mix</th><th>Where</th></tr></thead><tbody>');
+  if (!mon.rows.length) left.push('<tr><td colspan="2" class="empty">No wedges placed.</td></tr>');
+  for (const r of mon.rows) left.push('<tr><td class="num">' + r.n + '</td><td>' + esc(r.where) + '</td></tr>');
   left.push('</tbody></table>');
-  if (mon.unassigned.length) left.push('<p class="flag" style="margin:3px 0 0"><b>No wedge assigned:</b> ' + esc(mon.unassigned.join(", ")) + '</p>');
 
   if (needs.length){                              // nothing from the house: no section at all (Tim Shade, 2026-09-16)
     left.push('<h2>House equipment needed</h2><ul>');
@@ -1609,12 +1564,11 @@ function changeoverHTML(co){
   h += list("Comes off", co.items.leave, a => esc(a));
   h += '</div></div>';
   if (co.wedges.change.length || co.wedges.arrive.length || co.wedges.leave.length){
-    h += '<h2>Monitor changes</h2><table><thead><tr><th style="width:10%">Mix</th><th>Was</th><th>Becomes</th><th style="width:26%">Request</th></tr></thead><tbody>' +
-      co.wedges.change.map(w => '<tr><td class="num">' + w.n + '</td><td>' + esc(w.before) + '</td><td>' + esc(w.after) +
-        (w.moved ? ' <span style="font-size:8pt">(moves to ' + esc(w.to) + ')</span>' : "") + '</td><td>' + esc(w.request || "—") + '</td></tr>').join("") +
-      (co.wedges.arrive.length ? '<tr><td colspan="4">Wedge ' + co.wedges.arrive.join(", ") + " added</td></tr>" : "") +
-      (co.wedges.leave.length ? '<tr><td colspan="4">Wedge ' + co.wedges.leave.join(", ") + " struck</td></tr>" : "") +
-      '</tbody></table>';
+    h += '<h2>Monitor changes</h2><ul>' +
+      co.wedges.change.map(w => '<li>Wedge ' + w.n + ': ' + esc(w.from) + ' → ' + esc(w.to) + '</li>').join("") +
+      (co.wedges.arrive.length ? '<li>Wedge ' + co.wedges.arrive.join(", ") + " added</li>" : "") +
+      (co.wedges.leave.length ? '<li>Wedge ' + co.wedges.leave.join(", ") + " struck</li>" : "") +
+      '</ul>';
   }
   h += '<p class="foot">Positions are DS/CS/US (downstage, center, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
   return h;
@@ -1714,7 +1668,7 @@ function addHouse(ref){
     const p = plot();
     if (ref === "wedge"){
       const spot = freeSpot(p, p.wedges.length);
-      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true, assignees:[], request:"" });
+      p.wedges.push({ id:nextId("w"), number:(p.wedges.reduce((m, w) => Math.max(m, w.number), 0) + 1), x:spot.x, y:spot.y, rot:0, moved:true });
       S.sel = p.wedges[p.wedges.length - 1].id; return;
     }
     const spot = freeSpot(p, p.items.length);
@@ -1771,10 +1725,8 @@ function renderPanel(p){
     H.push("<h3>On stage — " + p.positions.length + "</h3><div class='plist'>");
     if (!p.positions.length) H.push('<p class="note">No positions yet. Add one above, or pick a shape from New.</p>');
     for (const pos of p.positions){
-      const w = p.wedges.find(w => w.assignees.includes(pos.id));
       H.push('<div class="prow pcard"><div class="pline"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
         '<span class="role">' + esc(labels[pos.id].role.label) + (kitIsByo(p, pos) ? " · BYO kit" : "") + '</span></span>' +
-        '<span class="ct">' + (w ? "mix " + w.number : '<span style="color:var(--amber)">no mix</span>') + '</span>' +
         '<button class="btn sm" data-psel="' + pos.id + '" title="select on the canvas">edit</button>' +
         '<button class="btn sm x" data-pdel="' + pos.id + '" title="remove from the band">×</button></div>' +
         '<input type="text" data-pname="' + pos.id + '" placeholder="name (optional)" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 6px;font-size:13px"></div>');
@@ -1795,13 +1747,10 @@ function renderPanel(p){
     H.push("</div><p class='note'>Select a placed item to name it: “Fender Twin Reverb” prints as <i>BYO: Fender Twin Reverb</i>. Its channels come from the position that owns it.</p>");
   }
   if (S.tab === "wedges"){
-    H.push('<h3>Monitor mixes</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Mixes are listed by position, not by name.</p>");
+    H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
-      H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
-        '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>');
-      for (const pos of p.positions) H.push('<label class="chk"><input type="checkbox" data-wassign="' + w.id + '" value="' + pos.id + '"' +
-        (w.assignees.includes(pos.id) ? " checked" : "") + '> ' + esc(posText2(p, pos, labels)) + '</label>');
-      H.push('<div class="fld" style="margin:6px 0 0"><input type="text" data-wreq="' + w.id + '" placeholder="more me, less drums…"></div></div>');
+      H.push('<div class="wedgecard"><header><b>Mix ' + w.number + '</b><span class="role">' + esc(posText(w, p)) + '</span><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
+        '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header></div>');
     }
     H.push('<button class="btn sm" data-house="wedge">+ wedge</button>');
   }
@@ -1873,14 +1822,7 @@ function renderPanel(p){
     S.sel = p.items[p.items.length - 1].id;
   }));
   el.querySelectorAll("[data-wsel]").forEach(b => b.onclick = () => { S.sel = b.dataset.wsel; render(); });
-  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); syncWedgeIds(p); }));
-  el.querySelectorAll("[data-wassign]").forEach(c => c.onchange = () => commit(() => {
-    const w = p.wedges.find(w => w.id === c.dataset.wassign);
-    if (c.checked){ for (const o of p.wedges) o.assignees = o.assignees.filter(id => id !== c.value); w.assignees.push(c.value); }
-    else w.assignees = w.assignees.filter(id => id !== c.value);
-    syncWedgeIds(p);
-  }));
-  el.querySelectorAll("[data-wreq]").forEach(i => { const w = p.wedges.find(w => w.id === i.dataset.wreq); bindText(i, () => w.request, v => w.request = v); });
+  el.querySelectorAll("[data-wdel]").forEach(b => b.onclick = () => commit(() => { p.wedges = p.wedges.filter(w => w.id !== b.dataset.wdel); }));
   const pn = $("cPrintNames"); if (pn) pn.onchange = () => commit(() => { plot().printNames = pn.checked; });
   const bi = $("bInstr"); if (bi) bi.onclick = () => openInstrumentation(plot());
   const bb = $("bBulk"); if (bb) bb.onclick = () => openBulkNames();
@@ -1927,8 +1869,6 @@ function renderInspector(p){
   const isWedge = !sel.kind && !isPosition(sel);
   if (isWedge){
     H.push('<h3>Mix ' + sel.number + '<span>' + posText(sel, p) + '</span></h3>');
-    H.push('<div class="fld"><label>What this mix wants</label><input type="text" id="iReq"></div>');
-    H.push('<p class="note">Assign positions in the Wedges tab.</p>');
   } else if (isPosition(sel)){
     H.push('<h3>' + esc(labels[sel.id].full) + '<span>' + posText(sel, p) + '</span></h3>');
     H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
@@ -1980,7 +1920,6 @@ function renderInspector(p){
   el.innerHTML = H.join("");
 
   const mut = fn => commit(fn);
-  if ($("iReq")) bindText($("iReq"), () => sel.request, v => sel.request = v);
   if ($("iNames")) bindText($("iNames"), () => posNames(sel).join(" / "), v => sel.names = v.split(/\s*[\/,]\s*/).map(s => s.trim()).filter(Boolean));
   if ($("iByo")) bindText($("iByo"), () => (sel.byo || []).join(", "), v => sel.byo = v.split(",").map(s => s.trim()).filter(Boolean));
   if ($("iLabel")) bindText($("iLabel"), () => sel.label, v => sel.label = v);
@@ -2016,8 +1955,7 @@ function renderInspector(p){
     q.positions = q.positions.filter(o => o.id !== sel.id);
     q.items = q.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
     q.wedges = q.wedges.filter(w => w.id !== sel.id);
-    for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== sel.id);
-    syncWedgeIds(q); S.sel = null;
+    S.sel = null;
   });
   $("bDesel").onclick = () => { S.sel = null; render(); };
 }
@@ -2080,8 +2018,7 @@ document.addEventListener("keydown", e => {
       p.positions = p.positions.filter(o => o.id !== sel.id);
       p.items = p.items.filter(o => o.id !== sel.id && !(o.ownerPositionIds || []).includes(sel.id));
       p.wedges = p.wedges.filter(w => w.id !== sel.id);
-      for (const w of p.wedges) w.assignees = w.assignees.filter(id => id !== sel.id);
-      syncWedgeIds(p); S.sel = null;
+      S.sel = null;
     });
   } else if (e.key === "Escape"){ S.sel = null; render(); }
 });
@@ -2133,8 +2070,7 @@ function emailText(p){
   for (const l of scheduleLines(p)) L.push(l);
   L.push("Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
   L.push("MONITORS");
-  for (const r of mon.rows) L.push("  Mix " + r.n + ": " + (r.who.join(", ") || "no one assigned") + (r.request ? " — " + r.request : ""));
-  if (mon.unassigned.length) L.push("  No wedge assigned: " + mon.unassigned.join(", "));
+  for (const r of mon.rows) L.push("  Mix " + r.n + ": " + r.where);
   if (needs.length){
     L.push("", "HOUSE EQUIPMENT NEEDED");
     for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
@@ -2225,9 +2161,6 @@ function openInstrumentation(target){
 function removePosition(p, id){
   p.positions = p.positions.filter(o => o.id !== id);
   p.items = p.items.filter(o => !(o.ownerPositionIds || []).includes(id));
-  for (const w of p.wedges) w.assignees = w.assignees.filter(x => x !== id);
-  p.wedges = p.wedges.filter(w => w.assignees.length || w.moved);
-  syncWedgeIds(p);
 }
 
 /* ================= bulk name entry ================= */

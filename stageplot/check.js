@@ -16,7 +16,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   blankPlot, addPosition, makeFromParts, makeFromTemplate, autoLayout, monitorGroups, resetIds,
   parseNameList, applyNameList, migratePlot, migrateV1,
   monitorTable, houseNeeds, byoList, warnings, changeover,
-  offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, syncWedgeIds, itemDef,
+  offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, itemDef,
   diagramGeom, labelBoxes, positionLabelBox,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
@@ -106,45 +106,50 @@ for (const t of E.TEMPLATES){
 
   // add a vocalist, then drop them again — what the buttons on the main page do
   const q = T("combo"), n = q.positions.length;
-  const mixesBefore = q.wedges.length;
-  const assignedBefore = JSON.stringify(q.wedges.map(w => w.assignees.slice().sort()));
+  const mixesBefore = q.wedges.length, wedgesBefore = JSON.stringify(q.wedges.map(w => [w.number, w.x, w.y]));
   const added = E.addPosition(q, "voice");
   E.autoLayout(q, { force:false });
   eq(q.positions.length, n + 1, "adding a vocalist adds a position");
   ok(!E.offDeck(added, q) && collisions(q).hard.length === 0, "…placed clear of everyone else");
   eq(q.wedges.length, mixesBefore, "…and no wedge appears on its own");
-  eq(JSON.stringify(q.wedges.map(w => w.assignees.slice().sort())), assignedBefore, "…nor is anyone else's mix redealt");
-  ok(!q.wedges.some(w => w.assignees.includes(added.id)), "…the new position has no mix until someone gives it one");
-  ok(E.monitorTable(q).unassigned.some(x => /Vox|Voice/.test(x)), "…and says so under the monitors table");
+  eq(JSON.stringify(q.wedges.map(w => [w.number, w.x, w.y])), wedgesBefore, "…nor does any existing wedge move or renumber");
   E.autoLayout(q, { force:true });
-  ok(q.wedges.some(w => w.assignees.includes(added.id)), "re-layout deals the mixes again, including the new position");
+  ok(q.wedges.length === mixesBefore && q.wedges.some(w => w.number === 1 && Math.abs(w.x - added.x) < 30),
+     "re-layout deals the wedges again: the vocalist's is mix 1, downstage of them");
 
   // a blank plot has no mixes, and building a band in it must not invent any
   const blank = E.blankPlot();
   for (const r of ["guitar","bass","drums"]){ E.addPosition(blank, r); E.autoLayout(blank, { force:false }); }
   eq(blank.wedges.length, 0, "a blank plot stays at zero wedges however many instruments you add");
-  eq(E.monitorTable(blank).unassigned.length, 3, "…and all three read as having no mix");
   E.autoLayout(blank, { force:true });
   eq(blank.wedges.length, 3, "…until re-layout deals them");
   q.positions = q.positions.filter(x => x.id !== added.id);
-  for (const w of q.wedges) w.assignees = w.assignees.filter(id => id !== added.id);
   E.autoLayout(q, { force:false });
   ok(collisions(q).hard.length === 0, "…and the row closes up cleanly");
 }
 
-/* ---- 2c. hand-assigned mixes survive a re-layout ---- */
+/* ---- 2c. a wedge is a spot on the deck and a number, nothing more (B2, Tim Shade 2026-09-16) ---- */
 {
   const p = T("rock");
-  const voice = p.positions.find(x => x.roleId === "voice"), drums = p.positions.find(x => x.roleId === "drums");
-  const mix = p.wedges[0];
-  mix.assignees = [voice.id, drums.id];
-  mix.request = "vocal and kick";
-  p.wedgesTouched = true;
-  E.addPosition(p, "alto");
-  E.autoLayout(p, { force:false });
-  const still = p.wedges.find(w => w.id === mix.id);
-  eq(still.request, "vocal and kick", "a typed monitor request is not rewritten when the band changes");
-  eq(JSON.stringify(still.assignees.slice().sort()), JSON.stringify([voice.id, drums.id].sort()), "…nor are hand-picked assignees");
+  ok(p.wedges.every(w => JSON.stringify(Object.keys(w).sort()) === JSON.stringify(["id","moved","number","rot","x","y"])),
+     "a dealt wedge is id, number, x, y, rot, moved: " + Object.keys(p.wedges[0]).sort().join(","));
+  eq(p.wedges.map(w => w.number).join(","), "1,2,3,4,5", "…numbered 1 to 5 in priority order");
+  const rows = E.monitorTable(p).rows;
+  ok(rows.length === 5 && rows.every(r => /^[DCU]S[LCR] \(/.test(r.where)) && !("who" in rows[0]) && !("request" in rows[0]),
+     "the Monitors table is mix number and where it stands: " + rows[0].where);
+  ok(!E.warnings(p).some(w => /assigned|no wedge/.test(w.text)), "no assignment warnings exist");
+  const old = JSON.parse(JSON.stringify(p));
+  old.wedges[0].assignees = [p.positions[0].id]; old.wedges[0].request = "more me"; old.positions[0].wedgeId = old.wedges[0].id;
+  const back = E.migratePlot(old);
+  ok(!("assignees" in back.wedges[0]) && !("request" in back.wedges[0]) && !("wedgeId" in back.positions[0]),
+     "an old file's assignees and requests are dropped on load");
+  const a = T("rock"), b = T("rock");
+  b.wedges[0].x += 40; b.wedges.pop();
+  const co = E.changeover(a, b);
+  ok(co.wedges.change.length === 1 && co.wedges.change[0].n === 1 && /→|from/.test(co.wedges.change[0].from + co.wedges.change[0].to) && co.wedges.leave.join(",") === "5",
+     "changeover: a moved wedge and a struck wedge, by number");
+  ok(!/data-wassign|data-wreq|What this mix wants|What they want|no one assigned|No wedge assigned/.test(src), "no mix-contents UI or wording left in the page");
+  ok(/Notes for the tech/.test(src), "the one free-text field is the notes on the Details tab");
 }
 
 /* ---- 3. big band: usable with no names at all ---- */
@@ -225,11 +230,11 @@ for (const t of E.TEMPLATES){
 {
   const p = T("rock");
   const voice = p.positions.find(x => x.roleId === "voice");
-  const before = E.monitorTable(p).rows.map(r => r.who.join(", "));
+  const before = E.posText2(p, voice);
   voice.names = ["Avery Stone"];
-  ok(E.monitorTable(p).rows.some(r => /Vox \(Avery Stone\)/.test(r.who.join(", "))), "a name shows in parentheses in the monitor table");
+  ok(/Vox \(Avery Stone\)/.test(E.posText2(p, voice)), "a name shows in parentheses in the tables");
   p.printNames = false;
-  eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.who.join(", "))), JSON.stringify(before), "printNames off falls back to position labels exactly");
+  eq(E.posText2(p, voice), before, "printNames off falls back to the position label exactly");
   ok(E.posShortLines(p, voice).every(l => l.text !== "Avery Stone"), "…and the diagram drops the name too");
   p.printNames = true;
   ok(E.posShortLines(p, voice).some(l => l.text === "Avery Stone"), "…and brings it back");
@@ -260,7 +265,6 @@ for (const t of E.TEMPLATES){
   drums.names = ["Jo Fischer", "Riley Nunez"];
   ok(/Jo Fischer \/ Riley Nunez/.test(E.posText2(p, drums)), "both names print: " + E.posText2(p, drums));
   eq(E.houseNeeds(p).find(n => n.id === "kit").need, 1, "and one house kit, not two");
-  eq(p.wedges.filter(w => w.assignees.includes(drums.id)).length, 1, "one chair, one wedge");
 }
 
 /* ---- 9. a custom role behaves like any other ---- */
@@ -379,7 +383,7 @@ for (const t of E.TEMPLATES){
   const keys = ex.positions.find(x => x.roleId === "keys");
   eq(keys.inputs.length, 2, "the keys/vocals player keeps both of their v1 inputs for mic placement");
   ok(ex.items.some(i => i.ref === "kb1") && ex.items.some(i => i.kind === "byo"), "owned gear and BYO items come across");
-  eq(ex.wedges[0].request, "more me, less kick", "wedge requests survive");
+  ok(!("request" in ex.wedges[0]) && !("assignees" in ex.wedges[0]), "a v1 wedge comes across as a spot and a number");
   eq(ex.songs[0].onstage.length, 5, "song personnel remap onto positions (the two drummers collapse to one chair)");
 
   const real = fs.existsSync(path.join(__dirname, "samples/v1/expected.json"));
