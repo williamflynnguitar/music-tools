@@ -402,6 +402,11 @@ const VENUE = {
     { id:"deluxe",  label:"Fender Deluxe Reverb",                             short:"Deluxe",     cat:"amp",   bcat:"gtramp", w:25, d:10, count:2 },  // confirmed
     { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg",       cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
     { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord",       cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
+    // The house upright piano (William, 2026-09-17): a keys player may take it instead of, or as well as, a keyboard.
+    // Last in its category on purpose — the keyboards stay the default; the piano is a swap, a House-tab add, or
+    // what a third keys player gets. acoustic: it is miked, never DI'd, so a player swapped onto it loses their
+    // DI box (settleDI). Footprint ASSUMED — a typical upright, not measured; the bench is the player's own 22″.
+    { id:"piano",   label:"House upright piano",                              short:"Piano",      cat:"keys", bcat:"keys",   w:58, d:24, acoustic:true },
     { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
     { id:"mic",     label:"Mic (on stand)",   short:"Mic",     cat:"mic",     w:12, d:12, count:8 },   // ASSUMED count. One object = one stand, whoever shares it
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
@@ -522,7 +527,7 @@ function stepState(plot, id){ return stepDone(plot, id) ? "done" : isSkipped(plo
  * get the two Voxes rather than one amp booked twice. VENUE.house order is
  * the preference order within a category.
  * ------------------------------------------------------------------ */
-const BACKLINE_CATS = { gtramp:"House guitar amp", keys:"House keyboard", bass:"House bass rig", kit:"House drum kit" };
+const BACKLINE_CATS = { gtramp:"House guitar amp", keys:"House keyboard / piano", bass:"House bass rig", kit:"House drum kit" };
 function houseCat(cat){ return VENUE.house.filter(h => h.bcat === cat); }
 /* A role's backline is a category id; tolerate a house id (an old custom role). */
 function backlineCat(role){
@@ -596,6 +601,21 @@ function placeDI(plot, it){
   it.x = clampIn(r.x0 - DI_GAP - f.w / 2, f.w / 2, D.w - f.w / 2);    // x falls toward stage left, against the gear
   it.y = clampIn(anchor.y, f.d / 2, D.d - f.d / 2);
 }
+/* The house piano is miked, not DI'd (acoustic:true on the house item). A
+   DI instrument (role.di) arrives with a DI box; when its player is put on
+   the piano the box goes, and when they are put back on a keyboard it comes
+   back, beside the gear. Called only where the backline actually changes —
+   the swap, a load-time settle, the layout engine handing out a fresh item —
+   never on a plain re-layout, so a DI box someone deleted on purpose stays
+   deleted. Only the player's own box is touched, never one placed by hand
+   for somebody else. */
+function settleDI(plot, pos){
+  const r = roleOf(plot, pos); if (!r.di) return;
+  const gear = findBackline(plot, pos, r), def = gear ? houseDef(gear.ref) : null;
+  const mine = disOn(plot).filter(i => (i.ownerPositionIds || []).includes(pos.id));
+  if (def && def.acoustic){ if (mine.length) plot.items = plot.items.filter(i => !mine.includes(i)); }
+  else if (!mine.length){ const it = addDI(plot, pos, r.label); placeDI(plot, it); }
+}
 function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
 /* Which house items this plot has already spoken for. */
 /* How many of each house item this plot has already spoken for. A house item
@@ -654,7 +674,11 @@ function settleBackline(plot){
     const room = h => (seen[h.id] || 0) < houseCount(h);
     if (items.length < 2 || !def || room(def)){ take(it.ref); continue; }
     const free = items.find(room);
-    if (free) it.ref = free.id;
+    if (free && free.id !== it.ref){
+      const acousticBefore = !!def.acoustic;
+      it.ref = free.id;
+      if (!!free.acoustic !== acousticBefore){ const own = ownerOf(plot, it); if (own) settleDI(plot, own); }
+    }
     take(it.ref);
   }
   return plot;
@@ -666,7 +690,7 @@ const AMP_IDS_BEFORE = { gtramp1:"vox", gtramp2:"vox", gtramp3:"deluxe", gtramp4
 function renameOldAmps(plot){ for (const it of plot.items) if (it.kind === "house" && AMP_IDS_BEFORE[it.ref]) it.ref = AMP_IDS_BEFORE[it.ref]; return plot; }
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller
+const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7, pianoKeys: 10 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller; pianoKeys: the depth of the upright piano's key strip, along the player's edge
 /* A music stand, top-down: a solid bar in front of the player (William,
    2026-09-16 — the side-view icon read as a monitor and collided with the
    neighbours). Every bar is the same size, w × thick inches, whoever it
@@ -718,8 +742,9 @@ function titleCase(s){ return String(s || "").replace(/^./, c => c.toUpperCase()
  *             "bass", "kit"). The plot takes the first item of that category
  *             it is not already using, so a second guitarist gets the second
  *             amp; backlinePrefer names one to take first when it is free.
- *             Somewhere Works has no acoustic piano, so piano and organ mean
- *             a house keyboard
+ *             Piano and organ mean a house keyboard by default; the house
+ *             upright piano is last in the keys category, so it is taken by
+ *             a swap, from the House tab, or by a third keys player
  *   gearSide  which side of the player the backline sits: "up" behind
  *             (amps), "down" in front (keyboards)
  *   zone      where the layout engine wants it (see LAYOUT)
@@ -1011,6 +1036,7 @@ function autoLayout(plot, opt){
       if (!ref) continue;
       it = { id:nextIdE("i"), kind:"house", ref:ref, label:"", x:p.x, y:p.y, rot:0, moved:false, ownerPositionIds:[p.id], inputs:[], notes:"" };
       plot.items.push(it);
+      if ((houseDef(ref) || {}).acoustic) settleDI(plot, p);   // the piano is miked: the DI box that arrived with the player goes
     }
     if (pinned(it)) continue;
     const down = r.gearSide === "down";     // a keyboard sits in front, an amp behind
@@ -1927,7 +1953,16 @@ function diagramSVG(plot, opt){
       : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
         (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
-    if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
+    if (def.cat === "keys"){
+      /* A keyboard: key lines the full depth. The upright piano: the keys are a
+         strip along the player's edge (local −y is upstage, where a gearSide
+         "down" player sits) and the case is the rest, with the fallboard
+         line between — so the tech can see which way it faces. */
+      const kd = def.acoustic ? DRAW.pianoKeys - 4 : f.d - 6, k0 = -f.d/2 + 3;
+      let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + k0 + "v" + kd;
+      if (def.acoustic) k += "M" + (-f.w/2 + 1) + "," + (-f.d/2 + DRAW.pianoKeys) + "h" + (f.w - 2);
+      body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>';
+    }
     if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);   // drawn as a kit, dashed, no rug; its name sits under it
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y), R = rectOf(it, plot);
@@ -1947,9 +1982,20 @@ function diagramSVG(plot, opt){
       if (fit && near){ gl = ts("DI", px, py + g.pt(fit.pt) * .36, fit.pt, "dim"); insideFit = true; }
       else gl = ts("DI" + (String(it.label || "").trim() ? " · " + it.label.trim() : ""), px, belowY, DRAW.smallPt, "dim");
     } else {
-      const box = insideBox(it, plot), fit = fitLabel(g, name, box.w, box.h, DRAW.smallPt);
+      const box = insideBox(it, plot);
+      let lx = px, ly = py;
+      if (def.acoustic && def.cat === "keys" && ((it.rot || 0) % 180 + 180) % 180 === 0){
+        /* The piano's name sits in the case, clear of the key strip: at 0° and
+           180° — how it rests by default — the label box loses the strip's
+           depth and its centre moves half that toward the case. Turned any
+           other way the text (always horizontal) would not fit the 14″ case,
+           so it is centred on the shape like the Korg's is. */
+        const off = DRAW.pianoKeys / 2 * ((it.rot || 0) % 360 === 0 ? 1 : -1);
+        ly += off; box.h -= DRAW.pianoKeys;
+      }
+      const fit = fitLabel(g, name, box.w, box.h, DRAW.smallPt);
       if (fit){ const u = g.pt(fit.pt), n = fit.lines.length;
-        fit.lines.forEach((ln, i) => { gl += ts(ln, px, py + (i - (n - 1) / 2) * 1.15 * u + u * .36, fit.pt, "dim"); }); insideFit = true; }
+        fit.lines.forEach((ln, i) => { gl += ts(ln, lx, ly + (i - (n - 1) / 2) * 1.15 * u + u * .36, fit.pt, "dim"); }); insideFit = true; }
       else gl = ts(outsideName, px, belowY, DRAW.smallPt, "dim");
     }
     if (it.kind === "byo" && it.label) gl += ts(it.label, px, belowY + (insideFit || isStand ? 0 : g.pt(DRAW.smallPt) * 1.15), DRAW.smallPt, "dim");
@@ -2290,7 +2336,8 @@ function addHouse(ref){
       else {
         const anchor = pos || gear, f = anchor ? footprintOf(anchor, p) : null;
         const at = anchor ? { x:anchor.x, y:anchor.y - f.d / 2 - (gear ? 7 : 10) } : freeSpot(p, p.items.length);   // an amp mic stands in front of the amp
-        const label = pos ? labels[pos.id].short : gear ? (owner ? labels[owner.id].short + " amp" : (itemDef(gear) || {}).short) : "";
+        const gdef = gear ? itemDef(gear) || {} : {};
+        const label = pos ? labels[pos.id].short : gear ? (owner && !gdef.acoustic ? labels[owner.id].short + " amp" : gdef.short) : "";   // at the piano: "Piano", whoever plays it
         if (ref === "mic") it = addMicItem(p, at, label, owner ? [owner.id] : [], true);
         else { it = { id:nextId("i"), kind:"house", ref, label:"", x:at.x, y:at.y, rot:0, moved:true, ownerPositionIds:[] }; p.items.push(it); }
       }
@@ -2377,7 +2424,7 @@ function renderPanel(p){
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))) H.push(houseRowHTML(p, h, labels, esc(h.label)));
-    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two VOX combos. The guitar amps are a VOX or a Fender Deluxe Reverb, two of each; anything else, the band brings (the <b>Band brings</b> tab). A row with a ✓ is already on the deck, and says whose it is. Select an amp or keyboard on the canvas to swap it for the other model. These buttons are only for an extra; when the house has none left, the button is off. No mics come with the house gear.</p>");
+    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two VOX combos. The guitar amps are a VOX or a Fender Deluxe Reverb, two of each; anything else, the band brings (the <b>Band brings</b> tab). A row with a ✓ is already on the deck, and says whose it is. Select an amp or keyboard on the canvas to swap it for another model \u2014 a keys player can take the Korg, the Nord or the house upright piano; the piano is miked rather than DI\u2019d, so swapping onto it drops the DI box and swapping back restores it. These buttons are only for an extra; when the house has none left, the button is off. No mics come with the house gear.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
@@ -2621,11 +2668,15 @@ function renderInspector(p){
   if ($("iSwap")) $("iSwap").onchange = () => mut(() => {
     const q = plot(), it = find(q, sel.id), want = $("iSwap").value, was = it.ref;
     if (want === was) return;
+    let other = null;
     if (!houseRoom(q, want)){                                   // none of that model left: trade with someone who has one
-      const other = q.items.find(o => o.id !== it.id && o.kind === "house" && o.ref === want);
+      other = q.items.find(o => o.id !== it.id && o.kind === "house" && o.ref === want);
       if (other) other.ref = was;
     }
     it.ref = want;
+    // onto or off the piano: the player's DI box goes or comes back (the piano is miked)
+    if (!!(houseDef(want) || {}).acoustic !== !!(houseDef(was) || {}).acoustic)
+      for (const o of [it, other]) if (o){ const own = ownerOf(q, o); if (own) settleDI(q, own); }
   });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
     sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);
@@ -2806,7 +2857,7 @@ async function copyText(t){
    storage it would show on every load. */
 /* One source for the help text: helpHTML() is what the ? in the top bar and
    the How it works button on the start screen both render. */
-const STEP_HINT = { positions:"who is playing, where, and whether they sit or stand", house:"the house amps and keyboards (added for you; swap or add)", byo:"gear the band brings",
+const STEP_HINT = { positions:"who is playing, where, and whether they sit or stand", house:"the house amps, keyboards and piano (added for you; swap or add)", byo:"gear the band brings",
   wedges:"monitor wedges, numbered by mix", mics:"every microphone and DI box, where it stands", misc:"music stands and a text label", details:"act, dates, notes for the tech" };
 function helpSections(){
   const k = t => '<kbd>' + t + '</kbd>';
@@ -2851,7 +2902,7 @@ function helpSections(){
       'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes.',
       'Label it — “vocal”, “tpt 1+2”, “snare”.',
       'One mic is one stand, however many share it.',
-      'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'])],
+      'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead. The house upright piano is miked: select it and add a mic.'])],
     ["Monitor wedges", ul([
       'Place each wedge where it goes.',
       'The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it.',

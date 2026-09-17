@@ -81,6 +81,7 @@ counts and the deck are still placeholders.
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
 | `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
 | `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
+| `piano` — House upright piano | confirmed there is one (William, 2026-09-17) | footprint ≈58″ × 24″ **ASSUMED**, a typical upright, not measured. Keys backline like the two keyboards, but last in the category, so a keys player takes it by swap, from the House tab, or as the third keyboard; `acoustic:true` — it is miked, never DI'd |
 | `deluxe` — Fender Deluxe Reverb, `count:2` | confirmed | ≈25″ × 10″. One model with a count, not two named boxes (William, 2026-09-16) |
 | `bassamp` head — Markbass Little Mark Tube 800 | confirmed | ≈24″ × 20″ with the cab |
 | `vox` — VOX AC combo, `count:2` | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel; one black, one red, but the plot never says which — the choice on offer is a VOX or a Fender, or bring your own (William, 2026-09-16). Written VOX, in caps, everywhere it is drawn or printed: "Vox" is the vocalist's chair |
@@ -133,6 +134,25 @@ old plots come out exactly as they did.
   plots and share links still open and simply pick up the real labels. Only
   gear that belongs to a player is settled: an extra amp placed by hand from
   the House tab is a deliberate ask and keeps the box it names.
+- **The house upright piano** (William, 2026-09-17: there is one, usable
+  instead of or as well as the keyboards). A house item in the keys category,
+  `piano`, after the Korg and the Nord, so nothing changes for a plot that
+  never asks for it: two keys players still get the two keyboards, a third
+  gets the piano rather than an over-count, and the category's over-count
+  reads "House keyboard / piano … has 3". It carries `acoustic:true`, and
+  that is the one thing the rest of the file reads: a piano is miked, not
+  DI'd, so `settleDI()` takes away the DI box a keys player arrived with when
+  they land on the piano and gives it back, beside the gear, when they go back
+  to a keyboard. It runs only where the backline actually changes — the
+  inspector's swap (both ends of a trade), a fresh item from the layout
+  engine, a load-time `settleBackline()` that moves a ref — never on a plain
+  re-layout, so a DI box deleted on purpose stays deleted. Drawn like a
+  keyboard but with the key lines as a strip along the player's edge and a
+  fallboard line, the case plain behind it, so the page shows which way it
+  faces; the name sits in the case at 0° and 180° and is centred like the
+  Korg's at any other angle, where horizontal text would not fit the case.
+  A mic added with the piano selected is labelled "Piano", not "Keys amp".
+  The big band's vertical-keyboard rule turns it like any keys item.
 - **House gear is shared between sets and never conflict-checked.** Two plots
   in one session on the same Deluxe Reverb is normal at Somewhere Works and
   raises nothing; the changeover sheet treats an amp that stays in place as
@@ -223,9 +243,10 @@ instrument, add a row; nothing else in the file enumerates instruments.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → a house guitar amp,
-  bass and upright → the house rig, keys and organ → a house keyboard (Somewhere
-  Works has no acoustic piano, so piano *is* a house keyboard), drums → the
-  house kit. The role asks for a *kind* and the plot hands out one it isn’t
+  bass and upright → the house rig, keys and organ → a house keyboard (piano
+  means a house keyboard by default; the house upright piano is the last item
+  in the keys category, so it is a swap, a House-tab add, or what a third
+  keys player gets — see "The house upright piano"), drums → the house kit. The role asks for a *kind* and the plot hands out one it isn’t
   already using — see "Backline is a kind, not a named amp". A
   `stance:"object"` role like the kit *is* its gear: the position draws as the
   kit and no separate item exists, which is why two drummers on one kit give
@@ -292,7 +313,9 @@ distinction is just which object stands at the amp.
 keys, organ, DJ, playback, acoustic guitar, violin, cello. `addPosition()`
 adds it, owned by the player and labelled for the instrument; `placeDI()`
 puts it on the stage-left side of the player's backline (or of the player)
-until someone drags it. Mics never arrive on their own.
+until someone drags it. Mics never arrive on their own. The one exception
+is a keys player on the house upright piano, which is miked: their box goes
+when they take the piano and comes back when they leave it (`settleDI()`).
 
 **The page counts them and nothing else counts them** (C3). Microphones — N
 and DI boxes — N are two sections in the right column, one line per object
@@ -756,23 +779,27 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 588 assertions: the role library, every template (builds,
+`node check.js` — 632 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,
 backline by category (two guitarists on two amps, five on an amber over-count
-naming 4, Korg and Nord, an organ on the Nord, a swap surviving re-layout, an
-old doubled `gtramp1` settling on load, two plots sharing an amp in silence),
+naming 4, Korg and Nord, an organ on the Nord, a third keys player on the
+house piano with no DI box and four over-counting "keyboard / piano … has
+3", the piano swap taking the DI box away and giving it back, a swap
+surviving re-layout, an old doubled `gtramp1` settling on load, two plots
+sharing an amp in silence),
 the delivery address and the band leader/director wording, the soundcheck
 and lineup fields, no mics on any house item, and no storage APIs or student
 names in `index.html`.
 
 `node print-check.js` measures the thing node cannot see: the printed page is
 paginated by *rendered height*, so it drives a headless Chromium through
-Playwright, renders `sheetHTML()` for every template and for the migrated v1
-fixture, and fails if a plot that fitted one page before now runs to two. It
+Playwright, renders `sheetHTML()` for every template, for the migrated v1 fixture and
+for a three-keys plot with one player on the house piano, and fails if a
+plot that fitted one page before now runs to two. It
 also confirms the delivery line to Tim Shade ends every page.
 `check.js` runs it and reports what it found; with no Playwright on the
 machine it exits 2 and check.js says it skipped, the way the local samples do.

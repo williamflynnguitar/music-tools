@@ -20,7 +20,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   diagramGeom, labelBoxes, positionLabelBox,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
+  pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
@@ -251,7 +251,7 @@ for (const t of E.TEMPLATES){
   const needs = Object.fromEntries(E.houseNeeds(p).map(n => [n.id, n.need]));
   eq(needs.kit, 1, "the drums position implies the house kit");
   eq(needs.vox, 1, "the guitar implies a house amp");
-  eq(needs.kb1, 1, "keys implies a house keyboard — SW has no acoustic piano");
+  eq(needs.kb1, 1, "keys implies a house keyboard — the Korg first; the house piano is a swap, not the default");
   eq(needs.bassamp, 1, "the bass implies the house rig");
   eq(E.diList(p).map(d => d.label).sort().join(","), "Bass,Keys", "two DI boxes on the deck — keys and bass — counted from the objects, not from an input list");
   ok(!("micstand" in needs) && !("mic" in needs) && !("di" in needs), "…and neither mics nor DIs are in the house-equipment list: they have their own sections");
@@ -501,6 +501,49 @@ for (const t of E.TEMPLATES){
   const both = E.makeFromParts([["keys",1],["organ",1],["bass",1],["drums",1]], null, "Keys and organ");
   eq(both.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2",
      "keys and organ take one each");
+
+  // the house upright piano (William, 2026-09-17): last in the keys category, miked rather than DI'd
+  const pianoDef = E.VENUE.house.find(h => h.id === "piano");
+  ok(pianoDef && pianoDef.bcat === "keys" && pianoDef.acoustic === true && pianoDef.cat === "keys", "the house upright piano is keys backline, marked acoustic, listed with the keyboards");
+  eq(E.houseCat("keys").map(h => h.id).join(", "), "kb1, kb2, piano", "…and comes after the Korg and the Nord, so the keyboards stay the default");
+  const trio = E.makeFromParts([["keys",3],["bass",1],["drums",1]], null, "Three keys");
+  eq(trio.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2, piano",
+     "a third keys player gets the piano rather than an over-count");
+  ok(!E.warnings(trio).some(w => /keyboard/.test(w.text)), "…and three keys players raise no over-count");
+  const keysLabels = E.positionLabels(trio), onPiano = trio.positions.find(p => trio.items.some(i => i.ref === "piano" && i.ownerPositionIds.includes(p.id)));
+  eq(E.diList(trio).map(d => d.label + " — " + d.who).sort().join(" | "), "Bass — Bass | Keys — Keys 1 | Keys — Keys 2",
+     "the two keyboard players keep their DI boxes; the pianist has none (the piano is miked)");
+  ok(onPiano && keysLabels[onPiano.id].short === "Keys 3", "…and it is Keys 3 who sits at the piano");
+  ok(E.houseNeeds(trio).some(n => n.id === "piano" && n.need === 1 && !n.over), "House equipment lists the piano by name");
+  const keys4 = E.makeFromParts([["keys",4],["bass",1],["drums",1]], null, "Four keys");
+  ok(E.houseNeeds(keys4).some(n => n.id === "cat:keys" && n.need === 4 && n.have === 3), "four keys players over-count the category, piano included: 4 of 3");
+  ok(E.warnings(keys4).some(w => /4 × House keyboard \/ piano needed; Somewhere Works has 3\./.test(w.text)), "…in words that say the piano counts");
+  // the swap, as settleDI sees it: onto the piano the DI goes, back onto a keyboard it returns beside the gear
+  const sw2 = E.makeFromParts([["keys",1],["bass",1],["drums",1]], null, "Piano swap");
+  const kpos = sw2.positions.find(p => p.roleId === "keys"), kgear = E.findBackline(sw2, kpos, E.roleOf(sw2, kpos));
+  eq(kgear.ref, "kb1", "a lone keys player starts on the Korg");
+  eq(E.disOn(sw2).filter(i => i.ownerPositionIds.includes(kpos.id)).length, 1, "…with a DI box");
+  kgear.ref = "piano"; E.settleDI(sw2, kpos);
+  eq(E.disOn(sw2).filter(i => i.ownerPositionIds.includes(kpos.id)).length, 0, "swapped onto the piano, the DI box goes");
+  eq(E.disOn(sw2).length, 1, "…and the bass player's stays");
+  E.autoLayout(sw2, { force:true });
+  eq(E.disOn(sw2).filter(i => i.ownerPositionIds.includes(kpos.id)).length, 0, "a re-layout does not bring it back");
+  eq(sw2.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).join(", "), "piano", "…and keeps the piano chosen");
+  kgear.ref = "kb2"; E.settleDI(sw2, kpos);
+  const back = E.disOn(sw2).filter(i => i.ownerPositionIds.includes(kpos.id));
+  eq(back.length, 1, "swapped back onto a keyboard, a DI box comes back");
+  ok(back[0] && back[0].label === "Keys" && !back[0].moved, "…labelled for the instrument and unpinned, so the layout engine carries it");
+  const kb2rect = E.rectOf(kgear, sw2);
+  ok(back[0] && Math.abs(back[0].y - kgear.y) < 1 && back[0].x < kb2rect.x0, "…and placed on the stage-left side of the keyboard");
+  E.settleDI(sw2, kpos);
+  eq(E.disOn(sw2).filter(i => i.ownerPositionIds.includes(kpos.id)).length, 1, "settling twice adds nothing");
+  // an old file whose third keys player was doubled onto the Korg settles onto the piano and loses the DI
+  const old3 = JSON.parse(JSON.stringify(trio));
+  for (const it of old3.items) if (E.refCat(it.ref) === "keys") it.ref = "kb1";
+  for (const pos of old3.positions) if (pos.roleId === "keys" && !E.disOn(old3).some(i => i.ownerPositionIds.includes(pos.id))) old3.items.push({ id:"di-x", kind:"house", ref:"di", label:"Keys", x:0, y:0, rot:0, moved:false, ownerPositionIds:[pos.id] });
+  E.settleBackline(old3);
+  eq(old3.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2, piano", "three keys players booked on the Korg settle onto the Korg, the Nord and the piano");
+  eq(E.disOn(old3).length, 3, "…and the one who landed on the piano lost the DI box");
 
   // a swap sticks: the lookup matches on owner and category, never on the id
   const sw = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Swap");

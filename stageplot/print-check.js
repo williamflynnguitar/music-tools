@@ -74,6 +74,7 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
         return p;
       },
       "example-v1 migrated": () => migratePlot(JSON.parse(JSON.stringify(v1file))),
+      "Three keys, one on the house piano": () => makeFromParts([["voice",1],["keys",3],["bass",1],["drums",1]], null, "Piano and keys"),   // the third keys player lands on the piano: one more bullet in House equipment
     };
     const out = [], sheet = document.getElementById("sheet");
     for (const name of Object.keys(build)){
@@ -81,7 +82,7 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
       sheet.innerHTML = sheetHTML(p);
       out.push({ name, h:sheet.scrollHeight, pages:Math.max(1, Math.ceil((sheet.scrollHeight - 4) / (10 * 96))),
                  deliverLine:/Please deliver to timothy\.shade@wichita\.edu as far in advance as possible\./.test(sheet.textContent),
-                 noContactLine:!/Contact:|Ensemble director/.test(sheet.textContent + emailText(p)),
+                 noContactLine:!/Contact:|Ensemble director/.test(sheet.textContent),   // emailText() went with the Email text button, 2026-09-16
                  bothLines:/Soundcheck: /.test(sheet.textContent) && /Performance: /.test(sheet.textContent) });
       sheet.innerHTML = "";
     }
@@ -107,6 +108,10 @@ const ok = (cond, m) => { checks++; if (!cond){ fails++; console.log("FAIL " + m
     const shots = {
       "combo-two-guitarists": `makeFromParts([["voice",1],["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars")`,
       "bigband": `makeFromTemplate("bigband")`,
+      "piano-trio": `(() => { const p = makeFromParts([["keys",1],["bass",1],["drums",1]], null, "Piano trio");
+        const k = p.positions.find(q => q.roleId === "keys"), g = findBackline(p, k, roleOf(p, k)); g.ref = "piano"; settleDI(p, k);
+        p.items.push({ id:"mic-p", kind:"house", ref:"mic", label:"Piano", x:g.x, y:g.y - 19, rot:0, moved:true, ownerPositionIds:[k.id] });
+        return p; })()`,   // the house upright piano, swapped in and miked
     };
     for (const name of Object.keys(shots)){
       await page.evaluate(expr => {
