@@ -759,8 +759,12 @@ const ROLES = [
   { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bass", gearSide:"up", di:true },
   { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:54, d:52, zone:"rhythm", backline:"kit" },   // the kit itself, no rug (B3)
   { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"standing",   w:22, d:22, zone:"rhythm" },
-  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"seated", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", di:true },
-  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"kb2", gearSide:"down", di:true },
+  { id:"keys",      label:"Keys",             pick:"Keys / keyboard", short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"seated", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", di:true },
+  // The house upright piano as a chair of its own (William, 2026-09-17: "add it as an option here"). It prefers the
+  // piano and falls back to a keyboard when the piano is taken, so di:true is right: on a keyboard the box is needed,
+  // and on the piano settleDI() takes it away. The layout engine treats it as keys (same slot, same big-band turn).
+  { id:"piano",     label:"Piano",            pick:"Upright piano",   short:"Piano", family:"rhythm", grp:"keys",   sub:1, stance:"seated", w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"piano", gearSide:"down", di:true },
+  { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:2, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"kb2", gearSide:"down", di:true },
   { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", di:true },
   { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", di:true },
   // saxes and other woodwinds — one row
@@ -798,6 +802,7 @@ const ROLE_MATCH = [
   [/clarinet/i, "clarinet"], [/flute/i, "flute"], [/\bsax/i, "alto"],
   [/horn section|horns/i, "hornsection"],
   [/drum|kit\b/i, "drums"], [/percussion|congas|aux perc/i, "perc"],
+  [/upright piano|acoustic piano|house piano/i, "piano"],   // before "upright", which is the bass; plain "piano" still means a keyboard
   [/upright|double bass|acoustic bass/i, "upright"],
   [/acoustic guitar|ac\.? gtr/i, "acoustic"], [/guitar|gtr/i, "guitar"],
   [/organ|hammond|b3/i, "organ"], [/piano|keys|keyboard|synth|rhodes/i, "keys"],
@@ -1015,8 +1020,9 @@ function autoLayout(plot, opt){
   const slots = big ? LAYOUT.rhythmBig : (plot.rhythmPlan === "bass-centre" ? LAYOUT.rhythmSwapped : LAYOUT.rhythm);
   const used = {};
   for (const p of rhythm){
-    const r = roleOf(plot, p), slot = slots[r.id] || slots.playback || [.5, .8];
-    const n = (used[r.id] = (used[r.id] || 0) + 1) - 1;
+    const r = roleOf(plot, p), sid = r.id === "piano" ? "keys" : r.id;   // the piano takes the keys slot, and staggers with them
+    const slot = slots[sid] || slots.playback || [.5, .8];
+    const n = (used[sid] = (used[sid] || 0) + 1) - 1;
     if (pinned(p)) continue;
     p.x = clampIn((slot[0] + (LAYOUT.stagger[n] || 0)) * W, 18, W - 18);
     p.y = clampIn(slot[1] * DP, 18, DP - 18);
@@ -1041,7 +1047,7 @@ function autoLayout(plot, opt){
     }
     if (pinned(it)) continue;
     const down = r.gearSide === "down";     // a keyboard sits in front, an amp behind
-    if (big && r.id === "keys"){            // big band: keyboard turned vertical, stage left of its player
+    if (big && (r.id === "keys" || r.id === "piano")){   // big band: keyboard (or piano) turned vertical, stage left of its player
       const def = itemDef(it) || { d:16 };
       it.rot = 90;
       it.x = clampIn(p.x - (r.w / 2 + def.d / 2 + 3), 12, W - 12);
@@ -1111,7 +1117,7 @@ function monitorGroups(plot){
   add("drums", byId(["drums","perc"]));
   add("bass", byId(["bass","upright"]));
   add("guitar", byId(["guitar","acoustic"]));
-  add("keys", byId(["keys","organ","dj","playback"]));
+  add("keys", byId(["keys","piano","organ","dj","playback"]));
   const sax = fam("sax"), low = byId(["tuba","btrombone","trombone","hornsection"]), high = byId(["trumpet","flugel"]);
   if (sax.length > 3){ add("saxes A", sax.slice(0, Math.ceil(sax.length / 2))); add("saxes B", sax.slice(Math.ceil(sax.length / 2))); }
   else add("saxes", sax);
@@ -2881,7 +2887,7 @@ function helpSections(){
     ["Seated or standing", ul([
       'A seated player\'s circle sits on a square chair; a standing player is the circle alone.',
       'Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair.',
-      'Keyboard players sit; in a big band the saxes, trombones and guitarist sit too.',
+      'Keyboard and piano players sit; in a big band the saxes, trombones and guitarist sit too.',
       'Chairs are counted for the house under House equipment.'])],
     ["Music stands", ul([
       'The solid bar on the audience side of a player is their music stand. It carries no label, because the key says what it is.',
