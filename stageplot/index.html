@@ -48,6 +48,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .btn.on{background:var(--brass);color:var(--ink);border-color:var(--brass)}
 .btn:disabled{opacity:.35;cursor:not-allowed}
 .btn.sm{padding:3px 8px;font-size:12px;font-family:var(--mono)}
+.btn.hi{border:2px solid var(--brass);background:rgba(201,162,74,.08);color:var(--bone)}
+.btn.hi:hover{background:rgba(201,162,74,.16)}
 .bar-actions{display:flex;gap:6px;flex-wrap:wrap}
 
 .tabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:6px 16px;border-bottom:1px solid var(--line)}
@@ -199,8 +201,6 @@ table.prev td{padding:3px 0;border-bottom:1px solid rgba(42,84,97,.4)}
 .help kbd{font-family:var(--mono);font-size:12px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:1px 5px;color:var(--bone)}
 .pickgrid{display:grid;gap:6px}
 .pickgrid button{text-align:left}
-.pickgrid button.hi{border-color:var(--brass);border-width:2px;background:rgba(201,162,74,.08)}
-.pickgrid button.hi:hover{background:rgba(201,162,74,.16)}
 .pickgrid .sub{display:block;font-size:12px;color:var(--bone-dim);font-family:var(--mono)}
 .cosheets{max-width:7.5in;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .cosheet{background:#fff;color:#000;padding:.35in;font-size:10pt}
@@ -323,7 +323,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
     <button class="btn" id="bPrint" title="the stage and the equipment sheet on one Letter page — choose Save as PDF in the print dialog">Print / PDF</button>
     <button class="btn sm" id="bUndo" title="Undo (⌘Z)">undo</button>
     <button class="btn sm" id="bRedo" title="Redo (⇧⌘Z)">redo</button>
-    <button class="btn sm" id="bHelp" title="how this works">?</button>
+    <button class="btn sm hi" id="bHelp" title="How it works">?</button>
     <button class="btn" id="bEditCopy" hidden>Edit a copy</button>
   </div>
   <input type="file" id="fileIn" accept=".json,application/json" hidden>
