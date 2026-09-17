@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
+  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -738,21 +738,30 @@ for (const t of E.TEMPLATES){
 {
   const p = T("rock"), byNum = n => p.wedges.find(w => w.number === n);
   const w3 = byNum(3), w1 = byNum(1);
+  eq(E.wedgeClashes(p).length, 0, "a fresh plot has every mix on its own number");
   E.setWedgeNumber(p, w3, 1);
-  ok(w3.number === 1 && w1.number === 3, "giving wedge 3 the number 1 swaps the two");
-  eq(p.wedges.map(w => w.number).sort().join(","), "1,2,3,4,5", "…and every number is still unique");
-  eq(E.monitorTable(p).rows[0].id, w3.id, "…and the Monitors table lists it first");
+  ok(w3.number === 1 && w1.number === 1, "giving wedge 3 the number 1 takes it — nothing swaps behind your back (William, 2026-09-16)");
+  const cl = E.wedgeClashes(p);
+  ok(cl.length === 1 && cl[0].number === 1 && cl[0].wedges.length === 2 && cl[0].wedges.includes(w1) && cl[0].wedges.includes(w3), "…and the clash is reported: mix 1 on two wedges");
+  ok(E.warnings(p).some(w => w.level === "red" && /Mix 1 is on 2 wedges/.test(w.text) && /every mix needs its own number/.test(w.text)), "…in red, in the warnings: " + E.warnings(p).map(w => w.text).join(" | "));
+  ok(/clashing\.has\(obj\.id\) \? ' stroke="#c0392b"/.test(src), "…and both wedges are outlined red on the stage");
+  ok(/wedgecard' \+ \(c \? " clash" : ""\)/.test(src) && /class="clashnote"/.test(src), "…and the card says so");
   E.setWedgeNumber(p, w3, 9);
   eq(w3.number, 9, "a number nobody holds is simply taken");
-  E.setWedgeNumber(p, w3, "0"); E.setWedgeNumber(p, w3, "abc");
-  eq(w3.number, 9, "zero and nonsense are ignored");
+  eq(E.wedgeClashes(p).length, 0, "…and the clash is gone");
+  E.setWedgeNumber(p, w3, "0"); E.setWedgeNumber(p, w3, "abc"); E.setWedgeNumber(p, w3, "");
+  eq(w3.number, 9, "zero, nonsense and a blank are ignored");
   E.setWedgeNumber(p, w3, "2.6");
-  ok(w3.number === 3 && byNum(2).number === 2 && p.wedges.filter(w => w.number === 3).length === 1, "a typed decimal rounds and still swaps");
-  p.wedges = p.wedges.filter(w => w.number !== 2);        // now 9, 3, 4, 5
-  eq(E.nextWedgeNumber(p), 1, "a new wedge takes the lowest number nobody has");
-  p.wedges.push({ id:"wx", number:1, x:0, y:0, rot:0, moved:true });
-  eq(E.nextWedgeNumber(p), 2, "…the next lowest after that");
+  ok(w3.number === 3 && byNum(2).number === 2, "a typed decimal rounds");
+  eq(E.monitorTable(p).rows[2].id, w3.id, "…and the Monitors table lists it third");
+  p.wedges = p.wedges.filter(w => w.number !== 2);        // now 1, 3, 4, 5 (w1 went back to 1 by nobody's hand — it never left)
+  eq(E.nextWedgeNumber(p), 2, "a new wedge takes the lowest number nobody has");
+  p.wedges.push({ id:"wx", number:2, x:0, y:0, rot:0, moved:true });
+  eq(E.nextWedgeNumber(p), 6, "…the next lowest after that");
   ok(/data-wnum=/.test(src) && /id="iWedgeNum"/.test(src), "the number is editable on the Wedges tab and in the inspector");
+  ok(/<input type="text" inputmode="numeric" pattern="\[0-9\]\*" data-wnum=/.test(src) && /<input type="text" inputmode="numeric" pattern="\[0-9\]\*" id="iWedgeNum"/.test(src), "…as a plain box you type into, not a spinner");
+  ok(!/type="number"[^>]*wnum|type="number"[^>]*iWedgeNum/.test(src), "…nowhere a number spinner");
+  ok(!/they swap\b|the two swap\b/.test(src), "…and nothing on the page still promises a swap");
 }
 
 /* ---- 19h. deleting is visible (A4, Tim Shade 2026-09-16) ---- */

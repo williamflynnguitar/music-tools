@@ -114,6 +114,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .wedgecard{border:1px solid var(--line);border-radius:4px;padding:8px 9px;margin-bottom:8px}
 .wedgecard header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
 .wedgecard header b{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--brass)}
+.wedgecard.clash{border-color:#c0392b}
+.wedgecard.clash input[data-wnum],.fld.clash input{border-color:#c0392b!important;color:#f3b8ac}
+.clashnote{margin:6px 0 0;font-size:13px;color:#f3b8ac}
 .inputrow{display:grid;grid-template-columns:26px 1fr auto;gap:6px;align-items:center;padding:3px 0;font-size:13px;border-bottom:1px solid rgba(42,84,97,.5)}
 .inputrow .ch{font-family:var(--mono);color:var(--brass);font-size:12px}
 .inputrow .mv{display:flex;gap:2px}
@@ -1102,16 +1105,26 @@ function wedgeSpot(plot, list){
    Adding an instrument later does NOT conjure a wedge or move the existing
    ones; a blank plot has none until you ask for them. */
 /* Mix numbers are the tech's priority order, top to bottom (Tim Shade,
-   2026-09-16), so they are set by hand: give a wedge the number another one
-   holds and the two swap, so numbers stay unique. A new wedge takes the
-   lowest number nobody has. */
+   2026-09-16), so they are set by hand, typed into a plain box. Two wedges
+   on one number is an error the page shows, on the card, on the wedge and
+   in the warnings, rather than a swap the app makes behind your back
+   (William, 2026-09-16 — the swap rule ran for a day). A new wedge takes
+   the lowest number nobody has. */
 function setWedgeNumber(plot, w, n){
   n = Math.round(+n);
-  if (!(n >= 1) || n === w.number) return w;     // blank, zero, nonsense: leave it alone
-  const other = plot.wedges.find(o => o !== w && o.number === n);
-  if (other) other.number = w.number;
+  if (!(n >= 1)) return w;                        // blank, zero, nonsense: leave it alone
   w.number = n;
   return w;
+}
+/* The mix numbers held by more than one wedge, each with its wedges in
+   number-then-position order. Empty when every mix has its own number. */
+function wedgeClashes(plot){
+  const by = new Map();
+  for (const w of plot.wedges){ if (!by.has(w.number)) by.set(w.number, []); by.get(w.number).push(w); }
+  return [...by.entries()].filter(e => e[1].length > 1).sort((a, b) => a[0] - b[0]).map(e => ({ number:e[0], wedges:e[1] }));
+}
+function wedgeClashText(plot, c){
+  return "Mix " + c.number + " is on " + c.wedges.length + " wedges (" + c.wedges.map(w => posText(w, plot)).join(", ") + ") — every mix needs its own number.";
 }
 function nextWedgeNumber(plot){
   const used = new Set(plot.wedges.map(w => w.number));
@@ -1459,6 +1472,7 @@ function warnings(plot){
   const ch = consoleCount(plot);
   if (ch > VENUE.consoleChannels)
     out.push({ level:"red", text:ch + " mics and DI boxes on the deck — the console has " + VENUE.consoleChannels + " channels." });
+  for (const c of wedgeClashes(plot)) out.push({ level:"red", text:wedgeClashText(plot, c) });
   for (const [ref, n] of [["mic", micsOn(plot).length], ["di", disOn(plot).length]]){
     const h = houseDef(ref);
     if (h && h.count !== undefined && n > h.count) out.push({ level:"amber", text:n + " × " + h.label + " needed; " + VENUE.shortName + " has " + h.count + "." });
@@ -1828,7 +1842,8 @@ function diagramSVG(plot, opt){
     t(f.label, cx, cy + g.pt(DRAW.tinyPt) * .35, DRAW.tinyPt, "dim", tall ? ' transform="rotate(-90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"' : "");
   }
 
-  const bad = obj => offDeck(obj, plot) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
+  const clashing = new Set(wedgeClashes(plot).flatMap(c => c.wedges.map(w => w.id)));   // two wedges on one mix number: both outlined red
+  const bad = obj => offDeck(obj, plot) || clashing.has(obj.id) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
   const draw = (obj, body) => {
     const sel = !print && S.sel === obj.id;
     P.push('<g transform="translate(' + g.sx(obj.x).toFixed(1) + ',' + g.sy(obj.y).toFixed(1) + ') rotate(' + (obj.rot || 0) + ')"' +
@@ -2291,12 +2306,15 @@ function renderPanel(p){
   }
   if (S.tab === "wedges"){
     H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
+    const clashes = wedgeClashes(p), clashOf = w => clashes.find(c => c.wedges.includes(w));
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
-      H.push('<div class="wedgecard"><header><b>Mix</b><input type="number" min="1" step="1" data-wnum="' + w.id + '" value="' + w.number + '" title="mix number — give it another wedge\'s number and they swap" style="width:52px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 5px;font-family:var(--mono)">' +
+      const c = clashOf(w);
+      H.push('<div class="wedgecard' + (c ? " clash" : "") + '"><header><b>Mix</b><input type="text" inputmode="numeric" pattern="[0-9]*" data-wnum="' + w.id + '" value="' + w.number + '" title="mix number — type it" style="width:52px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:3px 5px;font-family:var(--mono)">' +
         '<span class="role">' + esc(posText(w, p)) + '</span><button class="btn sm" data-wsel="' + w.id + '">find</button>' +
-        '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header></div>');
+        '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>' +
+        (c ? '<p class="clashnote">' + esc(wedgeClashText(p, c)) + '</p>' : "") + '</div>');
     }
-    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>' + (p.wedges.length ? '<p class="note">Mix 1 is the tech\'s first priority. Type a number to renumber; give a wedge another one\'s number and the two swap.</p>' : ""));
+    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>' + (p.wedges.length ? '<p class="note">Mix 1 is the tech\'s first priority. Type a number to renumber. Every mix needs its own number: two wedges on one number are marked here and on the stage until one is changed.</p>' : ""));
   }
   if (S.tab === "mics"){
     const sel = find(p, S.sel), selPos = isPosition(sel) ? sel : null, selItem = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
@@ -2438,8 +2456,10 @@ function renderInspector(p){
   const isWedge = !sel.kind && !isPosition(sel);
   if (isWedge){
     H.push('<h3>Mix ' + sel.number + '<span>' + posText(sel, p) + '</span></h3>');
-    H.push('<div class="insprow"><div class="fld" style="margin:0"><label>Mix number</label><input type="number" min="1" step="1" id="iWedgeNum" value="' + sel.number + '" style="width:80px"></div>' +
-      '<p class="note" style="margin:14px 0 0">1 is the tech\'s first priority. Give it another wedge\'s number and the two swap.</p></div>');
+    const clash = wedgeClashes(p).find(c => c.wedges.includes(sel));
+    H.push('<div class="insprow"><div class="fld' + (clash ? " clash" : "") + '" style="margin:0"><label>Mix number</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="iWedgeNum" value="' + sel.number + '" style="width:80px"></div>' +
+      '<p class="note" style="margin:14px 0 0">1 is the tech\'s first priority. Every mix needs its own number.</p></div>' +
+      (clash ? '<p class="clashnote">' + esc(wedgeClashText(p, clash)) + '</p>' : ""));
   } else if (isPosition(sel)){
     H.push('<h3>' + esc(labels[sel.id].full) + '<span>' + posText(sel, p) + '</span></h3>');
     H.push('<div class="insprow"><div class="fld" style="flex:1"><label>Instrument</label><select id="iRole" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
