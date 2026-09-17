@@ -2179,7 +2179,7 @@ function renderCanvas(p){
     };
   }
   $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
-  $("legendnote").textContent = "Audience at the bottom; stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
+  $("legendnote").textContent = "The audience is at the bottom, and stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
   if (!S.readOnly) wireCanvas();
 }
 /* The plot's own read-only link, for the printed page: this one plot, as it
@@ -2379,7 +2379,7 @@ function renderPanel(p){
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
     for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + '</span></button>');
-    H.push("</div><p class='note'>Select a placed item to name it: “Fender Twin Reverb” prints as <i>BYO: Fender Twin Reverb</i>. Its channels come from the position that owns it.</p>");
+    H.push("</div><p class='note'>Select a placed item to name it: “Fender Twin Reverb” prints as <i>BYO: Fender Twin Reverb</i>.</p>");
   }
   if (S.tab === "wedges"){
     H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
@@ -2428,7 +2428,7 @@ function renderPanel(p){
       '<div class="fld" style="flex:1.4;margin:0"><label>Date</label><input type="date" id="fDate"></div>' +
       '<div class="fld" style="flex:1;margin:0"><label>Show starts</label><input type="text" id="fStart" placeholder="7:30 PM"></div>' +
       '<div class="fld" style="flex:.8;margin:0"><label>Order</label><input type="number" id="fSetOrder" min="1" step="1" placeholder="1st"></div></div>' +
-      '<p class="note">The day, when the block starts, and where this band falls in it \u2014 for the soundcheck and for the show. Order is 1 = first. Prints as \u201cSoundcheck: 2026-11-14 \u00b7 5:30 PM \u00b7 2nd up\u201d.</p>' +
+      '<p class="note">For the soundcheck and for the show, give the day, when the block starts, and where this band falls in it. Order 1 is first. It prints as \u201cSoundcheck: 11/14/2026 \u00b7 5:30 PM \u00b7 2nd up\u201d.</p>' +
       '<div class="fld"><label>Notes for the tech</label><textarea id="fNotes"></textarea></div>' +
       '<h3>Deck (this plot)</h3><div class="insprow"><input type="text" id="fW" style="width:70px"> ft wide <input type="text" id="fD" style="width:70px"> ft deep</div>' +
       '<p class="note">New plots start at ' + VENUE.deck.widthFt + '′ × ' + VENUE.deck.depthFt + '′ (VENUE.deck). This plot keeps the size saved with it.</p>' +
@@ -2578,7 +2578,7 @@ function renderInspector(p){
           return '<option value="' + h.id + '"' + (h.id === sel.ref ? " selected" : "") + '>' + esc(h.label) +
                  " — " + (cap > 1 ? n + " of " + cap + " in use" : n ? "in use" : "free") + '</option>';
         }).join("") + '</select>' +
-        '<p class="note">Keeps the player, the spot on the deck and anything you dragged. Or the band brings its own, on the <b>Band brings</b> tab.</p></div>');
+        '<p class="note">Swapping keeps the player, the spot on the deck and anything you dragged. If the band brings its own instead, use the <b>Band brings</b> tab.</p></div>');
     }
     if (sel.kind !== "label"){
       H.push('<div class="fld"><span class="lbl">Belongs to</span>');
@@ -2804,16 +2804,16 @@ async function copyText(t){
 /* One source for the help text: helpHTML() is what the ? in the top bar and
    the How it works button on the start screen both render. */
 const STEP_HINT = { positions:"who is playing, where, and whether they sit or stand", house:"the house amps and keyboards (added for you; swap or add)", byo:"gear the band brings",
-  wedges:"monitor wedges, numbered by mix", mics:"every microphone and DI box, where it stands", misc:"music stands, power, a text label", details:"act, dates, notes for the tech" };
+  wedges:"monitor wedges, numbered by mix", mics:"every microphone and DI box, where it stands", misc:"music stands and a text label", details:"act, dates, notes for the tech" };
 function helpSections(){
   const k = t => '<kbd>' + t + '</kbd>';
   return [
     ["The seven steps", '<ol class="steps">' + RAIL_TABS.map(([id, label]) => '<li><b>' + esc(label) + '</b> — ' + STEP_HINT[id] + '</li>').join("") + '</ol>' +
-      'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist, not a gate — nothing is ever blocked.'],
-    ["Filling the band fast", 'Two shortcuts at the top of <b>Positions</b>. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
+      'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist: an empty step never blocks the next one.'],
+    ["Filling the band fast", '<b>Positions</b> has two shortcuts at the top. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
     ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. Keyboard players sit; in a big band the saxes, trombones and guitarist sit too. Chairs are counted for the house under House equipment.'],
-    ["Music stands", 'The solid bar on the audience side of a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many. The presets start you off: a jazz combo gives everyone one; a big band gives everyone one and the bass player and the drummer two, because their parts are longer; a rock / pop band gives none. They are counted for the house.'],
-    ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
+    ["Music stands", 'The solid bar on the audience side of a player is their music stand. It carries no label, because the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many. The presets start you off: a jazz combo gives everyone one; a big band gives everyone one and the bass player and the drummer two, because their parts are longer; a rock / pop band gives none. They are counted for the house.'],
+    ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). The audience is at the bottom, and stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
     ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
     ["The drum kit", 'The kick faces the audience, marked (kick). The open circle upstage of it is the drummer, labelled like every other player. Drums are drawn thick and filled, cymbals thin and open. Select the kit to say whether it is the house kit or your own.'],
@@ -2841,7 +2841,7 @@ $("bHelp").onclick = openHelp;
 function openStart(){
   const dlg = $("startDlg");
   dlg.innerHTML = '<div class="dlg wide"><h2>New plot</h2>' +
-    '<div class="pickgrid" style="margin-top:12px"><button class="btn hi" id="bStartHelp">How it works<span class="sub">first time here? the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
+    '<div class="pickgrid" style="margin-top:12px"><button class="btn hi" id="bStartHelp">How it works<span class="sub">the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
     '<h3 class="dlgh">Build the instrumentation</h3>' +
     '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against Somewhere Works: 5 mixes</span></button>' +
     '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
@@ -2920,7 +2920,7 @@ function openBulkNames(){
   const draw = () => {
     const rows = parseNameList(text, p);
     dlg.innerHTML = '<div class="dlg wide"><h2>Paste the roster</h2>' +
-      '<p>One name per line. Add “— instrument” to send a name to a particular position; the rest fill the list in order. Check the preview before you apply.</p>' +
+      '<p>Type one name per line. Add “— instrument” to send a name to a particular position; the rest fill the list in order. Check the preview before you apply.</p>' +
       '<textarea id="bulkText" rows="9" placeholder="Sam Ortiz — keys&#10;Dana Bell — guitar&#10;Chris Aoki — bass&#10;Jo Fischer — drums"></textarea>' +
       (rows.length ? '<h3 class="dlgh">Preview</h3><table class="prev"><thead><tr><th>Name</th><th>Goes to</th></tr></thead><tbody>' +
         rows.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + (r.label ? esc(r.label) : '<span style="color:var(--amber)">no position left</span>') + '</td></tr>').join("") +
@@ -2941,7 +2941,7 @@ function openBulkNames(){
 function openCustomRole(){
   const dlg = $("startDlg");
   dlg.innerHTML = '<div class="dlg"><h2>Custom instrument</h2>' +
-    '<p>For an instrument the list doesn\'t cover. It is saved inside this plot\'s file.</p>' +
+    '<p>Use this for an instrument the list doesn\'t cover. It is saved inside this plot\'s file.</p>' +
     '<div class="fld"><label>Name</label><input type="text" id="crLabel" placeholder="Steel pan"></div>' +
     '<div class="fld"><label>Short label for the diagram</label><input type="text" id="crShort" placeholder="Pan"></div>' +
     '<div class="insprow"><div class="fld" style="flex:1"><label>Space it takes</label><select id="crSize">' +
