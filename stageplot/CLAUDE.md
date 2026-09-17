@@ -457,6 +457,18 @@ instrument, the old Instrumentation dialog) and **Paste a roster…** (names,
 one per line, sent to their instruments); the help panel's "Filling the
 band fast" section says so, because nobody found them.
 
+## Music stands (2026-09-16)
+
+`pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
+mirroring the chairs. **A big band gives everyone a stand and the bass
+player and the drummer two** (`makeFromParts()`); a combo starts with none.
+A stand is drawn as an icon beside the player (`standGlyph()`, stage-left
+side, front first) with no label — William: a label per stand took more
+room than the stands — and the key names it. A stand placed from the Misc
+tab draws the same icon, unlabelled; it is for a stand that belongs to
+nobody. House equipment counts the players' stands plus the placed ones
+as "N × Music stand" against the 20 the house has (ASSUMED).
+
 ## The seven steps (update 2)
 
 The sidebar is `RAIL_TABS`, numbered 1–7 in order: Positions, House, Band
@@ -678,7 +690,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 508 assertions: the role library, every template (builds,
+`node check.js` — 521 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

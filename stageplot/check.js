@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
-  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText };`)();
+  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -798,7 +798,7 @@ for (const t of E.TEMPLATES){
 {
   ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How it works button on New plot");
   ok(/id="bPrint" title="[^"]*Save as PDF[^"]*">Print \/ PDF<\/button>/.test(src), "the one-click export is Print / PDF, and says so (E4)");
-  for (const topic of ["Bulk add players", "Paste a roster", "− chair", "Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF", "carries a link to itself", "Edit a copy", "a reprint produces a new link"])
+  for (const topic of ["Bulk add players", "Paste a roster", "− chair", "− stand", "Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF", "carries a link to itself", "Edit a copy", "a reprint produces a new link"])
     ok(src.indexOf(topic) !== -1, "the help covers: " + topic);
   ok(/#helpDlg\{display:none!important\}|,#helpDlg\{display:none!important\}/.test(src), "…and never prints");
   ok(!/openHelp\(\);\s*\}\)\(\);/.test(src), "…and nothing opens it on load");
@@ -906,6 +906,27 @@ for (const t of E.TEMPLATES){
   ok(!E.migratePlot(old).items.some(i => i.ref === "power"), "…and one in an old file is dropped on load");
   ok(/id="bInstr"[^>]*>Bulk add players…<\/button>/.test(src) && /id="bBulk"[^>]*>Paste a roster…<\/button>/.test(src), "the two shortcuts are Bulk add players… and Paste a roster…");
   ok(!/Instrumentation…|Paste names…/.test(src), "…and the old labels are gone");
+}
+
+/* ---- 19n. music stands (William, 2026-09-16) ---- */
+{
+  const bb = T("bigband");
+  ok(bb.positions.every(p => E.standsOf(bb, p) >= 1), "everyone in a big band has a stand");
+  ok(bb.positions.filter(p => ["bass","drums"].includes(p.roleId)).every(p => E.standsOf(bb, p) === 2), "…and the bass player and the drummer have two");
+  eq(E.standCount(bb), 19, "19 stands: 15 players with one, two with two");
+  ok(E.houseNeeds(bb).some(n => n.id === "musicstand" && n.need === 19 && !n.over), "…asked of the house as 19 × Music stand, under the 20 it has");
+  const combo = T("combo");
+  eq(E.standCount(combo), 0, "a combo starts with none");
+  const t = combo.positions.find(p => p.roleId === "tenor");
+  E.setStands(combo, t, 1); eq(E.standsOf(combo, t), 1, "+ stand gives a player a stand");
+  E.setStands(combo, t, 0); ok(!("stands" in t), "…and back to none removes the field");
+  combo.items.push({ id:"ms", kind:"house", ref:"musicstand", label:"", x:100, y:100, rot:0, moved:true, ownerPositionIds:[] });
+  E.setStands(combo, t, 2);
+  eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 3, "the house count is the players' stands plus any placed by hand");
+  ok(E.legendKeys(combo).some(k => k.id === "stand"), "the key names the stand icon");
+  ok(/function standGlyph\(/.test(src) && /standIcons\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as icons beside the player and a placed stand carries no label");
+  ok(/data-stand=/.test(src) && (src.match(/− stand/g) || []).length >= 2, "− stand / + stand on the card and in the inspector");
+  eq(E.standCount(E.migratePlot(JSON.parse(JSON.stringify(bb)))), 19, "stands survive save and load");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

@@ -459,6 +459,15 @@ function setChairs(plot, pos, n){
 }
 function chairCount(plot){ return plot.positions.reduce((n, p) => n + chairsOf(plot, p), 0); }
 function chairText(n){ return n === 0 ? "standing" : n === 1 ? "1 chair" : n + " chairs"; }
+/* Music stands, the same way: pos.stands, absent = 0. A big band gives
+   everyone one and the bass player and the drummer two (makeFromParts).
+   Drawn as an icon beside the player, never labelled — a label per stand
+   took more room than the stands (William, 2026-09-16) — and counted for
+   the house with any stands placed by hand from the Misc tab. */
+function standsOf(plot, pos){ return pos.stands === undefined ? 0 : Math.max(0, pos.stands | 0); }
+function setStands(plot, pos, n){ n = Math.max(0, Math.min(4, n | 0)); if (n) pos.stands = n; else delete pos.stands; return pos; }
+function standCount(plot){ return plot.positions.reduce((n, p) => n + standsOf(plot, p), 0); }
+function standText(n){ return n === 0 ? "no stand" : n === 1 ? "1 stand" : n + " stands"; }
 
 /* ---- the checklist: seven steps, each done / skipped / to do -------- *
  * The sidebar is numbered 1–7 and shows where an act has got to. Done is
@@ -1143,6 +1152,7 @@ function makeFromParts(parts, deck, name){
   if (winds.length >= LAYOUT.hornsForBigBand) for (const p of plot.positions){
     const r = roleOf(plot, p);
     if (p.chairs === undefined && (r.family === "sax" || ["guitar","trombone","btrombone"].includes(r.id))) p.chairs = 1;
+    if (p.stands === undefined) p.stands = ["bass","upright","drums"].includes(r.id) ? 2 : 1;   // everyone reads; the bass player and the drummer read two
   }
   autoLayout(plot, { force:true });
   return plot;
@@ -1299,6 +1309,7 @@ function houseNeeds(plot){
   }
   if (plot.wedges.length) counts.wedge = plot.wedges.length;
   const chairs = chairCount(plot); if (chairs) counts.chair = chairs;          // from the seated positions, never placed
+  const stands = standCount(plot); if (stands) counts.musicstand = (counts.musicstand || 0) + stands;   // the players' stands, plus any placed by hand
   /* Each item prints by name so the tech knows which amp to put where. Where a
      category holds more than one (four guitar amps, two keyboards) the
      over-count is a fact about the category, not about one amp, so it is one
@@ -1337,7 +1348,8 @@ function legendKeys(plot){
   const out = [], has = (id, text, yes) => { if (yes) out.push({ id, text }); };
   const pos = plot.positions, stance = p => roleOf(plot, p).stance;
   has("player",  "standing player", pos.some(p => stance(p) !== "object" && chairsOf(plot, p) === 0));
-  has("seated",  "seated: the circle sits on a chair", pos.some(p => chairsOf(plot, p) > 0));
+  has("seated",  "seated", pos.some(p => chairsOf(plot, p) > 0));
+  has("stand",   "music stand", pos.some(p => standsOf(plot, p) > 0) || plot.items.some(i => i.kind === "house" && i.ref === "musicstand"));
   has("wedge",   "wedge, numbered by mix", plot.wedges.length);
   has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
   has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo") || pos.some(p => kitIsByo(plot, p)));
@@ -1645,6 +1657,13 @@ function micGlyph(cx, cy, r, ink, fill){
   return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"/>' +
          '<path d="M' + (+cx).toFixed(1) + ',' + (cy + r * .6).toFixed(1) + 'v' + (r * 1.4).toFixed(1) + '" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" fill="none"/>';
 }
+/* A music stand, in plan: the desk, its stem and its base. k scales it
+   (1 = a 10″ desk). Shared by the diagram and the key. */
+function standGlyph(x, y, k, col, ground){
+  return '<g transform="translate(' + (+x).toFixed(1) + ',' + (+y).toFixed(1) + ') scale(' + k + ')">' +
+    '<rect x="-5" y="-4.5" width="10" height="6" rx="1" fill="' + ground + '" stroke="' + col + '" stroke-width="1"/>' +
+    '<path d="M0,1.5v3.5M-3,5.5h6" stroke="' + col + '" stroke-width="1" stroke-linecap="round" fill="none"/></g>';
+}
 function wedgePath(w, d){                              // trapezoid, throw face toward the top
   const x = -w/2, y = -d/2, t = w * .62;
   return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
@@ -1655,6 +1674,7 @@ function legendHTML(plot, print){
   const sw = {
     player:  '<circle cx="11" cy="8" r="6.2" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
     seated:  '<rect x="2.5" y="0.5" width="17" height="15" rx="2" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><circle cx="11" cy="8" r="5.6" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
+    stand:   standGlyph(11, 8, 1.3, ink, ground),
     wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
     house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
@@ -1744,9 +1764,10 @@ function diagramSVG(plot, opt){
     if (it.kind === "label"){ draw(it, ""); t(it.label || "", g.sx(it.x), g.sy(it.y), DRAW.labelPt); continue; }
     const def = itemDef(it); if (!def) continue;
     const f = footprintOf(it, plot), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
-    const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit";
+    const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit", isStand = it.kind === "house" && it.ref === "musicstand";
     const hitRect = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(it) || ' stroke="none"') + '/>';   // an invisible footprint: grabbable, outlined when over the edge
     let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
+      : isStand ? hitRect + standGlyph(0, 0, 1.6, stroke(it), print ? "#fff" : "#0d232b")   // an icon, no label: the key says what it is
       : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
         (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
@@ -1761,8 +1782,12 @@ function diagramSVG(plot, opt){
     let gl = ts(name, px, ly, DRAW.smallPt, isMic ? "" : "dim",
       ang ? ' transform="rotate(' + ang + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
     if (it.kind === "byo" && it.label) gl += ts(it.label, px, (kitItem ? ly : py + f.d/2) + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
-    labelled(it, px, py, gl);
+    if (!isStand) labelled(it, px, py, gl);
   }
+  // a player's music stands: icons beside them on the stage-left side, front first, never labelled
+  const standIcons = (pos, f) => { let out = ""; const n = standsOf(plot, pos);
+    for (let i = 0; i < n; i++) out += standGlyph(f.w / 2 + 8, 6 - i * 12, 1, stroke(pos), print ? "#fff" : "#0d232b");
+    return out; };
   // positions
   for (const pos of plot.positions){
     const role = roleOf(plot, pos), f = footprintOf(pos, plot), px = g.sx(pos.x), py = g.sy(pos.y);
@@ -1775,7 +1800,7 @@ function diagramSVG(plot, opt){
           (byo ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' +
           (byo ? ' stroke-dasharray="6 4"' : "") + bad(pos) + '/>';
       if (role.id === "drums") body += kitPieces(f, stroke(pos), dim, print ? "#fff" : "#0d232b", byo);
-      draw(pos, body);
+      draw(pos, body + standIcons(pos, f));
     } else {
       /* a seated player: the circle sits on a chair — a square a little larger
          than the circle, so its corners show all round; two chairs, two squares */
@@ -1785,7 +1810,7 @@ function diagramSVG(plot, opt){
         const cx = (i - (n - 1) / 2) * (cs + 3);
         chairs += '<rect x="' + (cx - cs / 2).toFixed(1) + '" y="' + (-cs / 2) + '" width="' + cs + '" height="' + cs + '" rx="3" fill="' + houseFill + '" stroke="' + stroke(pos) + '" stroke-width="1.1"/>';
       }
-      draw(pos, chairs + '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>');
+      draw(pos, chairs + '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>' + standIcons(pos, f));
     }
     const lb = LB[pos.id];
     let ly = (lb ? g.sy(lb.y1) : py + f.d/2) + g.pt(DRAW.labelPt) * .95, inner = "";
@@ -2122,9 +2147,12 @@ function renderPanel(p){
         (labels[pos.id].role.stance === "object" ? "" :
           '<div class="pline"><span class="ct chairs">' + chairText(chairsOf(p, pos)) + '</span>' +
           '<button class="btn sm" data-chair="' + pos.id + '" data-d="-1" title="one chair fewer; 0 is standing"' + (chairsOf(p, pos) ? "" : " disabled") + '>− chair</button>' +
-          '<button class="btn sm" data-chair="' + pos.id + '" data-d="1" title="one more chair">+ chair</button></div>') + '</div>');
+          '<button class="btn sm" data-chair="' + pos.id + '" data-d="1" title="one more chair">+ chair</button></div>') +
+        '<div class="pline"><span class="ct stands">' + standText(standsOf(p, pos)) + '</span>' +
+        '<button class="btn sm" data-stand="' + pos.id + '" data-d="-1" title="one music stand fewer"' + (standsOf(p, pos) ? "" : " disabled") + '>− stand</button>' +
+        '<button class="btn sm" data-stand="' + pos.id + '" data-d="1" title="one more music stand">+ stand</button></div></div>');
     }
-    H.push('</div><p class="note">Names are optional. A seated player\'s circle sits on a chair on the stage; − chair / + chair sets how many, and 0 is standing. Chairs are counted for the house.</p>');
+    H.push('</div><p class="note">Names are optional. A seated player\'s circle sits on a chair on the stage; − chair / + chair sets how many, and 0 is standing. A music stand is the small icon beside the player; − stand / + stand sets how many. Both are counted for the house.</p>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
@@ -2172,7 +2200,7 @@ function renderPanel(p){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push('</div><p class="note">Mics and DI boxes have their own tab; chairs come with seated players on the Positions tab. Somewhere Works handles power, and has no risers.</p>' +
+    H.push('</div><p class="note">A player\'s own stands are set on the Positions tab (+ stand); place one here only for a stand that belongs to nobody, a conductor\'s say. Mics and DI boxes have their own tab. Somewhere Works handles power, and has no risers.</p>' +
       '<div class="plist"><button class="pitem" data-label="1"><span>Text label</span></button></div>');
   }
   if (S.tab === "details"){
@@ -2205,6 +2233,7 @@ function renderPanel(p){
 
   el.querySelectorAll("[data-skip]").forEach(c => c.onchange = () => commit(() => setSkipped(plot(), c.dataset.skip, c.checked)));
   el.querySelectorAll("[data-chair]").forEach(b => b.onclick = () => commit(() => { const q = plot(), pos = find(q, b.dataset.chair); if (pos) setChairs(q, pos, chairsOf(q, pos) + (+b.dataset.d)); }));
+  el.querySelectorAll("[data-stand]").forEach(b => b.onclick = () => commit(() => { const q = plot(), pos = find(q, b.dataset.stand); if (pos) setStands(q, pos, standsOf(q, pos) + (+b.dataset.d)); }));
   el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
   el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
   el.querySelectorAll("[data-psel]").forEach(b => b.onclick = () => { S.sel = b.dataset.psel; render(); });
@@ -2303,6 +2332,9 @@ function renderInspector(p){
       H.push('<div class="fld"><span class="lbl">Seated or standing</span><div class="insprow"><span class="ct chairs" style="font-family:var(--mono);font-size:13px;min-width:80px">' + chairText(n) + '</span>' +
         '<button class="btn sm" data-chair="' + sel.id + '" data-d="-1"' + (n ? "" : " disabled") + '>− chair</button><button class="btn sm" data-chair="' + sel.id + '" data-d="1">+ chair</button></div></div>');
     }
+    const ns = standsOf(p, sel);
+    H.push('<div class="fld"><span class="lbl">Music stands</span><div class="insprow"><span class="ct stands" style="font-family:var(--mono);font-size:13px;min-width:80px">' + standText(ns) + '</span>' +
+      '<button class="btn sm" data-stand="' + sel.id + '" data-d="-1"' + (ns ? "" : " disabled") + '>− stand</button><button class="btn sm" data-stand="' + sel.id + '" data-d="1">+ stand</button></div></div>');
     H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
     H.push('<div class="fld"><span class="lbl">Doubles</span>');
     (sel.doubles || []).forEach((d, i) => H.push('<div class="inputrow" style="grid-template-columns:1fr auto"><span>' +
@@ -2351,6 +2383,7 @@ function renderInspector(p){
   if ($("iNotes")) bindText($("iNotes"), () => sel.notes, v => sel.notes = v);
   if ($("iWedgeNum")) $("iWedgeNum").onchange = () => mut(() => { const q = plot(), w = find(q, sel.id); if (w) setWedgeNumber(q, w, $("iWedgeNum").value); });
   el.querySelectorAll("[data-chair]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); if (pos) setChairs(q, pos, chairsOf(q, pos) + (+b.dataset.d)); }));
+  el.querySelectorAll("[data-stand]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); if (pos) setStands(q, pos, standsOf(q, pos) + (+b.dataset.d)); }));
   el.querySelectorAll("[data-kit]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); pos.kit = b.dataset.kit; }));
   if ($("iKitLabel")) bindText($("iKitLabel"), () => sel.kitLabel, v => sel.kitLabel = v);
   if ($("iRole")) $("iRole").onchange = () => mut(() => {
@@ -2549,7 +2582,8 @@ function helpSections(){
     ["The seven steps", '<ol class="steps">' + RAIL_TABS.map(([id, label]) => '<li><b>' + esc(label) + '</b> — ' + STEP_HINT[id] + '</li>').join("") + '</ol>' +
       'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist, not a gate — nothing is ever blocked.'],
     ["Filling the band fast", 'Two shortcuts at the top of <b>Positions</b>. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
-    ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. In a big band the saxes and the brass start seated; chairs are counted for the house under House equipment.'],
+    ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. Keyboard players sit; in a big band the saxes, trombones and guitarist sit too. Chairs are counted for the house under House equipment.'],
+    ["Music stands", 'The small stand icon beside a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many; a big band starts with one each and two for the bass player and the drummer. They are counted for the house.'],
     ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
     ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
