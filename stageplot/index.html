@@ -325,7 +325,6 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
     <button class="btn" id="bLoad">Load</button>
     <button class="btn" id="bSave">Save</button>
     <button class="btn" id="bShare">Share link</button>
-    <button class="btn" id="bEmail">Email text</button>
     <button class="btn" id="bChange" hidden>Changeover</button>
     <button class="btn hi" id="bPrint" title="the stage and the equipment sheet on one Letter page — choose Save as PDF in the print dialog">Print / PDF</button>
     <button class="btn sm" id="bUndo" title="Undo (⌘Z)">undo</button>
@@ -379,7 +378,7 @@ const VENUE = {
   address: "235 N Emporia, Wichita KS 67202",
   deliverTo: "timothy.shade@wichita.edu",    // William, 2026-09-15: every plot goes to Tim Shade; the mailto goes there too
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
-  editNotice: "Somewhere Works may adjust placements and monitor assignments to fit the room.",   // printed under the link on every page, and in the email
+  editNotice: "Somewhere Works may adjust placements and monitor assignments to fit the room.",   // printed under the link on every page
   deck: { widthFt: 24, depthFt: 20 },        // Tim Shade, 2026-09-16: the published spec says 20 × 20 of 4 × 8 platforms; he doesn't think it is square and calls it 24 wide × 20 deep
   monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
   extraWedgesFrom: "Shocker Studios",        // confirmed: where extra wedges might come from
@@ -1177,7 +1176,7 @@ function fmtDate(v){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v || "").
 function ordinal(n){ const r = n % 100; return n + (r >= 11 && r <= 13 ? "th" : { 1:"st", 2:"nd", 3:"rd" }[n % 10] || "th"); }
 /* One line each for the soundcheck and the performance, in the order a tech
    reads them: the day, when the block starts, where this band falls in it —
-   "Soundcheck: 2026-11-14 · 5:30 PM · 2nd up". The meta row and the email
+   "Soundcheck: 2026-11-14 · 5:30 PM · 2nd up". The meta row prints them
    text both print these, from here, so they cannot say different things.
    Both lines always print (William, 2026-09-15: the tech should see all
    three for each); a slot nobody filled leaves its place, and a line with
@@ -2137,7 +2136,7 @@ function render(opt){
   const p = plot();
   $("venueLine").innerHTML = esc(VENUE.name) + "<br>" + esc(VENUE.address);
   document.body.classList.toggle("ro", S.readOnly);
-  for (const id of ["bNew","bSave","bShare","bEmail","bUndo","bRedo","bLoad","bHelp"]) $(id).hidden = S.readOnly && id !== "bSave";
+  for (const id of ["bNew","bSave","bShare","bUndo","bRedo","bLoad","bHelp"]) $(id).hidden = S.readOnly && id !== "bSave";
   $("bEditCopy").hidden = !S.readOnly;
   $("bChange").hidden = S.plots.length < 2;
   $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
@@ -2186,7 +2185,7 @@ function renderCanvas(p){
 /* The plot's own read-only link, for the printed page: this one plot, as it
    is now. Compressing is async, so the sheet renders with the last link
    built for this exact content and asks for a fresh one when the content
-   has changed; when it arrives the sheet re-renders. Print and Email wait
+   has changed; when it arrives the sheet re-renders. Print waits
    for it (ensureLink), so what goes out always matches what is on the page. */
 const APP_URL = "https://williamflynnguitar.github.io/music-tools/stageplot/";
 function shareBase(){ return /^https?:$/.test(location.protocol) ? location.origin + location.pathname : APP_URL; }
@@ -2788,33 +2787,8 @@ async function decodeHash(hash){
   }
   return JSON.parse(new TextDecoder().decode(bytes));
 }
-function emailText(p, link){
-  const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), L = [];
-  L.push(p.name + (p.showName ? " — " + p.showName : ""), VENUE.name + ", " + VENUE.address);
-  if (p.director) L.push("Band leader/director: " + p.director);
-  for (const l of scheduleLines(p)) L.push(l);
-  L.push("Mics " + mics.length + "  ·  DI boxes " + dis.length + "  ·  Monitor mixes " + p.wedges.length + "/" + VENUE.monitorMixes, "");
-  L.push("MONITORS");
-  for (const r of mon.rows) L.push("  Mix " + r.n + ": " + r.where);
-  L.push("", "MICROPHONES (" + mics.length + ")");
-  for (const m of mics) L.push("  " + m.label + (m.who ? " — " + m.who : ""));
-  if (!mics.length) L.push("  None on the deck.");
-  L.push("", "DI BOXES (" + dis.length + ")");
-  for (const m of dis) L.push("  " + m.label + (m.who ? " — " + m.who : ""));
-  if (!dis.length) L.push("  None on the deck.");
-  if (needs.length){
-    L.push("", "HOUSE EQUIPMENT NEEDED");
-    for (const n of needs) L.push("  " + (n.need > 1 ? n.need + " x " : "") + n.label + (n.over ? "  (" + VENUE.shortName + " lists " + n.have + ")" : ""));
-  }
-  L.push("", "MUSICIANS PROVIDE");
-  if (!byo.length) L.push("  Nothing — all house gear.");
-  for (const b of byo) L.push("  " + b.what + (b.who ? " — " + b.who : ""));
-  if (p.notes) L.push("", "NOTES", "  " + p.notes.replace(/\n/g, "\n  "));
-  L.push("", deliverLine(p));
-  if (link) L.push("View or edit this plot online: " + link);
-  L.push(VENUE.editNotice);
-  return L.join("\n");
-}
+/* Email text — a plain-text copy of the sheet for a mailto — was removed 2026-09-16
+   (William): it had no diagram, and the PDF and the share link cover it. */
 async function copyText(t){
   try { await navigator.clipboard.writeText(t); }
   catch (err){
@@ -3021,14 +2995,6 @@ $("bShare").onclick = async () => {
     await copyText(url);
     toast("Read-only link copied (" + Math.round(url.length / 1024 * 10) / 10 + " KB)");
   } catch (err){ toast("Couldn't build the link: " + err.message); }
-};
-$("bEmail").onclick = async () => {
-  const p = plot(), text = emailText(p, await ensureLink(p));
-  await copyText(text);
-  const body = encodeURIComponent(text), subj = encodeURIComponent("Stage plot — " + p.name + (p.date ? " — " + fmtDate(p.date) : ""));
-  const mail = "mailto:" + VENUE.deliverTo + "?subject=" + subj + (body.length < 1600 ? "&body=" + body : "");
-  toast("Plain text copied" + (body.length < 1600 ? " — opening mail" : " — paste it into the email"));
-  location.href = mail;
 };
 $("bPrint").onclick = async () => {
   const p = plot();

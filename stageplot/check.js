@@ -557,8 +557,7 @@ for (const t of E.TEMPLATES){
   ok(/Band leader\/director<\/label>/.test(src), "the Details tab calls p.director the band leader/director");
   ok(/Band leader\/director: ' \+ esc\(p\.director\)/.test(src) && !/"Director: \u2014"|Director: —|Ensemble director/.test(src),
      "…the meta row prints it under that name, and only when it is filled in");
-  ok(/L\.push\("Band leader\/director: " \+ p\.director\)/.test(src), "…and so does the email text");
-  ok(/"mailto:" \+ VENUE\.deliverTo/.test(src), "the Email button addresses the same place the page says to deliver to");
+  ok(!/bEmail|function emailText|"mailto:"/.test(src), "there is no Email text button any more: it had no diagram, and the PDF and the share link cover it (William, 2026-09-16)");
   // the mics in the photos stay in the rehearsal rooms
   for (const h of E.VENUE.house.filter(h => h.bcat)){
     ok(!h.inputs, h.label + " brings no inputs");
@@ -603,8 +602,7 @@ for (const t of E.TEMPLATES){
      JSON.stringify(["", "", null, "", null]), "\u2026and so does a v1 file");
   for (const id of ["fCheckDate","fCheck","fCheckOrder","fDate","fStart","fSetOrder"])
     ok(new RegExp('id="' + id + '"').test(src), "the Details tab has " + id);
-  ok(/scheduleLines\(p\)\.map/.test(src) && /for \(const l of scheduleLines\(p\)\) L\.push\(l\)/.test(src),
-     "the printed page and the email text both print them, from the same function");
+  ok(/scheduleLines\(p\)\.map/.test(src), "the printed page prints them from scheduleLines");
   ok(!/"Performance: " \+ esc\(p\.date\)|"Performance: " \+ p\.date/.test(src), "\u2026and nothing prints the performance date on its own any more");
 }
 
@@ -778,7 +776,6 @@ for (const t of E.TEMPLATES){
   const unl = E.blankPlot(); const v = E.addPosition(unl, "voice"); E.addMicItem(unl, { x:v.x, y:v.y - 21 }, "", [v.id], true);
   eq(JSON.stringify(E.micList(unl)[0]), JSON.stringify({ label:"Vox", who:"" }), "an unlabelled mic lists as its owner's chair");
   ok(/gearList\("Microphones", mics\)/.test(src) && /gearList\("DI boxes", dis\)/.test(src), "the page prints Microphones and DI boxes as separate sections");
-  ok(/"MICROPHONES \(" \+ mics\.length/.test(src) && /"DI BOXES \(" \+ dis\.length/.test(src), "…and so does the email");
   ok(/'<span>Mics ' \+ mics\.length \+ ' · DI boxes ' \+ dis\.length/.test(src), "the meta row carries the one derived count");
 }
 
@@ -963,8 +960,7 @@ for (const t of E.TEMPLATES){
   ok(foot.indexOf("deliverLine(p)") < foot.indexOf("View or edit this plot online") && foot.indexOf("View or edit this plot online") < foot.indexOf("VENUE.editNotice"), "…deliver line, link, venue sentence, in that order");
   eq(E.VENUE.editNotice, "Somewhere Works may adjust placements and monitor assignments to fit the room.", "the venue sentence lives in VENUE");
   ok(/\.sheet \.foot\.link a\{color:#0645ad;text-decoration:underline\}/.test(src), "…blue and underlined, so it reads as a link on the page");
-  ok(/L\.push\("View or edit this plot online: " \+ link\)/.test(src) && /L\.push\(VENUE\.editNotice\)/.test(src), "the email carries the link and the sentence too");
-  ok(/await ensureLink\(p\); renderSheet\(p\);/.test(src) && /emailText\(p, await ensureLink\(p\)\)/.test(src), "Print and Email wait for the link, so it matches what goes out");
+  ok(/await ensureLink\(p\); renderSheet\(p\);/.test(src), "Print waits for the link, so it matches what goes out");
   ok(/shareBase\(\) \+ "\?open=" \+ Date\.now\(\)\.toString\(36\) \+ await encodeHash\(\[p\], 0\)/.test(src), "the printed link is this one plot, with a fresh ?open= token before the hash so Chrome's Save as PDF keeps it as a link from any page");
   ok(/location\.origin \+ location\.pathname : APP_URL/.test(src), "…built off the page's origin and path, never an existing query");
   ok(/return "#s=" \+ B64\.enc/.test(src) && /return "#j=" \+ B64\.enc/.test(src) && /\/\^#\(\[sj\]\)=\(\.\+\)\$\//.test(src) && /CompressionStream\("deflate-raw"\)/.test(src),

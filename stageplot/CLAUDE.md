@@ -77,7 +77,7 @@ counts and the deck are still placeholders.
 | Value | Status | Notes |
 |---|---|---|
 | `deck: {widthFt:24, depthFt:20}` | Tim Shade, 2026-09-16 | the published spec says 20 × 20 of 4 × 8 platforms; Tim doesn't think it is square and calls it 24 wide × 20 deep. Other venues: the Details tab edits a plot's own deck. See "Changing the deck" |
-| `deliverTo: timothy.shade@wichita.edu` | confirmed | William, 2026-09-15. Prints in the delivery line at the foot of every page, and the Email button addresses it. This is the plot's one fixed contact |
+| `deliverTo: timothy.shade@wichita.edu` | confirmed | William, 2026-09-15. Prints in the delivery line at the foot of every page. This is the plot's one fixed contact |
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
 | `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
 | `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
@@ -144,15 +144,15 @@ old plots come out exactly as they did.
 
 Every plot is delivered to Tim Shade: the foot of every printed page reads
 *Please deliver to timothy.shade@wichita.edu as far in advance as possible*
-(`deliverLine()`, off `VENUE.deliverTo` and `leadDays`), and the Email button
-opens a `mailto:` to the same address. That line is the plot's fixed contact.
+(`deliverLine()`, off `VENUE.deliverTo` and `leadDays`). That line is the
+plot's fixed contact.
 There is deliberately **no separate contact block at the top of the page** —
 the first cut of this (2026-09-15) printed *Contact: Tim Shade, Director, WSU
 School of Music* under the ensemble name, which read as though Tim led every
 band. William had it removed the same day.
 
 `p.director` is the **band leader/director** — that wording, in the Details
-tab, the meta row and the email text, because acts from outside the School of
+tab and the meta row, because acts from outside the School of
 Music load in here too and "ensemble director" is a school word. It is
 optional, and the meta row omits it rather than printing a dash.
 
@@ -170,9 +170,9 @@ fields, all optional, in two matching groups on the Details tab:
 The days are date inputs; the times are free text ("5:30 PM", "after Combo
 B" — a time input would force a format nobody writes on a call sheet); the
 orders are 1 = first. `date` kept its old name because every saved file
-carries it. `scheduleLines()` turns them into the two lines the meta row and
-the email text both print — *Soundcheck: 2026-11-14 · 5:30 PM · 2nd up*
-and *Performance: 2026-11-14 · 7:30 PM · 3rd up* — one function for both
+carries it. `scheduleLines()` turns them into the two lines the meta row
+prints — *Soundcheck: 2026-11-14 · 5:30 PM · 2nd up*
+and *Performance: 2026-11-14 · 7:30 PM · 3rd up* — one function
 surfaces so they cannot disagree. **Both lines always print**: a soundcheck
 nobody has filled in reads *Soundcheck: —*, because a missing soundcheck is
 something the tech should see rather than something the page hides. A slot
@@ -296,8 +296,8 @@ until someone drags it. Mics never arrive on their own.
 
 **The page counts them and nothing else counts them** (C3). Microphones — N
 and DI boxes — N are two sections in the right column, one line per object
-with the chair it belongs to (`micList()` / `diList()`), and the same two
-blocks are in the email. They are not in the house-equipment list. The meta
+with the chair it belongs to (`micList()` / `diList()`). They are not in the
+house-equipment list. The meta
 row carries the one derived number, "Mics 3 · DI boxes 2", and
 `consoleCount()` — one channel each — turns the banner red past
 `VENUE.consoleChannels`; more mics than the house owns is amber. A mic'd amp
@@ -426,8 +426,10 @@ labelling a mic, wedge numbers, and sending it — including that the printed
 plot carries a link to itself. Nothing opens itself on load — with no browser
 storage it would open on every load; a guided first-run tour is deferred.
 The one-click export is **Print / PDF**: the stage and the equipment sheet on
-one Letter page, saved as PDF from the print dialog. Save (.json), Share
-link and Email text are the other three; there is no PNG.
+one Letter page, saved as PDF from the print dialog. Save (.json) and Share
+link are the other two; there is no PNG. Email text — a plain-text copy for
+a mailto — was removed 2026-09-16: it had no diagram, and the PDF and the
+link cover it.
 
 ## Seated or standing (2026-09-16)
 
@@ -552,7 +554,7 @@ the sentence itself being the plot's own read-only link as a real `<a href>`
 URL in full ran to six lines of hash for a big band, and William had it
 taken off the same day); then `VENUE.editNotice`, the one-place sentence
 that Somewhere Works may adjust placements and monitor assignments. The
-email text carries the URL in full, since there it is one line. The link is `encodeHash([p], 0)` — this one plot, a
+link is `encodeHash([p], 0)` — this one plot, a
 snapshot as printed; a reprint makes a new link — off `shareBase()`, which
 is the page's own origin and path on http(s) and `APP_URL` on a file://
 preview, **with `?open=<token>` between them and the hash**, the token new
@@ -568,7 +570,7 @@ same-document hash change that never re-runs `init()`; a `hashchange`
 listener reloads for a plot hash that arrives any other way.
 Compressing is async, so `plotLink()` renders the sheet with the last link
 built for exactly this content and asks for a fresh one when the content
-changed; Print and Email `await ensureLink()` first, so what goes out
+changed; Print `await`s `ensureLink()` first, so what goes out
 matches what is on the page.
 
 **The hash has a version marker.** `#s=` is deflate-raw then base64url, made
