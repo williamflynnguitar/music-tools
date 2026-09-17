@@ -2342,8 +2342,7 @@ function renderPanel(p){
          to drums. Spell the label, never the value. */
       H.push('<h3>Rhythm section</h3><div class="seg2">' +
         '<button class="btn sm" data-rhythm="drums-centre" aria-pressed="' + (p.rhythmPlan !== "bass-centre") + '">Drums center<span>bass to the side</span></button>' +
-        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass center<span>drums to the side</span></button></div>' +
-        '<p class="note">The side is stage left: the performer\'s left, printed on the right of the page. Anything you have dragged stays where it is.</p>');
+        '<button class="btn sm" data-rhythm="bass-centre" aria-pressed="' + (p.rhythmPlan === "bass-centre") + '">Bass center<span>drums to the side</span></button></div>');
     }
 
     H.push("<h3>Add a position</h3><div class='chips'>");
@@ -2353,7 +2352,9 @@ function renderPanel(p){
       roleOptions(p, "voice") + '</select><button class="btn sm" id="bAddPos">+ add</button>' +
       '<button class="btn sm" id="bCustomRole">custom…</button></div>');
 
-    H.push("<h3>On stage — " + p.positions.length + "</h3><div class='plist'>");
+    H.push("<h3>On stage — " + p.positions.length + "</h3>" +
+      '<p class="note">Names are optional. A seated player\'s circle sits on a chair; − chair / + chair sets how many, and 0 is standing. The solid bar on the audience side of a player is a music stand; − stand / + stand sets how many. Both are counted for the house.</p>' +
+      "<div class='plist'>");
     if (!p.positions.length) H.push('<p class="note">No positions yet. Add one above, or pick a shape from New.</p>');
     for (const pos of p.positions){
       H.push('<div class="prow pcard"><div class="pline"><span class="nm"><b>' + esc(labels[pos.id].short) + '</b> ' +
@@ -2369,7 +2370,7 @@ function renderPanel(p){
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="-1" title="one music stand fewer"' + (standsOf(p, pos) ? "" : " disabled") + '>− stand</button>' +
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="1" title="one more music stand">+ stand</button></div></div>');
     }
-    H.push('</div><p class="note">Names are optional. A seated player\'s circle sits on a chair on the stage; − chair / + chair sets how many, and 0 is standing. A music stand is the solid bar on the audience side of a player; − stand / + stand sets how many. Both are counted for the house.</p>');
+    H.push('</div>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
