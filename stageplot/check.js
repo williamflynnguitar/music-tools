@@ -139,8 +139,12 @@ for (const t of E.TEMPLATES){
      "a dealt wedge is id, number, x, y, rot, moved: " + Object.keys(p.wedges[0]).sort().join(","));
   eq(p.wedges.map(w => w.number).join(","), "1,2,3,4,5", "…numbered 1 to 5 in priority order");
   const rows = E.monitorTable(p).rows;
-  ok(rows.length === 5 && rows.every(r => /^[DCU]S[LCR] \(/.test(r.where)) && !("who" in rows[0]) && !("request" in rows[0]),
-     "the Monitors table is mix number and where it stands: " + rows[0].where);
+  ok(rows.length === 5 && rows.every(r => /^(Downstage|Center stage|Upstage)( (left|center|right))?$/.test(r.where)) && !("who" in rows[0]) && !("request" in rows[0]),
+     "the Monitors table is mix number and the zone in words, no feet and inches: " + rows[0].where);
+  eq(E.posText({ x:E.deckIn(p).w * .2, y:E.deckIn(p).d * .5 }, p), "Center stage left", "posText spells the zone out from the performer's view");
+  eq(E.posText({ x:E.deckIn(p).w * .5, y:E.deckIn(p).d * .5 }, p), "Center stage", "…and the middle is just Center stage");
+  ok(!/ftIn\(o\.x\)|from SL|from DS/.test(src.slice(src.indexOf("function posText("), src.indexOf("function posText(") + 400)), "…no inches anywhere in it");
+  ok(!/feet are measured/.test(src), "the changeover footer no longer promises feet");
   ok(!E.warnings(p).some(w => /assigned|no wedge/.test(w.text)), "no assignment warnings exist");
   const old = JSON.parse(JSON.stringify(p));
   old.wedges[0].assignees = [p.positions[0].id]; old.wedges[0].request = "more me"; old.positions[0].wedgeId = old.wedges[0].id;
@@ -150,7 +154,7 @@ for (const t of E.TEMPLATES){
   const a = T("rock"), b = T("rock");
   b.wedges[0].x += 40; b.wedges.pop();
   const co = E.changeover(a, b);
-  ok(co.wedges.change.length === 1 && co.wedges.change[0].n === 1 && /→|from/.test(co.wedges.change[0].from + co.wedges.change[0].to) && co.wedges.leave.join(",") === "5",
+  ok(co.wedges.change.length === 1 && co.wedges.change[0].n === 1 && /stage/.test(co.wedges.change[0].from + co.wedges.change[0].to) && co.wedges.leave.join(",") === "5",
      "changeover: a moved wedge and a struck wedge, by number");
   ok(!/data-wassign|data-wreq|What this mix wants|What they want|no one assigned|No wedge assigned/.test(src), "no mix-contents UI or wording left in the page");
   ok(/Notes for the tech/.test(src), "the one free-text field is the notes on the Details tab");

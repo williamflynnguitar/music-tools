@@ -1229,18 +1229,21 @@ function offDeck(o, plot){
   const r = rectOf(o, plot), D = deckIn(plot), e = 0.5;
   return r.x0 < -e || r.y0 < -e || r.x1 > D.w + e || r.y1 > D.d + e;
 }
-function ftIn(inches){
-  const neg = inches < 0; inches = Math.abs(Math.round(inches));
-  const f = Math.floor(inches / 12), i = inches % 12;
-  return (neg ? "-" : "") + f + "′" + (i ? i + "″" : "");
-}
 function zoneOf(o, plot){                       // DSL / CSC / USR, stage left & right from the player
   const D = deckIn(plot), fx = o.x / D.w, fy = o.y / D.d;
   const ud = fy < 1/3 ? "DS" : fy < 2/3 ? "CS" : "US";
   const lr = fx < 1/3 ? "L" : fx < 2/3 ? "C" : "R";
   return ud + lr;
 }
-function posText(o, plot){ return zoneOf(o, plot) + " (" + ftIn(o.x) + " from SL, " + ftIn(o.y) + " from DS)"; }
+/* Where something stands, in words: the zone only, spelled out — "Center
+   stage right" — with no feet and inches (William, 2026-09-16: the tech
+   reads the diagram for placement; the numbers were noise). The zone is
+   from the performer's view. x/y are still stored to the inch. */
+const ZONE_WORDS = { DS:"Downstage", CS:"Center stage", US:"Upstage", L:"left", C:"center", R:"right" };
+function posText(o, plot){
+  const z = zoneOf(o, plot), ud = z.slice(0, 2), lr = z.slice(2);
+  return ud === "CS" && lr === "C" ? "Center stage" : ZONE_WORDS[ud] + " " + ZONE_WORDS[lr];
+}
 function diagramGeom(plot){
   const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + M + DRAW.marginBottom;
   let widthIn = 7.5, h = widthIn * vbH / vbW;
@@ -1499,7 +1502,8 @@ function changeover(a, b){
     const q = inB.get(o.key);
     if (!q){ out.people.leave.push({ name:o.name, role:o.role }); continue; }
     const from = posText(o.pos, a), to = posText(q.pos, b);
-    out.people.stay.push({ name:q.name, role:q.role, from, to, moved:from !== to });
+    const moved = Math.abs(o.pos.x - q.pos.x) > SAME || Math.abs(o.pos.y - q.pos.y) > SAME;
+    out.people.stay.push({ name:q.name, role:q.role, from, to, moved });
   }
   for (const o of ob) if (!inA.has(o.key)) out.people.arrive.push({ name:o.name, role:o.role });
 
@@ -1809,7 +1813,8 @@ function diagramSVG(plot, opt){
   for (const w of plot.wedges){
     const def = houseDef("wedge");
     draw(w, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + stroke(w) + '" stroke-width="' + swid(w) + '"' + bad(w) + '/>');
-    labelled(w, g.sx(w.x), g.sy(w.y), ts(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(DRAW.smallPt) * .35, DRAW.smallPt));
+    const wf = fitLabel(g, String(w.number), def.w * .6, def.d - 4, DRAW.labelPt) || { pt:DRAW.smallPt };   // the mix number, as big as the wedge holds
+    labelled(w, g.sx(w.x), g.sy(w.y), ts(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(wf.pt) * .36, wf.pt));
   }
   // backline and other gear
   for (const it of plot.items){
@@ -1999,23 +2004,24 @@ function changeoverHTML(co){
   let h = '<h1>Changeover: ' + esc(co.from) + ' → ' + esc(co.to) + '</h1>' +
     '<hr class="rule">';
   h += '<div class="cols"><div>';
-  h += list("Stays on", co.people.stay, a => esc(a.name) + (a.moved ? " — moves to " + esc(a.to) : ""));
+  const moveTo = a => a.from === a.to ? " — moves, within " + esc(a.to) : " — moves to " + esc(a.to);   // zones are coarse: a move can stay inside one
+  h += list("Stays on", co.people.stay, a => esc(a.name) + (a.moved ? moveTo(a) : ""));
   h += list("Arriving", co.people.arrive, a => esc(a.name));
   h += list("Coming off", co.people.leave, a => esc(a.name));
   h += '</div><div>';
   h += list("Stays put", co.items.stay, a => esc(a));
-  h += list("Moves", co.items.move, a => esc(a.what) + ": " + esc(a.from) + " → " + esc(a.to));
+  h += list("Moves", co.items.move, a => esc(a.what) + (a.from === a.to ? ", within " + esc(a.to) : ": " + esc(a.from) + " → " + esc(a.to)));
   h += list("Comes on", co.items.arrive, a => esc(a));
   h += list("Comes off", co.items.leave, a => esc(a));
   h += '</div></div>';
   if (co.wedges.change.length || co.wedges.arrive.length || co.wedges.leave.length){
     h += '<h2>Monitor changes</h2><ul>' +
-      co.wedges.change.map(w => '<li>Wedge ' + w.n + ': ' + esc(w.from) + ' → ' + esc(w.to) + '</li>').join("") +
+      co.wedges.change.map(w => '<li>Wedge ' + w.n + (w.from === w.to ? ' moves, within ' + esc(w.to) : ': ' + esc(w.from) + ' → ' + esc(w.to)) + '</li>').join("") +
       (co.wedges.arrive.length ? '<li>Wedge ' + co.wedges.arrive.join(", ") + " added</li>" : "") +
       (co.wedges.leave.length ? '<li>Wedge ' + co.wedges.leave.join(", ") + " struck</li>" : "") +
       '</ul>';
   }
-  h += '<p class="foot">Positions are DS/CS/US (downstage, center, upstage) + L/C/R from the performer\'s view; feet are measured from the downstage stage-left corner.</p>';
+  h += '<p class="foot">Positions are named by stage zone — downstage, center stage, upstage; left, center, right — from the performer\'s view. The diagram on each plot shows the exact spot.</p>';
   return h;
 }
 

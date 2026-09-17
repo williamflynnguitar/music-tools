@@ -597,7 +597,13 @@ trumpets, strings, other — merged smallest-adjacent-pair until they fit
 `VENUE.monitorMixes`, each wedge landing downstage of its group. Nothing
 records the grouping afterwards; the number is the mix and the diagram is
 where it stands. The printed Monitors table is mix number and location
-(`posText()`), one row per wedge.
+(`posText()`), one row per wedge — the zone in words, "Center stage right",
+with no feet and inches (William, 2026-09-16; the tech reads the diagram
+for the spot). `posText()` is the one place a position becomes text, so
+the Wedges tab, the inspector headings, the email and the changeover sheet
+all say the same thing; the changeover decides "moved" by distance, not by
+whether the words changed. The mix number on a wedge is drawn as large as
+the wedge holds (`fitLabel`, up to 12pt) on screen and in print.
 
 **Numbers are the tech's priority order and are set by hand** (A1). A
 number field on each Wedges-tab card and in the wedge inspector writes
@@ -726,7 +732,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 570 assertions: the role library, every template (builds,
+`node check.js` — 574 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
