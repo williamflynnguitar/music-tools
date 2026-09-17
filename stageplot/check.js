@@ -938,6 +938,10 @@ for (const t of E.TEMPLATES){
   ok(E.legendKeys(combo).some(k => k.id === "stand"), "the key names the stand icon");
   ok(!/standGlyph/.test(src) && /standBars\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as solid bars in front of the player and a placed stand carries no label");
   ok(/data-stand=/.test(src) && (src.match(/− stand/g) || []).length >= 2, "− stand / + stand on the card and in the inspector");
+  // the Mics & DIs tab says how to attach one (William, 2026-09-16): select the instrument or the equipment first, then add
+  ok((src.match(/To attach a mic or a DI to an instrument or a piece of equipment, (<b>)?select that player or that piece of equipment on the stage first/g) || []).length === 2,
+     "the Mics & DIs tab opens with the select-first instruction, and the help repeats it");
+  ok(/Nothing is selected, so it lands mid-stage, belonging to nobody\./.test(src) && /Right now it goes to <b>/.test(src), "…and says where the next mic or DI will land");
   eq(E.standCount(E.migratePlot(JSON.parse(JSON.stringify(bb)))), 19, "stands survive save and load");
 }
 
@@ -971,7 +975,12 @@ for (const t of E.TEMPLATES){
   ok(lb2 && lb2.y1 <= tpt.y - 11 - E.STAND.gap - E.STAND.thick, "a standing player's name sits below their stand bar");
   eq(E.labelClear(bb, tpt), 16, "…16″ from the centre: the circle, the gap and the bar");
   // the bar
-  eq(JSON.stringify(E.STAND), JSON.stringify({ frac:.6, thick:3, gap:2 }), "the stand is a bar 60% of the width, 3″ thick, 2″ off a standing player");
+  eq(JSON.stringify(E.STAND), JSON.stringify({ w:12, thick:3, gap:2, between:2 }), "the stand is a 12″ × 3″ bar, 2″ off a standing player, 2″ between a pair");
+  // every stand on the page is the same size, whoever it belongs to (William, 2026-09-16); diagramSVG is not headless, so the source is read
+  ok(/const bw = STAND\.w, span = n \* bw \+ STAND\.between \* \(n - 1\);/.test(src) && /width="' \+ bw \+ '" height="' \+ STAND\.thick/.test(src),
+     "a player's bars are each STAND.w wide, however many and whatever the shape: the kit's, the bass player's pair and a trumpet's alike");
+  ok(/isStand \? hitRect \+ '<rect x="' \+ \(-STAND\.w \/ 2\) \+ '" y="-1\.5" width="' \+ STAND\.w \+ '"/.test(src), "…and a stand placed by hand is the same bar");
+  ok(!/STAND\.frac|frac:/.test(src), "…nothing scales a stand to its owner's shape");
   ok(/yTop = obj \? f\.d \/ 2 \+ STAND\.gap : seated \? \(f\.w \+ 6\) \/ 2 - STAND\.thick - 1\.5 : f\.w \/ 2 \+ STAND\.gap/.test(src), "…on the tile's downstage edge when seated, just below the circle when standing, below the kit");
   ok(/fill="' \+ ink \+ '"\/>';\n    }\n    return out;/.test(src), "…solid, in the ink colour");
   ok(/stand:   '<circle cx="11" cy="6"/.test(src) && /<rect x="6\.5" y="12\.6" width="9" height="2\.4" rx="\.8" fill="' \+ ink/.test(src), "the key shows the bar under a player circle");

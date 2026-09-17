@@ -631,9 +631,11 @@ function settleBackline(plot){
 const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller
 /* A music stand, top-down: a solid bar in front of the player (William,
    2026-09-16 — the side-view icon read as a monitor and collided with the
-   neighbours). frac of the tile or circle width, thick inches, and a gap
-   below a standing player's circle. It never leaves the player's footprint. */
-const STAND = { frac: .6, thick: 3, gap: 2 };
+   neighbours). Every bar is the same size, w × thick inches, whoever it
+   belongs to (William, 2026-09-16: a bar sized to its owner's shape made the
+   kit's stands wide and the bass player's pair narrow, and a tech would ask
+   why). gap below a standing player's circle; between, between two bars. */
+const STAND = { w: 12, thick: 3, gap: 2, between: 2 };
 
 /* Bring-your-own palette. Free-text description prints after "BYO:".
    No inputs here: a BYO item arrives with none (addByo writes inputs:[]) and
@@ -1824,7 +1826,7 @@ function diagramSVG(plot, opt){
     const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit", isStand = it.kind === "house" && it.ref === "musicstand";
     const hitRect = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(it) || ' stroke="none"') + '/>';   // an invisible footprint: grabbable, outlined when over the edge
     let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
-      : isStand ? hitRect + '<rect x="-6" y="-1.5" width="12" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>'   // a stand that belongs to nobody: the bar, no label — the key says what it is
+      : isStand ? hitRect + '<rect x="' + (-STAND.w / 2) + '" y="-1.5" width="' + STAND.w + '" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>'   // a stand that belongs to nobody: the bar, no label — the key says what it is
       : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
         (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
@@ -1858,19 +1860,19 @@ function diagramSVG(plot, opt){
   }
   /* A player's music stand: a solid bar along the downstage edge of the
      chair tile, inset from the corners, or just downstage of a standing
-     player's circle (and of the kit's footprint). Two stands, two bars side
-     by side in the same span. Drawn in the player's own group, so it turns
-     with them and always sits in front. */
+     player's circle (and of the kit's footprint). Every bar is STAND.w wide,
+     the same as a stand placed by hand; two stands are two such bars side
+     by side, centred on the player. Drawn in the player's own group, so it
+     turns with them and always sits in front. */
   const standBars = (pos, f) => {
     const n = standsOf(plot, pos); if (!n) return "";
     const obj = roleOf(plot, pos).stance === "object", seated = !obj && chairsOf(plot, pos) > 0;
-    const span = (seated ? f.w + 6 : f.w) * STAND.frac;
     const yTop = obj ? f.d / 2 + STAND.gap : seated ? (f.w + 6) / 2 - STAND.thick - 1.5 : f.w / 2 + STAND.gap;
-    const gapB = 2, bw = (span - gapB * (n - 1)) / n;
+    const bw = STAND.w, span = n * bw + STAND.between * (n - 1);
     let out = "";
     for (let i = 0; i < n; i++){
-      const x0 = -span / 2 + i * (bw + gapB);
-      out += '<rect x="' + x0.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>';
+      const x0 = -span / 2 + i * (bw + STAND.between);
+      out += '<rect x="' + x0.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + bw + '" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>';
     }
     return out;
   };
@@ -2273,12 +2275,14 @@ function renderPanel(p){
   if (S.tab === "mics"){
     const sel = find(p, S.sel), selPos = isPosition(sel) ? sel : null, selItem = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
     const at = selPos ? posText2(p, selPos, labels) : selItem ? (itemDef(selItem) || {}).short : null;
-    H.push("<h3>Mics and DI boxes</h3><div class='plist'>");
+    H.push("<h3>Mics and DI boxes</h3>" +
+      '<p class="note">To attach a mic or a DI to an instrument or a piece of equipment, <b>select that player or that piece of equipment on the stage first</b>, then add the mic or DI here. ' +
+      (at ? "Right now it goes to <b>" + esc(at) + "</b>." : "Nothing is selected, so it lands mid-stage, belonging to nobody.") + "</p><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["mic","di"].includes(h.cat))){
       const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
       H.push('<button class="pitem" data-house="' + h.id + '"><span>+ ' + esc(h.label) + (at ? ' <span class="role">at ' + esc(at) + '</span>' : "") + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
     }
-    H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. Select a player or an amp first and the mic lands at them; then drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>');
+    H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. A mic lands in front of whoever was selected; drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>');
     const mics = micsOn(p), dis = disOn(p);
     if (mics.length || dis.length){
       H.push("<h3>On stage — " + mics.length + " mic" + (mics.length === 1 ? "" : "s") + ", " + dis.length + " DI" + (dis.length === 1 ? "" : "s") + "</h3><div class='plist'>");
@@ -2682,7 +2686,7 @@ function helpSections(){
     ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
     ["The drum kit", 'The kick faces the audience and is labelled. The solid dot is the drummer; its stem shows which way they face. Select the kit to say whether it is the house kit or your own.'],
-    ["Microphones", 'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
+    ["Microphones", 'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI. Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
     ["Monitor wedges", 'Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — type a number on the <b>Wedges</b> tab to renumber. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
     ["Sending it", '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.'],
   ];

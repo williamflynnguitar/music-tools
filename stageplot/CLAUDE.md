@@ -457,17 +457,31 @@ instrument, the old Instrumentation dialog) and **Paste a roster…** (names,
 one per line, sent to their instruments); the help panel's "Filling the
 band fast" section says so, because nobody found them.
 
+## Mics & DIs: select first (2026-09-16)
+
+The Mics & DIs tab opens with the rule, above the + Mic / + DI buttons:
+**to attach a mic or a DI to an instrument or a piece of equipment, select
+that player or that piece of equipment on the stage first, then add the mic
+or DI** (William, 2026-09-16). The note then says where the next one will
+land — "Right now it goes to Alto 1" from the selection, or, with nothing
+selected, that it lands mid-stage belonging to nobody (`freeSpot()`). The
+help's Microphones entry leads with the same sentence.
+
 ## Music stands (2026-09-16)
 
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
 mirroring the chairs. **A big band gives everyone a stand and the bass
 player and the drummer two** (`makeFromParts()`); a combo starts with none.
-**A stand is a solid bar, top-down** (`STAND`: 60% of the tile or circle
-width, 3″ thick, bone on screen and black in print): along the downstage
-edge of a seated player's chair tile, inset from the corners; 2″ below a
-standing player's circle; below the kit's footprint. Two stands are two
-bars in the same span. It is drawn in the player's own group, so it turns
-with them and always sits in front, and it never leaves the footprint. The
+**A stand is a solid bar, top-down** (`STAND`: 12″ × 3″, bone on screen
+and black in print): along the downstage edge of a seated player's chair
+tile, inset from the corners; 2″ below a standing player's circle; below
+the kit's footprint. **Every bar is the same size**, whoever owns it and
+whether placed by hand — the first bar was 60% of its owner's width, which
+made the kit's stands wide and the bass player's pair narrow, and a tech
+would wonder why (William, 2026-09-16). Two stands are two bars 2″ apart,
+centred on the player, so a standing player's pair overhangs the circle by
+2″ a side. It is drawn in the player's own group, so it turns with them and
+always sits in front. The
 first version was a side-view desk-and-stem icon beside the player; it read
 as a monitor and collided with the neighbours. A stand placed from the Misc
 tab draws the bar alone, unlabelled; it is for a stand that belongs to
@@ -732,7 +746,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 574 assertions: the role library, every template (builds,
+`node check.js` — 579 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
