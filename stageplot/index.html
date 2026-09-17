@@ -805,8 +805,8 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
    puts the bass centre and the kit to the side (William, 2026-09-16); the
    rest leave the kit centre, the app's default. */
 const TEMPLATES = [
-  { id:"combo", name:"Jazz combo", note:"horns over a rhythm section; add or drop players after",
-    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], stands:"all", rhythm:"bass-centre" },
+  { id:"combo", name:"Jazz combo", note:"three horns over a rhythm section with guitar; add or drop players after",
+    parts:[["tenor",1],["trumpet",1],["trombone",1],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"all", rhythm:"bass-centre" },   // a septet since 2026-09-16 (William): the third horn and the guitar were added to the default
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
     parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"bigband" },
   { id:"rock", name:"Rock / pop band", note:"lead vocal, guitar, keys, bass, drums",
@@ -855,18 +855,18 @@ const LAYOUT = {
      page — see Coordinates. */
   rhythm: {                    // drums centre, bass to the side (inboard of the stage-left stairs, D2)
     drums:[.50,.80], bass:[.21,.58], upright:[.21,.58], guitar:[.87,.63],
-    keys:[.74,.40], organ:[.26,.40], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],
+    keys:[.74,.50], organ:[.26,.50], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],   // keys .40 until 2026-09-16: the keyboard landed in the horn line
   },
   rhythmSwapped: {             // bass centre, drums to the side (inboard of the stage-left stairs, D2)
     drums:[.26,.68], bass:[.52,.62], upright:[.52,.62], guitar:[.87,.63],
-    keys:[.74,.40], organ:[.26,.40], perc:[.40,.86], dj:[.74,.80], playback:[.62,.90],
+    keys:[.74,.50], organ:[.26,.50], perc:[.40,.86], dj:[.74,.80], playback:[.62,.90],
   },
   rhythmBig: {                 // big-band shape: the stage-right block (fx near 1 is page left), packed toward the wall so the sections get the width
     bass:[.91,.729], upright:[.90,.715], drums:[.76,.778], keys:[.905,.375],
     guitar:[.654,.280],          // only used when there is no sax row to sit beside
     organ:[.875,.160], perc:[.560,.900], dj:[.896,.180], playback:[.950,.560],
   },
-  gearUp: .17, gearDown: .26,  // how far the backline sits from its player (fraction of depth)
+  gearUp: .17, gearDown: .10,  // how far the backline sits from its player (fraction of depth). gearDown was .26 from the first commit — a keyboard five feet in front of a seated player, out in the horn line (William, 2026-09-16); .10 is 24″ on this deck, the keyboard against the chair
   wedgeGap: 44,                // inches downstage of the position it serves — room for a seated player's chair and their label between
   stagger: [0, .07, -.07, .14, -.14],
 };

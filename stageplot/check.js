@@ -113,6 +113,20 @@ for (const t of E.TEMPLATES){
   eq(combo.rhythmPlan, "bass-centre", "the jazz combo opens with the bass centre");
   ok(centreish(combo.positions.find(x => x.roleId === "bass")) && !centreish(combo.positions.find(x => x.roleId === "drums")), "…and is laid out that way from the first layout, not after a re-layout");
   eq(E.TEMPLATES.filter(t => t.rhythm === "bass-centre").map(t => t.id).join(","), "combo", "…and it is the only preset that does");
+  eq(E.TEMPLATES.find(t => t.id === "combo").parts.map(x => x[0] + "×" + x[1]).join(" "), "tenor×1 trumpet×1 trombone×1 guitar×1 keys×1 bass×1 drums×1", "the jazz combo is a septet: tenor, trumpet, trombone, guitar, keys, bass, drums (William, 2026-09-16)");
+  // the keyboard sits against its seated player and upstage of the horn line, never out among the horns (William, 2026-09-16)
+  eq(E.LAYOUT.gearDown, .10, "a keyboard is 10% of the depth — 24″ here — downstage of its player, not the 26% it was");
+  for (const t of E.TEMPLATES) for (const plan of ["drums-centre","bass-centre"]){
+    const q = T(t.id); q.rhythmPlan = plan; E.autoLayout(q, { force:true });
+    const kb = q.items.find(i => E.refCat(i.ref) === "keys"), horns = q.positions.filter(x => ["sax","brass"].includes(E.roleOf(q, x).family));
+    if (!kb || !horns.length) continue;
+    const kr = E.rectOf(kb, q);
+    const clear = horns.every(h => { const r = E.rectOf(h, q); return Math.max(kr.x0 - r.x1, r.x0 - kr.x1, kr.y0 - r.y1, r.y0 - kr.y1) >= 6; });
+    ok(clear, t.name + " (" + plan + "): the keyboard is at least 6″ clear of every horn");
+    const keys = q.positions.find(x => E.roleOf(q, x).id === "keys");
+    if (!q.positions.some(x => E.roleOf(q, x).family === "sax" || E.roleOf(q, x).family === "brass") || horns.length >= E.LAYOUT.hornsForBigBand) continue;
+    ok(horns.every(h => kr.y0 > E.rectOf(h, q).y1), t.name + " (" + plan + "): …and upstage of the horn line, with its player behind it (" + Math.round(keys.y - kb.y) + "″)");
+  }
   ok(E.TEMPLATES.every(t => !t.rhythm || ["drums-centre","bass-centre"].includes(t.rhythm)), "a preset's rhythm plan is one of the two the app knows");
   eq(E.blankPlot().rhythmPlan, "drums-centre", "a blank plot still opens with the kit centre");
 
@@ -977,7 +991,7 @@ for (const t of E.TEMPLATES){
   eq(E.TEMPLATES.map(t => t.id + ":" + t.stands).join(" "), "combo:all bigband:bigband rock:none vocals:none duo:none", "every preset carries a stands rule");
   const combo = T("combo");
   ok(combo.positions.every(p => E.standsOf(combo, p) === 1), "a jazz combo gives every player one stand — the bass player and the drummer too");
-  eq(E.standCount(combo), 5, "…five for five");
+  eq(E.standCount(combo), 7, "…seven for seven: the combo is a septet since 2026-09-16, three horns and guitar over keys, bass and drums");
   for (const id of ["rock","vocals","duo"]){ const q = T(id); eq(E.standCount(q), 0, id + ": no music stands"); }
   const counts = E.makeFromParts([["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], null, "from counts");
   eq(E.standCount(counts), 0, "Bulk add players gives a combo-sized band none: the rule belongs to the preset, and the big band one still comes from the horn count");
@@ -990,7 +1004,7 @@ for (const t of E.TEMPLATES){
   E.setStands(combo, t, 0); ok(!("stands" in t), "…and back to none removes the field");
   combo.items.push({ id:"ms", kind:"house", ref:"musicstand", label:"", x:100, y:100, rot:0, moved:true, ownerPositionIds:[] });
   E.setStands(combo, t, 2);
-  eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 7, "the house count is the players' stands plus any placed by hand");
+  eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 9, "the house count is the players' stands plus any placed by hand");
   ok(E.legendKeys(combo).some(k => k.id === "stand"), "the key names the stand icon");
   ok(!/standGlyph/.test(src) && /standBars\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as solid bars in front of the player and a placed stand carries no label");
   ok(/data-stand=/.test(src) && (src.match(/− stand/g) || []).length >= 2, "− stand / + stand on the card and in the inspector");
