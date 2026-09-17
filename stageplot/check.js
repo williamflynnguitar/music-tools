@@ -772,6 +772,17 @@ for (const t of E.TEMPLATES){
   ok(/'<span>Mics ' \+ mics\.length \+ ' · DI boxes ' \+ dis\.length/.test(src), "the meta row carries the one derived count");
 }
 
+/* ---- 19f2. the palette says what is already on the deck (William, 2026-09-16) ---- */
+{
+  ok(/function houseRowHTML\(p, h, labels, nameHTML\)/.test(src), "one row builder for house backline, mics and DIs, and music stands");
+  ok(/houseRowHTML\(p, h, labels, esc\(h\.label\)\)/.test(src) && /houseRowHTML\(p, h, labels, '\+ ' \+ esc\(h\.label\)/.test(src), "…used by all three lists");
+  ok(/'<span class="ondeck">✓ ' \+ \(used === 1 \? "on the deck" : used \+ " on the deck"\)/.test(src) && /whose\.join\(", "\)/.test(src), "a row already on the deck says ✓ on the deck, and whose it is");
+  ok(/\(left <= 0 \? ' disabled title="the house has none left"' : ""\)/.test(src) && /left === 0 \? "none left"/.test(src), "…and with none left the button is disabled and says none left, not 0 left beside a live button");
+  ok(/const used = h\.id === "musicstand" \? placed \+ standCount\(p\) : placed;/.test(src), "…music stands count the players' own stands against the house");
+  ok(!/\(cap - used\) \+ " left<\/span>/.test(src), "…the old bare count is gone from every list");
+  ok(/objectRef\(r\) === h\.id && !kitIsByo\(p, pos\)/.test(src), "…the house kit is on the deck through the drums position, unless the band brings its own");
+}
+
 /* ---- 19g. renumbering wedges (A1, Tim Shade 2026-09-16) ---- */
 {
   const p = T("rock"), byNum = n => p.wedges.find(w => w.number === n);

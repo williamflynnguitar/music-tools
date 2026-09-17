@@ -96,6 +96,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .pitem .ct{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
 .pitem .ct.over{color:var(--amber)}
 .pitem.dim{opacity:.55}
+.pitem:disabled{cursor:not-allowed;background:#0c1d24;color:var(--bone-dim)}   /* the check and the name stay readable: the row is information now, not a button */
+.pitem:disabled:hover{background:#0c1d24;border-color:transparent}
+.pitem .ondeck{display:block;font-family:var(--mono);font-size:11px;color:var(--brass);margin-top:2px}
 .prow{display:flex;align-items:center;gap:8px;background:var(--petrol);border-radius:4px;padding:6px 9px;font-size:13.5px}
 .prow .nm{flex:1;min-width:0}
 .pcard{flex-direction:column;align-items:stretch;gap:5px}
@@ -2200,6 +2203,24 @@ function renderRailTabs(){
   }).join("");
   $("railtabs").querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { S.tab = b.dataset.tab; renderRailTabs(); renderPanel(plot()); });
 }
+/* A palette row for a house item: its name, what of it is already on the
+   deck and whose it is, and what the house has left. Nothing at all left
+   and the button is disabled — the row says so instead of adding one more
+   (William, 2026-09-16: "0 left" used to sit beside a button that still
+   worked, and nothing said the item was already out there). A plot that
+   somehow holds more than the house owns reads amber, as before. */
+function houseRowHTML(p, h, labels, nameHTML){
+  const placed = placedCount(p, h.id);
+  const used = h.id === "musicstand" ? placed + standCount(p) : placed;          // a player's own stands count against the house too
+  const cap = h.count === undefined ? 1 : h.count, left = cap - used;
+  const whose = [];
+  for (const it of p.items) if (it.kind === "house" && it.ref === h.id) for (const id of (it.ownerPositionIds || [])) if (labels[id]) whose.push(labels[id].short);
+  for (const pos of p.positions){ const r = roleOf(p, pos); if (r.stance === "object" && objectRef(r) === h.id && !kitIsByo(p, pos) && labels[pos.id]) whose.push(labels[pos.id].short); }
+  const on = used ? '<span class="ondeck">✓ ' + (used === 1 ? "on the deck" : used + " on the deck") + (whose.length ? " · " + esc(whose.join(", ")) : "") + '</span>' : "";
+  const ct = left < 0 ? (-left) + " over" : left === 0 ? "none left" : left + " left";
+  return '<button class="pitem" data-house="' + h.id + '"' + (left <= 0 ? ' disabled title="the house has none left"' : "") + '>' +
+    '<span>' + nameHTML + on + '</span><span class="ct' + (left < 0 ? " over" : "") + '">' + ct + '</span></button>';
+}
 function placedCount(p, ref){
   return p.items.filter(i => i.kind === "house" && i.ref === ref).length +
          p.positions.filter(pos => { const r = roleOf(p, pos); return r.stance === "object" && objectRef(r) === ref; }).length +
@@ -2313,11 +2334,8 @@ function renderPanel(p){
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
-    for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))){
-      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
-      H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
-    }
-    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two Voxes. Select an amp or keyboard on the canvas to swap it for another. These buttons are only for an extra. No mics come with the house gear.</p>");
+    for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))) H.push(houseRowHTML(p, h, labels, esc(h.label)));
+    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two Voxes. A row with a ✓ is already on the deck, and says whose it is. Select an amp or keyboard on the canvas to swap it for another. These buttons are only for an extra; when the house has none left, the button is off. No mics come with the house gear.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
@@ -2342,10 +2360,7 @@ function renderPanel(p){
     H.push("<h3>Mics and DI boxes</h3>" +
       '<p class="note">To attach a mic or a DI to an instrument or a piece of equipment, <b>select that player or that piece of equipment on the stage first</b>, then add the mic or DI here. ' +
       (at ? "Right now it goes to <b>" + esc(at) + "</b>." : "Nothing is selected, so it lands mid-stage, belonging to nobody.") + "</p><div class='plist'>");
-    for (const h of VENUE.house.filter(h => ["mic","di"].includes(h.cat))){
-      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
-      H.push('<button class="pitem" data-house="' + h.id + '"><span>+ ' + esc(h.label) + (at ? ' <span class="role">at ' + esc(at) + '</span>' : "") + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
-    }
+    for (const h of VENUE.house.filter(h => ["mic","di"].includes(h.cat))) H.push(houseRowHTML(p, h, labels, '+ ' + esc(h.label) + (at ? ' <span class="role">at ' + esc(at) + '</span>' : "")));
     H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. A mic lands in front of whoever was selected; drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>');
     const mics = micsOn(p), dis = disOn(p);
     if (mics.length || dis.length){
@@ -2358,10 +2373,7 @@ function renderPanel(p){
   }
   if (S.tab === "misc"){
     H.push("<h3>Music stands</h3><div class='plist'>");
-    for (const h of VENUE.house.filter(h => h.cat === "stand")){
-      const used = placedCount(p, h.id), cap = h.count === undefined ? 1 : h.count;
-      H.push('<button class="pitem" data-house="' + h.id + '"><span>' + esc(h.label) + '</span><span class="ct' + (used > cap ? " over" : "") + '">' + (cap - used) + " left</span></button>");
-    }
+    for (const h of VENUE.house.filter(h => h.cat === "stand")) H.push(houseRowHTML(p, h, labels, esc(h.label)));
     H.push('</div><p class="note">A player\'s own stands are set on the Positions tab (+ stand); place one here only for a stand that belongs to nobody, a conductor\'s say. Mics and DI boxes have their own tab. Somewhere Works handles power, and has no risers.</p>' +
       '<div class="plist"><button class="pitem" data-label="1"><span>Text label</span></button></div>');
   }
