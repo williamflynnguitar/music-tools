@@ -199,6 +199,8 @@ table.prev td{padding:3px 0;border-bottom:1px solid rgba(42,84,97,.4)}
 .help kbd{font-family:var(--mono);font-size:12px;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:1px 5px;color:var(--bone)}
 .pickgrid{display:grid;gap:6px}
 .pickgrid button{text-align:left}
+.pickgrid button.hi{border-color:var(--brass);border-width:2px;background:rgba(201,162,74,.08)}
+.pickgrid button.hi:hover{background:rgba(201,162,74,.16)}
 .pickgrid .sub{display:block;font-size:12px;color:var(--bone-dim);font-family:var(--mono)}
 .cosheets{max-width:7.5in;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 .cosheet{background:#fff;color:#000;padding:.35in;font-size:10pt}
@@ -2499,6 +2501,7 @@ $("bHelp").onclick = openHelp;
 function openStart(){
   const dlg = $("startDlg");
   dlg.innerHTML = '<div class="dlg wide"><h2>New plot</h2>' +
+    '<div class="pickgrid" style="margin-top:12px"><button class="btn hi" id="bStartHelp">How it works<span class="sub">first time here? the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
     '<h3 class="dlgh">Build the instrumentation</h3>' +
     '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against Somewhere Works: 5 mixes</span></button>' +
     '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
@@ -2506,8 +2509,7 @@ function openStart(){
     TEMPLATES.map(t => '<button class="btn" data-tpl="' + t.id + '">' + esc(t.name) + '<span class="sub">' + esc(t.note || "") + '</span></button>').join("") +
     '</div>' +
     '<h3 class="dlgh">Open something</h3>' +
-    '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button>' +
-    '<button class="btn" id="bStartHelp">How it works<span class="sub">the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
+    '<div class="pickgrid"><button class="btn" id="bStartLoad">Load a .json plot<span class="sub">or drop the file anywhere on the page</span></button></div>' +
     (S.plots.length ? '<div class="insprow" style="margin-top:14px"><button class="btn" id="bCancelNew">cancel</button></div>' : "") +
     '</div>';
   dlg.hidden = false;
