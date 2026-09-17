@@ -431,16 +431,15 @@ link and Email text are the other three; there is no PNG.
 ## Seated or standing (2026-09-16)
 
 `pos.chairs` is how many chairs a player needs: 0 standing, 1 seated, 2 a
-shared or double chair. Absent means the role's stance (`chairsOf()`: a
-seated role — trumpet, trombone, bass trombone, tuba, flugelhorn, perc,
-organ, cello — gets 1, the kit 0), so nothing saved before this changed
-meaning, and `setChairs()` removes the field when a player is back at the
-role's default. **A big band is seated by William's rule** (2026-09-16):
-when the winds reach `hornsForBigBand`, `makeFromParts()` gives every sax
-and the guitarist a chair and stands the trumpets and flugelhorns, so the
-template and the counts builder agree; the trombones sit by role anyway.
-A combo's saxes stand and its brass sit by role. A big band asks for 10
-chairs.
+shared or double chair. Absent means the role's stance (`chairsOf()`), and
+**the only seated roles are the keyboard players**, keys and organ; every
+other human stands in every configuration — combo, rock/pop, vocals, duo.
+**A big band** additionally seats its saxes, trombones (bass trombone
+included) and guitarist: when the winds reach `hornsForBigBand`,
+`makeFromParts()` gives those a chair, so the template and the counts
+builder agree; trumpets stand. William's list, 2026-09-16. A big band
+asks for 11 chairs. `setChairs()` removes the field when a player is back
+at the role's default, so nothing saved before this changed meaning.
 
 On the stage a seated player's circle sits on a square chair 6″ larger
 than the circle, so the corners show all round; two chairs draw two squares.
@@ -679,7 +678,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 503 assertions: the role library, every template (builds,
+`node check.js` — 508 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

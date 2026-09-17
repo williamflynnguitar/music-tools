@@ -205,7 +205,7 @@ for (const t of E.TEMPLATES){
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,seated,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its trumpet sits, so seated is in it): " + ids(combo));
+  eq(ids(combo), "player,seated,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its keys player sits, so seated is in it): " + ids(combo));
   const blank = E.blankPlot();
   eq(ids(blank), "truss,fixture", "an empty deck's key has only the truss and the venue's fixtures");
   E.addPosition(blank, "keys");
@@ -863,9 +863,9 @@ for (const t of E.TEMPLATES){
   ok(by(p => p.roleId === "trombone").every(p => E.chairsOf(bb, p) === 1), "…and its trombones");
   ok(by(p => p.roleId === "trumpet").every(p => E.chairsOf(bb, p) === 0), "…its trumpets stand (William, 2026-09-16)");
   eq(E.chairsOf(bb, by(p => p.roleId === "guitar")[0]), 1, "…and its guitarist sits");
-  ok(by(p => ["bass","keys"].includes(p.roleId)).every(p => E.chairsOf(bb, p) === 0) && E.chairsOf(bb, by(p => p.roleId === "drums")[0]) === 0, "bass and keys stand, and the kit is the kit");
-  eq(E.chairCount(bb), 10, "10 chairs: 5 saxes, 4 trombones, the guitarist");
-  ok(E.houseNeeds(bb).some(n => n.id === "chair" && n.need === 10 && !n.over), "…asked of the house as 10 × Chair, with no over-count");
+  ok(E.chairsOf(bb, by(p => p.roleId === "keys")[0]) === 1 && E.chairsOf(bb, by(p => p.roleId === "bass")[0]) === 0 && E.chairsOf(bb, by(p => p.roleId === "drums")[0]) === 0, "keys sit (always), bass stands, and the kit is the kit");
+  eq(E.chairCount(bb), 11, "11 chairs: 5 saxes, 4 trombones, the guitarist, the keys player");
+  ok(E.houseNeeds(bb).some(n => n.id === "chair" && n.need === 11 && !n.over), "…asked of the house as 11 × Chair, with no over-count");
   // labels: a row takes one side
   const g = E.diagramGeom(bb), LB = E.labelBoxes(bb, g);
   for (const row of [["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"], ["Tbn 2","Tbn 1","Tbn 3","Tbn 4"], ["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]]){
@@ -877,7 +877,10 @@ for (const t of E.TEMPLATES){
   ok(E.ROLES.filter(r => r.stance !== "object" && r.id !== "hornsection").every(r => r.w === 22 && r.d === 22), "every human being is the same size, 22 × 22");
   const combo = T("combo");
   eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "tenor")), 0, "a combo's tenor stands");
-  eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "trumpet")), 1, "…its trumpet sits, by role");
+  eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "trumpet")), 0, "…and its trumpet");
+  eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "keys")), 1, "…its keys player sits, as keyboard players always do");
+  for (const t of ["rock","vocals","duo"]){ const q = T(t); ok(q.positions.every(p => E.chairsOf(q, p) === (p.roleId === "keys" || p.roleId === "organ" ? 1 : 0)), t + ": everyone stands but the keys player"); }
+  eq(E.ROLES.filter(r => r.stance === "seated").map(r => r.id).join(","), "keys,organ", "the only seated roles are the keyboard players");
   const t = combo.positions.find(p => p.roleId === "tenor");
   E.setChairs(combo, t, 1);
   ok(t.chairs === 1 && E.chairsOf(combo, t) === 1, "+ chair seats a standing player");
@@ -895,7 +898,7 @@ for (const t of E.TEMPLATES){
   ok(/const n = chairsOf\(plot, pos\), cs = f\.w \+ 6;/.test(src) && /rx="3" fill="' \+ houseFill/.test(src), "a seated player is drawn on a square chair a little larger than the circle");
   ok(/data-chair=/.test(src) && (src.match(/− chair/g) || []).length >= 2, "− chair / + chair on the card and in the inspector");
   const saved = E.migratePlot(JSON.parse(JSON.stringify(bb)));
-  eq(E.chairCount(saved), 10, "chairs survive save and load");
+  eq(E.chairCount(saved), 11, "chairs survive save and load");
   // power strips and risers are gone
   ok(!E.VENUE.house.some(h => h.id === "power" || h.id === "riser"), "no power strip or riser in the palette");
   const old = JSON.parse(JSON.stringify(T("rock")));

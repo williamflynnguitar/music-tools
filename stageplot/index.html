@@ -440,9 +440,10 @@ function onFixture(plot, obj, x, y){
 
 /* ---- seated or standing ------------------------------------------ *
  * pos.chairs is how many chairs a player needs: 0 standing, 1 seated, 2 a
- * shared or double chair. Absent means the role's own stance (a seated
- * role gets 1), so nothing saved before this changes meaning. A big band
- * seats its saxes as well (makeFromParts). Chairs are counted for the
+ * shared or double chair. Absent means the role's own stance, and the only
+ * seated roles are the keyboard players (keys, organ) — everyone else
+ * stands in every configuration, except that a big band seats its saxes,
+ * trombones and guitarist (makeFromParts). Chairs are counted for the
  * house from the positions; they are never placed as objects.
  * ------------------------------------------------------------------ */
 function chairsOf(plot, pos){
@@ -671,8 +672,8 @@ const ROLES = [
   { id:"bass",      label:"Bass",             pick:"Electric bass",   short:"Bass",  family:"rhythm", grp:"bass",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bass", gearSide:"up", di:true },
   { id:"upright",   label:"Upright bass",     pick:"Upright bass",    short:"Upright",family:"rhythm",grp:"bass",   sub:1, stance:"standing", w:22, d:22, zone:"rhythm", backline:"bass", gearSide:"up", di:true },
   { id:"drums",     label:"Drums",            pick:"Drum kit",        short:"Drums", family:"rhythm", grp:"drums",  sub:0, stance:"object",   w:54, d:52, zone:"rhythm", backline:"kit" },   // the kit itself, no rug (B3)
-  { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"seated",   w:22, d:22, zone:"rhythm" },
-  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"standing", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", di:true },
+  { id:"perc",      label:"Percussion",       pick:"Percussion (aux)",short:"Perc",  family:"rhythm", grp:"drums",  sub:1, stance:"standing",   w:22, d:22, zone:"rhythm" },
+  { id:"keys",      label:"Keys",             pick:"Keys / piano",    short:"Keys",  family:"rhythm", grp:"keys",   sub:0, stance:"seated", w:22, d:22, zone:"rhythm", backline:"keys", gearSide:"down", di:true },
   { id:"organ",     label:"Organ",            short:"Organ", family:"rhythm", grp:"keys",   sub:1, stance:"seated",   w:22, d:22, zone:"rhythm", backline:"keys", backlinePrefer:"kb2", gearSide:"down", di:true },
   { id:"dj",        label:"DJ",               pick:"DJ / laptop",     short:"DJ",    family:"other",  grp:"keys",   sub:2, stance:"object",   w:48, d:24, zone:"rhythm", di:true },
   { id:"playback",  label:"Playback",         pick:"Backing track playback", short:"Track", family:"other", grp:"keys", sub:3, stance:"object", w:18, d:12, zone:"rhythm", di:true },
@@ -684,16 +685,16 @@ const ROLES = [
   { id:"clarinet",  label:"Clarinet",         short:"Cl",    family:"sax",    grp:"horn",   sub:4, stance:"standing", w:22, d:22, zone:"front" },
   { id:"flute",     label:"Flute",            short:"Fl",    family:"sax",    grp:"horn",   sub:5, stance:"standing", w:22, d:22, zone:"front" },
   // brass — low brass row, then high brass row
-  { id:"tuba",      label:"Tuba",             short:"Tuba",  family:"brass",  grp:"horn",   sub:6, stance:"seated",   w:22, d:22, zone:"front" },
-  { id:"btrombone", label:"Bass trombone",    short:"B.Tbn", family:"brass",  grp:"horn",   sub:7, stance:"seated",   w:22, d:22, zone:"front" },
-  { id:"trombone",  label:"Trombone",         short:"Tbn",   family:"brass",  grp:"horn",   sub:8, stance:"seated",   w:22, d:22, zone:"front" },
+  { id:"tuba",      label:"Tuba",             short:"Tuba",  family:"brass",  grp:"horn",   sub:6, stance:"standing",   w:22, d:22, zone:"front" },
+  { id:"btrombone", label:"Bass trombone",    short:"B.Tbn", family:"brass",  grp:"horn",   sub:7, stance:"standing",   w:22, d:22, zone:"front" },
+  { id:"trombone",  label:"Trombone",         short:"Tbn",   family:"brass",  grp:"horn",   sub:8, stance:"standing",   w:22, d:22, zone:"front" },
   { id:"hornsection",label:"Horn section",    pick:"Horn section (generic)", short:"Horns", family:"brass", grp:"horn", sub:9, stance:"standing", w:60, d:24, zone:"front" },
-  { id:"trumpet",   label:"Trumpet",          short:"Tpt",   family:"brass",  grp:"horn",   sub:10, stance:"seated",  w:22, d:22, zone:"front" },
-  { id:"flugel",    label:"Flugelhorn",       short:"Flug",  family:"brass",  grp:"horn",   sub:11, stance:"seated",  w:22, d:22, zone:"front" },
+  { id:"trumpet",   label:"Trumpet",          short:"Tpt",   family:"brass",  grp:"horn",   sub:10, stance:"standing",  w:22, d:22, zone:"front" },
+  { id:"flugel",    label:"Flugelhorn",       short:"Flug",  family:"brass",  grp:"horn",   sub:11, stance:"standing",  w:22, d:22, zone:"front" },
   // strings and everything else
   { id:"acoustic",  label:"Acoustic guitar",  short:"Ac gtr",family:"strings",grp:"guitar", sub:1, stance:"standing", w:22, d:22, zone:"front", di:true },
   { id:"violin",    label:"Violin",           short:"Vln",   family:"strings",grp:"strings",sub:0, stance:"standing", w:22, d:22, zone:"mid", di:true },
-  { id:"cello",     label:"Cello",            short:"Cello", family:"strings",grp:"strings",sub:1, stance:"seated",   w:22, d:22, zone:"mid", di:true },
+  { id:"cello",     label:"Cello",            short:"Cello", family:"strings",grp:"strings",sub:1, stance:"standing",   w:22, d:22, zone:"mid", di:true },
   { id:"harmonica", label:"Harmonica",        short:"Harp",  family:"other",  grp:"other",  sub:0, stance:"standing", w:22, d:22, zone:"front" },
 ];
 const ROLE_FALLBACK = { id:"other", label:"Other", short:"Other", family:"other", grp:"other", sub:9, stance:"standing", w:22, d:22, zone:"front" };
@@ -1136,12 +1137,12 @@ function makeFromParts(parts, deck, name){
     const spec = typeof what === "string" ? { roleId:what } : what;
     for (let i = 0; i < count; i++) addPosition(plot, spec.roleId, { doubles:spec.doubles });
   }
-  // a big band (William, 2026-09-16): saxes and trombones sit, trumpets stand, the guitar sits; a combo's horns stand
+  // Who sits (William, 2026-09-16): keyboard players always (their role); in a big band the saxes,
+  // the trombones and the guitarist as well. Everyone else stands, in every configuration.
   const winds = plot.positions.filter(p => ["sax","brass"].includes(roleOf(plot, p).family));
   if (winds.length >= LAYOUT.hornsForBigBand) for (const p of plot.positions){
-    const r = roleOf(plot, p); if (p.chairs !== undefined) continue;
-    if (r.family === "sax" || r.id === "guitar") p.chairs = 1;
-    else if (r.id === "trumpet" || r.id === "flugel") p.chairs = 0;
+    const r = roleOf(plot, p);
+    if (p.chairs === undefined && (r.family === "sax" || ["guitar","trombone","btrombone"].includes(r.id))) p.chairs = 1;
   }
   autoLayout(plot, { force:true });
   return plot;
