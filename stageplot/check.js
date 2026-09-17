@@ -861,10 +861,20 @@ for (const t of E.TEMPLATES){
   const bb = T("bigband"), L = E.positionLabels(bb), by = f => bb.positions.filter(f);
   ok(by(p => p.roleId === "alto" || p.roleId === "tenor" || p.roleId === "bari").every(p => E.chairsOf(bb, p) === 1), "a big band's saxes sit");
   ok(by(p => p.roleId === "trombone").every(p => E.chairsOf(bb, p) === 1), "…and its trombones");
-  ok(by(p => p.roleId === "trumpet").every(p => E.chairsOf(bb, p) === 1), "…and its trumpets, by role");
-  ok(by(p => ["guitar","bass","keys"].includes(p.roleId)).every(p => E.chairsOf(bb, p) === 0) && E.chairsOf(bb, by(p => p.roleId === "drums")[0]) === 0, "the rhythm section stands, and the kit is the kit");
-  eq(E.chairCount(bb), 13, "13 chairs: 5 saxes, 4 trombones, 4 trumpets");
-  ok(E.houseNeeds(bb).some(n => n.id === "chair" && n.need === 13 && !n.over), "…asked of the house as 13 × Chair, with no over-count");
+  ok(by(p => p.roleId === "trumpet").every(p => E.chairsOf(bb, p) === 0), "…its trumpets stand (William, 2026-09-16)");
+  eq(E.chairsOf(bb, by(p => p.roleId === "guitar")[0]), 1, "…and its guitarist sits");
+  ok(by(p => ["bass","keys"].includes(p.roleId)).every(p => E.chairsOf(bb, p) === 0) && E.chairsOf(bb, by(p => p.roleId === "drums")[0]) === 0, "bass and keys stand, and the kit is the kit");
+  eq(E.chairCount(bb), 10, "10 chairs: 5 saxes, 4 trombones, the guitarist");
+  ok(E.houseNeeds(bb).some(n => n.id === "chair" && n.need === 10 && !n.over), "…asked of the house as 10 × Chair, with no over-count");
+  // labels: a row takes one side
+  const g = E.diagramGeom(bb), LB = E.labelBoxes(bb, g);
+  for (const row of [["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"], ["Tbn 2","Tbn 1","Tbn 3","Tbn 4"], ["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]]){
+    const sides = new Set(row.map(s => LB[bb.positions.find(x => L[x.id].short === s).id].side));
+    ok(sides.size === 1, row[0] + "'s row labels all on one side (" + [...sides].join(",") + ")");
+  }
+  const spacing = Math.abs(by(p => L[p.id].short === "Tpt 1")[0].x - by(p => L[p.id].short === "Tpt 2")[0].x);
+  ok(spacing >= 36, "big band chairs are at least 36″ apart (" + spacing.toFixed(1) + "″)");
+  ok(E.ROLES.filter(r => r.stance !== "object" && r.id !== "hornsection").every(r => r.w === 22 && r.d === 22), "every human being is the same size, 22 × 22");
   const combo = T("combo");
   eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "tenor")), 0, "a combo's tenor stands");
   eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "trumpet")), 1, "…its trumpet sits, by role");
@@ -885,7 +895,7 @@ for (const t of E.TEMPLATES){
   ok(/const n = chairsOf\(plot, pos\), cs = f\.w \+ 6;/.test(src) && /rx="3" fill="' \+ houseFill/.test(src), "a seated player is drawn on a square chair a little larger than the circle");
   ok(/data-chair=/.test(src) && (src.match(/− chair/g) || []).length >= 2, "− chair / + chair on the card and in the inspector");
   const saved = E.migratePlot(JSON.parse(JSON.stringify(bb)));
-  eq(E.chairCount(saved), 13, "chairs survive save and load");
+  eq(E.chairCount(saved), 10, "chairs survive save and load");
   // power strips and risers are gone
   ok(!E.VENUE.house.some(h => h.id === "power" || h.id === "riser"), "no power strip or riser in the palette");
   const old = JSON.parse(JSON.stringify(T("rock")));

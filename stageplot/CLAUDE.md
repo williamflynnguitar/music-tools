@@ -210,6 +210,15 @@ instrument, add a row; nothing else in the file enumerates instruments.
 
 - `family` drives row packing (`voice`, `sax`, `brass`, `rhythm`, `strings`,
   `other`); `grp`/`sub` order a row; they are deliberately separate.
+- **The big band spreads out** (2026-09-16): `bigBandColumn` went from .465
+  to .39 so the section rows take more of the width, with the kit at .76
+  and the bass and keys packed toward the stage-right wall to make room;
+  `wedgeGap` went from 30″ to 44″ so a seated player's chair and label fit
+  between the row and its wedge.
+- **A row's labels take one side.** `labelBoxes()` groups players at the
+  same depth and, if any label would have to flip upstage, flips the whole
+  row (`positionLabelBox(…, force)`), so a section never reads with names
+  above some chairs and below others.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → a house guitar amp,
@@ -426,13 +435,18 @@ shared or double chair. Absent means the role's stance (`chairsOf()`: a
 seated role — trumpet, trombone, bass trombone, tuba, flugelhorn, perc,
 organ, cello — gets 1, the kit 0), so nothing saved before this changed
 meaning, and `setChairs()` removes the field when a player is back at the
-role's default. **A big band sits its saxes too**: `makeFromParts()` gives
-every sax a chair when the winds reach `hornsForBigBand`, so both the
-template and the counts builder come out seated; a combo's saxes stand.
-William's ruling for saxes and trombones; trumpets sit by role.
+role's default. **A big band is seated by William's rule** (2026-09-16):
+when the winds reach `hornsForBigBand`, `makeFromParts()` gives every sax
+and the guitarist a chair and stands the trumpets and flugelhorns, so the
+template and the counts builder agree; the trombones sit by role anyway.
+A combo's saxes stand and its brass sit by role. A big band asks for 10
+chairs.
 
 On the stage a seated player's circle sits on a square chair 6″ larger
 than the circle, so the corners show all round; two chairs draw two squares.
+**Every human being is 22″ × 22″** (William, the same day: "why are the
+trombone players bigger than the saxes?") — footprints are people, not
+horns; only gear and the horn-section group marker differ.
 The key has "standing player" and "seated". Every card on the Positions tab
 and the inspector carry **− chair / + chair** with the state in words
 ("standing", "1 chair", "2 chairs"). Chairs are never placed as objects:
@@ -665,7 +679,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 497 assertions: the role library, every template (builds,
+`node check.js` — 503 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
