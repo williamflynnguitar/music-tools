@@ -125,7 +125,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 /* center canvas */
 .canvaswrap{padding:12px 14px 40px;min-width:0}
 .canvashead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--bone-dim);letter-spacing:.05em}
-.deckwrap{background:#08151a;border:1px solid var(--line);border-radius:5px;padding:6px}
+.deckwrap{background:#08151a;border:1px solid var(--line);border-radius:5px;padding:6px;position:relative}
+.wnumbox{position:absolute;box-sizing:border-box;text-align:center;font-family:var(--mono);font-size:16px;font-weight:600;background:var(--ink);color:var(--bone);border:2px solid var(--brass);border-radius:4px;padding:2px 0;outline:none;z-index:3}
 svg.deck{display:block;width:100%;height:auto;touch-action:none}
 svg.deck{cursor:default}
 svg.deck text{cursor:inherit;user-select:none;-webkit-user-select:none}
@@ -2333,7 +2334,7 @@ function renderPanel(p){
         '<button class="btn sm" data-wdel="' + w.id + '" style="margin-left:auto">delete</button></header>' +
         (c ? '<p class="clashnote">' + esc(wedgeClashText(p, c)) + '</p>' : "") + '</div>');
     }
-    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>' + (p.wedges.length ? '<p class="note">Mix 1 is the tech\'s first priority. Type a number to renumber. Every mix needs its own number: two wedges on one number are marked here and on the stage until one is changed.</p>' : ""));
+    H.push('<button class="btn sm" data-house="wedge">+ wedge</button>' + (p.wedges.length ? '<p class="note">Mix 1 is the tech\'s first priority. Type a number here, or double-click the wedge on the stage, to renumber. Every mix needs its own number: two wedges on one number are marked here and on the stage until one is changed.</p>' : ""));
   }
   if (S.tab === "mics"){
     const sel = find(p, S.sel), selPos = isPosition(sel) ? sel : null, selItem = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
@@ -2594,15 +2595,51 @@ function clearStage(){
   if (!confirm("Clear the stage?\n\nEvery position, piece of gear, mic and wedge comes off. Undo brings them back.")) return;
   commit(() => { const q = plot(); q.positions = []; q.items = []; q.wedges = []; S.sel = null; });
 }
+/* Renumber a wedge on the stage itself: double-click (double-tap) it and a
+   number box opens over it (William, 2026-09-16). Enter or clicking away
+   keeps the number, Escape drops it; the same setWedgeNumber as the Wedges
+   tab, so a duplicate shows up red the same way. The double press is
+   counted by hand in pointerdown, not with the dblclick event: the stage
+   re-renders after every press, so the second click never lands on the
+   same element, and a double-tap on a phone does not fire dblclick anyway. */
+function editWedgeOnStage(g, w){
+  const wrap = $("deck").parentElement;
+  const old = wrap.querySelector(".wnumbox"); if (old) old.remove();
+  const gr = g.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+  const box = document.createElement("input");
+  box.className = "wnumbox"; box.type = "text"; box.inputMode = "numeric"; box.pattern = "[0-9]*"; box.value = w.number;
+  box.title = "mix number — Enter keeps it, Esc drops it";
+  const bw = Math.max(44, gr.width * .9), bh = Math.max(30, gr.height * .8);
+  box.style.left = (gr.left - wr.left + (gr.width - bw) / 2) + "px"; box.style.top = (gr.top - wr.top + (gr.height - bh) / 2) + "px";
+  box.style.width = bw + "px"; box.style.height = bh + "px";
+  let done = false;
+  const finish = keep => {
+    if (done) return; done = true;
+    const v = box.value; box.remove();
+    if (keep) commit(() => { const q = plot(), ww = find(q, w.id); if (ww) setWedgeNumber(q, ww, v); });
+  };
+  box.addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); finish(true); } else if (e.key === "Escape"){ e.preventDefault(); finish(false); } e.stopPropagation(); });
+  box.addEventListener("blur", () => finish(true));
+  box.addEventListener("pointerdown", e => e.stopPropagation());
+  wrap.appendChild(box); box.focus(); box.select();
+}
+let lastPress = { id:null, t:0 };   // the previous press on the stage, for the double press that renumbers a wedge. Outside wireCanvas: the stage is rebuilt and re-wired after every press
 function wireCanvas(){
   const svg = $("deck");
   svg.addEventListener("pointerdown", e => {
     const del = e.target.closest("g[data-del]");
     if (del){ e.preventDefault(); commit(() => removeObject(plot(), del.dataset.del)); return; }
     const g = e.target.closest("g[data-id]");
-    if (!g){ if (S.sel){ S.sel = null; render(); } return; }
+    if (!g){ if (S.sel){ S.sel = null; render(); } lastPress = { id:null, t:0 }; return; }
     const p = plot(), id = g.dataset.id, obj = find(p, id);
     if (!obj) return;
+    const now = performance.now(), twice = lastPress.id === id && now - lastPress.t < 450;
+    lastPress = { id, t:now };
+    if (twice && !obj.kind && !isPosition(obj) && !S.readOnly){   // a wedge pressed twice: renumber it in place
+      e.preventDefault(); lastPress = { id:null, t:0 };
+      editWedgeOnStage(svg.querySelector('g[data-id="' + id + '"]:not([data-abs])') || g, obj);
+      return;
+    }
     S.sel = id;
     svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
     svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => el.classList.add("sel"));
@@ -2752,7 +2789,7 @@ function helpSections(){
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
     ["The drum kit", 'The kick faces the audience, marked (kick). The open circle upstage of it is the drummer, labelled like every other player. Drums are drawn thick and filled, cymbals thin and open. Select the kit to say whether it is the house kit or your own.'],
     ["Microphones", 'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI. Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
-    ["Monitor wedges", 'Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — type a number on the <b>Wedges</b> tab to renumber. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
+    ["Monitor wedges", 'Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
     ["Sending it", '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.'],
   ];
 }

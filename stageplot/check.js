@@ -786,6 +786,11 @@ for (const t of E.TEMPLATES){
   ok(/<input type="text" inputmode="numeric" pattern="\[0-9\]\*" data-wnum=/.test(src) && /<input type="text" inputmode="numeric" pattern="\[0-9\]\*" id="iWedgeNum"/.test(src), "…as a plain box you type into, not a spinner");
   ok(!/type="number"[^>]*wnum|type="number"[^>]*iWedgeNum/.test(src), "…nowhere a number spinner");
   ok(!/they swap\b|the two swap\b/.test(src), "…and nothing on the page still promises a swap");
+  ok(/twice = lastPress\.id === id && now - lastPress\.t < 450/.test(src) && /function editWedgeOnStage\(g, w\)/.test(src) && /setWedgeNumber\(q, ww, v\)/.test(src), "pressing a wedge on the stage twice opens a number box over it, on the same setWedgeNumber (William, 2026-09-16)");
+  ok(/if \(twice && !obj\.kind && !isPosition\(obj\) && !S\.readOnly\)/.test(src) && !/addEventListener\("dblclick"/.test(src), "…wedges only, not on a shared read-only plot, and counted by hand — the stage re-renders between the two clicks, so dblclick never fires");
+  ok(/^let lastPress = \{ id:null, t:0 \};/m.test(src), "…and the press memory lives outside wireCanvas, which runs again after every render");
+  ok(/e\.key === "Escape"\)\{ e\.preventDefault\(\); finish\(false\);/.test(src) && /addEventListener\("blur", \(\) => finish\(true\)\)/.test(src), "…Escape drops the edit, Enter or clicking away keeps it");
+  ok(/double-click a wedge on the stage/.test(src) && /or double-click the wedge on the stage/.test(src), "…and the help and the Wedges tab both say so");
 }
 
 /* ---- 19h. deleting is visible (A4, Tim Shade 2026-09-16) ---- */
