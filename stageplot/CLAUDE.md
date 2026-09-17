@@ -388,9 +388,9 @@ Same instrumentation always yields the same layout; `check.js` asserts it.
 
 `VENUE.fixtures` — two PA columns, ground-stacked, on the deck at the
 downstage edge a foot inboard of the corner truss posts (Tim's photo), and
-two shallow stairs: downstage on the stage-left edge, upstage on the back
-edge at stage right (see "The stairs are shallow"; "does not need to be
-100%"). They exist so acts stop
+two shallow stairs on the side edges: downstage on the stage-left edge,
+upstage on the stage-right edge near the back (see "The stairs are
+shallow"; "does not need to be 100%"). They exist so acts stop
 putting gear on top of them. `venueFixtures(plot)` returns them for a plot on
 the venue's deck and nothing for any other size, because another size is
 another room. Drawn hatched with a label, `pointer-events="none"`, keyed as
@@ -461,9 +461,10 @@ a 17-piece big band's link is about 1 KB (2.8 KB uncompressed).
 
 What a staircase takes from the deck is a one-foot landing strip on the
 edge, three or four treads wide; the steps go down off the deck. So
-`stairs-dsl` is 12″ × 42″ on the stage-left edge, downstage of the middle,
-and `stairs-usr` is 42″ × 12″ on the back edge at stage right (`steps:true`
-draws them ruled as treads, the vertical one's label reading up its length).
+`stairs-dsl` is 12″ × 42″ on the stage-left edge about 8′ from the front,
+and `stairs-usr` is 12″ × 42″ on the stage-right edge just below the back
+corner — both side edges, from William's marks (`steps:true` draws them
+ruled as treads, a vertical strip's label reading up its length).
 `onFixture()` refuses a drag or an arrow nudge that would put anything on a
 fixture — the PA and the stairs are not floor — and the layout engine never
 places there either.

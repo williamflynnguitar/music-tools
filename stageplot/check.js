@@ -776,12 +776,12 @@ for (const t of E.TEMPLATES){
   ok(pa.every(f => E.rectOf(f, p).y0 === 0), "the PA columns stand at the downstage edge");
   ok(pa[0].x < D.w / 3 && pa[1].x > D.w * 2 / 3, "…one at each side");
   const dsl = E.rectOf(fx.find(f => f.id === "stairs-dsl"), p), usr = E.rectOf(fx.find(f => f.id === "stairs-usr"), p);
-  ok(dsl.x0 === 0 && dsl.y1 < D.d / 2 && usr.y1 === D.d && usr.x0 > D.w / 2, "the downstage stairs are on the stage-left edge, the upstage stairs on the back edge at stage right");
-  ok(dsl.w <= 12 && usr.d <= 12 && dsl.d >= 36 && usr.w >= 36, "…both a shallow strip, a foot deep and three or four treads wide (update 2)");
+  ok(dsl.x0 === 0 && dsl.y1 < D.d / 2 && usr.x1 === D.w && usr.y0 > D.d / 2, "the downstage stairs are on the stage-left edge, the upstage stairs on the stage-right edge toward the back");
+  ok(dsl.w <= 12 && usr.w <= 12 && dsl.d >= 36 && usr.d >= 36, "…both a shallow strip, a foot deep and three or four treads wide (update 2)");
   ok(fx.filter(f => f.steps).length === 2 && /f\.steps/.test(src) && /rotate\(-90 /.test(src.slice(src.lastIndexOf("for (const f of venueFixtures(plot)){"), src.lastIndexOf("for (const f of venueFixtures(plot)){") + 1600)),
      "…drawn ruled as treads, the vertical one's label reading up its length");
   const walker = E.addPosition(p, "voice");
-  ok(E.onFixture(p, walker, 6, 63) && E.onFixture(p, walker, 243, 234) && E.onFixture(p, walker, 24, 12), "a player dropped on the stairs or the PA is refused");
+  ok(E.onFixture(p, walker, 6, 96) && E.onFixture(p, walker, 282, 207) && E.onFixture(p, walker, 24, 12), "a player dropped on the stairs or the PA is refused");
   ok(!E.onFixture(p, walker, 144, 120), "…and the middle of the deck is fine");
   ok(/onFixture\(p, obj, x, y\)\) return;/.test(src) && /onFixture\(p, sel, sel\.x \+ dx, sel\.y \+ dy\)\) return;/.test(src), "…both the drag and the arrow keys check it");
   for (const t of E.TEMPLATES){

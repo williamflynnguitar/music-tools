@@ -415,13 +415,15 @@ const VENUE = {
      on the deck at the downstage edge, a foot inboard of the corner truss
      posts (his photo). The stairs are shallow: what they take from the deck
      is a one-foot landing strip on the edge, three or four treads wide, and
-     the steps go down off the deck (William, update 2). Downstage stairs on
-     the stage-left edge; upstage stairs on the back edge, stage right. */
+     the steps go down off the deck (William, update 2). Both are on the
+     side edges: the downstage pair on the stage-left edge about 8′ from the
+     front, the upstage pair on the stage-right edge just below the back
+     corner (William's marks on the diagram, 2026-09-16). */
   fixtures: [
     { id:"pa-sl",      label:"PA",     w:24, d:24, x:24,  y:12 },                 // downstage left
     { id:"pa-sr",      label:"PA",     w:24, d:24, x:264, y:12 },                 // downstage right
-    { id:"stairs-dsl", label:"stairs", w:12, d:42, x:6,   y:63,  steps:true },    // on the stage-left edge, downstage of the middle
-    { id:"stairs-usr", label:"stairs", w:42, d:12, x:243, y:234, steps:true },    // on the back edge, stage right
+    { id:"stairs-dsl", label:"stairs", w:12, d:42, x:6,   y:96,  steps:true },    // on the stage-left edge, 8′ from the front
+    { id:"stairs-usr", label:"stairs", w:12, d:42, x:282, y:207, steps:true },    // on the stage-right edge, just below the back corner
   ],
 };
 /* The fixtures, for this plot: the venue's if the plot is on the venue's
@@ -805,7 +807,7 @@ function slClearance(plot, y, half){
   let x = 0;
   for (const f of venueFixtures(plot)){
     const r = rectOf(f, plot);
-    if (r.x0 <= 1 && r.y1 > y - half && r.y0 < y + half) x = Math.max(x, r.x1 + 4);
+    if (r.x0 <= 1 && r.y1 > y - half && r.y0 < y + half) x = Math.max(x, r.x1 + 4 + 12);   // a chair centre: half a chair past the fixture, plus a gap
   }
   return x;
 }
