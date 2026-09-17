@@ -398,7 +398,7 @@ for (const t of E.TEMPLATES){
 {
   const compare = (name, v1, want) => {
     const p = E.migratePlot(v1);
-    eq(p.schemaVersion, 3, name + ": migrates to the current schema");
+    eq(p.schemaVersion, 4, name + ": migrates to the current schema");
     eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.n)), JSON.stringify(want.monitors.map(m => m[0])), name + ": same wedges");
     const gear = h => !["di","micstand","mic","chair"].includes(h[0]);   // stands were counted off the input list; mics and DIs are objects now; chairs are new
     eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need]).filter(gear)), JSON.stringify(want.house.filter(gear).map(h => [h[0], h[1]])), name + ": same house equipment");
@@ -438,7 +438,7 @@ for (const t of E.TEMPLATES){
   if (!files.length) say("no sample plots in samples/ — they are local-only, see CLAUDE.md");
   for (const f of files){
     const p = E.migratePlot(readSample(f));
-    eq(p.schemaVersion, 3, "samples/" + f + " loads at the current schema");
+    eq(p.schemaVersion, 4, "samples/" + f + " loads at the current schema");
     ok(p.positions.length > 0, "samples/" + f + ": " + p.positions.length + " positions");
   }
 }
@@ -729,7 +729,7 @@ for (const t of E.TEMPLATES){
   tp.inputs = [{ source:"Trumpet", type:"mic" }];
   old.sections = { sax:{ on:true, mics:2 } };
   const p = E.migratePlot(old);
-  eq(p.schemaVersion, 3, "an old file migrates to schema 3");
+  eq(p.schemaVersion, 4, "an old file migrates to the current schema, 4");
   eq(E.micsOn(p).map(m => m.label).sort().join("|"), "Kick|OH L|Snare|Trumpet|sax section 1|sax section 2", "its mics are mics on the deck, labelled as the inputs were");
   eq(E.disOn(p).map(d => d.label).sort().join("|"), "Keys L|Keys R", "a stereo DI is two DI boxes");
   ok(p.positions.every(x => !("inputs" in x)) && !("sections" in p), "…and no position carries inputs, no plot carries sections");
@@ -781,6 +781,36 @@ for (const t of E.TEMPLATES){
   ok(/const used = h\.id === "musicstand" \? placed \+ standCount\(p\) : placed;/.test(src), "…music stands count the players' own stands against the house");
   ok(!/\(cap - used\) \+ " left<\/span>/.test(src), "…the old bare count is gone from every list");
   ok(/objectRef\(r\) === h\.id && !kitIsByo\(p, pos\)/.test(src), "…the house kit is on the deck through the drums position, unless the band brings its own");
+}
+
+/* ---- 19f3. the wedge's wide end is the grille and faces the player (William, 2026-09-16) ---- */
+{
+  const W = new Function(src.slice(src.indexOf("function wedgePath("), src.indexOf("function legendHTML(")) + "; return { wedgePath, wedgeGrille };")();
+  const pts = W.wedgePath(22, 18).match(/-?[\d.]+,-?[\d.]+/g).map(s => s.split(",").map(Number));
+  const top = pts.filter(q => q[1] < 0), bottom = pts.filter(q => q[1] > 0);
+  const width = a => Math.abs(a[0][0] - a[1][0]);
+  ok(width(top) > width(bottom) && Math.abs(width(top) - 22) < .01, "the wide end — the grille, where the sound comes out — is local up (" + width(top) + "″ up, " + width(bottom).toFixed(1) + "″ back)");
+  eq((W.wedgeGrille(22, 18, "#000", 1).match(/<path /g) || []).length, 5, "five grille lines on the face");
+  ok(/wedgeGrille\(def\.w, def\.d, stroke\(w\), 1\)/.test(src), "…drawn on every wedge on the stage");
+  ok(/wedge:   '<path d="M7,14\.5L15,14\.5L18,2L4,2Z"/.test(src) && /the lined end is the grille, facing the player/.test(src), "…and in the key, which says what it is");
+  // every preset: every dealt wedge's grille faces the group it serves
+  for (const t of E.TEMPLATES){
+    const p = T(t.id);
+    E.monitorGroups(p).forEach((g, i) => {
+      const w = p.wedges[i]; if (!w) return;
+      const cx = g.list.reduce((a, q) => a + q.x, 0) / g.list.length, cy = g.list.reduce((a, q) => a + q.y, 0) / g.list.length;
+      const th = (w.rot || 0) * Math.PI / 180, tx = -Math.sin(th), ty = Math.cos(th);   // local up, turned by rot, in stage inches (x stage-left, y upstage)
+      ok(tx * (cx - w.x) + ty * (cy - w.y) > 0, t.name + ": mix " + w.number + " (" + g.name + ") faces its players (rot " + w.rot + ")");
+    });
+  }
+  // schema 4: a saved wedge keeps the direction it was drawn in; the engine's rot-0 downstage wedge now faces its players
+  const old = JSON.parse(JSON.stringify(T("combo"))); old.schemaVersion = 3;
+  old.wedges = [0, 45, 90, 180, 270].map((r, i) => ({ id:"w" + i, number:i + 1, x:50 + i * 30, y:100, rot:r, moved:true }));
+  const q = E.migratePlot(old);
+  eq(q.wedges.map(w => w.rot).join(","), "0,225,270,0,90", "migrating: 0 stays, everything else turns half round");
+  eq(q.schemaVersion, 4, "…and the plot is schema 4");
+  eq(E.blankPlot().schemaVersion, 4, "a new plot is schema 4");
+  ok(/The wide end with the lines is the grille, where the sound comes out/.test(src), "the help says which end the sound comes out of");
 }
 
 /* ---- 19g. renumbering wedges (A1, Tim Shade 2026-09-16) ---- */

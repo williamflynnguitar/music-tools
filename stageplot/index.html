@@ -1102,7 +1102,7 @@ function wedgeSpot(plot, list){
     const inside = out > Math.min.apply(null, xs) && out < Math.max.apply(null, xs);
     x = inside ? clampIn(away > 0 ? Math.min.apply(null, xs) - 26 : Math.max.apply(null, xs) + 26, 14, D.w - 14) : out;
     y = clampIn(cy, 14, D.d - 14);
-    rot = x > cx ? 270 : 90;
+    rot = x > cx ? 90 : 270;                                // the grille (local up) turned toward the section: 90 turns it to page right, which is toward smaller x
   }
   return { x, y, rot };
 }
@@ -1176,7 +1176,7 @@ function scheduleLines(p){
 }
 function blankPlot(deck, name){
   const D = deck || { widthFt:VENUE.deck.widthFt, depthFt:VENUE.deck.depthFt };
-  return { schemaVersion:3, id:nextIdE("plot"), name:name || "New plot", templateId:"",
+  return { schemaVersion:4, id:nextIdE("plot"), name:name || "New plot", templateId:"",
     director:"", date:"", showName:"", notes:"", printNames:true,
     soundcheckDate:"", soundcheck:"", soundcheckOrder:null,   // the soundcheck: day, when the block starts, place in it
     startTime:"", setOrder:null,                                // the performance: date is above; when it starts, place in it
@@ -1470,7 +1470,7 @@ function legendKeys(plot){
   has("player",  "standing player", pos.some(p => stance(p) !== "object" && chairsOf(plot, p) === 0));
   has("seated",  "seated", pos.some(p => chairsOf(plot, p) > 0));
   has("stand",   "music stand", pos.some(p => standsOf(plot, p) > 0) || plot.items.some(i => i.kind === "house" && i.ref === "musicstand"));
-  has("wedge",   "wedge, numbered by mix", plot.wedges.length);
+  has("wedge",   "wedge, numbered by mix; the lined end is the grille, facing the player", plot.wedges.length);
   has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
   has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo") || pos.some(p => kitIsByo(plot, p)));
   has("mic",     "mic on a stand", micsOn(plot).length);
@@ -1706,6 +1706,15 @@ function migratePlot(p){
   if ("skipped" in p){ const list = Array.isArray(p.skipped) ? p.skipped.filter(x => SKIPPABLE.includes(x)) : []; if (list.length) p.skipped = list; else delete p.skipped; }
   for (const pos of p.positions) delete pos.wedgeId;
   if (!p.schemaVersion || p.schemaVersion < 3) placeInputs(p);          // per-player inputs become mics and DI boxes on the deck
+  if (p.schemaVersion < 4){
+    /* Schema 4 (2026-09-16): the wedge's wide end is the grille and is drawn
+       at local up; before, the narrow end was up. A saved wedge keeps the
+       direction it was DRAWN in — its rot turns half round — except one at
+       rot 0, the engine's downstage placement, which faced the audience as
+       drawn and nobody meant that: it stays 0 and now faces its players. */
+    for (const w of p.wedges) w.rot = (w.rot || 0) === 0 ? 0 : ((w.rot || 0) + 180) % 360;
+    p.schemaVersion = 4;
+  }
   for (const k of ["sections","sectionsIncludeUnmiked","channelOrder","ampProfile"]) delete p[k];   // the input list, gone 2026-09-16
   return p;
 }
@@ -1779,9 +1788,23 @@ function micGlyph(cx, cy, r, ink, fill){
   return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"/>' +
          '<path d="M' + (+cx).toFixed(1) + ',' + (cy + r * .6).toFixed(1) + 'v' + (r * 1.4).toFixed(1) + '" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" fill="none"/>';
 }
-function wedgePath(w, d){                              // trapezoid, throw face toward the top
-  const x = -w/2, y = -d/2, t = w * .62;
-  return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
+/* A wedge in plan: a trapezoid whose WIDE end is the grille, where the sound
+   comes out — a real wedge is widest at the face and tapers to the back
+   (William, 2026-09-16). The grille is local up, so at rot 0 it faces
+   upstage, at the player a downstage wedge serves. Until 2026-09-16 the
+   narrow end was up, so a downstage wedge faced the audience while a side
+   wedge faced its section, and the two read as pointing different ways.
+   wedgeGrille draws the lines on the face, so the direction is on the
+   page and not a convention. */
+function wedgePath(w, d){
+  const x = -w/2, y = -d/2, t = w * .62;               // t: the narrow back
+  return "M" + (x + (w - t)/2) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + (y + d) + " L" + (x + w) + "," + y + " L" + x + "," + y + " Z";
+}
+function wedgeGrille(w, d, col, sw){
+  const y0 = -d/2 + 1.6, y1 = -d/2 + 4.6, n = 5, span = w * .62;
+  let out = "";
+  for (let i = 0; i < n; i++){ const gx = (-span/2 + span * i / (n - 1)).toFixed(1); out += '<path d="M' + gx + ',' + y0.toFixed(1) + 'V' + y1.toFixed(1) + '" stroke="' + col + '" stroke-width="' + sw + '" stroke-linecap="round"/>'; }
+  return out;
 }
 function legendHTML(plot, print){
   const ink = print ? "#000" : "#e8e1d1", dim = print ? "#555" : "#a89f8c";
@@ -1790,7 +1813,7 @@ function legendHTML(plot, print){
     player:  '<circle cx="11" cy="8" r="6.2" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
     seated:  '<rect x="2.5" y="0.5" width="17" height="15" rx="2" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><circle cx="11" cy="8" r="5.6" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
     stand:   '<circle cx="11" cy="6" r="4.6" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/><rect x="6.5" y="12.6" width="9" height="2.4" rx=".8" fill="' + ink + '"/>',
-    wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
+    wedge:   '<path d="M7,14.5L15,14.5L18,2L4,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>' + ["7","9","11","13","15"].map(x => '<path d="M' + x + ',3.2V5.2" stroke="' + ink + '" stroke-width=".9" stroke-linecap="round"/>').join("") + '<text x="11" y="12.8" font-size="7" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
     house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
     mic:     micGlyph(11, 8, 4.2, ink, fill),
@@ -1870,9 +1893,9 @@ function diagramSVG(plot, opt){
   // wedges first, so people and gear sit on top
   for (const w of plot.wedges){
     const def = houseDef("wedge");
-    draw(w, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + stroke(w) + '" stroke-width="' + swid(w) + '"' + bad(w) + '/>');
-    const wf = fitLabel(g, String(w.number), def.w * .6, def.d - 4, DRAW.labelPt) || { pt:DRAW.smallPt };   // the mix number, as big as the wedge holds
-    labelled(w, g.sx(w.x), g.sy(w.y), ts(String(w.number), g.sx(w.x), g.sy(w.y) + g.pt(wf.pt) * .36, wf.pt));
+    draw(w, '<path d="' + wedgePath(def.w, def.d) + '" fill="' + houseFill + '" stroke="' + stroke(w) + '" stroke-width="' + swid(w) + '"' + bad(w) + '/>' + wedgeGrille(def.w, def.d, stroke(w), 1));
+    const wf = fitLabel(g, String(w.number), def.w * .5, def.d - 8, DRAW.labelPt) || { pt:DRAW.smallPt };   // the mix number, as big as the wedge holds below the grille
+    labelled(w, g.sx(w.x), g.sy(w.y), ts(String(w.number), g.sx(w.x), g.sy(w.y) + 1.5 + g.pt(wf.pt) * .36, wf.pt));
   }
   // backline and other gear
   for (const it of plot.items){
@@ -2801,7 +2824,7 @@ function helpSections(){
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
     ["The drum kit", 'The kick faces the audience, marked (kick). The open circle upstage of it is the drummer, labelled like every other player. Drums are drawn thick and filled, cymbals thin and open. Select the kit to say whether it is the house kit or your own.'],
     ["Microphones", 'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI. Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
-    ["Monitor wedges", 'Place each wedge where it goes. Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
+    ["Monitor wedges", 'Place each wedge where it goes. The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it. Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
     ["Sending it", '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.'],
   ];
 }
