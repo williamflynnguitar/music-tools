@@ -1819,7 +1819,7 @@ function sheetHTML(p, opt){
      printed, from which anyone with the PDF can Edit a copy. The sentence is
      the link — a real href, so it survives Save as PDF. The URL itself is not
      printed: a big band's runs to six lines of hash (William, 2026-09-16). */
-  if (link) H.push('<p class="foot under link"><a href="' + esc(link) + '">View or edit this plot online</a></p>');
+  if (link) H.push('<p class="foot under link"><a href="' + esc(link) + '" target="_blank" rel="noopener">View or edit this plot online</a></p>');   // a new tab: on the page itself a same-document hash change would not reload the app
   H.push('<p class="foot under">' + esc(VENUE.editNotice) + '</p>');
   return H.join("");
 }
@@ -2685,6 +2685,10 @@ window.addEventListener("drop", e => {
   if (f) f.text().then(t => loadJSON(t, f.name));
 });
 window.addEventListener("resize", () => { if (plot()) renderSheet(plot()); });
+/* A plot link arriving in an already-open tab (pasted into the address bar,
+   or the page's own link followed in place) is a same-document hash change,
+   which never re-runs init(): reload so it opens read-only like any other. */
+window.addEventListener("hashchange", () => { if (/^#[sj]=/.test(location.hash)) location.reload(); });
 
 /* ================= start ================= */
 (async function init(){

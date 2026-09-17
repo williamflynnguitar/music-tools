@@ -841,8 +841,9 @@ for (const t of E.TEMPLATES){
   ok(/data-skip=/.test(src) && /SKIPPABLE\.includes\(S\.tab\)/.test(src), "the nothing-here toggle is drawn on the skippable tabs only");
   ok(/body\.ro \.rail[^}]*display:none/.test(src), "…and the read-only view hides the rail, toggles included");
   // the printed link and the notice
-  ok(/<a href="' \+ esc\(link\) \+ '">View or edit this plot online<\/a>/.test(src), "the page prints the sentence as the link, not the URL");
-  const foot = src.slice(src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))"), src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))") + 700);
+  ok(/<a href="' \+ esc\(link\) \+ '" target="_blank" rel="noopener">View or edit this plot online<\/a>/.test(src), "the page prints the sentence as the link, not the URL, opening in a new tab");
+  ok(/addEventListener\("hashchange", \(\) => \{ if \(\/\^#\[sj\]=\/\.test\(location\.hash\)\) location\.reload\(\); \}\)/.test(src), "…and a plot hash arriving in an open tab reloads the app");
+  const foot = src.slice(src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))"), src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))") + 1200);
   ok(foot.indexOf("deliverLine(p)") < foot.indexOf("View or edit this plot online") && foot.indexOf("View or edit this plot online") < foot.indexOf("VENUE.editNotice"), "…deliver line, link, venue sentence, in that order");
   eq(E.VENUE.editNotice, "Somewhere Works may adjust placements and monitor assignments to fit the room.", "the venue sentence lives in VENUE");
   ok(/\.sheet \.foot\.link a\{color:#000;text-decoration:underline\}/.test(src), "…underlined, so it reads as a link on the page");
