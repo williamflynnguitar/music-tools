@@ -172,8 +172,7 @@ svg.deck .delx:hover circle{fill:#d4715f}
 .sheet .diagram svg{display:block;width:100%;height:auto}
 .sheet .foot{font-family:var(--psans);font-size:7.5pt;color:#444;margin-top:4px;border-top:.5pt solid #999;padding-top:3px}
 .sheet .foot.under{border-top:0;margin-top:1px;padding-top:0}
-.sheet .foot.link{font-family:var(--mono);font-size:6.5pt;word-break:break-all;overflow-wrap:anywhere}
-.sheet .foot.link a{color:#000;text-decoration:none}
+.sheet .foot.link a{color:#000;text-decoration:underline}
 .sheet .notes{white-space:pre-wrap}
 .sheet .empty{color:#666;font-style:italic}
 
@@ -1817,9 +1816,10 @@ function sheetHTML(p, opt){
   if (p.notes) H.push('<h2>Notes</h2><p class="notes">' + esc(p.notes) + '</p>');
   H.push('<p class="foot">' + esc(deliverLine(p)) + ' Prepared with the stage plot tool — williamflynnguitar.github.io/music-tools/stageplot/</p>');
   /* The page carries a link to itself: a read-only snapshot of the plot as
-     printed, from which anyone with the PDF can Edit a copy. A real href, so
-     it survives Save as PDF, and the URL in full, so it survives paper. */
-  if (link) H.push('<p class="foot under link">View or edit this plot online: <a href="' + esc(link) + '">' + esc(link) + '</a></p>');
+     printed, from which anyone with the PDF can Edit a copy. The sentence is
+     the link — a real href, so it survives Save as PDF. The URL itself is not
+     printed: a big band's runs to six lines of hash (William, 2026-09-16). */
+  if (link) H.push('<p class="foot under link"><a href="' + esc(link) + '">View or edit this plot online</a></p>');
   H.push('<p class="foot under">' + esc(VENUE.editNotice) + '</p>');
   return H.join("");
 }

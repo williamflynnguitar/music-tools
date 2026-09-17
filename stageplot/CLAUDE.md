@@ -438,12 +438,13 @@ the toggles with it.
 
 ## The page links to itself (update 2)
 
-Under the delivery line the page prints *View or edit this plot online:*
-followed by the plot's own read-only link, as a real `<a href>` (it survives
-Save as PDF) and as the URL in full in a small monospace face that wraps
-(it survives paper); then `VENUE.editNotice`, the one-place sentence that
-Somewhere Works may adjust placements and monitor assignments. The email
-text carries both too. The link is `encodeHash([p], 0)` — this one plot, a
+Under the delivery line the page prints *View or edit this plot online*,
+the sentence itself being the plot's own read-only link as a real `<a href>`
+(it survives Save as PDF; on paper the sentence is all that is left — the
+URL in full ran to six lines of hash for a big band, and William had it
+taken off the same day); then `VENUE.editNotice`, the one-place sentence
+that Somewhere Works may adjust placements and monitor assignments. The
+email text carries the URL in full, since there it is one line. The link is `encodeHash([p], 0)` — this one plot, a
 snapshot as printed; a reprint makes a new link — off `shareBase()`, which
 is the page's own address on http(s) and `APP_URL` on a file:// preview.
 Compressing is async, so `plotLink()` renders the sheet with the last link

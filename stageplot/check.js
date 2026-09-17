@@ -841,11 +841,11 @@ for (const t of E.TEMPLATES){
   ok(/data-skip=/.test(src) && /SKIPPABLE\.includes\(S\.tab\)/.test(src), "the nothing-here toggle is drawn on the skippable tabs only");
   ok(/body\.ro \.rail[^}]*display:none/.test(src), "…and the read-only view hides the rail, toggles included");
   // the printed link and the notice
-  ok(/View or edit this plot online: <a href="' \+ esc\(link\) \+ '">' \+ esc\(link\) \+ '<\/a>/.test(src), "the page prints the link as an href and in full");
+  ok(/<a href="' \+ esc\(link\) \+ '">View or edit this plot online<\/a>/.test(src), "the page prints the sentence as the link, not the URL");
   const foot = src.slice(src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))"), src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))") + 700);
   ok(foot.indexOf("deliverLine(p)") < foot.indexOf("View or edit this plot online") && foot.indexOf("View or edit this plot online") < foot.indexOf("VENUE.editNotice"), "…deliver line, link, venue sentence, in that order");
   eq(E.VENUE.editNotice, "Somewhere Works may adjust placements and monitor assignments to fit the room.", "the venue sentence lives in VENUE");
-  ok(/\.sheet \.foot\.link\{font-family:var\(--mono\);font-size:6\.5pt;word-break:break-all/.test(src), "…monospace, small, wrapping, never truncated");
+  ok(/\.sheet \.foot\.link a\{color:#000;text-decoration:underline\}/.test(src), "…underlined, so it reads as a link on the page");
   ok(/L\.push\("View or edit this plot online: " \+ link\)/.test(src) && /L\.push\(VENUE\.editNotice\)/.test(src), "the email carries the link and the sentence too");
   ok(/await ensureLink\(p\); renderSheet\(p\);/.test(src) && /emailText\(p, await ensureLink\(p\)\)/.test(src), "Print and Email wait for the link, so it matches what goes out");
   ok(/encodeHash\(\[p\], 0\)/.test(src), "the printed link is this one plot, not the whole session");
