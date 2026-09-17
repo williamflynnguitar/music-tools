@@ -183,7 +183,7 @@ existed load with them empty; `check.js` covers the v1 and v2 paths.
 ### Changing the deck
 
 Edit `VENUE.deck` — one line. (24 × 12 → 24 × 20 on 2026-09-16, D1: the
-diagram grew from 4.4″ to its 5.3″ cap and the page paid for it with what
+diagram grew from 4.4″ to its cap (5.3″ then, 5.0″ since chairs and stands added lines) and the page paid for it with what
 B1 and B2 removed — every template still prints on one page, the big band
 at 873 of 960 px.) Templates and the layout engine work in
 **fractions** of the deck, so every template re-lays out proportionally. Saved

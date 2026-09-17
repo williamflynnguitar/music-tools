@@ -1238,7 +1238,7 @@ function posText(o, plot){ return zoneOf(o, plot) + " (" + ftIn(o.x) + " from SL
 function diagramGeom(plot){
   const D = deckIn(plot), M = DRAW.margin, vbW = D.w + 2*M, vbH = D.d + M + DRAW.marginBottom;
   let widthIn = 7.5, h = widthIn * vbH / vbW;
-  const maxH = 5.3;
+  const maxH = 5.0;   // 5.3 until 2026-09-16: chairs and stands added two lines to House equipment, and the big band has to stay on one page
   if (h > maxH){ widthIn = maxH * vbW / vbH; h = maxH; }
   return { D, M, vbW, vbH, widthIn, heightIn:h, pt: p => p / 72 * vbW / widthIn,
            sx: x => M + (D.w - x), sy: y => M + (D.d - y) };
