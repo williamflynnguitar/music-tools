@@ -115,7 +115,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .chk input{accent-color:var(--brass)}
 .note{font-size:12.5px;color:var(--bone-dim);line-height:1.4;margin:6px 0}
 .wedgecard{border:1px solid var(--line);border-radius:4px;padding:8px 9px;margin-bottom:8px}
-.wedgecard header{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.wedgecard header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:5px}   /* wraps: in a narrow rail the buttons drop to their own line instead of hanging out of the card */
+.wedgecard header .role{flex:1 1 90px;min-width:0}
 .wedgecard header b{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--brass)}
 .wedgecard.clash{border-color:#c0392b}
 .wedgecard.clash input[data-wnum],.fld.clash input{border-color:#c0392b!important;color:#f3b8ac}
@@ -390,14 +391,14 @@ const VENUE = {
     // category, footprint in inches (w across the stage x d upstage), count.
     // bcat marks backline a role can be given: the order within a bcat is the
     // order the app hands them out, so the Korg goes before the Nord and the
-    // Voxes before the Deluxe Reverbs. No house item names a mic — the mics in
+    // VOX before the Deluxe Reverbs. No house item names a mic — the mics in
     // the photos live in the rehearsal rooms and do not come with the gear.
     { id:"kit",     label:"House drum kit",                                   short:"House kit",  cat:"drums",  bcat:"kit",    w:54, d:52 },  // no model: the house has several kits (Tim Shade, 2026-09-16)
     { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Bass rig",   cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
-    { id:"gtramp1", label:"VOX AC combo (black)",                             short:"VOX blk",    cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel. VOX in caps: "Vox" is the vocalist's chair (William, 2026-09-16)
-    { id:"gtramp2", label:"VOX AC combo (red)",                               short:"VOX red",    cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
-    { id:"gtramp3", label:"Fender Deluxe Reverb (1)",                         short:"Deluxe 1",   cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
-    { id:"gtramp4", label:"Fender Deluxe Reverb (2)",                         short:"Deluxe 2",   cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
+    // Guitar amps are two MODELS with a count, not four named boxes (William, 2026-09-16): the choice on
+    // offer is a VOX or a Fender, or bring your own. VOX in caps: "Vox" is the vocalist's chair.
+    { id:"vox",     label:"VOX AC combo",                                     short:"VOX",        cat:"amp",   bcat:"gtramp", w:27, d:11, count:2 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel; one black, one red
+    { id:"deluxe",  label:"Fender Deluxe Reverb",                             short:"Deluxe",     cat:"amp",   bcat:"gtramp", w:25, d:10, count:2 },  // confirmed
     { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg",       cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
     { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord",       cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
     { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
@@ -596,15 +597,22 @@ function placeDI(plot, it){
 }
 function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
 /* Which house items this plot has already spoken for. */
-function houseTaken(plot){
-  const s = new Set();
-  for (const it of plot.items) if (it.kind === "house" && it.ref) s.add(it.ref);
+/* How many of each house item this plot has already spoken for. A house item
+   is a MODEL with a count (two VOX AC combos, two Deluxe Reverbs, one Korg,
+   one Nord), so "taken" is a count against h.count, not a yes or no
+   (William, 2026-09-16; it was one named box per id until then). */
+function houseUsed(plot){
+  const n = {};
+  for (const it of plot.items) if (it.kind === "house" && it.ref) n[it.ref] = (n[it.ref] || 0) + 1;
   for (const pos of plot.positions){
     const r = roleOf(plot, pos);
-    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) s.add(ref); }
+    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) n[ref] = (n[ref] || 0) + 1; }
   }
-  return s;
+  return n;
 }
+function houseCount(h){ return h.count === undefined ? 1 : h.count; }
+function houseRoom(plot, id, used){ const h = houseDef(id); return !!h && ((used || houseUsed(plot))[id] || 0) < houseCount(h); }
+function houseTaken(plot){ const used = houseUsed(plot); return new Set(Object.keys(used).filter(id => !houseRoom(plot, id, used))); }   // the ids with none left
 /* The item already standing in for this player's backline. Matched on OWNER
    and CATEGORY, never on the exact id — otherwise a re-layout would undo a
    swap by not recognising the amp the director chose. */
@@ -618,34 +626,43 @@ function findBackline(plot, pos, role){
 function pickBackline(plot, role){
   const items = houseCat(backlineCat(role));
   if (!items.length) return null;
-  const taken = houseTaken(plot);
-  if (role.backlinePrefer && items.some(h => h.id === role.backlinePrefer) && !taken.has(role.backlinePrefer))
+  const used = houseUsed(plot);
+  if (role.backlinePrefer && items.some(h => h.id === role.backlinePrefer) && houseRoom(plot, role.backlinePrefer, used))
     return role.backlinePrefer;
-  const free = items.find(h => !taken.has(h.id));
+  const free = items.find(h => houseRoom(plot, h.id, used));
   return (free || items[0]).id;
 }
-/* Two players on one physical amp is always a mistake — every file saved
-   before backline went by category put both guitarists on gtramp1. Move the
-   later one onto the next free item of its category; leave it alone if the
-   category really is full, so a genuine over-count still prints. Only gear
-   that belongs to someone is touched: an extra amp placed by hand from the
-   House tab is a deliberate ask and keeps the box it names. */
+/* More players on one model than the house owns is a mistake the loader
+   fixes — every file saved before backline went by category put both
+   guitarists on gtramp1, now vox. Walk the owned gear in order and move
+   anything past its model's count onto the next model of its category with
+   room; leave it alone if the category really is full, so a genuine
+   over-count still prints. Only gear that belongs to someone is touched: an
+   extra amp placed by hand from the House tab is a deliberate ask and keeps
+   the box it names. */
 function settleBackline(plot){
-  const seen = new Set();
+  const seen = {};
+  const take = id => { seen[id] = (seen[id] || 0) + 1; };
   for (const pos of plot.positions){
     const r = roleOf(plot, pos);
-    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) seen.add(ref); }
+    if (r.stance === "object" && r.backline){ const ref = objectRef(r); if (ref) take(ref); }
   }
   for (const it of plot.items){
     if (it.kind !== "house" || !it.ref || !(it.ownerPositionIds || []).length) continue;
-    const cat = refCat(it.ref), items = cat ? houseCat(cat) : [];
-    if (items.length < 2 || !seen.has(it.ref)){ seen.add(it.ref); continue; }
-    const free = items.find(h => !seen.has(h.id));
+    const cat = refCat(it.ref), items = cat ? houseCat(cat) : [], def = houseDef(it.ref);
+    const room = h => (seen[h.id] || 0) < houseCount(h);
+    if (items.length < 2 || !def || room(def)){ take(it.ref); continue; }
+    const free = items.find(room);
     if (free) it.ref = free.id;
-    seen.add(it.ref);
+    take(it.ref);
   }
   return plot;
 }
+/* Ids that files saved before 2026-09-16 used for the guitar amps, when the
+   house listed four boxes: the two VOX combos and the two Deluxe Reverbs
+   are one model each now. */
+const AMP_IDS_BEFORE = { gtramp1:"vox", gtramp2:"vox", gtramp3:"deluxe", gtramp4:"deluxe" };
+function renameOldAmps(plot){ for (const it of plot.items) if (it.kind === "house" && AMP_IDS_BEFORE[it.ref]) it.ref = AMP_IDS_BEFORE[it.ref]; return plot; }
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
 const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller
@@ -1435,15 +1452,15 @@ function houseNeeds(plot){
   const multi = h => h.bcat && houseCat(h.bcat).length > 1;
   const out = VENUE.house.filter(h => counts[h.id]).map(h => ({
     id:h.id, label:h.label + (h.bcat === "kit" && kitLabels.length ? " — " + kitLabels.join(" / ") : ""),
-    need:counts[h.id], have:h.count === undefined ? 1 : h.count,
-    over:multi(h) ? false : counts[h.id] > (h.count === undefined ? 1 : h.count),
+    need:counts[h.id], have:houseCount(h),
+    over:multi(h) ? false : counts[h.id] > houseCount(h),
   }));
   for (const cat of Object.keys(BACKLINE_CATS)){
     const items = houseCat(cat);
     if (items.length < 2) continue;
-    const need = items.reduce((n, h) => n + (counts[h.id] || 0), 0);
-    if (need > items.length)
-      out.push({ id:"cat:" + cat, label:BACKLINE_CATS[cat], need:need, have:items.length, over:true, category:true });
+    const need = items.reduce((n, h) => n + (counts[h.id] || 0), 0), have = items.reduce((n, h) => n + houseCount(h), 0);
+    if (need > have)
+      out.push({ id:"cat:" + cat, label:BACKLINE_CATS[cat], need:need, have:have, over:true, category:true });
   }
   return out;
 }
@@ -1581,7 +1598,7 @@ function plotFileName(plot){
 }
 function todayISO(){ const d = new Date(); return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-"); }
 
-const V1_ITEM_ROLE = { kit:"drums", bassamp:"bass", gtramp1:"guitar", kb1:"keys", kb2:"organ",
+const V1_ITEM_ROLE = { kit:"drums", bassamp:"bass", gtramp1:"guitar", vox:"guitar", deluxe:"guitar", kb1:"keys", kb2:"organ",
   "byo-gtramp":"guitar", "byo-bassamp":"bass", "byo-keys":"keys", "byo-kit":"drums",
   "byo-laptop":"dj", "byo-acoustic":"acoustic", "byo-upright":"upright" };
 /* v1 stored named people plus items that carried the inputs. v2 stores
@@ -1641,7 +1658,7 @@ function migrateV1(p){
   out.wedges = (p.wedges || []).map(w => ({ id:w.id || nextIdE("w"), number:w.number, x:w.x, y:w.y, rot:w.rot || 0, moved:true }));
   out.songs = (p.songs || []).map(s => ({ title:s.title || "",
     onstage:[...new Set((s.onstage || []).map(id => posOf[id] && posOf[id].id).filter(Boolean))] }));
-  settleBackline(out);             // v1 gave every guitarist gtramp1; the house has four amps
+  settleBackline(renameOldAmps(out));   // v1 gave every guitarist gtramp1 — vox now; the house has two of those and two Deluxe Reverbs
   out.schemaVersion = 2;           // v2-shaped, inputs still on the positions: migratePlot() takes it the rest of the way
   return out;
 }
@@ -1701,7 +1718,7 @@ function migratePlot(p){
     delete pos.pkg; delete pos.pkgOverride;
   }
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; }
-  settleBackline(p);               // a file saved when every guitarist got gtramp1
+  settleBackline(renameOldAmps(p));     // a file saved when every guitarist got gtramp1, or when the amps were four named boxes
   for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
   if ("skipped" in p){ const list = Array.isArray(p.skipped) ? p.skipped.filter(x => SKIPPABLE.includes(x)) : []; if (list.length) p.skipped = list; else delete p.skipped; }
   for (const pos of p.positions) delete pos.wedgeId;
@@ -2358,7 +2375,7 @@ function renderPanel(p){
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["drums","amp","keys"].includes(h.cat))) H.push(houseRowHTML(p, h, labels, esc(h.label)));
-    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two Voxes. A row with a ✓ is already on the deck, and says whose it is. Select an amp or keyboard on the canvas to swap it for another. These buttons are only for an extra; when the house has none left, the button is off. No mics come with the house gear.</p>");
+    H.push("</div><p class='note'>Backline is added automatically, and each player gets one the plot isn\u2019t already using \u2014 two guitarists get the two VOX combos. The guitar amps are a VOX or a Fender Deluxe Reverb, two of each; anything else, the band brings (the <b>Band brings</b> tab). A row with a ✓ is already on the deck, and says whose it is. Select an amp or keyboard on the canvas to swap it for the other model. These buttons are only for an extra; when the house has none left, the button is off. No mics come with the house gear.</p>");
   }
   if (S.tab === "byo"){
     H.push("<h3>The band brings</h3><div class='plist'>");
@@ -2549,19 +2566,20 @@ function renderInspector(p){
       H.push('<div class="fld"><label>' + (sel.kind === "label" ? "Text" : "What is it (prints after “BYO:”)") + '</label><input type="text" id="iLabel"></div>');
     if (sel.kind === "house" && (sel.ref === "mic" || sel.ref === "di"))
       H.push('<div class="fld"><label>' + (sel.ref === "mic" ? "What it is for (vocal, tpt 1+2, snare, gtr amp)" : "What it is for (bass, keys L)") + '</label><input type="text" id="iLabel" placeholder="' + (sel.ref === "mic" ? "tpt 1+2" : "keys L") + '"></div>');
-    /* Swap one house amp or keyboard for another of the same kind. Picking one
-       another player has takes theirs and gives them this one, so no two
-       players are ever sent to the same box. */
+    /* Swap one house amp or keyboard for another model of the same kind. A
+       model with one left is simply taken; picking one the house has none
+       left of takes another player's and gives them this one, so no plot
+       asks for more of a model than the house owns. */
     if (sel.kind === "house" && def && def.bcat && houseCat(def.bcat).length > 1){
-      const mine = houseCat(def.bcat);
-      H.push('<div class="fld"><label>Which one (' + VENUE.shortName + ' has ' + mine.length + ')</label>' +
+      const mine = houseCat(def.bcat), used = houseUsed(p);
+      H.push('<div class="fld"><label>Which one</label>' +
         '<select id="iSwap" style="width:100%;background:var(--ink);border:1px solid var(--line);border-radius:3px;padding:5px">' +
         mine.map(h => {
-          const other = p.items.find(o => o.id !== sel.id && o.kind === "house" && o.ref === h.id);
+          const n = used[h.id] || 0, cap = houseCount(h);
           return '<option value="' + h.id + '"' + (h.id === sel.ref ? " selected" : "") + '>' + esc(h.label) +
-                 (other ? " — in use" : "") + '</option>';
+                 " — " + (cap > 1 ? n + " of " + cap + " in use" : n ? "in use" : "free") + '</option>';
         }).join("") + '</select>' +
-        '<p class="note">Keeps the player, the spot on the deck and anything you dragged.</p></div>');
+        '<p class="note">Keeps the player, the spot on the deck and anything you dragged. Or the band brings its own, on the <b>Band brings</b> tab.</p></div>');
     }
     if (sel.kind !== "label"){
       H.push('<div class="fld"><span class="lbl">Belongs to</span>');
@@ -2601,8 +2619,10 @@ function renderInspector(p){
   if ($("iSwap")) $("iSwap").onchange = () => mut(() => {
     const q = plot(), it = find(q, sel.id), want = $("iSwap").value, was = it.ref;
     if (want === was) return;
-    const other = q.items.find(o => o.id !== it.id && o.kind === "house" && o.ref === want);
-    if (other) other.ref = was;
+    if (!houseRoom(q, want)){                                   // none of that model left: trade with someone who has one
+      const other = q.items.find(o => o.id !== it.id && o.kind === "house" && o.ref === want);
+      if (other) other.ref = was;
+    }
     it.ref = want;
   });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {

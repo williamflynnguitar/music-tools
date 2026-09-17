@@ -81,9 +81,9 @@ counts and the deck are still placeholders.
 | `leadDays: null` | **ASSUMED** | null prints "as far in advance as possible"; a number prints "Please deliver by <date>" counted back from the performance date |
 | `kb1` — Korg SV-2S 88 | confirmed | ≈54″ × 15″ |
 | `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
-| `gtramp3`, `gtramp4` — Fender Deluxe Reverb (1) and (2) | confirmed | ≈25″ × 10″ |
+| `deluxe` — Fender Deluxe Reverb, `count:2` | confirmed | ≈25″ × 10″. One model with a count, not two named boxes (William, 2026-09-16) |
 | `bassamp` head — Markbass Little Mark Tube 800 | confirmed | ≈24″ × 20″ with the cab |
-| `gtramp1`, `gtramp2` — VOX AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart. Written VOX, in caps, everywhere it is drawn or printed: "Vox" is the vocalist's chair (William, 2026-09-16) |
+| `vox` — VOX AC combo, `count:2` | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel; one black, one red, but the plot never says which — the choice on offer is a VOX or a Fender, or bring your own (William, 2026-09-16). Written VOX, in caps, everywhere it is drawn or printed: "Vox" is the vocalist's chair |
 | `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
 | `mic` 8, `musicstand` 20, `di` 8, `chair` 40 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
@@ -107,10 +107,11 @@ left to be wired up by mistake.
 A role's `backline` names a **category** — `gtramp`, `keys`, `bass`, `kit`, the
 keys of `BACKLINE_CATS` — and each house item carries the category it belongs
 to as `bcat`. `pickBackline()` hands out the first item of that category the
-plot is not already using, so two guitarists get the black Vox and the red Vox
-rather than one amp booked twice, and two keys players get the Korg and the
-Nord. **The order inside `VENUE.house` is the preference order**: Korg before
-Nord, the Voxes before the Deluxe Reverbs. `organ` additionally carries
+plot has room on — a house item is a model with a `count`, so two guitarists
+get the two VOX combos and a third the Deluxe Reverb, and two keys players get
+the Korg and the Nord. **The order inside `VENUE.house` is the preference
+order**: Korg before Nord, VOX before the Deluxe Reverb. Files saved with the
+old four amp ids (`gtramp1`–`gtramp4`) are renamed on load (`renameOldAmps`). `organ` additionally carries
 `backlinePrefer:"kb2"`, so an organ still takes the Nord when it is free and
 old plots come out exactly as they did.
 
@@ -511,7 +512,7 @@ character, so a 22″ circle holds "Gtr" at 12pt and "Tenor / 1" at about
 8pt. **The kit is named once, on the kick** ("Drums", `kitPieces()`); it has
 no label of its own. A DI box is 10″, just enough for "DI" inside; a box
 with no source within 3′ says "DI · <instrument>" outside instead. House
-and band-brought gear carry a `short` sized to the shape ("VOX blk",
+and band-brought gear carry a `short` sized to the shape ("VOX",
 "Deluxe 1", "Korg", "Bass rig", "Gtr amp"); the full labels still print in
 House equipment and Musicians provide.
 

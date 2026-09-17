@@ -20,7 +20,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   diagramGeom, labelBoxes, positionLabelBox,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
-  pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
+  pickBackline, findBackline, settleBackline, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
@@ -250,7 +250,7 @@ for (const t of E.TEMPLATES){
   eq(p.wedges.length, 5, "…and five mixes");
   const needs = Object.fromEntries(E.houseNeeds(p).map(n => [n.id, n.need]));
   eq(needs.kit, 1, "the drums position implies the house kit");
-  eq(needs.gtramp1, 1, "the guitar implies a house amp");
+  eq(needs.vox, 1, "the guitar implies a house amp");
   eq(needs.kb1, 1, "keys implies a house keyboard — SW has no acoustic piano");
   eq(needs.bassamp, 1, "the bass implies the house rig");
   eq(E.diList(p).map(d => d.label).sort().join(","), "Bass,Keys", "two DI boxes on the deck — keys and bass — counted from the objects, not from an input list");
@@ -401,7 +401,8 @@ for (const t of E.TEMPLATES){
     eq(p.schemaVersion, 4, name + ": migrates to the current schema");
     eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.n)), JSON.stringify(want.monitors.map(m => m[0])), name + ": same wedges");
     const gear = h => !["di","micstand","mic","chair"].includes(h[0]);   // stands were counted off the input list; mics and DIs are objects now; chairs are new
-    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need]).filter(gear)), JSON.stringify(want.house.filter(gear).map(h => [h[0], h[1]])), name + ": same house equipment");
+    const amp = { gtramp1:"vox", gtramp2:"vox", gtramp3:"deluxe", gtramp4:"deluxe" };   // the v1 expectations name the old four amp boxes; a loaded file names the model
+    eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need]).filter(gear)), JSON.stringify(want.house.filter(gear).map(h => [amp[h[0]] || h[0], h[1]])), name + ": same house equipment");
     const diWant = (want.house.find(h => h[0] === "di") || [0, 0])[1];
     eq(E.disOn(p).length, diWant, name + ": the DI boxes v1 counted are DI boxes on the deck (" + diWant + ")");
     eq(E.micsOn(p).length, want.rows.filter(r => r[3] === "mic").length, name + ": every v1 mic channel is a mic on the deck");
@@ -473,7 +474,10 @@ for (const t of E.TEMPLATES){
 {
   const two = E.makeFromParts([["guitar",2],["keys",1],["bass",1],["drums",1]], null, "Two guitars");
   const ampsOf = q => q.items.filter(i => i.kind === "house" && E.refCat(i.ref) === "gtramp").map(i => i.ref).sort();
-  eq(ampsOf(two).join(", "), "gtramp1, gtramp2", "two guitarists get the two Voxes, not one amp booked twice");
+  eq(ampsOf(two).join(", "), "vox, vox", "two guitarists get the two VOX combos — one model, count 2 (William, 2026-09-16)");
+  const three = E.makeFromParts([["guitar",3],["bass",1],["drums",1]], null, "Three guitars");
+  eq(ampsOf(three).join(", "), "deluxe, vox, vox", "a third guitarist gets a Deluxe Reverb once both VOX are spoken for");
+  eq(E.VENUE.house.filter(h => h.bcat === "gtramp").map(h => h.id + ":" + h.count).join(" "), "vox:2 deluxe:2", "the house guitar amps are two models, two of each — a VOX or a Fender, or bring your own");
   ok(!E.houseNeeds(two).some(n => n.over), "…and nothing is over-counted");
   ok(!E.warnings(two).some(w => /amp/i.test(w.text)), "…and no amber warning about amps");
   for (const it of two.items.filter(i => E.refCat(i.ref) === "gtramp"))
@@ -485,7 +489,7 @@ for (const t of E.TEMPLATES){
   ok(over && / has 4\./.test(over.text), "…naming what the house has: " + (over ? over.text : "no warning"));
   ok(E.houseNeeds(five).some(n => n.id === "cat:gtramp" && n.need === 5 && n.have === 4),
      "…and the printed list says 5 needed of 4");
-  ok(!E.houseNeeds(five).some(n => n.id === "gtramp1" && n.over),
+  ok(!E.houseNeeds(five).some(n => n.id === "vox" && n.over),
      "…as a fact about the category, not a second warning about one amp");
 
   const keys2 = E.makeFromParts([["keys",2],["bass",1],["drums",1]], null, "Two keys");
@@ -502,12 +506,12 @@ for (const t of E.TEMPLATES){
   const sw = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Swap");
   const amp = sw.items.find(i => E.refCat(i.ref) === "gtramp");
   const owner = amp.ownerPositionIds[0];
-  amp.ref = "gtramp3"; amp.moved = true;
+  amp.ref = "deluxe"; amp.moved = true;
   const where = [amp.x, amp.y];
   E.autoLayout(sw, { force:true });
   const after = sw.items.filter(i => E.refCat(i.ref) === "gtramp");
   eq(after.length, 1, "a swap doesn't grow a second amp on re-layout");
-  eq(after[0].ref, "gtramp3", "…the Deluxe Reverb stays chosen");
+  eq(after[0].ref, "deluxe", "…the Deluxe Reverb stays chosen");
   eq(after[0].ownerPositionIds[0], owner, "…keeps its owner");
   eq(JSON.stringify([after[0].x, after[0].y]), JSON.stringify(where), "…and keeps the spot it was pinned to");
 
@@ -515,7 +519,13 @@ for (const t of E.TEMPLATES){
   const old = JSON.parse(JSON.stringify(two));
   for (const it of old.items) if (E.refCat(it.ref) === "gtramp") it.ref = "gtramp1";
   const loaded = E.migratePlot(old);
-  eq(ampsOf(loaded).join(", "), "gtramp1, gtramp2", "a saved file with both guitarists on gtramp1 loads onto two amps");
+  eq(ampsOf(loaded).join(", "), "vox, vox", "a saved file with both guitarists on gtramp1 loads onto the two VOX combos");
+  const four = JSON.parse(JSON.stringify(E.makeFromParts([["guitar",3],["bass",1],["drums",1]], null, "Old three")));
+  for (const it of four.items) if (E.refCat(it.ref) === "gtramp") it.ref = "gtramp1";
+  eq(ampsOf(E.migratePlot(four)).join(", "), "deluxe, vox, vox", "…and three on gtramp1 come back as two VOX and a Deluxe Reverb");
+  const named = JSON.parse(JSON.stringify(two));
+  named.items.filter(i => E.refCat(i.ref) === "gtramp").forEach((it, i) => it.ref = ["gtramp2","gtramp4"][i]);
+  eq(ampsOf(E.migratePlot(named)).join(", "), "deluxe, vox", "a file naming the red VOX and the second Deluxe Reverb loads as a VOX and a Deluxe Reverb");
   ok(!E.warnings(loaded).some(w => /amp/i.test(w.text)), "…and stops printing an over-count that is no longer true");
   eq(JSON.stringify(loaded.items.map(i => [i.x, i.y])), JSON.stringify(old.items.map(i => [i.x, i.y])),
      "…without moving anything");
@@ -526,15 +536,15 @@ for (const t of E.TEMPLATES){
   const src1 = dup.items.find(i => i.kind === "house" && i.ref === "gtramp1");
   dup.items.push(Object.assign({}, src1, { id:"i99", x:src1.x - 40 }));
   E.resetIds();
-  eq(ampsOf(E.migrateV1(dup)).join(", "), "gtramp1, gtramp2", "a v1 file with two of the same amp lands on two real amps");
+  eq(ampsOf(E.migrateV1(dup)).join(", "), "vox, vox", "a v1 file with two of the same amp lands on the two VOX combos");
 
   // house gear is shared between sets and never conflict-checked
   const a = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Set one");
   const b = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Set two");
-  for (const q of [a, b]) q.items.find(i => E.refCat(i.ref) === "gtramp").ref = "gtramp3";
+  for (const q of [a, b]) q.items.find(i => E.refCat(i.ref) === "gtramp").ref = "deluxe";
   ok(!E.warnings(a).length && !E.warnings(b).length,
      "two plots on the same Deluxe Reverb warn about nothing (" + E.warnings(a).concat(E.warnings(b)).map(w => w.text).join("; ") + ")");
-  ok(E.changeover(a, b).items.stay.some(x => /Deluxe Reverb \(1\)/.test(x)),
+  ok(E.changeover(a, b).items.stay.some(x => /Deluxe Reverb/.test(x)),
      "…and the changeover sheet says the amp stays put");
   ok(!/S\.plots/.test(src.slice(A, B)), "the engine cannot see the other plots in the session, so nothing can cross-check them");
 }
@@ -1104,8 +1114,8 @@ for (const t of E.TEMPLATES){
   const byoFits = E.BYO_KINDS.filter(b => b.id !== "byo-kit").map(b => [b.short, !!E.fitLabel(g, b.short, b.w - 2, b.d - 2, 9.5)]);
   eq(byoFits.filter(x => !x[1]).map(x => x[0]).join(","), "Laptop,Ac gtr", "the band-brought palette holds its names inside, but for the laptop and the acoustic guitar (logged fallbacks)");
   const amp = bb.items.find(i => E.refCat(i.ref) === "gtramp"), ab = E.insideBox(amp, bb);
-  ok(E.fitLabel(g, "VOX blk", ab.w, ab.h, 9.5) !== null, "VOX blk fits inside its amp — the short names are what the shape holds");
-  ok(E.VENUE.house.filter(h => h.bcat === "gtramp" && /vox/i.test(h.short)).every(h => /^VOX /.test(h.short) && /^VOX /.test(h.label)), "the VOX amps are VOX in caps, on the stage and in the list: Vox is the vocalist's chair (William, 2026-09-16)");
+  ok(E.fitLabel(g, "VOX", ab.w, ab.h, 9.5) !== null && E.fitLabel(g, "Deluxe", ab.w - 2, ab.h - 1, 9.5) !== null, "VOX and Deluxe fit inside their amps — the short names are what the shape holds");
+  ok(E.VENUE.house.filter(h => h.bcat === "gtramp" && /vox/i.test(h.short)).every(h => h.short === "VOX" && /^VOX /.test(h.label)), "the VOX amps are VOX in caps, on the stage and in the list: Vox is the vocalist's chair (William, 2026-09-16)");
   const kb = bb.items.find(i => E.refCat(i.ref) === "keys"), kbb = E.insideBox(kb, bb);
   ok(kbb.w < kbb.h && E.fitLabel(g, "Korg", kbb.w, kbb.h, 9.5) !== null, "Korg fits upright inside the vertical keyboard");
   for (const t of E.TEMPLATES){                    // every preset: every piece of gear holds its name
