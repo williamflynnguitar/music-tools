@@ -575,12 +575,16 @@ function addMicItem(plot, at, label, ownerIds, moved){
   return it;
 }
 /* Where a DI box sits when nobody has dragged it: on the stage-left side of
-   the player's backline if they have one, else of the player. */
+   the player's backline if they have one, else of the player, DI_GAP inches
+   off its edge. It was 14″ until 2026-09-16, from when the label was drawn
+   below the box and needed the room; the label reads inside the box now, so
+   the box sits against the rig (William, 2026-09-16). */
+const DI_GAP = 3;
 function placeDI(plot, it){
   const own = ownerOf(plot, it); if (!own) return;
   const gear = plot.items.find(i => i !== it && i.kind === "house" && i.ref !== "di" && i.ref !== "mic" && (i.ownerPositionIds || []).includes(own.id));
   const anchor = gear || own, r = rectOf(anchor, plot), D = deckIn(plot), f = footprintOf(it, plot);
-  it.x = clampIn(r.x0 - 14 - f.w / 2, f.w / 2, D.w - f.w / 2);    // x falls toward stage left; far enough that its label clears the gear
+  it.x = clampIn(r.x0 - DI_GAP - f.w / 2, f.w / 2, D.w - f.w / 2);    // x falls toward stage left, against the gear
   it.y = clampIn(anchor.y, f.d / 2, D.d - f.d / 2);
 }
 function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? " — " + t : ""; }
@@ -787,10 +791,13 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
 /* stands: what a preset hands out (William, 2026-09-16) — "all": one each;
    "bigband": one each, two for the bass player and the drummer, whose parts
    are longer; "none": the band plays from memory. A rule, not a count, so
-   the Bulk-add builder can apply the big band one from the horn count. */
+   the Bulk-add builder can apply the big band one from the horn count.
+   rhythm: which rhythm-section shape the preset opens in — the jazz combo
+   puts the bass centre and the kit to the side (William, 2026-09-16); the
+   rest leave the kit centre, the app's default. */
 const TEMPLATES = [
   { id:"combo", name:"Jazz combo", note:"horns over a rhythm section; add or drop players after",
-    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], stands:"all" },
+    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], stands:"all", rhythm:"bass-centre" },
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
     parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"bigband" },
   { id:"rock", name:"Rock / pop band", note:"lead vocal, guitar, keys, bass, drums",
@@ -833,8 +840,10 @@ const LAYOUT = {
   comfySpacing: 46, minSpacing: 26,
   /* Standard shape, [fx, fy] per role. Two arrangements, because combos
      argue about this one: the kit upstage centre with the bass out at the
-     stage-left edge (the default), or the two swapped. fx 0 is the
-     stage-left edge, which is the RIGHT of the page — see Coordinates. */
+     stage-left edge (the default, and what the rock and vocal presets open
+     in), or the two swapped (what the jazz combo preset opens in, William
+     2026-09-16). fx 0 is the stage-left edge, which is the RIGHT of the
+     page — see Coordinates. */
   rhythm: {                    // drums centre, bass to the side (inboard of the stage-left stairs, D2)
     drums:[.50,.80], bass:[.21,.58], upright:[.21,.58], guitar:[.87,.63],
     keys:[.74,.40], organ:[.26,.40], perc:[.28,.80], dj:[.74,.80], playback:[.62,.90],
@@ -1160,9 +1169,10 @@ function addPosition(plot, roleId, opts){
   if (role.di) addDI(plot, pos, role.label);
   return pos;
 }
-/* parts: [[roleId|{roleId,doubles}, count], ...] */
-function makeFromParts(parts, deck, name){
+/* parts: [[roleId|{roleId,doubles}, count], ...]; rhythmPlan: "drums-centre" (the default) or "bass-centre" */
+function makeFromParts(parts, deck, name, rhythmPlan){
   const plot = blankPlot(deck, name);
+  if (rhythmPlan === "bass-centre") plot.rhythmPlan = rhythmPlan;
   for (const [what, count] of parts){
     const spec = typeof what === "string" ? { roleId:what } : what;
     for (let i = 0; i < count; i++) addPosition(plot, spec.roleId, { doubles:spec.doubles });
@@ -1183,7 +1193,7 @@ function makeFromParts(parts, deck, name){
 function makeFromTemplate(id, deck){
   const t = TEMPLATES.find(x => x.id === id);
   if (!t) return blankPlot(deck);
-  const plot = makeFromParts(t.parts, deck, t.name);
+  const plot = makeFromParts(t.parts, deck, t.name, t.rhythm);   // the preset's rhythm-section shape, before the first layout
   if (t.stands) defaultStands(plot, t.stands);  // the preset's stands rule (William, 2026-09-16)
   plot.templateId = t.id;
   return plot;

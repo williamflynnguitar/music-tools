@@ -99,14 +99,22 @@ for (const t of E.TEMPLATES){
     ok(hits.hard.length === 0, t.name + " with bass centre has no two things in one place:\n        " + hits.hard.join("\n        "));
     ok(p.positions.concat(p.items, p.wedges).every(o => !E.offDeck(o, p)), t.name + " with bass centre stays on the deck");
   }
-  const combo = T("combo");
-  const drums = combo.positions.find(x => x.roleId === "drums"), bass = combo.positions.find(x => x.roleId === "bass");
-  const centreish = o => Math.abs(o.x - E.deckIn(combo).w / 2) < E.deckIn(combo).w * .2;
+  const rock = T("rock");
+  const drums = rock.positions.find(x => x.roleId === "drums"), bass = rock.positions.find(x => x.roleId === "bass");
+  const centreish = o => Math.abs(o.x - E.deckIn(rock).w / 2) < E.deckIn(rock).w * .2;
+  eq(rock.rhythmPlan, "drums-centre", "a rock band opens with the kit centre — the app's default");
   ok(centreish(drums) && !centreish(bass), "default: the kit is centre, the bass is out to the side");
-  combo.rhythmPlan = "bass-centre"; E.autoLayout(combo, { force:true });
-  const d2 = combo.positions.find(x => x.roleId === "drums"), b2 = combo.positions.find(x => x.roleId === "bass");
+  rock.rhythmPlan = "bass-centre"; E.autoLayout(rock, { force:true });
+  const d2 = rock.positions.find(x => x.roleId === "drums"), b2 = rock.positions.find(x => x.roleId === "bass");
   ok(centreish(b2) && !centreish(d2), "swapped: the bass is centre, the kit is out to the side");
-  ok(b2.x > E.deckIn(combo).w / 2 - 40 && d2.x < E.deckIn(combo).w / 3, "…and the kit took the stage-left side (" + Math.round(d2.x) + "″ from the stage-left edge)");
+  ok(b2.x > E.deckIn(rock).w / 2 - 40 && d2.x < E.deckIn(rock).w / 3, "…and the kit took the stage-left side (" + Math.round(d2.x) + "″ from the stage-left edge)");
+  // the jazz combo preset opens bass centre (William, 2026-09-16); every other preset, drums centre
+  const combo = T("combo");
+  eq(combo.rhythmPlan, "bass-centre", "the jazz combo opens with the bass centre");
+  ok(centreish(combo.positions.find(x => x.roleId === "bass")) && !centreish(combo.positions.find(x => x.roleId === "drums")), "…and is laid out that way from the first layout, not after a re-layout");
+  eq(E.TEMPLATES.filter(t => t.rhythm === "bass-centre").map(t => t.id).join(","), "combo", "…and it is the only preset that does");
+  ok(E.TEMPLATES.every(t => !t.rhythm || ["drums-centre","bass-centre"].includes(t.rhythm)), "a preset's rhythm plan is one of the two the app knows");
+  eq(E.blankPlot().rhythmPlan, "drums-centre", "a blank plot still opens with the kit centre");
 
   // add a vocalist, then drop them again — what the buttons on the main page do
   const q = T("combo"), n = q.positions.length;
