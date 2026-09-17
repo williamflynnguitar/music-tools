@@ -555,6 +555,7 @@ function kitIsByo(plot, pos){ return backlineCat(roleOf(plot, pos)) === "kit" &&
 function micsOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "mic"); }
 function disOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "di"); }
 function ownerOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).find(Boolean) || null; }
+function ownersOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).filter(Boolean); }   // every owner: a shared keyboard has two
 /* What the page prints for them: one line per object, in the order they were
    placed, with the chair it belongs to. Counted from the deck, nowhere else. */
 function micList(plot){
@@ -677,7 +678,7 @@ function settleBackline(plot){
     if (free && free.id !== it.ref){
       const acousticBefore = !!def.acoustic;
       it.ref = free.id;
-      if (!!free.acoustic !== acousticBefore){ const own = ownerOf(plot, it); if (own) settleDI(plot, own); }
+      if (!!free.acoustic !== acousticBefore) for (const own of ownersOf(plot, it)) settleDI(plot, own);
     }
     take(it.ref);
   }
@@ -1749,7 +1750,14 @@ function migratePlot(p){
   for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
   if ("skipped" in p){ const list = Array.isArray(p.skipped) ? p.skipped.filter(x => SKIPPABLE.includes(x)) : []; if (list.length) p.skipped = list; else delete p.skipped; }
   for (const pos of p.positions) delete pos.wedgeId;
-  if (!p.schemaVersion || p.schemaVersion < 3) placeInputs(p);          // per-player inputs become mics and DI boxes on the deck
+  if (!p.schemaVersion || p.schemaVersion < 3){
+    placeInputs(p);          // per-player inputs become mics and DI boxes on the deck
+    /* A file this old predates the piano, so the only pianist it can hold is
+       one settleBackline() just moved there — and their legacy DI was still
+       in position.inputs when it ran. Now that placeInputs() has made the
+       box, take it away again. */
+    for (const pos of p.positions){ const r = roleOf(p, pos), g = findBackline(p, pos, r); if (g && (houseDef(g.ref) || {}).acoustic) settleDI(p, pos); }
+  }
   if (p.schemaVersion < 4){
     /* Schema 4 (2026-09-16): the wedge's wide end is the grille and is drawn
        at local up; before, the narrow end was up. A saved wedge keeps the
@@ -2676,7 +2684,7 @@ function renderInspector(p){
     it.ref = want;
     // onto or off the piano: the player's DI box goes or comes back (the piano is miked)
     if (!!(houseDef(want) || {}).acoustic !== !!(houseDef(was) || {}).acoustic)
-      for (const o of [it, other]) if (o){ const own = ownerOf(q, o); if (own) settleDI(q, own); }
+      for (const o of [it, other]) if (o) for (const own of ownersOf(q, o)) settleDI(q, own);   // every owner: a shared keyboard settles both players
   });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
     sel.ownerPositionIds = c.checked ? (sel.ownerPositionIds || []).concat([c.value]) : (sel.ownerPositionIds || []).filter(x => x !== c.value);

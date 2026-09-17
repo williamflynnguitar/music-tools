@@ -144,9 +144,14 @@ old plots come out exactly as they did.
   DI'd, so `settleDI()` takes away the DI box a keys player arrived with when
   they land on the piano and gives it back, beside the gear, when they go back
   to a keyboard. It runs only where the backline actually changes — the
-  inspector's swap (both ends of a trade), a fresh item from the layout
-  engine, a load-time `settleBackline()` that moves a ref — never on a plain
-  re-layout, so a DI box deleted on purpose stays deleted. Drawn like a
+  inspector's swap (both ends of a trade, every owner of a shared item), a
+  fresh item from the layout engine, a load-time `settleBackline()` that
+  moves a ref — never on a plain re-layout, so a DI box deleted on purpose
+  stays deleted. One wrinkle in the load path: a pre-schema-3 file still
+  holds its DI as `position.inputs` when `settleBackline()` runs, so
+  `migratePlot()` settles any pianist again after `placeInputs()` has made
+  the box; such a file predates the piano, so the only pianist it can hold
+  is one the settle just put there (Copilot caught this on PR #12). Drawn like a
   keyboard but with the key lines as a strip along the player's edge and a
   fallboard line, the case plain behind it, so the page shows which way it
   faces; the name sits in the case at 0° and 180° and is centred like the
@@ -779,7 +784,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 632 assertions: the role library, every template (builds,
+`node check.js` — 636 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
@@ -788,9 +793,11 @@ pinning and re-layout, deck re-layout, changeover, the v1 migration against
 backline by category (two guitarists on two amps, five on an amber over-count
 naming 4, Korg and Nord, an organ on the Nord, a third keys player on the
 house piano with no DI box and four over-counting "keyboard / piano … has
-3", the piano swap taking the DI box away and giving it back, a swap
-surviving re-layout, an old doubled `gtramp1` settling on load, two plots
-sharing an amp in silence),
+3", the piano swap taking the DI box away and giving it back, a schema-2
+file with legacy DI inputs loading its third keys player onto the piano
+without a box, a shared piano settling both players, a swap surviving
+re-layout, an old doubled `gtramp1` settling on load, two plots sharing an
+amp in silence),
 the delivery address and the band leader/director wording, the soundcheck
 and lineup fields, no mics on any house item, and no storage APIs or student
 names in `index.html`.

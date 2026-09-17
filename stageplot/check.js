@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -544,6 +544,24 @@ for (const t of E.TEMPLATES){
   E.settleBackline(old3);
   eq(old3.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2, piano", "three keys players booked on the Korg settle onto the Korg, the Nord and the piano");
   eq(E.disOn(old3).length, 3, "…and the one who landed on the piano lost the DI box");
+  // …and through the real load path: a schema-2 file still carries the DI as position.inputs, which
+  // placeInputs() turns into a box only after settleBackline() has run (Copilot, PR #12)
+  const legacy = JSON.parse(JSON.stringify(trio));
+  legacy.schemaVersion = 2;
+  for (const it of legacy.items) if (E.refCat(it.ref) === "keys") it.ref = "kb1";
+  legacy.items = legacy.items.filter(i => !(i.ref === "di" && legacy.positions.some(pos => pos.roleId === "keys" && i.ownerPositionIds.includes(pos.id))));
+  for (const pos of legacy.positions) if (pos.roleId === "keys") pos.inputs = [{ type:"di", source:"Keys" }];
+  const loadedLegacy = E.migratePlot(legacy);
+  eq(loadedLegacy.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, kb2, piano", "a schema-2 file with three keys players on the Korg loads onto the Korg, the Nord and the piano");
+  eq(E.diList(loadedLegacy).map(d => d.who).sort().join(", "), "Bass, Keys 1, Keys 2", "…and the legacy DI inputs become boxes for the two keyboard players only, none for the pianist");
+  // a shared keyboard settles both players
+  const shared = E.makeFromParts([["keys",2],["bass",1],["drums",1]], null, "Shared keys");
+  const kp = shared.positions.filter(q => q.roleId === "keys"), kitems = shared.items.filter(i => E.refCat(i.ref) === "keys");
+  shared.items = shared.items.filter(i => i !== kitems[1]); kitems[0].ownerPositionIds = kp.map(q => q.id);
+  kitems[0].ref = "piano"; for (const own of E.ownersOf(shared, kitems[0])) E.settleDI(shared, own);
+  eq(E.diList(shared).map(d => d.who).join(", "), "Bass", "two players sharing one piano both lose their DI boxes");
+  kitems[0].ref = "kb1"; for (const own of E.ownersOf(shared, kitems[0])) E.settleDI(shared, own);
+  eq(E.diList(shared).map(d => d.who).sort().join(", "), "Bass, Keys 1, Keys 2", "…and both get one back on a keyboard");
 
   // a swap sticks: the lookup matches on owner and category, never on the id
   const sw = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Swap");
