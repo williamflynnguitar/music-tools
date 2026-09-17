@@ -460,12 +460,21 @@ function setChairs(plot, pos, n){
 }
 function chairCount(plot){ return plot.positions.reduce((n, p) => n + chairsOf(plot, p), 0); }
 function chairText(n){ return n === 0 ? "standing" : n === 1 ? "1 chair" : n + " chairs"; }
-/* Music stands, the same way: pos.stands, absent = 0. A big band gives
-   everyone one and the bass player and the drummer two (makeFromParts).
-   Drawn as an icon beside the player, never labelled — a label per stand
-   took more room than the stands (William, 2026-09-16) — and counted for
-   the house with any stands placed by hand from the Misc tab. */
+/* Music stands, the same way: pos.stands, absent = 0. What a preset hands
+   out is its stands rule (TEMPLATES, defaultStands): a jazz combo gives
+   everyone one, a big band everyone one and the bass player and the drummer
+   two, a rock/pop band none (William, 2026-09-16). Drawn as a bar in front
+   of the player, never labelled — a label per stand took more room than the
+   stands — and counted for the house with any placed by hand from the Misc tab. */
 function standsOf(plot, pos){ return pos.stands === undefined ? 0 : Math.max(0, pos.stands | 0); }
+function defaultStands(plot, rule){              // sets every position that has no count of its own; "none" clears them all
+  for (const p of plot.positions){
+    if (rule === "none"){ delete p.stands; continue; }
+    if (p.stands !== undefined) continue;
+    p.stands = rule === "bigband" && ["bass","upright","drums"].includes(roleOf(plot, p).id) ? 2 : 1;
+  }
+  return plot;
+}
 function setStands(plot, pos, n){ n = Math.max(0, Math.min(4, n | 0)); if (n) pos.stands = n; else delete pos.stands; return pos; }
 function standCount(plot){ return plot.positions.reduce((n, p) => n + standsOf(plot, p), 0); }
 function standText(n){ return n === 0 ? "no stand" : n === 1 ? "1 stand" : n + " stands"; }
@@ -775,17 +784,21 @@ function posShortLines(plot, pos, labels){       // for the diagram: label, then
 }
 
 /* ---- instrumentation templates: shapes, not rosters --------------- */
+/* stands: what a preset hands out (William, 2026-09-16) — "all": one each;
+   "bigband": one each, two for the bass player and the drummer, whose parts
+   are longer; "none": the band plays from memory. A rule, not a count, so
+   the Bulk-add builder can apply the big band one from the horn count. */
 const TEMPLATES = [
   { id:"combo", name:"Jazz combo", note:"horns over a rhythm section; add or drop players after",
-    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]] },
+    parts:[["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], stands:"all" },
   { id:"bigband", name:"Big band (17)", note:"5 sax, 4 tpt, 4 tbn, gtr, pno, bass, drums",
-    parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+    parts:[["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"bigband" },
   { id:"rock", name:"Rock / pop band", note:"lead vocal, guitar, keys, bass, drums",
-    parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+    parts:[["voice",1],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"none" },
   { id:"vocals", name:"Vocals + rhythm section", note:"three voices, rhythm section",
-    parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]] },
+    parts:[["voice",3],["guitar",1],["keys",1],["bass",1],["drums",1]], stands:"none" },
   { id:"duo", name:"Solo / duo", note:"voice doubling acoustic guitar",
-    parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic" }] },1]] },
+    parts:[[{ roleId:"voice", doubles:[{ roleId:"acoustic" }] },1]], stands:"none" },
 ];
 
 /* ---- layout engine ------------------------------------------------ *
@@ -1157,10 +1170,12 @@ function makeFromParts(parts, deck, name){
   // Who sits (William, 2026-09-16): keyboard players always (their role); in a big band the saxes,
   // the trombones and the guitarist as well. Everyone else stands, in every configuration.
   const winds = plot.positions.filter(p => ["sax","brass"].includes(roleOf(plot, p).family));
-  if (winds.length >= LAYOUT.hornsForBigBand) for (const p of plot.positions){
-    const r = roleOf(plot, p);
-    if (p.chairs === undefined && (r.family === "sax" || ["guitar","trombone","btrombone"].includes(r.id))) p.chairs = 1;
-    if (p.stands === undefined) p.stands = ["bass","upright","drums"].includes(r.id) ? 2 : 1;   // everyone reads; the bass player and the drummer read two
+  if (winds.length >= LAYOUT.hornsForBigBand){
+    for (const p of plot.positions){
+      const r = roleOf(plot, p);
+      if (p.chairs === undefined && (r.family === "sax" || ["guitar","trombone","btrombone"].includes(r.id))) p.chairs = 1;
+    }
+    defaultStands(plot, "bigband");              // everyone reads; the bass player and the drummer read two. A smaller band built from counts starts with none
   }
   autoLayout(plot, { force:true });
   return plot;
@@ -1169,6 +1184,7 @@ function makeFromTemplate(id, deck){
   const t = TEMPLATES.find(x => x.id === id);
   if (!t) return blankPlot(deck);
   const plot = makeFromParts(t.parts, deck, t.name);
+  if (t.stands) defaultStands(plot, t.stands);  // the preset's stands rule (William, 2026-09-16)
   plot.templateId = t.id;
   return plot;
 }
@@ -2681,7 +2697,7 @@ function helpSections(){
       'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist, not a gate — nothing is ever blocked.'],
     ["Filling the band fast", 'Two shortcuts at the top of <b>Positions</b>. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
     ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. Keyboard players sit; in a big band the saxes, trombones and guitarist sit too. Chairs are counted for the house under House equipment.'],
-    ["Music stands", 'The solid bar on the audience side of a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many; a big band starts with one each and two for the bass player and the drummer. They are counted for the house.'],
+    ["Music stands", 'The solid bar on the audience side of a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many. The presets start you off: a jazz combo gives everyone one; a big band gives everyone one and the bass player and the drummer two, because their parts are longer; a rock / pop band gives none. They are counted for the house.'],
     ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
     ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],

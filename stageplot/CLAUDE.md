@@ -470,8 +470,15 @@ help's Microphones entry leads with the same sentence.
 ## Music stands (2026-09-16)
 
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
-mirroring the chairs. **A big band gives everyone a stand and the bass
-player and the drummer two** (`makeFromParts()`); a combo starts with none.
+mirroring the chairs. **Each preset carries a stands rule** (`stands` on
+`TEMPLATES`, applied by `defaultStands()` in `makeFromTemplate()`;
+William, 2026-09-16): the jazz combo `"all"`, one each; the big band
+`"bigband"`, one each and two for the bass player and the drummer, whose
+parts are longer; rock / pop, vocals + rhythm and solo / duo `"none"`.
+A rule fills only positions with no count of their own, except `"none"`,
+which clears them. Bulk add players (`makeFromParts()`) has no preset to
+read, so it applies the big band rule when the horn count makes it a big
+band and gives a smaller band none.
 **A stand is a solid bar, top-down** (`STAND`: 12″ × 3″, bone on screen
 and black in print): along the downstage edge of a seated player's chair
 tile, inset from the corners; 2″ below a standing player's circle; below
@@ -746,7 +753,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 579 assertions: the role library, every template (builds,
+`node check.js` — 588 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

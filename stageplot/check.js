@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
-  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText,
+  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
@@ -210,7 +210,7 @@ for (const t of E.TEMPLATES){
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,seated,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its keys player sits, so seated is in it): " + ids(combo));
+  eq(ids(combo), "player,seated,stand,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its keys player sits, so seated is in it; everyone reads, so stand is too): " + ids(combo));
   const blank = E.blankPlot();
   eq(ids(blank), "truss,fixture", "an empty deck's key has only the truss and the venue's fixtures");
   E.addPosition(blank, "keys");
@@ -927,14 +927,24 @@ for (const t of E.TEMPLATES){
   ok(bb.positions.filter(p => ["bass","drums"].includes(p.roleId)).every(p => E.standsOf(bb, p) === 2), "…and the bass player and the drummer have two");
   eq(E.standCount(bb), 19, "19 stands: 15 players with one, two with two");
   ok(E.houseNeeds(bb).some(n => n.id === "musicstand" && n.need === 19 && !n.over), "…asked of the house as 19 × Music stand, under the 20 it has");
+  // the presets' stands rules (William, 2026-09-16)
+  eq(E.TEMPLATES.map(t => t.id + ":" + t.stands).join(" "), "combo:all bigband:bigband rock:none vocals:none duo:none", "every preset carries a stands rule");
   const combo = T("combo");
-  eq(E.standCount(combo), 0, "a combo starts with none");
+  ok(combo.positions.every(p => E.standsOf(combo, p) === 1), "a jazz combo gives every player one stand — the bass player and the drummer too");
+  eq(E.standCount(combo), 5, "…five for five");
+  for (const id of ["rock","vocals","duo"]){ const q = T(id); eq(E.standCount(q), 0, id + ": no music stands"); }
+  const counts = E.makeFromParts([["tenor",1],["trumpet",1],["keys",1],["bass",1],["drums",1]], null, "from counts");
+  eq(E.standCount(counts), 0, "Bulk add players gives a combo-sized band none: the rule belongs to the preset, and the big band one still comes from the horn count");
+  eq(E.standCount(E.makeFromParts([["alto",2],["tenor",2],["bari",1],["trumpet",4],["trombone",4],["bass",1],["drums",1]], null, "from counts")), 17, "…17 for a 15-piece built from counts: one each, two for the bass player and the drummer");
+  const kept = E.makeFromParts([["tenor",1]], null, "kept"); kept.positions[0].stands = 3; E.defaultStands(kept, "all");
+  eq(kept.positions[0].stands, 3, "a rule never overwrites a count a player already has; \"none\" clears them all");
+  E.defaultStands(kept, "none"); ok(!("stands" in kept.positions[0]), "…cleared");
   const t = combo.positions.find(p => p.roleId === "tenor");
-  E.setStands(combo, t, 1); eq(E.standsOf(combo, t), 1, "+ stand gives a player a stand");
+  E.setStands(combo, t, 2); eq(E.standsOf(combo, t), 2, "+ stand gives a player another stand");
   E.setStands(combo, t, 0); ok(!("stands" in t), "…and back to none removes the field");
   combo.items.push({ id:"ms", kind:"house", ref:"musicstand", label:"", x:100, y:100, rot:0, moved:true, ownerPositionIds:[] });
   E.setStands(combo, t, 2);
-  eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 3, "the house count is the players' stands plus any placed by hand");
+  eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 7, "the house count is the players' stands plus any placed by hand");
   ok(E.legendKeys(combo).some(k => k.id === "stand"), "the key names the stand icon");
   ok(!/standGlyph/.test(src) && /standBars\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as solid bars in front of the player and a placed stand carries no label");
   ok(/data-stand=/.test(src) && (src.match(/− stand/g) || []).length >= 2, "− stand / + stand on the card and in the inspector");
