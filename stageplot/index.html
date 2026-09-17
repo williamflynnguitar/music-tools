@@ -378,24 +378,25 @@ const VENUE = {
   consoleChannels: 32,                       // confirmed
   warnChannelsAt: 28,                        // leave headroom for talkback/spare
   house: [
-    // id, label (printed verbatim on the page), short (fits in the diagram),
+    // id, label (printed verbatim on the page), short (drawn INSIDE the shape on the diagram, so it is
+    // as short as the shape: an 11″-deep amp holds one line of about seven characters at 7pt),
     // category, footprint in inches (w across the stage x d upstage), count.
     // bcat marks backline a role can be given: the order within a bcat is the
     // order the app hands them out, so the Korg goes before the Nord and the
     // Voxes before the Deluxe Reverbs. No house item names a mic — the mics in
     // the photos live in the rehearsal rooms and do not come with the gear.
     { id:"kit",     label:"House drum kit",                                   short:"House kit",  cat:"drums",  bcat:"kit",    w:54, d:52 },  // no model: the house has several kits (Tim Shade, 2026-09-16)
-    { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Markbass rig", cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
-    { id:"gtramp1", label:"Vox AC combo (black)",                             short:"Vox (black)", cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
-    { id:"gtramp2", label:"Vox AC combo (red)",                               short:"Vox (red)",  cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
-    { id:"gtramp3", label:"Fender Deluxe Reverb (1)",                         short:"Deluxe Reverb 1", cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
-    { id:"gtramp4", label:"Fender Deluxe Reverb (2)",                         short:"Deluxe Reverb 2", cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
-    { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg SV-2S", cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
-    { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord Stage 4", cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
+    { id:"bassamp", label:"Markbass Little Mark Tube 800 + Markbass 4×10 cab", short:"Bass rig",   cat:"amp",  bcat:"bass",   w:24, d:20 },  // head confirmed; ASSUMED cab model
+    { id:"gtramp1", label:"Vox AC combo (black)",                             short:"Vox blk",    cat:"amp",   bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
+    { id:"gtramp2", label:"Vox AC combo (red)",                               short:"Vox red",    cat:"amp",    bcat:"gtramp", w:27, d:11 },  // ASSUMED model — AC15C1 or AC30C2, not yet read off the back panel
+    { id:"gtramp3", label:"Fender Deluxe Reverb (1)",                         short:"Deluxe 1",   cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
+    { id:"gtramp4", label:"Fender Deluxe Reverb (2)",                         short:"Deluxe 2",   cat:"amp", bcat:"gtramp", w:25, d:10 },  // confirmed
+    { id:"kb1",     label:"Korg SV-2S 88",                                    short:"Korg",       cat:"keys",   bcat:"keys",   w:54, d:15 },  // confirmed
+    { id:"kb2",     label:"Nord Stage 4 88",                                  short:"Nord",       cat:"keys", bcat:"keys",   w:51, d:14 },  // confirmed
     { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
     { id:"mic",     label:"Mic (on stand)",   short:"Mic",     cat:"mic",     w:12, d:12, count:8 },   // ASSUMED count. One object = one stand, whoever shares it
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
-    { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:6,  d:6,  count:8 },   // ASSUMED count
+    { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:10, d:10, count:8 },   // ASSUMED count. 10″: just enough to hold "DI" at the minimum type size
     { id:"chair",   label:"Chair",            short:"Chair",   cat:"chair",   w:18, d:18, count:40 },  // ASSUMED count. Not placed: counted from seated positions (chairsOf)
   ],
   // Fixed context drawn outside the deck, not draggable:
@@ -627,7 +628,12 @@ function settleBackline(plot){
 }
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2)
+const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller
+/* A music stand, top-down: a solid bar in front of the player (William,
+   2026-09-16 — the side-view icon read as a monitor and collided with the
+   neighbours). frac of the tile or circle width, thick inches, and a gap
+   below a standing player's circle. It never leaves the player's footprint. */
+const STAND = { frac: .6, thick: 3, gap: 2 };
 
 /* Bring-your-own palette. Free-text description prints after "BYO:".
    No inputs here: a BYO item arrives with none (addByo writes inputs:[]) and
@@ -635,15 +641,15 @@ const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9
    mic was dead data that contradicted "nothing starts miked" — removed
    2026-09-15 rather than left to be copied into a live path by mistake. */
 const BYO_KINDS = [
-  { id:"byo-gtramp",  label:"Guitar amp",    cat:"amp",   w:26, d:12 },
-  { id:"byo-bassamp", label:"Bass amp",      cat:"amp",   w:26, d:20 },
-  { id:"byo-keys",    label:"Keyboard",      cat:"keys",  w:54, d:16 },
-  { id:"byo-kit",     label:"Drum kit",      cat:"drums", w:54, d:52 },
-  { id:"byo-pedals",  label:"Pedalboard",    cat:"misc",  w:24, d:12 },
-  { id:"byo-laptop",  label:"Laptop",        cat:"keys",  w:16, d:12 },
-  { id:"byo-acoustic",label:"Acoustic guitar",cat:"guitar",w:18, d:10 },
-  { id:"byo-upright", label:"Upright bass",  cat:"bass",  w:24, d:24 },
-  { id:"byo-misc",    label:"Misc",          cat:"misc",  w:18, d:18 },
+  { id:"byo-gtramp",  label:"Guitar amp",    short:"Gtr amp",  cat:"amp",   w:26, d:12 },
+  { id:"byo-bassamp", label:"Bass amp",      short:"Bass amp", cat:"amp",   w:26, d:20 },
+  { id:"byo-keys",    label:"Keyboard",      short:"Keyboard", cat:"keys",  w:54, d:16 },
+  { id:"byo-kit",     label:"Drum kit",      short:"Drum kit", cat:"drums", w:54, d:52 },
+  { id:"byo-pedals",  label:"Pedalboard",    short:"Pedals",   cat:"misc",  w:24, d:12 },
+  { id:"byo-laptop",  label:"Laptop",        short:"Laptop",   cat:"keys",  w:16, d:12 },
+  { id:"byo-acoustic",label:"Acoustic guitar",short:"Ac gtr",  cat:"guitar",w:18, d:10 },
+  { id:"byo-upright", label:"Upright bass",  short:"Upright",  cat:"bass",  w:24, d:24 },
+  { id:"byo-misc",    label:"Misc",          short:"Misc",     cat:"misc",  w:18, d:18 },
 ];
 
 function houseDef(ref){ return VENUE.house.find(h => h.id === ref); }
@@ -1244,17 +1250,70 @@ function diagramGeom(plot){
            sx: x => M + (D.w - x), sy: y => M + (D.d - y) };
 }
 
-/* Where a position's label goes. Downstage of the marker by default —
-   the side the reader's eye follows — flipping upstage when a wedge or
-   a piece of gear is already there. Automatic, so a dragged layout
-   stays legible without anyone thinking about it. */
+/* ---- labels inside shapes ------------------------------------------ *
+ * Every object's label is drawn centred inside its own shape when it fits
+ * (William, 2026-09-16): at full size, then as two lines broken at a space,
+ * then smaller down to DRAW.minPt, and only then outside the shape. Text is
+ * measured as .56 em a character (Helvetica) and 1.15 em a line. Text
+ * always stays upright, whatever the object's rotation.
+ * ------------------------------------------------------------------ */
+function textWidth(s, u){ return String(s).length * .56 * u; }
+function breakTwo(s){                            // at the space nearest the middle
+  s = String(s); let best = -1;
+  for (let k = 0; k < s.length; k++) if (s[k] === " " && (best < 0 || Math.abs(k - s.length / 2) < Math.abs(best - s.length / 2))) best = k;
+  return best > 0 ? [s.slice(0, best), s.slice(best + 1)] : null;
+}
+function fitLabel(g, text, w, h, ptMax, ptMin){
+  ptMin = ptMin || DRAW.minPt; text = String(text || "").trim(); if (!text) return null;
+  const two = breakTwo(text);
+  for (let pt = ptMax; pt >= ptMin - 1e-9; pt -= .5){
+    const u = g.pt(pt);
+    if (textWidth(text, u) <= w && 1.15 * u <= h) return { lines:[text], pt };
+    if (two && Math.max(textWidth(two[0], u), textWidth(two[1], u)) <= w && 2.3 * u <= h) return { lines:two, pt };
+  }
+  return null;
+}
+/* The box a label may occupy inside a shape: a circle's inscribed square
+   (a shade over 0.7 of the diameter, plus a little), a rectangle less
+   padding — its own sides at right angles, the short side's inscribed
+   square at 45° — all axis-aligned, because the text stays upright. */
+function insideBox(o, plot){
+  const f = footprintOf(o, plot);
+  if (isPosition(o) && roleOf(plot, o).stance !== "object"){ const d = f.w * .78; return { w:d, h:d }; }
+  const rot = (((o.rot || 0) % 90) + 90) % 90;
+  if (rot === 0){ const r = rectOf(o, plot); return { w:r.w - 2, h:r.d - 2 }; }
+  const side = Math.min(f.w, f.d) * .7; return { w:side, h:side };
+}
+/* A player's label block: the chair label goes inside the circle when it
+   fits; doubles and names — and a chair label that will not fit even at the
+   minimum size — go outside, in the box positionLabelBox() places. The kit
+   carries no label of its own: its kick says Drums. */
+function labelPlan(plot, pos, g, labels){
+  const lines = posShortLines(plot, pos, labels), role = roleOf(plot, pos);
+  if (role.id === "drums") return { inside:null, outside:lines.slice(1) };
+  const box = insideBox(pos, plot);
+  const fit = fitLabel(g, lines[0].text, box.w, box.h, DRAW.labelPt);
+  return fit ? { inside:fit, outside:lines.slice(1) } : { inside:null, outside:lines };
+}
+/* How far downstage of the player's centre an outside label may start:
+   past the chair tile if seated, past the stand bar if standing with one. */
+function labelClear(plot, pos){
+  const f = footprintOf(pos, plot), bar = standsOf(plot, pos) > 0 ? STAND.gap + STAND.thick : 0;
+  if (roleOf(plot, pos).stance === "object") return f.d / 2 + bar;
+  if (chairsOf(plot, pos) > 0) return (f.w + 6) / 2;
+  return f.w / 2 + bar;
+}
+/* Where a position's outside label goes, if it has one. Downstage of the
+   marker by default — the side the reader's eye follows — flipping upstage
+   when a wedge or a piece of gear is already there. Automatic, so a dragged
+   layout stays legible without anyone thinking about it. */
 function positionLabelBox(plot, pos, g, taken, labels, force){
-  const lines = posShortLines(plot, pos, labels);
+  const lines = labelPlan(plot, pos, g, labels).outside;
+  if (!lines.length) return null;
   const pt = g.pt(DRAW.labelPt), spt = g.pt(DRAW.smallPt);
-  const width = t => t.length * .55 * (t === lines[0].text ? pt : spt);
-  const w = Math.max.apply(null, lines.map(l => l.text.length * .55 * (l.size === "label" ? pt : spt)));
-  const h = 1.15 * pt + lines.slice(1).reduce((a, l) => a + (l.size === "label" ? pt : spt) * 1.05, 0) + .3 * pt;
-  const half = footprintOf(pos, plot).d / 2;
+  const w = Math.max.apply(null, lines.map(l => textWidth(l.text, l.size === "label" ? pt : spt)));
+  const h = lines.reduce((a, l) => a + (l.size === "label" ? pt : spt) * 1.15, 0) + .3 * pt;
+  const half = labelClear(plot, pos);
   const mk = side => ({ side, w, h, lines, x0:pos.x - w/2, x1:pos.x + w/2,
     y0: side === "down" ? pos.y - half - h : pos.y + half,
     y1: side === "down" ? pos.y - half     : pos.y + half + h });
@@ -1284,9 +1343,9 @@ function labelBoxes(plot, g){
     if (done.has(pos.id)) continue;
     const row = rowOf(pos);
     let boxes = row.map(o => positionLabelBox(plot, o, g, taken, labels));
-    if (row.length > 1 && boxes.some(b => b.side === "up"))
+    if (row.length > 1 && boxes.some(b => b && b.side === "up"))
       boxes = row.map(o => positionLabelBox(plot, o, g, taken, labels, "up"));
-    row.forEach((o, i) => { map[o.id] = boxes[i]; taken.push(boxes[i]); done.add(o.id); });
+    row.forEach((o, i) => { done.add(o.id); if (boxes[i]){ map[o.id] = boxes[i]; taken.push(boxes[i]); } });
   }
   return map;
 }
@@ -1642,9 +1701,9 @@ function kitPieces(f, col, dim, fill, dashed){
     piece(-16, -5, 7, true), piece(21, -1, 5, true),     // ride, hats
     piece(-19, 11, 7), piece(-9, 0, 4.5), piece(-2, -2, 4.5), piece(9, 2, 6),   // floor tom, rack toms, snare
     piece(1, 16, 10),                                     // kick: resonant head to the audience, on the footprint's front edge
-    // the kick is the one drum the tech has to find first, so it is named
-    '<text x="' + (1 * kx).toFixed(1) + '" y="' + (16 * ky + 1.8 * kr).toFixed(1) + '" font-size="' + (5 * kr).toFixed(1) + '" text-anchor="middle" fill="' + col +
-      '" font-family="Helvetica, Arial, sans-serif">Kick</text>',
+    // the kit is named once, on the kick — the one drum the tech has to find first — and nowhere else
+    '<text x="' + (1 * kx).toFixed(1) + '" y="' + (16 * ky + 1.9 * kr).toFixed(1) + '" font-size="' + (5.5 * kr).toFixed(1) + '" text-anchor="middle" fill="' + col +
+      '" font-family="Helvetica, Arial, sans-serif">Drums</text>',
     // the drummer: a solid mark so it cannot be mistaken for another drum,
     // with a stem for which way they face — downstage, at the audience
     drummerMark(3 * kx, -19 * ky, 6.5 * kr, col),
@@ -1657,13 +1716,6 @@ function micGlyph(cx, cy, r, ink, fill){
   return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"/>' +
          '<path d="M' + (+cx).toFixed(1) + ',' + (cy + r * .6).toFixed(1) + 'v' + (r * 1.4).toFixed(1) + '" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" fill="none"/>';
 }
-/* A music stand, in plan: the desk, its stem and its base. k scales it
-   (1 = a 10″ desk). Shared by the diagram and the key. */
-function standGlyph(x, y, k, col, ground){
-  return '<g transform="translate(' + (+x).toFixed(1) + ',' + (+y).toFixed(1) + ') scale(' + k + ')">' +
-    '<rect x="-5" y="-4.5" width="10" height="6" rx="1" fill="' + ground + '" stroke="' + col + '" stroke-width="1"/>' +
-    '<path d="M0,1.5v3.5M-3,5.5h6" stroke="' + col + '" stroke-width="1" stroke-linecap="round" fill="none"/></g>';
-}
 function wedgePath(w, d){                              // trapezoid, throw face toward the top
   const x = -w/2, y = -d/2, t = w * .62;
   return "M" + x + "," + (y + d) + " L" + (x + w) + "," + (y + d) + " L" + (x + (w + t)/2) + "," + y + " L" + (x + (w - t)/2) + "," + y + " Z";
@@ -1674,7 +1726,7 @@ function legendHTML(plot, print){
   const sw = {
     player:  '<circle cx="11" cy="8" r="6.2" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
     seated:  '<rect x="2.5" y="0.5" width="17" height="15" rx="2" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><circle cx="11" cy="8" r="5.6" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/>',
-    stand:   standGlyph(11, 8, 1.3, ink, ground),
+    stand:   '<circle cx="11" cy="6" r="4.6" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.2"/><rect x="6.5" y="12.6" width="9" height="2.4" rx=".8" fill="' + ink + '"/>',
     wedge:   '<path d="M4,14.5L18,14.5L15,2L7,2Z" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/><text x="11" y="11.6" font-size="8" text-anchor="middle" fill="' + ink + '" font-family="Helvetica, Arial, sans-serif">2</text>',
     house:   '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     byo:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="' + ink + '" stroke-width="1.1" stroke-dasharray="3 2"/>',
@@ -1767,31 +1819,60 @@ function diagramSVG(plot, opt){
     const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit", isStand = it.kind === "house" && it.ref === "musicstand";
     const hitRect = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(it) || ' stroke="none"') + '/>';   // an invisible footprint: grabbable, outlined when over the edge
     let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
-      : isStand ? hitRect + standGlyph(0, 0, 1.6, stroke(it), print ? "#fff" : "#0d232b")   // an icon, no label: the key says what it is
+      : isStand ? hitRect + '<rect x="-6" y="-1.5" width="12" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>'   // a stand that belongs to nobody: the bar, no label — the key says what it is
       : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
         (it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(it) + '" stroke-width="' + swid(it) + '"' + dash + bad(it) + '/>';
     if (def.cat === "keys"){ let k = ""; for (let x = -f.w/2 + 4; x < f.w/2 - 2; x += 5) k += "M" + x + "," + (-f.d/2 + 3) + "v" + (f.d - 6); body += '<path d="' + k + '" stroke="' + stroke(it) + '" stroke-width=".7" opacity=".7"/>'; }
     if (kitItem) body += kitPieces(f, stroke(it), dim, print ? "#fff" : "#0d232b", true);   // drawn as a kit, dashed, no rug; its name sits under it
     draw(it, body);
-    const px = g.sx(it.x), py = g.sy(it.y);
-    const below = kitItem || isMic || isDI;          // too small, or too busy, to carry a name inside
-    const ang = below ? 0 : labelAngle(it.rot);      // the label lies along the item, never upside down
-    const ly = below ? py + f.d/2 + g.pt(DRAW.smallPt) * (isDI ? .95 : 1.1) : py + g.pt(DRAW.smallPt) * .35;
-    const name = it.kind === "byo" ? "BYO " + def.label : isMic ? micText(plot, it, labels) : isDI ? "DI" + (String(it.label || "").trim() ? " · " + it.label.trim() : "") : def.short;
-    let gl = ts(name, px, ly, DRAW.smallPt, isMic ? "" : "dim",
-      ang ? ' transform="rotate(' + ang + ' ' + px.toFixed(1) + ' ' + py.toFixed(1) + ')"' : "");
-    if (it.kind === "byo" && it.label) gl += ts(it.label, px, (kitItem ? ly : py + f.d/2) + g.pt(DRAW.smallPt) * 1.1, DRAW.smallPt, "dim");
+    const px = g.sx(it.x), py = g.sy(it.y), R = rectOf(it, plot);
+    const belowY = py + R.d / 2 + g.pt(DRAW.smallPt) * 1.1;   // the outside fallback: under the shape, whatever its rotation
+    const name = it.kind === "byo" ? (def.short || def.label) : isMic ? micText(plot, it, labels) : isDI ? "DI" : def.short;   // inside: the short name; dashed already says BYO
+    const outsideName = it.kind === "byo" ? "BYO " + def.label : name;
+    let gl = "", insideFit = false;
+    if (isStand){}                                                      // the bar is the label
+    else if (isMic) gl = ts(name, px, belowY, DRAW.smallPt);            // a 12″ capsule holds no name: below, always
+    else if (kitItem) gl = ts(outsideName, px, belowY, DRAW.smallPt, "dim");   // the drums say Drums; whose kit it is goes under
+    else if (isDI){
+      /* "DI" inside the box; the instrument is whatever it stands next to. A
+         box far from any source — nothing within 3′ — says which, outside. */
+      const near = plot.positions.some(p => Math.hypot(p.x - it.x, p.y - it.y) < 36) ||
+                   plot.items.some(o => o !== it && o.kind !== "label" && !["mic","di"].includes(o.ref) && Math.hypot(o.x - it.x, o.y - it.y) < 36);
+      const box = insideBox(it, plot), fit = fitLabel(g, "DI", box.w, box.h, DRAW.smallPt);
+      if (fit && near){ gl = ts("DI", px, py + g.pt(fit.pt) * .36, fit.pt, "dim"); insideFit = true; }
+      else gl = ts("DI" + (String(it.label || "").trim() ? " · " + it.label.trim() : ""), px, belowY, DRAW.smallPt, "dim");
+    } else {
+      const box = insideBox(it, plot), fit = fitLabel(g, name, box.w, box.h, DRAW.smallPt);
+      if (fit){ const u = g.pt(fit.pt), n = fit.lines.length;
+        fit.lines.forEach((ln, i) => { gl += ts(ln, px, py + (i - (n - 1) / 2) * 1.15 * u + u * .36, fit.pt, "dim"); }); insideFit = true; }
+      else gl = ts(outsideName, px, belowY, DRAW.smallPt, "dim");
+    }
+    if (it.kind === "byo" && it.label) gl += ts(it.label, px, belowY + (insideFit || isStand ? 0 : g.pt(DRAW.smallPt) * 1.15), DRAW.smallPt, "dim");
     if (!isStand) labelled(it, px, py, gl);
   }
-  // a player's music stands: icons beside them on the stage-left side, front first, never labelled
-  const standIcons = (pos, f) => { let out = ""; const n = standsOf(plot, pos);
-    for (let i = 0; i < n; i++) out += standGlyph(f.w / 2 + 8, 6 - i * 12, 1, stroke(pos), print ? "#fff" : "#0d232b");
-    return out; };
+  /* A player's music stand: a solid bar along the downstage edge of the
+     chair tile, inset from the corners, or just downstage of a standing
+     player's circle (and of the kit's footprint). Two stands, two bars side
+     by side in the same span. Drawn in the player's own group, so it turns
+     with them and always sits in front. */
+  const standBars = (pos, f) => {
+    const n = standsOf(plot, pos); if (!n) return "";
+    const obj = roleOf(plot, pos).stance === "object", seated = !obj && chairsOf(plot, pos) > 0;
+    const span = (seated ? f.w + 6 : f.w) * STAND.frac;
+    const yTop = obj ? f.d / 2 + STAND.gap : seated ? (f.w + 6) / 2 - STAND.thick - 1.5 : f.w / 2 + STAND.gap;
+    const gapB = 2, bw = (span - gapB * (n - 1)) / n;
+    let out = "";
+    for (let i = 0; i < n; i++){
+      const x0 = -span / 2 + i * (bw + gapB);
+      out += '<rect x="' + x0.toFixed(1) + '" y="' + yTop.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>';
+    }
+    return out;
+  };
   // positions
   for (const pos of plot.positions){
     const role = roleOf(plot, pos), f = footprintOf(pos, plot), px = g.sx(pos.x), py = g.sy(pos.y);
-    const lines = posShortLines(plot, pos, labels);
+    const plan = labelPlan(plot, pos, g, labels);
     if (role.stance === "object"){
       const byo = kitIsByo(plot, pos);               // the band's own kit: dashed, like everything else the band brings
       let body = role.id === "drums"
@@ -1800,7 +1881,7 @@ function diagramSVG(plot, opt){
           (byo ? (print ? "#fff" : "#0d232b") : houseFill) + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' +
           (byo ? ' stroke-dasharray="6 4"' : "") + bad(pos) + '/>';
       if (role.id === "drums") body += kitPieces(f, stroke(pos), dim, print ? "#fff" : "#0d232b", byo);
-      draw(pos, body + standIcons(pos, f));
+      draw(pos, body + standBars(pos, f));
     } else {
       /* a seated player: the circle sits on a chair — a square a little larger
          than the circle, so its corners show all round; two chairs, two squares */
@@ -1810,13 +1891,20 @@ function diagramSVG(plot, opt){
         const cx = (i - (n - 1) / 2) * (cs + 3);
         chairs += '<rect x="' + (cx - cs / 2).toFixed(1) + '" y="' + (-cs / 2) + '" width="' + cs + '" height="' + cs + '" rx="3" fill="' + houseFill + '" stroke="' + stroke(pos) + '" stroke-width="1.1"/>';
       }
-      draw(pos, chairs + '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>' + standIcons(pos, f));
+      draw(pos, chairs + '<circle r="' + (f.w / 2) + '" fill="' + (print ? "#fff" : "#0d232b") + '" stroke="' + stroke(pos) + '" stroke-width="' + swid(pos) + '"' + bad(pos) + '/>' + standBars(pos, f));
     }
-    const lb = LB[pos.id];
-    let ly = (lb ? g.sy(lb.y1) : py + f.d/2) + g.pt(DRAW.labelPt) * .95, inner = "";
-    for (const ln of lines){
-      inner += ts(ln.text, px, ly, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
-      ly += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.05;
+    let inner = "";
+    if (plan.inside){                              // the chair label, centred in the circle, upright
+      const u = g.pt(plan.inside.pt), n = plan.inside.lines.length;
+      plan.inside.lines.forEach((ln, i) => { inner += ts(ln, px, py + (i - (n - 1) / 2) * 1.15 * u + u * .36, plan.inside.pt); });
+    }
+    const lb = LB[pos.id];                         // doubles, names, or a label that would not fit: outside, clear of chair and stand
+    if (lb){
+      let ly = g.sy(lb.y1) + g.pt(lb.lines[0].size === "label" ? DRAW.labelPt : DRAW.smallPt) * .95;
+      for (const ln of lb.lines){
+        inner += ts(ln.text, px, ly, ln.size === "label" ? DRAW.labelPt : DRAW.smallPt, ln.size === "label" ? "" : "dim");
+        ly += g.pt(ln.size === "label" ? DRAW.labelPt : DRAW.smallPt) * 1.15;
+      }
     }
     labelled(pos, px, py, inner);
   }
@@ -2152,7 +2240,7 @@ function renderPanel(p){
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="-1" title="one music stand fewer"' + (standsOf(p, pos) ? "" : " disabled") + '>− stand</button>' +
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="1" title="one more music stand">+ stand</button></div></div>');
     }
-    H.push('</div><p class="note">Names are optional. A seated player\'s circle sits on a chair on the stage; − chair / + chair sets how many, and 0 is standing. A music stand is the small icon beside the player; − stand / + stand sets how many. Both are counted for the house.</p>');
+    H.push('</div><p class="note">Names are optional. A seated player\'s circle sits on a chair on the stage; − chair / + chair sets how many, and 0 is standing. A music stand is the solid bar on the audience side of a player; − stand / + stand sets how many. Both are counted for the house.</p>');
   }
   if (S.tab === "house"){
     H.push("<h3>House backline</h3><div class='plist'>");
@@ -2583,7 +2671,7 @@ function helpSections(){
       'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist, not a gate — nothing is ever blocked.'],
     ["Filling the band fast", 'Two shortcuts at the top of <b>Positions</b>. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
     ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. Keyboard players sit; in a big band the saxes, trombones and guitarist sit too. Chairs are counted for the house under House equipment.'],
-    ["Music stands", 'The small stand icon beside a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many; a big band starts with one each and two for the bass player and the drummer. They are counted for the house.'],
+    ["Music stands", 'The solid bar on the audience side of a player is their music stand — no label, the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many; a big band starts with one each and two for the bass player and the drummer. They are counted for the house.'],
     ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). Audience at the bottom; stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
     ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
     ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],

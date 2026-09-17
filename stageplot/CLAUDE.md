@@ -462,12 +462,48 @@ band fast" section says so, because nobody found them.
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
 mirroring the chairs. **A big band gives everyone a stand and the bass
 player and the drummer two** (`makeFromParts()`); a combo starts with none.
-A stand is drawn as an icon beside the player (`standGlyph()`, stage-left
-side, front first) with no label — William: a label per stand took more
-room than the stands — and the key names it. A stand placed from the Misc
-tab draws the same icon, unlabelled; it is for a stand that belongs to
-nobody. House equipment counts the players' stands plus the placed ones
-as "N × Music stand" against the 20 the house has (ASSUMED).
+**A stand is a solid bar, top-down** (`STAND`: 60% of the tile or circle
+width, 3″ thick, bone on screen and black in print): along the downstage
+edge of a seated player's chair tile, inset from the corners; 2″ below a
+standing player's circle; below the kit's footprint. Two stands are two
+bars in the same span. It is drawn in the player's own group, so it turns
+with them and always sits in front, and it never leaves the footprint. The
+first version was a side-view desk-and-stem icon beside the player; it read
+as a monitor and collided with the neighbours. A stand placed from the Misc
+tab draws the bar alone, unlabelled; it is for a stand that belongs to
+nobody. House equipment counts the players' stands plus the placed ones as
+"N × Music stand" against the 20 the house has (ASSUMED).
+
+## Labels inside shapes (2026-09-16)
+
+Every object's label is drawn centred and upright inside its own shape
+(`fitLabel()`): at full size, then as two lines broken at the space nearest
+the middle, then smaller in half-point steps down to `DRAW.minPt` (7pt),
+and only then outside — never smaller. `insideBox()` is what a label may
+occupy: a circle's inscribed square (0.78 of the diameter), a rectangle
+less 2″ (its own sides at right angles; the short side's square at 45°).
+`labelPlan()` splits a player's block: the chair label inside the circle,
+doubles and names outside in the box `positionLabelBox()` places, which
+now starts clear of the chair tile or the stand bar (`labelClear()`); a
+row's outside labels still take one side. Text is measured at .56 em a
+character, so a 22″ circle holds "Gtr" at 12pt and "Tenor / 1" at about
+8pt. **The kit is named once, on the kick** ("Drums", `kitPieces()`); it has
+no label of its own. A DI box is 10″, just enough for "DI" inside; a box
+with no source within 3′ says "DI · <instrument>" outside instead. House
+and band-brought gear carry a `short` sized to the shape ("Vox blk",
+"Deluxe 1", "Korg", "Bass rig", "Gtr amp"); the full labels still print in
+House equipment and Musicians provide.
+
+**Outside-label fallbacks in the default presets:** none — every chair
+label and every piece of gear in all five presets fits inside (`check.js`
+asserts it per preset). By design, outside: names and doubles under a
+player; a mic's label (a 12″ capsule holds nothing); a band-brought kit's
+"BYO Drum kit" under the kit; and from the band-brought palette the
+16″ laptop and the 18″ × 10″ acoustic guitar, whose shapes hold no word at
+7pt. The vertical stairs strip's label reads up its length (a fixture, not
+an object). Deferred: an outside label that dodges neighbours for gear (it
+only dodges for players); measuring text with real glyph widths rather
+than .56 em.
 
 ## The seven steps (update 2)
 
@@ -690,7 +726,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 521 assertions: the role library, every template (builds,
+`node check.js` — 570 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's

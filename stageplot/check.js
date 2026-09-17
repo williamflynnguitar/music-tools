@@ -22,7 +22,8 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
-  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText };`)();
+  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText,
+  STAND, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -609,7 +610,7 @@ for (const t of E.TEMPLATES){
   // the kit is drawn outside the engine block, so lift just those two functions
   const K = new Function(src.slice(src.indexOf("function drummerMark("), src.indexOf("function wedgePath(")) + "; return { drummerMark, kitPieces };")();
   const kit = K.kitPieces({ w:72, d:60 }, "#000", "#555", "#eee");
-  ok(/>Kick<\/text>/.test(kit), "the kick drum is labelled on the kit");
+  ok(/>Drums<\/text>/.test(kit) && !/>Kick<\/text>/.test(kit), "the kit is named once, on the kick, as Drums");
   const stem = /<path d="M-?[\d.]+,-?[\d.]+v([\d.]+)" stroke="#000" stroke-width="[\d.]+" stroke-linecap="round"/.exec(kit);
   const dot = /<circle cx="-?[\d.]+" cy="-?[\d.]+" r="([\d.]+)" fill="#000"/.exec(kit);
   ok(stem && dot && +stem[1] > +dot[1] * 1.5, "the drummer's stem clears the dot by most of a radius (" + (stem ? stem[1] : "?") + " on r " + (dot ? dot[1] : "?") + ")");
@@ -869,9 +870,16 @@ for (const t of E.TEMPLATES){
   // labels: a row takes one side
   const g = E.diagramGeom(bb), LB = E.labelBoxes(bb, g);
   for (const row of [["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"], ["Tbn 2","Tbn 1","Tbn 3","Tbn 4"], ["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]]){
-    const sides = new Set(row.map(s => LB[bb.positions.find(x => L[x.id].short === s).id].side));
-    ok(sides.size === 1, row[0] + "'s row labels all on one side (" + [...sides].join(",") + ")");
+    const outside = row.map(s => LB[bb.positions.find(x => L[x.id].short === s).id]).filter(Boolean);
+    eq(outside.length, 0, row[0] + "'s row: every chair label fits inside its circle, nothing outside");
   }
+  bb.positions.forEach(p => { p.names = ["Pat Q"]; });
+  const LB2 = E.labelBoxes(bb, E.diagramGeom(bb));
+  for (const row of [["Gtr","Tenor 1","Alto 1","Alto 2","Tenor 2","Bari"], ["Tbn 2","Tbn 1","Tbn 3","Tbn 4"], ["Tpt 2","Tpt 1","Tpt 3","Tpt 4"]]){
+    const sides = new Set(row.map(s => LB2[bb.positions.find(x => L[x.id].short === s).id].side));
+    ok(sides.size === 1, row[0] + "'s row: the names all on one side (" + [...sides].join(",") + ")");
+  }
+  bb.positions.forEach(p => { p.names = []; });
   const spacing = Math.abs(by(p => L[p.id].short === "Tpt 1")[0].x - by(p => L[p.id].short === "Tpt 2")[0].x);
   ok(spacing >= 36, "big band chairs are at least 36″ apart (" + spacing.toFixed(1) + "″)");
   ok(E.ROLES.filter(r => r.stance !== "object" && r.id !== "hornsection").every(r => r.w === 22 && r.d === 22), "every human being is the same size, 22 × 22");
@@ -924,9 +932,64 @@ for (const t of E.TEMPLATES){
   E.setStands(combo, t, 2);
   eq(E.houseNeeds(combo).find(n => n.id === "musicstand").need, 3, "the house count is the players' stands plus any placed by hand");
   ok(E.legendKeys(combo).some(k => k.id === "stand"), "the key names the stand icon");
-  ok(/function standGlyph\(/.test(src) && /standIcons\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as icons beside the player and a placed stand carries no label");
+  ok(!/standGlyph/.test(src) && /standBars\(pos, f\)/.test(src) && /if \(!isStand\) labelled\(it, px, py, gl\);/.test(src), "stands draw as solid bars in front of the player and a placed stand carries no label");
   ok(/data-stand=/.test(src) && (src.match(/− stand/g) || []).length >= 2, "− stand / + stand on the card and in the inspector");
   eq(E.standCount(E.migratePlot(JSON.parse(JSON.stringify(bb)))), 19, "stands survive save and load");
+}
+
+/* ---- 19o. labels inside shapes, and the stand as a bar (William, 2026-09-16) ---- */
+{
+  const bb = T("bigband"), g = E.diagramGeom(bb), L = E.positionLabels(bb);
+  const box = E.insideBox(bb.positions.find(p => p.roleId === "guitar"), bb);
+  ok(Math.abs(box.w - 22 * .78) < .01, "a player's label box is the circle's inscribed square (" + box.w.toFixed(1) + "″)");
+  const gtr = E.fitLabel(g, "Gtr", box.w, box.h, 12);
+  ok(gtr && gtr.lines.length === 1 && gtr.pt === 12, "Gtr fits at full size on one line");
+  const ten = E.fitLabel(g, "Tenor 1", box.w, box.h, 12);
+  ok(ten && ten.lines.join("/") === "Tenor/1" && ten.pt >= 7 && ten.pt < 12, "Tenor 1 breaks at the space and shrinks (" + (ten ? ten.pt : "?") + "pt)");
+  ok(E.fitLabel(g, "Somethingfartoolong", box.w, box.h, 12) === null, "what will not fit at the minimum goes outside, never smaller");
+  eq(E.DRAW.minPt, 7, "the minimum type size is 7pt");
+  for (const p of bb.positions){
+    const plan = E.labelPlan(bb, p, g, L);
+    if (p.roleId === "drums") ok(!plan.inside && plan.outside.length === 0, "the kit has no label of its own: the kick says Drums");
+    else ok(plan.inside && plan.inside.pt >= 7, L[p.id].short + " reads inside its circle at " + (plan.inside ? plan.inside.pt : "?") + "pt");
+  }
+  for (const t of E.TEMPLATES){                    // every preset: every chair label inside, none outside
+    const q = T(t.id), G = E.diagramGeom(q), M = E.positionLabels(q);
+    const out = q.positions.filter(p => p.roleId !== "drums" && !E.labelPlan(q, p, G, M).inside).map(p => M[p.id].short);
+    eq(out.length, 0, t.name + ": every chair label fits inside" + (out.length ? " — not " + out.join(", ") : ""));
+  }
+  // a name goes outside, clear of the chair tile and of the stand bar
+  const alto = bb.positions.find(p => L[p.id].short === "Alto 1"); alto.names = ["Sam Ortiz"];
+  const lb = E.positionLabelBox(bb, alto, g, [], L);
+  ok(lb && lb.lines.length === 1 && lb.lines[0].text === "Sam Ortiz" && lb.y1 <= alto.y - 14, "a seated player's name sits outside, below the chair tile");
+  const tpt = bb.positions.find(p => L[p.id].short === "Tpt 1"); tpt.names = ["Dana Bell"];
+  const lb2 = E.positionLabelBox(bb, tpt, g, [], L);
+  ok(lb2 && lb2.y1 <= tpt.y - 11 - E.STAND.gap - E.STAND.thick, "a standing player's name sits below their stand bar");
+  eq(E.labelClear(bb, tpt), 16, "…16″ from the centre: the circle, the gap and the bar");
+  // the bar
+  eq(JSON.stringify(E.STAND), JSON.stringify({ frac:.6, thick:3, gap:2 }), "the stand is a bar 60% of the width, 3″ thick, 2″ off a standing player");
+  ok(/yTop = obj \? f\.d \/ 2 \+ STAND\.gap : seated \? \(f\.w \+ 6\) \/ 2 - STAND\.thick - 1\.5 : f\.w \/ 2 \+ STAND\.gap/.test(src), "…on the tile's downstage edge when seated, just below the circle when standing, below the kit");
+  ok(/fill="' \+ ink \+ '"\/>';\n    }\n    return out;/.test(src), "…solid, in the ink colour");
+  ok(/stand:   '<circle cx="11" cy="6"/.test(src) && /<rect x="6\.5" y="12\.6" width="9" height="2\.4" rx="\.8" fill="' \+ ink/.test(src), "the key shows the bar under a player circle");
+  // DI boxes and gear
+  eq(E.VENUE.house.find(h => h.id === "di").w, 10, "a DI box is 10″, just enough to hold DI at the minimum size");
+  const dib = E.insideBox(bb.items.find(i => i.ref === "di"), bb);
+  ok(E.fitLabel(g, "DI", dib.w, dib.h, 9.5) !== null, "…and DI fits in it");
+  ok(/gl = ts\("DI", px, py \+ g\.pt\(fit\.pt\) \* \.36, fit\.pt, "dim"\); insideFit = true;/.test(src) && /"DI" \+ \(String\(it\.label \|\| ""\)\.trim\(\) \? " · "/.test(src),
+     "DI reads inside the box; far from any source it says which, outside");
+  ok(!/labelAngle\(it\.rot\)/.test(src), "gear labels stay upright, whatever the rotation");
+  const byoFits = E.BYO_KINDS.filter(b => b.id !== "byo-kit").map(b => [b.short, !!E.fitLabel(g, b.short, b.w - 2, b.d - 2, 9.5)]);
+  eq(byoFits.filter(x => !x[1]).map(x => x[0]).join(","), "Laptop,Ac gtr", "the band-brought palette holds its names inside, but for the laptop and the acoustic guitar (logged fallbacks)");
+  const amp = bb.items.find(i => E.refCat(i.ref) === "gtramp"), ab = E.insideBox(amp, bb);
+  ok(E.fitLabel(g, "Vox blk", ab.w, ab.h, 9.5) !== null, "Vox blk fits inside its amp — the short names are what the shape holds");
+  const kb = bb.items.find(i => E.refCat(i.ref) === "keys"), kbb = E.insideBox(kb, bb);
+  ok(kbb.w < kbb.h && E.fitLabel(g, "Korg", kbb.w, kbb.h, 9.5) !== null, "Korg fits upright inside the vertical keyboard");
+  for (const t of E.TEMPLATES){                    // every preset: every piece of gear holds its name
+    const q = T(t.id), G = E.diagramGeom(q), out = [];
+    for (const it of q.items){ const def = E.itemDef(it); if (!def || ["mic","di","musicstand"].includes(it.ref)) continue;
+      const b = E.insideBox(it, q); if (!E.fitLabel(G, def.short || def.label, b.w, b.h, 9.5)) out.push(def.short); }
+    eq(out.length, 0, t.name + ": every piece of gear holds its name inside" + (out.length ? " — not " + out.join(", ") : ""));
+  }
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *
