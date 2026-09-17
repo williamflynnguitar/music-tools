@@ -139,7 +139,16 @@ old plots come out exactly as they did.
   `piano`, after the Korg and the Nord, so nothing changes for a plot that
   never asks for it: two keys players still get the two keyboards, a third
   gets the piano rather than an over-count, and the category's over-count
-  reads "House keyboard / piano … has 3". It carries `acoustic:true`, and
+  reads "House keyboard / piano … has 3". It is also **a chair of its own**:
+  the `piano` role, "Upright piano" in the picker (William, the same day —
+  the swap alone was not findable), with `backlinePrefer:"piano"`, so a
+  pianist gets the piano and a second pianist falls back to a keyboard.
+  The role carries `di:true` for exactly that fallback: on a keyboard the
+  box is needed, on the piano `settleDI()` takes it away. The layout engine
+  treats the role as keys — same slot, shared stagger, the big band's
+  vertical turn — and it shares the keys monitor group. On a roster,
+  "upright piano" / "acoustic piano" / "house piano" is the piano (matched
+  before "upright", which is the bass); plain "piano" is still a keyboard. It carries `acoustic:true`, and
   that is the one thing the rest of the file reads: a piano is miked, not
   DI'd, so `settleDI()` takes away the DI box a keys player arrived with when
   they land on the piano and gives it back, beside the gear, when they go back
@@ -463,8 +472,8 @@ link cover it.
 
 `pos.chairs` is how many chairs a player needs: 0 standing, 1 seated, 2 a
 shared or double chair. Absent means the role's stance (`chairsOf()`), and
-**the only seated roles are the keyboard players**, keys and organ; every
-other human stands in every configuration — combo, rock/pop, vocals, duo.
+**the only seated roles are the keyboard players**, keys, piano and organ;
+every other human stands in every configuration — combo, rock/pop, vocals, duo.
 **A big band** additionally seats its saxes, trombones (bass trombone
 included) and guitarist: when the winds reach `hornsForBigBand`,
 `makeFromParts()` gives those a chair, so the template and the counts
@@ -784,7 +793,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 636 assertions: the role library, every template (builds,
+`node check.js` — 652 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
@@ -793,7 +802,9 @@ pinning and re-layout, deck re-layout, changeover, the v1 migration against
 backline by category (two guitarists on two amps, five on an amber over-count
 naming 4, Korg and Nord, an organ on the Nord, a third keys player on the
 house piano with no DI box and four over-counting "keyboard / piano … has
-3", the piano swap taking the DI box away and giving it back, a schema-2
+3", the Upright piano role taking the piano and falling back to the Korg
+with a DI box, a big band with its pianist on the piano turned vertical,
+the piano swap taking the DI box away and giving it back, a schema-2
 file with legacy DI inputs loading its third keys player onto the piano
 without a box, a shared piano settling both players, a swap surviving
 re-layout, an old doubled `gtramp1` settling on load, two plots sharing an

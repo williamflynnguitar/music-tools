@@ -209,7 +209,7 @@ for (const t of E.TEMPLATES){
   for (const r of E.ROLES.map(r => r.id)) E.addPosition(blank, r);
   ok(blank.positions.every(x => !("inputs" in x)), "no role in the library arrives with inputs (" + E.ROLES.length + " tried)");
   ok(E.ROLES.every(r => !r.inputs && !r.pkgs && !r.start), "…and no role carries mic packages");
-  eq(E.ROLES.filter(r => r.di).map(r => r.id).join(","), "bass,upright,keys,organ,dj,playback,acoustic,violin,cello",
+  eq(E.ROLES.filter(r => r.di).map(r => r.id).join(","), "bass,upright,keys,piano,organ,dj,playback,acoustic,violin,cello",
      "the DI instruments are marked, for the DI box that goes with them");
   for (const name of ["inputUnits","channelRows","channelCount","PKG_SETS","addMic","notMiked","unmiked","sectionRows","diSources","settleOldSections"])
     ok(!new RegExp("function " + name + "\\(|const " + name + " =").test(src), "no " + name + " left in the page");
@@ -562,6 +562,32 @@ for (const t of E.TEMPLATES){
   eq(E.diList(shared).map(d => d.who).join(", "), "Bass", "two players sharing one piano both lose their DI boxes");
   kitems[0].ref = "kb1"; for (const own of E.ownersOf(shared, kitems[0])) E.settleDI(shared, own);
   eq(E.diList(shared).map(d => d.who).sort().join(", "), "Bass, Keys 1, Keys 2", "…and both get one back on a keyboard");
+  // the piano as a chair of its own (William, 2026-09-17): "Upright piano" in the picker
+  const pr = E.ROLES.find(r => r.id === "piano");
+  ok(pr && pr.pick === "Upright piano" && pr.backlinePrefer === "piano" && pr.family === "rhythm" && pr.stance === "seated", "an Upright piano role in the rhythm group, seated, preferring the house piano");
+  eq(E.roleIdFromText("Sam — upright piano"), "piano", "\"upright piano\" on a roster is the piano, not the upright bass");
+  eq(E.roleIdFromText("Sam — upright"), "upright", "…and plain \"upright\" is still the bass");
+  eq(E.roleIdFromText("Sam — piano"), "keys", "…while plain \"piano\" is still a keyboard, as before");
+  const pt = E.makeFromParts([["piano",1],["bass",1],["drums",1]], null, "Piano trio");
+  const ppos = pt.positions.find(q => q.roleId === "piano");
+  eq(E.positionLabels(pt)[ppos.id].short, "Piano", "the chair is labelled Piano");
+  eq(pt.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).join(", "), "piano", "a piano player gets the house piano");
+  eq(E.diList(pt).map(d => d.who).join(", "), "Bass", "…and no DI box");
+  eq(E.chairsOf(pt, ppos), 1, "…and a chair");
+  ok(!collisions(pt).hard.length, "…laid out clear of everything: " + collisions(pt).hard.join("; "));
+  const pk = E.makeFromParts([["piano",1],["keys",1],["bass",1],["drums",1]], null, "Piano and keys");
+  const pkRefs = pk.positions.filter(q => ["piano","keys"].includes(q.roleId)).map(q => q.roleId + ":" + E.findBackline(pk, q, E.roleOf(pk, q)).ref);
+  eq(pkRefs.sort().join(", "), "keys:kb1, piano:piano", "piano and keys side by side: the piano and the Korg");
+  eq(E.diList(pk).map(d => d.who).sort().join(", "), "Bass, Keys", "…only the keys player is DI'd");
+  ok(!collisions(pk).hard.length, "…both laid out clear: " + collisions(pk).hard.join("; "));
+  const pp = E.makeFromParts([["piano",2],["bass",1],["drums",1]], null, "Two pianos");
+  eq(pp.items.filter(i => E.refCat(i.ref) === "keys").map(i => i.ref).sort().join(", "), "kb1, piano", "a second piano player falls back to the Korg when the piano is taken");
+  eq(E.diList(pp).map(d => d.who).sort().join(", "), "Bass, Piano 2", "…and is DI'd there, while Piano 1 is not");
+  const bbp = E.TEMPLATES.find(t => t.id === "bigband").parts.map(([w, n]) => [w === "keys" ? "piano" : w, n]);
+  const bb2 = E.makeFromParts(bbp, null, "Big band on the piano");
+  const bbPiano = bb2.items.find(i => i.ref === "piano");
+  ok(bbPiano && bbPiano.rot === 90, "a big band's pianist has the piano turned vertical like the keyboard");
+  ok(!collisions(bb2).hard.length, "…and the big band lays out clear with it: " + collisions(bb2).hard.join("; "));
 
   // a swap sticks: the lookup matches on owner and category, never on the id
   const sw = E.makeFromParts([["guitar",1],["bass",1],["drums",1]], null, "Swap");
@@ -1060,7 +1086,7 @@ for (const t of E.TEMPLATES){
   eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "trumpet")), 0, "…and its trumpet");
   eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "keys")), 1, "…its keys player sits, as keyboard players always do");
   for (const t of ["rock","vocals","duo"]){ const q = T(t); ok(q.positions.every(p => E.chairsOf(q, p) === (p.roleId === "keys" || p.roleId === "organ" ? 1 : 0)), t + ": everyone stands but the keys player"); }
-  eq(E.ROLES.filter(r => r.stance === "seated").map(r => r.id).join(","), "keys,organ", "the only seated roles are the keyboard players");
+  eq(E.ROLES.filter(r => r.stance === "seated").map(r => r.id).join(","), "keys,piano,organ", "the only seated roles are the keyboard and piano players");
   const t = combo.positions.find(p => p.roleId === "tenor");
   E.setChairs(combo, t, 1);
   ok(t.chairs === 1 && E.chairsOf(combo, t) === 1, "+ chair seats a standing player");
