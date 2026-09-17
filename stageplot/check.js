@@ -846,10 +846,11 @@ for (const t of E.TEMPLATES){
   const foot = src.slice(src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))"), src.indexOf("H.push('<p class=\"foot\">' + esc(deliverLine(p))") + 1200);
   ok(foot.indexOf("deliverLine(p)") < foot.indexOf("View or edit this plot online") && foot.indexOf("View or edit this plot online") < foot.indexOf("VENUE.editNotice"), "…deliver line, link, venue sentence, in that order");
   eq(E.VENUE.editNotice, "Somewhere Works may adjust placements and monitor assignments to fit the room.", "the venue sentence lives in VENUE");
-  ok(/\.sheet \.foot\.link a\{color:#000;text-decoration:underline\}/.test(src), "…underlined, so it reads as a link on the page");
+  ok(/\.sheet \.foot\.link a\{color:#0645ad;text-decoration:underline\}/.test(src), "…blue and underlined, so it reads as a link on the page");
   ok(/L\.push\("View or edit this plot online: " \+ link\)/.test(src) && /L\.push\(VENUE\.editNotice\)/.test(src), "the email carries the link and the sentence too");
   ok(/await ensureLink\(p\); renderSheet\(p\);/.test(src) && /emailText\(p, await ensureLink\(p\)\)/.test(src), "Print and Email wait for the link, so it matches what goes out");
-  ok(/encodeHash\(\[p\], 0\)/.test(src), "the printed link is this one plot, not the whole session");
+  ok(/shareBase\(\) \+ "\?open=" \+ Date\.now\(\)\.toString\(36\) \+ await encodeHash\(\[p\], 0\)/.test(src), "the printed link is this one plot, with a fresh ?open= token before the hash so Chrome's Save as PDF keeps it as a link from any page");
+  ok(/location\.origin \+ location\.pathname : APP_URL/.test(src), "…built off the page's origin and path, never an existing query");
   ok(/return "#s=" \+ B64\.enc/.test(src) && /return "#j=" \+ B64\.enc/.test(src) && /\/\^#\(\[sj\]\)=\(\.\+\)\$\//.test(src) && /CompressionStream\("deflate-raw"\)/.test(src),
      "the hash is deflate-raw + base64url under the s marker; plain base64url JSON under j still decodes");
   ok(/const APP_URL = "https:\/\/williamflynnguitar\.github\.io\/music-tools\/stageplot\/"/.test(src) && /shareBase\(\)/.test(src), "a file:// preview still prints the live address");

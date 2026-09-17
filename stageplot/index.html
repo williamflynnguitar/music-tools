@@ -172,7 +172,7 @@ svg.deck .delx:hover circle{fill:#d4715f}
 .sheet .diagram svg{display:block;width:100%;height:auto}
 .sheet .foot{font-family:var(--psans);font-size:7.5pt;color:#444;margin-top:4px;border-top:.5pt solid #999;padding-top:3px}
 .sheet .foot.under{border-top:0;margin-top:1px;padding-top:0}
-.sheet .foot.link a{color:#000;text-decoration:underline}
+.sheet .foot.link a{color:#0645ad;text-decoration:underline}   /* blue, so it reads as a link on the page and in the PDF */
 .sheet .notes{white-space:pre-wrap}
 .sheet .empty{color:#666;font-style:italic}
 
@@ -1908,10 +1908,16 @@ function renderCanvas(p){
    has changed; when it arrives the sheet re-renders. Print and Email wait
    for it (ensureLink), so what goes out always matches what is on the page. */
 const APP_URL = "https://williamflynnguitar.github.io/music-tools/stageplot/";
-function shareBase(){ return /^https?:$/.test(location.protocol) ? location.href.split("#")[0] : APP_URL; }
+function shareBase(){ return /^https?:$/.test(location.protocol) ? location.origin + location.pathname : APP_URL; }
+/* The printed link carries "?open=<token>" before the hash. Without a query
+   the link is the page's own address plus a fragment, and Chrome's Save as
+   PDF treats that as an in-document jump to an element that does not exist
+   and writes no link into the PDF at all (verified with headless Chrome,
+   2026-09-16). The token is new for every link built, so even a page that
+   was itself opened from a printed link prints a link to a different URL. */
 async function ensureLink(p){
   const key = JSON.stringify(p);
-  if (!(S.link && S.link.key === key)) S.link = { key, url:shareBase() + await encodeHash([p], 0) };
+  if (!(S.link && S.link.key === key)) S.link = { key, url:shareBase() + "?open=" + Date.now().toString(36) + await encodeHash([p], 0) };
   return S.link.url;
 }
 function plotLink(p){

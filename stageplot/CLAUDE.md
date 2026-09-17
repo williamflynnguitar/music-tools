@@ -446,7 +446,18 @@ taken off the same day); then `VENUE.editNotice`, the one-place sentence
 that Somewhere Works may adjust placements and monitor assignments. The
 email text carries the URL in full, since there it is one line. The link is `encodeHash([p], 0)` — this one plot, a
 snapshot as printed; a reprint makes a new link — off `shareBase()`, which
-is the page's own address on http(s) and `APP_URL` on a file:// preview.
+is the page's own origin and path on http(s) and `APP_URL` on a file://
+preview, **with `?open=<token>` between them and the hash**, the token new
+for every link built. That query string is load-bearing: a link to the page's own address plus a fragment is, to
+Chrome's Save as PDF, an in-document jump to an element that does not
+exist, and it writes no link annotation at all (verified with headless
+Chrome: same page + hash → 0 annotations, same page + query + hash → 1;
+and the token matters because a page opened from a printed link is itself
+at `?open=…`, so a fixed query would make its own printed link
+same-document again).
+The link also opens in a new tab, because followed in place it would be a
+same-document hash change that never re-runs `init()`; a `hashchange`
+listener reloads for a plot hash that arrives any other way.
 Compressing is async, so `plotLink()` renders the sheet with the last link
 built for exactly this content and asks for a fresh one when the content
 changed; Print and Email `await ensureLink()` first, so what goes out
