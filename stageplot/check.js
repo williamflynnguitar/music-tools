@@ -1104,7 +1104,8 @@ for (const t of E.TEMPLATES){
   const byoFits = E.BYO_KINDS.filter(b => b.id !== "byo-kit").map(b => [b.short, !!E.fitLabel(g, b.short, b.w - 2, b.d - 2, 9.5)]);
   eq(byoFits.filter(x => !x[1]).map(x => x[0]).join(","), "Laptop,Ac gtr", "the band-brought palette holds its names inside, but for the laptop and the acoustic guitar (logged fallbacks)");
   const amp = bb.items.find(i => E.refCat(i.ref) === "gtramp"), ab = E.insideBox(amp, bb);
-  ok(E.fitLabel(g, "Vox blk", ab.w, ab.h, 9.5) !== null, "Vox blk fits inside its amp — the short names are what the shape holds");
+  ok(E.fitLabel(g, "VOX blk", ab.w, ab.h, 9.5) !== null, "VOX blk fits inside its amp — the short names are what the shape holds");
+  ok(E.VENUE.house.filter(h => h.bcat === "gtramp" && /vox/i.test(h.short)).every(h => /^VOX /.test(h.short) && /^VOX /.test(h.label)), "the VOX amps are VOX in caps, on the stage and in the list: Vox is the vocalist's chair (William, 2026-09-16)");
   const kb = bb.items.find(i => E.refCat(i.ref) === "keys"), kbb = E.insideBox(kb, bb);
   ok(kbb.w < kbb.h && E.fitLabel(g, "Korg", kbb.w, kbb.h, 9.5) !== null, "Korg fits upright inside the vertical keyboard");
   for (const t of E.TEMPLATES){                    // every preset: every piece of gear holds its name

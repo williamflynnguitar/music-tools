@@ -83,7 +83,7 @@ counts and the deck are still placeholders.
 | `kb2` — Nord Stage 4 88 | confirmed | ≈51″ × 14″ |
 | `gtramp3`, `gtramp4` — Fender Deluxe Reverb (1) and (2) | confirmed | ≈25″ × 10″ |
 | `bassamp` head — Markbass Little Mark Tube 800 | confirmed | ≈24″ × 20″ with the cab |
-| `gtramp1`, `gtramp2` — Vox AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart |
+| `gtramp1`, `gtramp2` — VOX AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart. Written VOX, in caps, everywhere it is drawn or printed: "Vox" is the vocalist's chair (William, 2026-09-16) |
 | `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
 | `mic` 8, `musicstand` 20, `di` 8, `chair` 40 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
@@ -511,7 +511,7 @@ character, so a 22″ circle holds "Gtr" at 12pt and "Tenor / 1" at about
 8pt. **The kit is named once, on the kick** ("Drums", `kitPieces()`); it has
 no label of its own. A DI box is 10″, just enough for "DI" inside; a box
 with no source within 3′ says "DI · <instrument>" outside instead. House
-and band-brought gear carry a `short` sized to the shape ("Vox blk",
+and band-brought gear carry a `short` sized to the shape ("VOX blk",
 "Deluxe 1", "Korg", "Bass rig", "Gtr amp"); the full labels still print in
 House equipment and Musicians provide.
 
