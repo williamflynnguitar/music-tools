@@ -80,6 +80,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .chk.skip{margin:-2px 0 10px;color:var(--bone-dim);font-size:12.5px}
 .help ol.steps{margin:2px 0 4px;padding-left:22px}
 .help ol.steps li{margin:1px 0}
+.help dd ul{margin:2px 0 4px;padding-left:22px}
+.help dd ul li{margin:2px 0}
 .panel h3{font-size:13px;font-weight:400;color:var(--bone-dim);margin:14px 0 6px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .panel h3:first-child{margin-top:0}
 .plist{display:flex;flex-direction:column;gap:5px}
@@ -2808,19 +2810,58 @@ const STEP_HINT = { positions:"who is playing, where, and whether they sit or st
   wedges:"monitor wedges, numbered by mix", mics:"every microphone and DI box, where it stands", misc:"music stands and a text label", details:"act, dates, notes for the tech" };
 function helpSections(){
   const k = t => '<kbd>' + t + '</kbd>';
+  const ul = items => '<ul>' + items.map(t => '<li>' + t + '</li>').join("") + '</ul>';   // one point per bullet (William, 2026-09-17: easier to scan than a paragraph)
   return [
-    ["The seven steps", '<ol class="steps">' + RAIL_TABS.map(([id, label]) => '<li><b>' + esc(label) + '</b> — ' + STEP_HINT[id] + '</li>').join("") + '</ol>' +
-      'Work down the sidebar in that order. A step shows ✓ once it has something in it; tick “nothing here” to skip one. It is a checklist: an empty step never blocks the next one.'],
-    ["Filling the band fast", '<b>Positions</b> has two shortcuts at the top. <b>Bulk add players…</b> sets how many of each instrument and builds every position at once. <b>Paste a roster…</b> takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'],
-    ["Seated or standing", 'A seated player\'s circle sits on a square chair; a standing player is the circle alone. Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair. Keyboard players sit; in a big band the saxes, trombones and guitarist sit too. Chairs are counted for the house under House equipment.'],
-    ["Music stands", 'The solid bar on the audience side of a player is their music stand. It carries no label, because the key says what it is. <b>− stand</b> / <b>+ stand</b> on the card sets how many. The presets start you off: a jazz combo gives everyone one; a big band gives everyone one and the bass player and the drummer two, because their parts are longer; a rock / pop band gives none. They are counted for the house.'],
-    ["Moving things", 'Click to select, drag to move — dragging a name drags the player. Arrow keys nudge 6″ (' + k("shift") + ' for a foot). The audience is at the bottom, and stage left and right are the performer\'s. The PA and the stairs are not floor: nothing will drop onto them.'],
-    ["Turning things", k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage. Anything turns: players, the kit, a keyboard, a wedge, a mic.'],
-    ["Removing things", 'Select it and click its ⊗, or press ' + k("Delete") + '. <b>clear stage</b> empties the deck. ' + k("⌘Z") + ' undoes anything.'],
-    ["The drum kit", 'The kick faces the audience, marked (kick). The open circle upstage of it is the drummer, labelled like every other player. Drums are drawn thick and filled, cymbals thin and open. Select the kit to say whether it is the house kit or your own.'],
-    ["Microphones", 'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI. Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes. Label it — “vocal”, “tpt 1+2”, “snare”. One mic is one stand, however many share it. Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'],
-    ["Monitor wedges", 'Place each wedge where it goes. The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it. Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab. Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'],
-    ["Sending it", '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog. The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link. <b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link. Deliver it to ' + esc(VENUE.deliverTo) + '.'],
+    ["The seven steps", '<ol class="steps">' + RAIL_TABS.map(([id, label]) => '<li><b>' + esc(label) + '</b> — ' + STEP_HINT[id] + '</li>').join("") + '</ol>' + ul([
+      'Work down the sidebar in that order.',
+      'A step shows ✓ once it has something in it; tick “nothing here” to skip one.',
+      'It is a checklist: an empty step never blocks the next one.'])],
+    ["Filling the band fast", ul([
+      '<b>Bulk add players…</b>, at the top of <b>Positions</b>, sets how many of each instrument and builds every position at once.',
+      '<b>Paste a roster…</b>, beside it, takes a list you already have — one player per line, “Sam Ortiz — keys” — and fills the positions with those names, each sent to its instrument. Paste first, tidy after.'])],
+    ["Seated or standing", ul([
+      'A seated player\'s circle sits on a square chair; a standing player is the circle alone.',
+      'Every card on <b>Positions</b> (and the panel under the stage) has <b>− chair</b> / <b>+ chair</b>: 0 is standing, 2 is a shared or double chair.',
+      'Keyboard players sit; in a big band the saxes, trombones and guitarist sit too.',
+      'Chairs are counted for the house under House equipment.'])],
+    ["Music stands", ul([
+      'The solid bar on the audience side of a player is their music stand. It carries no label, because the key says what it is.',
+      '<b>− stand</b> / <b>+ stand</b> on the card sets how many.',
+      'The presets start you off: a jazz combo gives everyone one; a big band gives everyone one and the bass player and the drummer two, because their parts are longer; a rock / pop band gives none.',
+      'They are counted for the house.'])],
+    ["Moving things", ul([
+      'Click to select, drag to move — dragging a name drags the player.',
+      'Arrow keys nudge 6″ (' + k("shift") + ' for a foot).',
+      'The audience is at the bottom, and stage left and right are the performer\'s.',
+      'The PA and the stairs are not floor: nothing will drop onto them.'])],
+    ["Turning things", ul([
+      k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage.',
+      'Anything turns: players, the kit, a keyboard, a wedge, a mic.'])],
+    ["Removing things", ul([
+      'Select it and click its ⊗, or press ' + k("Delete") + '.',
+      '<b>clear stage</b> empties the deck.',
+      k("⌘Z") + ' undoes anything.'])],
+    ["The drum kit", ul([
+      'The kick faces the audience, marked (kick).',
+      'The open circle upstage of it is the drummer, labelled like every other player.',
+      'Drums are drawn thick and filled, cymbals thin and open.',
+      'Select the kit to say whether it is the house kit or your own.'])],
+    ["Microphones", ul([
+      'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI.',
+      'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes.',
+      'Label it — “vocal”, “tpt 1+2”, “snare”.',
+      'One mic is one stand, however many share it.',
+      'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead.'])],
+    ["Monitor wedges", ul([
+      'Place each wedge where it goes.',
+      'The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it.',
+      'Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab.',
+      'Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'])],
+    ["Sending it", ul([
+      '<b>Print / PDF</b> puts the stage and the equipment sheet on one Letter page — choose <i>Save as PDF</i> in the print dialog.',
+      'The printed plot carries a link to itself: anyone with the PDF can open that link and choose <b>Edit a copy</b>. The link is a snapshot of the plot as printed; a reprint produces a new link.',
+      '<b>Save</b> keeps a file you can load and edit later; <b>Share link</b> copies a read-only link.',
+      'Deliver it to ' + esc(VENUE.deliverTo) + '.'])],
   ];
 }
 function helpHTML(){
