@@ -22,7 +22,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, venueFixtures,
-  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState };`)();
+  onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -205,7 +205,7 @@ for (const t of E.TEMPLATES){
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (DI boxes and the venue's fixtures included): " + ids(combo));
+  eq(ids(combo), "player,seated,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its trumpet sits, so seated is in it): " + ids(combo));
   const blank = E.blankPlot();
   eq(ids(blank), "truss,fixture", "an empty deck's key has only the truss and the venue's fixtures");
   E.addPosition(blank, "keys");
@@ -373,7 +373,7 @@ for (const t of E.TEMPLATES){
     const p = E.migratePlot(v1);
     eq(p.schemaVersion, 3, name + ": migrates to the current schema");
     eq(JSON.stringify(E.monitorTable(p).rows.map(r => r.n)), JSON.stringify(want.monitors.map(m => m[0])), name + ": same wedges");
-    const gear = h => h[0] !== "di" && h[0] !== "micstand" && h[0] !== "mic";   // stands were counted off the input list; mics and DIs are objects now
+    const gear = h => !["di","micstand","mic","chair"].includes(h[0]);   // stands were counted off the input list; mics and DIs are objects now; chairs are new
     eq(JSON.stringify(E.houseNeeds(p).map(h => [h.id, h.need]).filter(gear)), JSON.stringify(want.house.filter(gear).map(h => [h[0], h[1]])), name + ": same house equipment");
     const diWant = (want.house.find(h => h[0] === "di") || [0, 0])[1];
     eq(E.disOn(p).length, diWant, name + ": the DI boxes v1 counted are DI boxes on the deck (" + diWant + ")");
@@ -798,7 +798,7 @@ for (const t of E.TEMPLATES){
 {
   ok(/id="bHelp"/.test(src) && /function openHelp\(\)/.test(src) && /id="bStartHelp"/.test(src), "a ? in the top bar and a How it works button on New plot");
   ok(/id="bPrint" title="[^"]*Save as PDF[^"]*">Print \/ PDF<\/button>/.test(src), "the one-click export is Print / PDF, and says so (E4)");
-  for (const topic of ["Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF", "carries a link to itself", "Edit a copy", "a reprint produces a new link"])
+  for (const topic of ["Bulk add players", "Paste a roster", "− chair", "Click to select, drag to move", "45° clockwise", "counter-clockwise", "click its ⊗", "Delete", "The kick faces the audience", "+ Mic", "One mic is one stand", "mix 1 is the tech", "Print / PDF", "Save as PDF", "carries a link to itself", "Edit a copy", "a reprint produces a new link"])
     ok(src.indexOf(topic) !== -1, "the help covers: " + topic);
   ok(/#helpDlg\{display:none!important\}|,#helpDlg\{display:none!important\}/.test(src), "…and never prints");
   ok(!/openHelp\(\);\s*\}\)\(\);/.test(src), "…and nothing opens it on load");
@@ -854,6 +854,45 @@ for (const t of E.TEMPLATES){
   ok(/return "#s=" \+ B64\.enc/.test(src) && /return "#j=" \+ B64\.enc/.test(src) && /\/\^#\(\[sj\]\)=\(\.\+\)\$\//.test(src) && /CompressionStream\("deflate-raw"\)/.test(src),
      "the hash is deflate-raw + base64url under the s marker; plain base64url JSON under j still decodes");
   ok(/const APP_URL = "https:\/\/williamflynnguitar\.github\.io\/music-tools\/stageplot\/"/.test(src) && /shareBase\(\)/.test(src), "a file:// preview still prints the live address");
+}
+
+/* ---- 19m. seated or standing: chairs (William, 2026-09-16) ---- */
+{
+  const bb = T("bigband"), L = E.positionLabels(bb), by = f => bb.positions.filter(f);
+  ok(by(p => p.roleId === "alto" || p.roleId === "tenor" || p.roleId === "bari").every(p => E.chairsOf(bb, p) === 1), "a big band's saxes sit");
+  ok(by(p => p.roleId === "trombone").every(p => E.chairsOf(bb, p) === 1), "…and its trombones");
+  ok(by(p => p.roleId === "trumpet").every(p => E.chairsOf(bb, p) === 1), "…and its trumpets, by role");
+  ok(by(p => ["guitar","bass","keys"].includes(p.roleId)).every(p => E.chairsOf(bb, p) === 0) && E.chairsOf(bb, by(p => p.roleId === "drums")[0]) === 0, "the rhythm section stands, and the kit is the kit");
+  eq(E.chairCount(bb), 13, "13 chairs: 5 saxes, 4 trombones, 4 trumpets");
+  ok(E.houseNeeds(bb).some(n => n.id === "chair" && n.need === 13 && !n.over), "…asked of the house as 13 × Chair, with no over-count");
+  const combo = T("combo");
+  eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "tenor")), 0, "a combo's tenor stands");
+  eq(E.chairsOf(combo, combo.positions.find(p => p.roleId === "trumpet")), 1, "…its trumpet sits, by role");
+  const t = combo.positions.find(p => p.roleId === "tenor");
+  E.setChairs(combo, t, 1);
+  ok(t.chairs === 1 && E.chairsOf(combo, t) === 1, "+ chair seats a standing player");
+  E.setChairs(combo, t, 2);
+  eq(E.chairText(E.chairsOf(combo, t)), "2 chairs", "…and again for a double chair");
+  E.setChairs(combo, t, 0);
+  ok(!("chairs" in t), "back to the role's default removes the field, so the file is unchanged");
+  E.setChairs(combo, t, -3);
+  eq(E.chairsOf(combo, t), 0, "never below zero");
+  const kit = combo.positions.find(p => p.roleId === "drums");
+  E.setChairs(combo, kit, 2);
+  eq(E.chairsOf(combo, kit), 0, "the kit takes no chairs — the throne is part of the kit");
+  const keys = E.legendKeys(combo).map(k => k.id);
+  ok(keys.includes("player") && keys.includes("seated"), "the key shows both standing and seated when both are drawn");
+  ok(/const n = chairsOf\(plot, pos\), cs = f\.w \+ 6;/.test(src) && /rx="3" fill="' \+ houseFill/.test(src), "a seated player is drawn on a square chair a little larger than the circle");
+  ok(/data-chair=/.test(src) && (src.match(/− chair/g) || []).length >= 2, "− chair / + chair on the card and in the inspector");
+  const saved = E.migratePlot(JSON.parse(JSON.stringify(bb)));
+  eq(E.chairCount(saved), 13, "chairs survive save and load");
+  // power strips and risers are gone
+  ok(!E.VENUE.house.some(h => h.id === "power" || h.id === "riser"), "no power strip or riser in the palette");
+  const old = JSON.parse(JSON.stringify(T("rock")));
+  old.items.push({ id:"pw", kind:"house", ref:"power", label:"", x:50, y:50, rot:0, moved:true, ownerPositionIds:[] });
+  ok(!E.migratePlot(old).items.some(i => i.ref === "power"), "…and one in an old file is dropped on load");
+  ok(/id="bInstr"[^>]*>Bulk add players…<\/button>/.test(src) && /id="bBulk"[^>]*>Paste a roster…<\/button>/.test(src), "the two shortcuts are Bulk add players… and Paste a roster…");
+  ok(!/Instrumentation…|Paste names…/.test(src), "…and the old labels are gone");
 }
 
 /* ---- 20. the printed page, measured in a browser ---- *

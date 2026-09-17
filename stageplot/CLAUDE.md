@@ -86,8 +86,8 @@ counts and the deck are still placeholders.
 | `gtramp1`, `gtramp2` — Vox AC combo, black and red | **ASSUMED** model | AC15C1 or AC30C2, not yet read off the back panel. The colour is what the label says, because the colour is how the tech tells them apart |
 | `bassamp` cab — Markbass 4×10 | **ASSUMED** model | the head is confirmed, the cab is not |
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
-| `mic` 8, `musicstand` 20, `di` 8, `power` 6 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
-| `riser` count 0 | **ASSUMED** | unknown whether Somewhere Works owns any |
+| `mic` 8, `musicstand` 20, `di` 8, `chair` 40 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
+| power strips, risers | removed 2026-09-16 | Somewhere Works handles power; there are no risers. An old file's power/riser items are dropped on load |
 | `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
 
 Footprints are approximate on purpose: they only have to draw at a sensible
@@ -419,6 +419,31 @@ The one-click export is **Print / PDF**: the stage and the equipment sheet on
 one Letter page, saved as PDF from the print dialog. Save (.json), Share
 link and Email text are the other three; there is no PNG.
 
+## Seated or standing (2026-09-16)
+
+`pos.chairs` is how many chairs a player needs: 0 standing, 1 seated, 2 a
+shared or double chair. Absent means the role's stance (`chairsOf()`: a
+seated role — trumpet, trombone, bass trombone, tuba, flugelhorn, perc,
+organ, cello — gets 1, the kit 0), so nothing saved before this changed
+meaning, and `setChairs()` removes the field when a player is back at the
+role's default. **A big band sits its saxes too**: `makeFromParts()` gives
+every sax a chair when the winds reach `hornsForBigBand`, so both the
+template and the counts builder come out seated; a combo's saxes stand.
+William's ruling for saxes and trombones; trumpets sit by role.
+
+On the stage a seated player's circle sits on a square chair 6″ larger
+than the circle, so the corners show all round; two chairs draw two squares.
+The key has "standing player" and "seated". Every card on the Positions tab
+and the inspector carry **− chair / + chair** with the state in words
+("standing", "1 chair", "2 chairs"). Chairs are never placed as objects:
+`chairCount()` feeds House equipment as "N × Chair" (`chair` in
+`VENUE.house`, count 40, ASSUMED — ask Tim).
+
+The Positions tab's two shortcuts are **Bulk add players…** (counts per
+instrument, the old Instrumentation dialog) and **Paste a roster…** (names,
+one per line, sent to their instruments); the help panel's "Filling the
+band fast" section says so, because nobody found them.
+
 ## The seven steps (update 2)
 
 The sidebar is `RAIL_TABS`, numbered 1–7 in order: Positions, House, Band
@@ -640,7 +665,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 471 assertions: the role library, every template (builds,
+`node check.js` — 497 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, the layout engine's
