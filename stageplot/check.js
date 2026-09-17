@@ -23,7 +23,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   pickBackline, findBackline, settleBackline, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
   micsOn, disOn, ownerOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
-  STAND, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
+  STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
 /* Boxes as the diagram actually draws them — the footprint plus, for a
    position, the label where labelBoxes() puts it. HARD = two physical
@@ -218,11 +218,11 @@ for (const t of E.TEMPLATES){
 {
   const ids = p => E.legendKeys(p).map(k => k.id).join(",");
   const combo = T("combo");
-  eq(ids(combo), "player,seated,stand,wedge,house,di,drummer,truss,fixture", "the jazz combo's key (its keys player sits, so seated is in it; everyone reads, so stand is too): " + ids(combo));
+  eq(ids(combo), "player,seated,stand,wedge,house,di,kitparts", "the jazz combo's key (its keys player sits, so seated is in it; everyone reads, so stand is too): " + ids(combo));
   const blank = E.blankPlot();
-  eq(ids(blank), "truss,fixture", "an empty deck's key has only the truss and the venue's fixtures");
+  eq(ids(blank), "", "an empty deck's key is empty: the truss posts, the PA and the stairs are the venue's own and are not keyed (William, 2026-09-16)");
   E.addPosition(blank, "keys");
-  ok(!/drummer|wedge|byo/.test(ids(blank)), "…and never lists a symbol that isn't drawn: " + ids(blank));
+  ok(!/kitparts|wedge|byo/.test(ids(blank)), "…and never lists a symbol that isn't drawn: " + ids(blank));
   const byo = T("combo"); byo.items.push({ id:"b1", kind:"byo", ref:"byo-pedals", label:"", x:40, y:40, rot:0, moved:true, ownerPositionIds:[] });
   ok(/byo/.test(ids(byo)), "band-brought gear adds the dashed box to the key");
   ok(E.legendKeys(combo).every(k => k.text && !/⊘/.test(k.text)), "every key entry is words, not another symbol");
@@ -617,16 +617,40 @@ for (const t of E.TEMPLATES){
   ok(/id="bRotL"[^>]*>rotate ⟲ \(⇧R\)/.test(src) && /id="bRot"[^>]*>rotate ⟳ \(R\)/.test(src), "both directions have a button in the inspector, naming their key (E1)");
 }
 
-/* ---- 19c. the drummer mark and the kick label ---- */
+/* ---- 19c. the kit: a right-handed kit, drums thick and cymbals thin, the drummer a player circle (William, 2026-09-16) ---- */
 {
-  // the kit is drawn outside the engine block, so lift just those two functions
-  const K = new Function(src.slice(src.indexOf("function drummerMark("), src.indexOf("function wedgePath(")) + "; return { drummerMark, kitPieces };")();
-  const kit = K.kitPieces({ w:72, d:60 }, "#000", "#555", "#eee");
-  ok(/>Drums<\/text>/.test(kit) && !/>Kick<\/text>/.test(kit), "the kit is named once, on the kick, as Drums");
-  const stem = /<path d="M-?[\d.]+,-?[\d.]+v([\d.]+)" stroke="#000" stroke-width="[\d.]+" stroke-linecap="round"/.exec(kit);
-  const dot = /<circle cx="-?[\d.]+" cy="-?[\d.]+" r="([\d.]+)" fill="#000"/.exec(kit);
-  ok(stem && dot && +stem[1] > +dot[1] * 1.5, "the drummer's stem clears the dot by most of a radius (" + (stem ? stem[1] : "?") + " on r " + (dot ? dot[1] : "?") + ")");
-  ok(/drummer: drummerMark\(/.test(src) && /drummerMark\(3 \* kx/.test(src), "the key and the kit draw the drummer with the same function");
+  // the kit is drawn outside the engine block, so lift just that function
+  const K = new Function(src.slice(src.indexOf("function kitPieces("), src.indexOf("/* A mic on a stand")) + "; return { kitPieces };")();
+  const kit = K.kitPieces({ w:54, d:52 }, "#000", "#555", "#eee");
+  ok(/>\(kick\)<\/text>/.test(kit) && !/>Drums<\/text>|>Kick<\/text>/.test(kit), "the kick says (kick), and the kit's name is not on it");
+  ok(!/drummerMark/.test(src), "the solid dot with a stem is gone");
+  const circles = [...kit.matchAll(/<circle cx="(-?[\d.]+)" cy="(-?[\d.]+)" r="([\d.]+)" fill="([^"]+)" stroke="([^"]+)" stroke-width="([\d.]+)"/g)].map(m => ({ x:+m[1], y:+m[2], r:+m[3], fill:m[4], stroke:m[5], sw:+m[6] }));
+  eq(circles.length, 7, "seven pieces: kick, snare, one rack tom, floor tom, hats, crash, ride");
+  const drums = circles.filter(c => c.sw === 2.4 && c.fill === "#eee" && c.stroke === "#000"), cymbals = circles.filter(c => c.sw === .7 && c.fill === "none" && c.stroke === "#555");
+  eq(drums.length + "/" + cymbals.length, "4/3", "four drums thick and filled, three cymbals thin, dim and open");
+  const kick = drums.find(c => c.y + c.r > 25), snare = drums.find(c => c.x > 5 && c !== kick), rack = drums.find(c => c.x < 0 && c.x > -10), floor = drums.find(c => c.x < -10);
+  ok(kick && Math.abs(kick.x) < .01 && Math.abs(kick.y + kick.r - 26) < .6, "the kick is front centre, on the footprint's front edge");
+  ok(snare && snare.y < kick.y && snare.y > -15, "the snare is on the drummer's left, in front of them");
+  ok(rack && rack.y < kick.y - kick.r && rack.x < 0 && rack.x > -8, "one rack tom just upstage of the kick, a little to the drummer's right");
+  ok(floor && floor.x < -10 && floor.y < 0, "the floor tom is on the drummer's right, beside them");
+  const hats = cymbals.find(c => c.x > 10 && c.y < 0), crash = cymbals.find(c => c.x > 10 && c.y > 5), ride = cymbals.find(c => c.x < -10);
+  ok(hats && crash && ride, "hats far left beside the snare, crash beside the kick on the left, ride beside the kick on the right");
+  ok(hats.x > snare.x && Math.abs(hats.y - snare.y) < 12, "…the hats beside the snare");
+  ok(circles.every(c => c.x - c.r >= -27 && c.x + c.r <= 27 && c.y - c.r >= -26 && c.y + c.r <= 26), "every piece is inside the 54×52 footprint");
+  const drummer = { x:0, y:-E.DRUMMER.up, r:E.DRUMMER.r };
+  const all = circles.concat([drummer]);
+  const overlaps = [];
+  for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) if (Math.hypot(all[i].x - all[j].x, all[i].y - all[j].y) < all[i].r + all[j].r - .01) overlaps.push(i + "-" + j);
+  eq(overlaps.join(","), "", "no piece overlaps another, or the drummer");
+  ok(drummer.y - drummer.r >= -26, "the drummer's circle is inside the footprint too");
+  const dashed = K.kitPieces({ w:54, d:52 }, "#000", "#555", "#eee", true);
+  eq((dashed.match(/stroke-dasharray="4 3"/g) || []).length, 7, "a band-provided kit is dashed on drums and cymbals both");
+  ok(/kitparts:'<circle cx="6\.5" cy="8" r="4\.4" fill="' \+ ground \+ '" stroke="' \+ ink \+ '" stroke-width="2\.4"\/><circle cx="16\.5" cy="8" r="4\.4" fill="none" stroke="' \+ dim \+ '" stroke-width="\.7"\/>'/.test(src), "the key shows one drum and one cymbal, thick and thin");
+  ok(/const dr = drummerAt\(pos, plot\);/.test(src) && /'<circle cx="' \+ dr\.x\.toFixed\(1\) \+ '" cy="' \+ dr\.y\.toFixed\(1\) \+ '" r="' \+ dr\.r\.toFixed\(1\) \+ '" fill="' \+ \(print \? "#fff" : "#0d232b"\) \+ '" stroke="' \+ stroke\(pos\) \+ '" stroke-width="' \+ swid\(pos\) \+ '"\/>'/.test(src),
+     "the drummer is an open circle in the player style, drawn with the kit position");
+  const p = T("combo"), kitPos = p.positions.find(x => x.roleId === "drums"), dr = E.drummerAt(kitPos, p);
+  eq(dr.r, 11, "…a 22″ circle like any standing player's");
+  eq(dr.y, -15, "…15″ upstage of the kit's centre, over the throne");
 }
 
 /* ---- 19d. the kit: the house's or the band's (A3, Tim Shade 2026-09-16) ---- */
@@ -779,8 +803,8 @@ for (const t of E.TEMPLATES){
   const p = T("combo"), kit = p.positions.find(x => x.roleId === "drums"), f = E.footprintOf(kit, p);
   eq(f.w + "×" + f.d, "54×52", "the drums footprint is the kit itself");
   eq(E.BYO_KINDS.find(b => b.id === "byo-kit").w + "×" + E.BYO_KINDS.find(b => b.id === "byo-kit").d, "54×52", "…and so is the band's own kit");
-  const K = new Function(src.slice(src.indexOf("function drummerMark("), src.indexOf("function wedgePath(")) + "; return { drummerMark, kitPieces };")();
-  const kick = /<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)" fill="#eee" stroke="#000" stroke-width="1.2"\/>(?=<text)/.exec(K.kitPieces({ w:54, d:52 }, "#000", "#555", "#eee"));
+  const K = new Function(src.slice(src.indexOf("function kitPieces("), src.indexOf("/* A mic on a stand")) + "; return { kitPieces };")();
+  const kick = /<circle cx="([-\d.]+)" cy="([-\d.]+)" r="([\d.]+)" fill="#eee" stroke="#000" stroke-width="2.4"\/>(?=<text)/.exec(K.kitPieces({ w:54, d:52 }, "#000", "#555", "#eee"));
   ok(kick && Math.abs(+kick[2] + +kick[3] - 26) < .6, "the kick's front edge is the footprint's front edge (" + (kick ? (+kick[2] + +kick[3]).toFixed(1) : "?") + " of 26)");
   ok(!/rx="2" fill="' \+[\s\S]{0,120}kitPieces\(f, stroke\(pos\)/.test(src), "the kit position draws no filled rectangle under the drums");
   const w = p.wedges[0]; w.x = kit.x; w.y = kit.y - 26 - 9; w.rot = 0; w.moved = true;   // a wedge touching the kick, throw face at the drummer
@@ -811,7 +835,7 @@ for (const t of E.TEMPLATES){
     ok(hits.length === 0, t.name + ": nothing is laid out on the PA or the stairs" + (hits.length ? ": " + hits.join("; ") : ""));
   }
   eq(E.venueFixtures(E.makeFromTemplate("combo", { widthFt:24, depthFt:12 })).length, 0, "another deck size is another room: no fixtures");
-  ok(E.legendKeys(p).some(k => k.id === "fixture"), "the key names them");
+  ok(!E.legendKeys(p).some(k => k.id === "fixture" || k.id === "truss"), "the key does not name them — the tech knows their own room");
   ok(!/mainsDownstageLR/.test(src), "the old PA boxes outside the deck are gone");
   ok(/pointer-events="none"><rect/.test(src), "…and the fixtures cannot be grabbed");
 }
@@ -985,8 +1009,7 @@ for (const t of E.TEMPLATES){
   eq(E.DRAW.minPt, 7, "the minimum type size is 7pt");
   for (const p of bb.positions){
     const plan = E.labelPlan(bb, p, g, L);
-    if (p.roleId === "drums") ok(!plan.inside && plan.outside.length === 0, "the kit has no label of its own: the kick says Drums");
-    else ok(plan.inside && plan.inside.pt >= 7, L[p.id].short + " reads inside its circle at " + (plan.inside ? plan.inside.pt : "?") + "pt");
+    ok(plan.inside && plan.inside.pt >= 7, L[p.id].short + " reads inside its circle at " + (plan.inside ? plan.inside.pt : "?") + "pt" + (p.roleId === "drums" ? " — the drummer's circle" : ""));
   }
   for (const t of E.TEMPLATES){                    // every preset: every chair label inside, none outside
     const q = T(t.id), G = E.diagramGeom(q), M = E.positionLabels(q);
