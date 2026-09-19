@@ -137,11 +137,11 @@ Brief: `briefs/triad-voicings-over-a-bass-note-brief.md`.
   then those qualities draw Ex. 20's staff with no symbols and a "not yet
   written" notice, still play, and appear in no drill prompt and not in
   View 2's symbol list. Entering a ruled column is a data edit.
-- **Three questions open with William** (also at the top of the worksheet):
-  (1) Ex. 21 prints CΔ7 for the C triad over C, which has no 7th — keep the
-  printed label (current) or show plain X? (2) the ♭2 cell is printed as a
-  stacked alteration and set inline here as `X7(♭9 ♭13 sus4)` — is that the
-  order? (3) the three worksheet columns.
+- **Ruled by William, 2026-09-19:** (1) the R cell stays **XΔ7** as Ex. 21
+  prints it, even though a triad over its own root has no 7th — do not
+  "correct" it to plain X; (2) the ♭2 cell, printed as a stacked alteration,
+  is set inline as `X7(♭9 ♭13 sus4)`, in that order. **Still open:** the
+  three worksheet columns.
 - **View 1, One triad**: Ex. 20–21 as a live staff (`tbnSystemSVG`, on the
   `NOTE_DEFS` glyphs). Bass order starts a major third above the triad's
   root and descends twelve half steps; the triad's root sits in B♭3–A4
@@ -168,7 +168,7 @@ Brief: `briefs/triad-voicings-over-a-bass-note-brief.md`.
   G♭, a 3rd above A is C♯) when that triad spells clean, else the ring's
   name. Consequence: View 1 prints G♭7alt. under a C triad, as the book
   does, while View 2's root ring offers F♯ (suite rule) and so reads
-  F♯7alt. Flagged to William. No double accidental can be produced;
+  F♯7alt. Flagged to William, not yet ruled. No double accidental can be produced;
   check.js asserts it on names, labels and the drawn staff.
 - **Playback**: the bass note sounds first and sustains an octave or two
   below the triad's lowest voice (`tbnBassMidi`, never under E1; upper

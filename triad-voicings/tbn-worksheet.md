@@ -22,15 +22,12 @@ array of twelve cells in `TBN`, in `index.html`.
 The 𝄫7 of the brief's draft is written °7 here, under the no-double-accidentals
 rule (2026-09-12).
 
-## Three questions about the major table
+## The major table — settled 2026-09-19
 
-1. Ex. 21 labels the C triad over C as **CΔ7**. A C triad over its own root
-   has no 7th. Keep the printed label, or show plain **X**? *(The app keeps
-   the printed label for now.)*
-2. The ♭2 cell is printed as a stacked alteration: B7 with ♭13 over ♭9, then
-   sus4. The app sets it inline as **X7(♭9 ♭13 sus4)**. Is that the order you
-   want?
-3. The three columns below.
+1. The C triad over C stays **CΔ7**, as Ex. 21 prints it.
+2. The ♭2 cell is set inline as **X7(♭9 ♭13 sus4)**, in that order.
+
+What is left is the three columns below.
 
 ## Minor triad
 
