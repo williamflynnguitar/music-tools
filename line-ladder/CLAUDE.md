@@ -277,12 +277,15 @@ registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
   Pack-2 groups start folded and unchecked (`optIn`), so the default Mixed
   draw is what it was — 23 permutations would otherwise swamp it.
 
-**Questions for William:**
-1. p. 86's text says components 1 and 2 repeat and 3 and 4 play once; the
-   notation repeats 1 and 3 and plays 2 and 4 once. The notation is six bars
-   plus the landing whole note, which does agree with the text's "6-bar
-   phrase". The assembled routine follows whichever is right.
-2. The ♭5-of-ø correction above — confirm.
+**Ruled (William, 2026-09-19): p. 86's notation is right, its text is not —
+components 1 and 3 repeat, 2 and 4 play once.** The assembled routine is
+therefore scale to the 5th twice (bars 1–2), scale to the 9th (bars 3–4), the
+triad arpeggio twice inside bar 5, the arpeggio to the 9th (bar 6), and the
+root as a whole note in bar 7: six bars plus the landing note, which is what
+the text's "6-bar phrase" counts. `routine-3`'s degree string already holds
+both passes of the triad, as the notation beams them into one bar.
+
+**Question for William:** the ♭5-of-ø correction above — confirm.
 
 ## Open questions for William (carried over)
 
@@ -298,8 +301,9 @@ registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
 Imposed placements that override the chord-scale ruling (D1) · a
 late-placement template putting a Way in the last two beats of a 4-beat chord
 (D2) · two 1-2-3-5 cells paired across a 4-beat chord (p. 58) · the assembled
-seven-bar routine (needs William's ruling, and a way to give the bars inside
-one long static segment different concepts) · student-authored Ways (practice
+seven-bar routine (its order is ruled — see Concept pack 2 — so what it still
+needs is a way to give the bars inside one long static segment different
+concepts) · student-authored Ways (practice
 suggestion 5 — belongs with the lick journal) ·
 TAB post-pass · MUSC 120 grouping view (tags are already in the schema) ·
 handout-cell pack · etude assembly / weighted fill / lick journal ·

@@ -1,8 +1,10 @@
 /* Line Ladder — the four components of Stan Smith's Scale/Arpeggio Routine,
    from Appendix F. Pure data. Each degree string fills its segment exactly
    (min = max beats), so the eighths template's descending fill never runs.
-   The assembled routine is not here: it waits on William's ruling about which
-   components repeat, and on a way to split one long static segment. */
+   The assembled routine is not here. Its order is ruled (William, 2026-09-19:
+   the notation is right — components 1 and 3 repeat, 2 and 4 play once); what
+   it waits on is a way to split one long static segment. routine-3 already
+   holds both passes of the triad, which the notation beams into one bar. */
 window.LL_CONCEPTS = window.LL_CONCEPTS || [];
 (function(){
   const SRC = "Stan Smith's Scale/Arpeggio Routine — Introduction to Jazz Guitar (2014), p. 86";
