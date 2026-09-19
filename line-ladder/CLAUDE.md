@@ -8,7 +8,10 @@ runs a metronome. The handbook is one source among several: it is cited in
 per-concept and per-preset `source` fields only, never in headings or chrome.
 
 Files: `index.html` (engine + UI) plus plain `.js` concept packs in
-`concepts/` loaded by `<script>` tags (`core.js`, `digital.js`). No build
+`concepts/` loaded by `<script>` tags, in this order: `core.js`, `digital.js`,
+then concept pack 2 — `cells.js`, `ways.js`, `routine.js`. Registry order is
+the Drill fallback order, and pack 2 loads last so the fallback did not change
+(still 1-2-3-5 on a 2-beat chord, R–3–5–7 elsewhere; `check.js` §12). No build
 step, no storage APIs, works from `file://`. Root `CLAUDE.md` conventions
 apply, including the lookahead scheduler. Headless tests: `node check.js`.
 
@@ -48,15 +51,42 @@ must fall back to 1-2-3-5, reproducing the old Scale mode).
   group,                          // checklist grouping by concept family
   source,                         // citation, shown only as a small info line
   tags,                           // metadata, not shown in v1
-  applies: { qualities:[...], minBeats?, maxBeats? },
+  subgroup?,                      // folds under a sub-heading inside its group
+  optIn?: true,                   // starts unchecked in Mixed (all of pack 2)
+  applies: { qualities:[...], minBeats?, maxBeats?,
+             rows?: [{qualities, offsets, label}],   // realized-tones guard
+             next?: {motion, qualities?} },          // what it must move to
   degrees: [1,3,5,7],             // 1/3/5/7 = chord tones (against "chord"),
                                   // others index the collection; 9 = degree 2
-                                  // an octave up, etc.
+                                  // an octave up, etc. Zero and negatives
+                                  // reach under the root: 0 is the 7th below
+                                  // degree 1, -1 the 6th below (degBase is a
+                                  // floor-mod), so 5-3-1-7 falling is [5,3,1,0]
+  fixed?: true,                   // never rotated; rungs move it by octaves
+  lands?: 3 | 5,                  // rung 4: the next segment starts here
   against: "chord" | "scale",     // "scale" needs cs.steps, so it never
                                   // applies to º7 (chordScale returns {arp})
   rhythm: "eighths" | "eighths-hold" | "quarters",
   endpoint: null | {4:7, 8:3} }   // per-unit run endpoints (see templates)
 ```
+
+The four pack-2 schema features are generic — none names a concept:
+
+- **`fixed`** — the order of the notes is the concept (a permutation, a Way),
+  so rotation would turn it into a different one. Rung 2 and rung 4 re-anchor
+  its octave only, down the path run/endpoint concepts already take.
+- **`applies.rows`** — `matchRow` realizes the concept's *unrotated* degrees
+  against the segment, reduces them to semitone offsets from the chord root
+  mod 12, and needs one row to match both the quality and the offsets in
+  order. When present it replaces `applies.qualities`. One entry covers several
+  lines of a published table and refuses every case the table does not list.
+  `buildLine` returns the matched row per segment (`line.rows`); the checklist
+  prints its `label` under the concept ("here: 5-6-♭7-9"), because the same
+  entry reads differently over different chords.
+- **`applies.next`** — the concept needs a following segment whose root is
+  `motion` semitones up and, if given, whose quality is listed. `appliesTo`
+  takes the next segment as a third argument; every caller passes it.
+- **`lands`** — see rung 4.
 
 Chord-tone pitches map through `ARPQ_TONES`: −6 is its own R–♭3–5–6
 (William, 2026-09 — the 6 fills the "7" slot, so R–3–5–7 on Gm6 reads
@@ -95,8 +125,11 @@ Each rung is a pure pass `(segments, per-segment events) → events`; order of
 application is fixed 1→2→3→4 regardless of which are checked. After every
 pass, whatever actually changed stamps the bars it touched with the rung's
 mark — bar labels read `<short> <marks>`: `±8` fold, `inv` nearest start,
-`→` approach, `7→3` seam. All off = raw (acceptance: every chord starts on
-its own degree 1 in the reference octave, nothing folded).
+`→` approach, `7→3` seam landing on a 3rd, `→5` seam landing on a 5th. All
+off = raw (acceptance: every segment's first note is its concept's
+`degrees[0]` relative to the chord root in the reference octave, nothing
+folded). A mark is stamped on the bar a changed note *begins*
+in; the tied remainder of a held note in the next bar carries none.
 
 1. **Fold to range** (`foldPass`) — any note outside the range moves an
    octave inward, per note. Replaces the old octave-displacement /
@@ -105,8 +138,8 @@ its own degree 1 in the reference octave, nothing folded).
    (inversion, wrapped degrees up an octave) and pick rotation + octave so
    the segment starts on the chord tone nearest the previous note.
    Candidates that keep the whole segment inside the range win outright, so
-   the later fold rarely has to break a shape. Run/endpoint concepts don't
-   rotate — they re-anchor their start octave only.
+   the later fold rarely has to break a shape. Run/endpoint and `fixed`
+   concepts don't rotate — they re-anchor their start octave only.
 3. **Stepwise approach** (`approachPass`) — a segment-ending note held from
    beat 3 (dur ≥ 4 slots) shortens to beat 3, and beat 4 walks the
    segment's collection in two 8ths into the next segment's first note —
@@ -122,6 +155,23 @@ its own degree 1 in the reference octave, nothing folded).
    penalty. Overrides rung 2's start for that seam only; a stale rung-3
    walk into the old start is stripped. Chained dominants: a segment
    already re-seamed keeps its 3rd start (no re-rotation to ♭7).
+   **`lands` generalizes the seam**: after a segment whose concept carries
+   `lands: 3 | 5`, the next segment starts on that degree in the octave
+   nearest this segment's last sounding note, by the same mechanisms
+   (rotation, start-degree override for runs, nothing if it already starts
+   there). A `lands` concept says where its own line goes, so nothing is
+   re-rotated to a ♭7 for it. A `fixed` next concept that starts elsewhere
+   leaves the seam alone, unmarked; a `fixed` dominant that does not already
+   end on its ♭7 offers no 7→3. Marks: `7→3` when the landing is a 3rd, `→5`
+   when it is a 5th (`seam` / `seam5` in `marks`). With rung 4 off `lands`
+   does nothing.
+   A start a seam has claimed is tracked in `pinned`, not read off the change
+   marks (Sep 2026): when rung 2 had already put the V on its 3rd, the seam
+   changed nothing and stamped nothing, and the *next* seam then rotated the
+   V back to end on its ♭7 — undoing a Way in, and breaking the chained-
+   dominant rule above for the old concepts too (the bridge of rhythm
+   changes). Fixing it changed 256 of 26,400 old-concept builds, all with
+   rung 4 on; everything else in pack 2's engine work is output-neutral.
 
 ## Progressions
 
@@ -192,6 +242,48 @@ Lookahead scheduler verbatim (25 ms interval / 130 ms lookahead): clicks on
 2 and 4, count-in of 0/1/2 bars as quarter clicks (bar starts accented),
 optional loop, space toggles. The line itself is not sounded.
 
+## Concept pack 2 (Sep 2026)
+
+Brief: `briefs/line-ladder-concept-pack-2.md`. Source: William's
+*Introduction to Jazz Guitar* (2014) — 1-2-3-5 placements and permutations
+(p. 59), Mike Steinel's "Three Ways In, Two Ways Out" (Appendix E, pp. 84–85),
+the four components of Stan Smith's Scale/Arpeggio Routine (Appendix F, p. 86).
+Every degree string was re-read against the rasterized pages. 38 entries; the
+registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
+
+- **D1. Placements obey the chord-scale rulings.** "1-2-3-5 on the 9th of
+  maj7" needs a ♯11, so it fires on `@IV` and is silent on `@I`. "5th of tonic
+  minor" fires only on a melodic tonic (`@i/Cmel`, Solar) — the cycles rule −6
+  as harmonic minor. "♭5 of ø" fires only on a Locrian ø (vii of major); a ii
+  of minor fails. "9th of dominant" and both altered rows need melodic-minor
+  annotations. An *imposed* mode that ignores the rulings is deferred. When a
+  drilled concept fires nowhere, the sub line under the title says so.
+- **D2. Ways use `eighths-hold`.** Four eighths on a 2-beat chord, as printed;
+  on a 4-beat chord the fourth note holds through beats 3–4 and then resolves.
+- **D3. Ways Out fire on any `7` whose next chord is a fourth up,** whatever
+  its quality. Ways In: a m7 whose next chord is a dominant a fourth up.
+- **D4. Permutations and placements run 2–4 beats** (`eighths-hold`);
+  `digital-1235` stays 2-beat `eighths` because the Drill fallback depends on
+  it. So none of them fires on a merged 8-beat chord.
+- **D5. The assembled routine is not built** — the four components ship as
+  separate concepts, each at its exact beat length.
+- The book's ♭5-of-ø line prints its tones as ♭3-4-♭5-♭7, repeating the minor
+  column; the row uses the corrected ♭5-♯5-♭7-♭9 (F G A C on Bø).
+- The brief gave routine-1/2 the bar labels `→5` / `→9`, and rung 4 the mark
+  `→5`. One bar could then read "→5 →5", so the labels are `sc→5` / `sc→9`
+  (`check.js` §12 asserts no label reads as a rung mark).
+- Checklist: groups fold (`<details>`, open state in `st.open`), all / none on
+  each heading in Mixed, a shared citation printed once under the heading.
+  Pack-2 groups start folded and unchecked (`optIn`), so the default Mixed
+  draw is what it was — 23 permutations would otherwise swamp it.
+
+**Questions for William:**
+1. p. 86's text says components 1 and 2 repeat and 3 and 4 play once; the
+   notation repeats 1 and 3 and plays 2 and 4 once. The notation is six bars
+   plus the landing whole note, which does agree with the text's "6-bar
+   phrase". The assembled routine follows whichever is right.
+2. The ♭5-of-ø correction above — confirm.
+
 ## Open questions for William (carried over)
 
 - 12/16-beat chords keep the old unit split ([8,4] / [8,8]) — never ruled on.
@@ -203,6 +295,12 @@ optional loop, space toggles. The line itself is not sounded.
 
 ## Deferred (do not build until asked)
 
+Imposed placements that override the chord-scale ruling (D1) · a
+late-placement template putting a Way in the last two beats of a 4-beat chord
+(D2) · two 1-2-3-5 cells paired across a 4-beat chord (p. 58) · the assembled
+seven-bar routine (needs William's ruling, and a way to give the bars inside
+one long static segment different concepts) · student-authored Ways (practice
+suggestion 5 — belongs with the lick journal) ·
 TAB post-pass · MUSC 120 grouping view (tags are already in the schema) ·
 handout-cell pack · etude assembly / weighted fill / lick journal ·
 strict-handout mode.

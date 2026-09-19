@@ -64,11 +64,28 @@ textarea{width:100%;font-family:var(--mono);font-size:13px;resize:vertical}
 .modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:12px}
 .modes button{flex:1;background:transparent;border:0;padding:6px 10px;cursor:pointer;color:var(--bone-dim)}
 .modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
-.cgroup{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass);margin:14px 0 2px}
+/* concept groups fold: the registry holds about 47 entries, and on a phone
+   the checklist sits above the score */
+.cg{margin:6px 0 0}
+.cg>summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;list-style:none;cursor:pointer;padding:8px 0 4px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass)}
+.cg>summary::-webkit-details-marker{display:none}
+.cg>summary::before{content:"▸";flex:none;width:10px;color:var(--bone-dim);letter-spacing:0}
+.cg[open]>summary::before{content:"▾"}
+.cg>summary .cg-name{flex:1 1 auto}
+.cg>summary .cg-btns{display:flex;gap:6px;margin-left:auto}   /* wraps under the name when the column is narrow */
+.cg>summary .cg-n{color:var(--bone-dim);letter-spacing:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cg-btn{background:transparent;border:1px solid var(--line);border-radius:3px;color:var(--bone-dim);cursor:pointer;
+  font-family:var(--mono);font-size:12px;letter-spacing:0;text-transform:none;padding:7px 12px;touch-action:manipulation}
+.cg-btn:hover{color:var(--bone);border-color:var(--brass)}
+.cg .cg{margin:4px 0 0 12px}
+.cg .cg>summary{color:var(--bone-dim)}
+.cg-src{display:block;font-size:11px;color:var(--bone-dim);font-family:var(--mono);margin:0 0 4px 18px}
 .concept{margin:2px 0}
 .concept label{display:flex;gap:8px;align-items:baseline;font-size:14px;cursor:pointer}
 .concept input{accent-color:var(--brass);flex:none}
-.concept .src{display:block;font-size:11px;color:var(--bone-dim);font-family:var(--mono);margin-left:22px}
+.concept .src,.concept .fires{display:block;font-size:11px;color:var(--bone-dim);font-family:var(--mono);margin-left:22px}
+.concept .fires:empty{display:none}
 .rung{margin:10px 0}
 .rung .exp{display:block;font-size:12px;color:var(--bone-dim);margin-left:22px}
 .rangerow{display:flex;gap:8px;align-items:center}
@@ -230,7 +247,7 @@ textarea{width:100%;font-family:var(--mono);font-size:13px;resize:vertical}
     <div class="rung"><label class="check" style="margin:0"><input type="checkbox" id="rApp"> 3 · stepwise approach</label>
       <span class="exp">held notes stop at beat 3; beat 4 walks the scale into the next chord's first note</span></div>
     <div class="rung"><label class="check" style="margin:0"><input type="checkbox" id="rSeam"> 4 · dominant seam 7→3</label>
-      <span class="exp">a dominant resolving down a fifth ends on ♭7; the next chord starts on its 3rd</span></div>
+      <span class="exp">a dominant resolving down a fifth ends on ♭7; the next chord starts on its 3rd. A Way in or out lands the next chord on the 3rd or 5th it names</span></div>
   </div>
   <div class="group">
     <label class="lbl" for="rangesel">Range</label>
@@ -259,6 +276,9 @@ textarea{width:100%;font-family:var(--mono);font-size:13px;resize:vertical}
 
 <script src="concepts/core.js"></script>
 <script src="concepts/digital.js"></script>
+<script src="concepts/cells.js"></script>
+<script src="concepts/ways.js"></script>
+<script src="concepts/routine.js"></script>
 <script>
 /* ===== data: keys, spelling, chord vocabulary, chord scales, progressions =====
    Ported from the position-era engine; the chord-scale rule is unchanged
@@ -614,12 +634,33 @@ function makeSegments(chords){
     return seg;
   });
 }
-function appliesTo(c, seg){
+/* applies.rows — the realized-tones guard: the concept's unrotated degrees,
+   realized against this segment and reduced to semitone offsets from the chord
+   root mod 12, have to match one row's quality list and offset list in order.
+   One entry can then cover several lines of a published table and refuse every
+   case the table does not list. Returns the matched row (its label is what the
+   entry reads as over this chord), or null. */
+function matchRow(c, seg){
+  const rows=(c.applies||{}).rows;
+  if(!rows) return null;
+  const offs=c.degrees.map(d=>{ const info=degInfo(seg,c,d); return info?((info.off%12)+12)%12:null; });
+  return rows.find(r=>r.qualities.includes(seg.ch.q) && r.offsets.length===offs.length &&
+    r.offsets.every((o,j)=>o===offs[j])) || null;
+}
+/* next is the following segment (undefined on the last chord): applies.next
+   narrows a concept to a root motion, and optionally to what it moves to */
+function appliesTo(c, seg, next){
   const a=c.applies||{};
-  if(a.qualities && !a.qualities.includes(seg.ch.q)) return false;
+  if(a.rows){ if(!matchRow(c,seg)) return false; }
+  else if(a.qualities && !a.qualities.includes(seg.ch.q)) return false;
   if(a.minBeats && seg.beats<a.minBeats) return false;
   if(a.maxBeats && seg.beats>a.maxBeats) return false;
   if(c.against==='scale' && !seg.cs.steps) return false;
+  if(a.next){
+    if(!next) return false;
+    if(((next.ch.pc-seg.ch.pc)%12+12)%12!==a.next.motion) return false;
+    if(a.next.qualities && !a.next.qualities.includes(next.ch.q)) return false;
+  }
   return true;
 }
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
@@ -630,23 +671,26 @@ function assignConcepts(segs, opts){
   const checked = REGISTRY.filter(c=>opts.checked.has(c.id));
   const rng = mulberry32((opts.seed||1)>>>0);
   return segs.map((seg,i)=>{
+    const next=segs[i+1];
     if(opts.mode==='drill'){
       const drill = conceptById(opts.drillId);
-      if(drill && appliesTo(drill,seg)) return drill;
-      return REGISTRY.find(c=>appliesTo(c,seg)) || null;
+      if(drill && appliesTo(drill,seg,next)) return drill;
+      return REGISTRY.find(c=>appliesTo(c,seg,next)) || null;
     }
     const draw = rng();
     const locked = opts.locks && opts.locks[i] && conceptById(opts.locks[i]);
-    if(locked && appliesTo(locked,seg)) return locked;
-    const apply = checked.filter(c=>appliesTo(c,seg));
-    if(!apply.length) return REGISTRY.find(c=>appliesTo(c,seg)) || null;
+    if(locked && appliesTo(locked,seg,next)) return locked;
+    const apply = checked.filter(c=>appliesTo(c,seg,next));
+    if(!apply.length) return REGISTRY.find(c=>appliesTo(c,seg,next)) || null;
     return apply[Math.floor(draw*apply.length)];
   });
 }
 
 /* ---------- realization ---------- */
 function unitPlan(beats){ const u=[]; let b=beats; while(b>8){u.push(8);b-=8;} if(b>0) u.push(b); return u; }
-const degBase = d => ((d-1)%7)+1;
+/* degrees may be zero or negative: 0 is the 7th below degree 1, -1 the 6th
+   below (a floor-mod — JavaScript's % goes negative). 5-3-1-7 falling is [5,3,1,0]. */
+const degBase = d => ((((d-1)%7)+7)%7)+1;
 const degOctv = d => Math.floor((d-1)/7)*12;
 function degInfo(seg, concept, d){          // semitone offset from the root + spelled name
   const base=degBase(d), oct=degOctv(d);
@@ -757,7 +801,9 @@ function nearPass(segs, evs, range, concepts, marks){
     const c=concepts[i], list=evs[i];
     if(!c || !list.length || prev===null){ out.push(list); if(list.length) prev=list[list.length-1].midi; return; }
     let cands;
-    if(c.endpoint || !c.degrees || c.degrees.length<2) cands=[0];
+    /* a fixed concept is never rotated — the order of its notes is what it
+       is — so, like a run, it re-anchors its start octave only */
+    if(c.endpoint || c.fixed || !c.degrees || c.degrees.length<2) cands=[0];
     else{
       cands=c.degrees.map((_,k)=>k).filter(k=>[1,3,5,7].includes(degBase(c.degrees[k])));
       if(!cands.length) cands=[0];
@@ -834,24 +880,43 @@ function bestOctave(seg, c, range, rot, startDeg, anchor){
   }
   return best;
 }
+/* Rung 4. The seam is either the dominant one (a dominant resolving down a
+   fifth ends on its b7, the next segment starts on its 3rd) or one a concept
+   declares with `lands`: the next segment starts on that degree, in the octave
+   nearest this segment's last sounding note. A `lands` concept says where its
+   own line is going, so nothing is re-rotated to a b7 for it. Marks: 'seam'
+   (7→3) when the landing is a 3rd, 'seam5' (→5) when it is a 5th. */
 function seamPass(segs, evs, range, concepts, marks){
   const out=evs.map(l=>l.slice());
+  /* segments whose start an earlier seam has claimed. Kept apart from the
+     marks, which record change: when rung 2 has already put the start where
+     the seam wants it, the seam changes nothing and stamps nothing, but the
+     start is still spoken for and must not be rotated away below. */
+  const pinned=new Set();
   for(let i=0;i+1<segs.length;i++){
     const seg=segs[i], nxt=segs[i+1], c=concepts[i], nc=concepts[i+1];
-    if(!(seg.ch.q==='7'||seg.ch.q==='sus7')) continue;
-    if(((nxt.ch.pc-seg.ch.pc)%12+12)%12!==5) continue;
     if(!c || !nc || !out[i].length || !out[i+1].length) continue;
+    const land=c.lands||null;
+    if(!land){
+      if(!(seg.ch.q==='7'||seg.ch.q==='sus7')) continue;
+      if(((nxt.ch.pc-seg.ch.pc)%12+12)%12!==5) continue;
+    }
+    const target=land||3, mark=target===5?'seam5':'seam';
     const b7=(seg.ch.pc+10)%12;
-    /* how can the next segment start on its 3rd? */
+    /* how can the next segment start on the target degree? A run takes a
+       start-degree override, a pattern rotates, a fixed concept can only
+       already start there — otherwise the seam is left alone */
     let nk=null, nStartDeg=null;
-    if(nc.endpoint) nStartDeg=3;
-    else{ nk=(nc.degrees||[]).findIndex(d=>degBase(d)===3); if(nk<0) nk=null; }
+    if(nc.endpoint) nStartDeg=target;
+    else if(nc.fixed){ if(degBase((nc.degrees||[])[0])===target) nk=0; }
+    else{ nk=(nc.degrees||[]).findIndex(d=>degBase(d)===target); if(nk<0) nk=null; }
     if(nk===null && nStartDeg===null) continue;
-    /* the dominant ends on its b7 (re-rotated if the pattern allows) */
+    /* the dominant ends on its b7 (re-rotated if the pattern allows; a fixed
+       pattern that does not end there has no 7→3 to offer) */
     let domList=out[i], domChanged=false;
     const real=domList.filter(e=>!e.ins);
-    if((real[real.length-1].midi%12)!==b7 && !marks[i].has('seam')){
-      if(c.endpoint || !c.degrees) continue;
+    if(!land && (real[real.length-1].midi%12)!==b7 && !pinned.has(i)){
+      if(c.endpoint || c.fixed || !c.degrees) continue;
       const i7=c.degrees.findIndex(d=>degBase(d)===7);
       if(i7<0) continue;
       const k=(i7+1)%c.degrees.length;
@@ -859,23 +924,24 @@ function seamPass(segs, evs, range, concepts, marks){
       if(!best) continue;
       domList=best.t; domChanged=true;
     }
-    /* the next segment starts on the 3rd, in the octave nearest the b7 */
+    /* the next segment starts on the target, in the octave nearest the last note */
     const domEnd=domList.filter(e=>!e.ins).slice(-1)[0].midi;
     const best=bestOctave(nxt,nc,range,nk===null?0:nk,nStartDeg,domEnd);
     if(!best){ if(domChanged){ out[i]=domList; marks[i].add('seam'); } continue; }
     const newN = best.t;
+    pinned.add(i+1);
     const nChanged = newN.length!==out[i+1].length || newN.some((e,j)=>e.midi!==out[i+1][j].midi);
     if(nChanged){
-      /* a stale rung-3 walk into the old start comes out; the 7→3
+      /* a stale rung-3 walk into the old start comes out; the seam's own
          resolution is the connection now */
       if(domList.some(e=>e.ins)){
         const stripped=domList.filter(e=>!e.ins), lastE=stripped[stripped.length-1];
         stripped[stripped.length-1]={...lastE, dur:lastE.dur+2};
         domList=stripped; domChanged=true;
       }
-      out[i+1]=newN; marks[i+1].add('seam');
+      out[i+1]=newN; marks[i+1].add(mark);
     }
-    if(domChanged){ out[i]=domList; marks[i].add('seam'); }
+    if(domChanged){ out[i]=domList; marks[i].add(mark); }
   }
   return out;
 }
@@ -895,7 +961,8 @@ function buildLine(opts){
       for(let j=0;j<n;j++){
         const ea=a[j], eb=b[j];
         if(ea&&eb&&ea.midi===eb.midi&&ea.slot===eb.slot&&ea.dur===eb.dur) continue;
-        [ea,eb].forEach(e=>{ if(e) barMarks[Math.floor((seg.at+e.slot)/8)].add(mark); });
+        const mk = typeof mark==='function' ? mark(i) : [mark];
+        [ea,eb].forEach(e=>{ if(e) mk.forEach(m=>barMarks[Math.floor((seg.at+e.slot)/8)].add(m)); });
       }
     });
   };
@@ -905,10 +972,13 @@ function buildLine(opts){
   if(r.fold) pass(()=>foldPass(segs, evs, opts.range, marks), 'fold');
   if(r.near) pass(()=>nearPass(segs, evs, opts.range, concepts, marks), 'near');
   if(r.app)  pass(()=>approachPass(segs, evs, marks), 'app');
-  if(r.seam) pass(()=>seamPass(segs, evs, opts.range, concepts, marks), 'seam');
+  /* rung 4 has two marks — 7→3 and →5 — so a changed segment stamps its own */
+  if(r.seam) pass(()=>seamPass(segs, evs, opts.range, concepts, marks), i=>['seam','seam5'].filter(m=>marks[i].has(m)));
   if(r.fold) pass(()=>foldPass(segs, evs, opts.range, null), 'fold');   // later rungs may re-leave the range
   const anyFlag=segs.some(s=>s.cs.flag);
-  return {segs, concepts, evs, marks, barMarks, anyFlag};
+  /* which applies.rows line each segment's concept matched, if it has rows */
+  const rows=segs.map((seg,i)=>concepts[i]?matchRow(concepts[i],seg):null);
+  return {segs, concepts, evs, marks, barMarks, anyFlag, rows};
 }
 
 /* ---------- bars: split held notes at barlines into tied pieces, fill the
@@ -947,7 +1017,7 @@ function toBars(line){
     bars[Math.floor(seg.at/8)].labels.push({at:seg.at%8,
       text:c?(c.short||c.name):'—', flag:!!seg.cs.flag});
   });
-  const MK={fold:'±8', near:'inv', app:'→', seam:'7→3'};
+  const MK={fold:'±8', near:'inv', app:'→', seam:'7→3', seam5:'→5'};
   bars.forEach((bar,b)=>{
     const mk=[...(line.barMarks?line.barMarks[b]:[])].map(m=>MK[m]).join(' ');
     if(!mk) return;
@@ -1232,8 +1302,10 @@ function parseNoteName(s){
   const pc=(NOTE_PC[m[1].toUpperCase()]+(m[2]==='#'||m[2]==='♯'?1:(m[2]==='b'||m[2]==='♭'?-1:0))%12+12)%12;
   return (parseInt(m[3],10)+1)*12+pc;
 }
+/* Mixed starts with every concept checked except the ones a pack marks optIn;
+   open holds which concept groups are unfolded (in memory only) */
 const st={prog:'ii51maj', key:'C', part:'c', mode:'drill', drillId:'arp-r357',
-  checked:new Set(REGISTRY.map(c=>c.id)), seed:1, locks:{}, line:null, bars:null};
+  checked:new Set(REGISTRY.filter(c=>!c.optIn).map(c=>c.id)), seed:1, locks:{}, line:null, bars:null, open:{}};
 
 function currentRange(){
   const lo=parseNoteName(el('rangeLo').value), hi=parseNoteName(el('rangeHi').value);
@@ -1259,9 +1331,13 @@ function rebuild(){
   st.name=src.name;
   el('title').textContent = src.name;
   const dc=conceptById(st.drillId);
+  const drillFires = st.line.concepts.some(c=>c&&c.id===st.drillId);
   el('sub').textContent = st.mode==='drill'
-    ? (dc?dc.name:'')+' through every chord it applies to; other chords fall back to the first applicable concept.'
+    ? (drillFires
+        ? (dc?dc.name:'')+' through every chord it applies to; other chords fall back to the first applicable concept.'
+        : (dc?dc.name:'This concept')+' applies to no chord in this progression, so every chord has fallen back to the first applicable concept.')
     : 'Each chord draws a concept at random from the checked set. Reroll for a new draw; click a bar to lock it.';
+  updateFires();
   const lockedBars=new Set();
   Object.keys(st.locks).forEach(i=>{ const seg=st.line.segs[+i]; if(seg) lockedBars.add(Math.floor(seg.at/8)+1); });
   st.perSys = el('chartwrap').clientWidth && el('chartwrap').clientWidth<620 ? 2 : 4;
@@ -1271,7 +1347,7 @@ function rebuild(){
     .map(s=>'<div class="sys">'+s+'</div>').join('');
   el('legend').innerHTML =
     (st.line.anyFlag?'<span class="flagmark">†</span> no function annotation in the data — collection guessed from the chord quality. ':'')
-    + 'Bar labels: concept, then a mark per smoothing rung that changed the bar — ±8 fold · inv nearest start · → approach · 7→3 dominant seam.';
+    + 'Bar labels: concept, then a mark per smoothing rung that changed the bar — ±8 fold · inv nearest start · → approach · 7→3 seam landing on a 3rd · →5 seam landing on a 5th.';
   sizeChart();
   el('chart').querySelectorAll('rect[data-bar]').forEach(rct=>{
     rct.addEventListener('click',()=>toggleLock(+rct.dataset.bar));
@@ -1294,22 +1370,67 @@ addEventListener('resize', ()=>{
   if(st.line && want !== st.perSys) rebuild(); else sizeChart();
 });
 
+/* The checklist, grouped by concept family and folded. A group is one
+   <details>; concepts that carry a subgroup fold again under a sub-heading
+   inside it. A citation appears once, in the small info line: under the
+   heading when the whole group shares it, otherwise under each concept.
+   Open state lives in st.open so a mode switch does not refold the list. */
+const escH = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function conceptRow(c, showSrc){
+  const checked = st.mode==='drill' ? (st.drillId===c.id?' checked':'') : (st.checked.has(c.id)?' checked':'');
+  const type = st.mode==='drill' ? 'radio' : 'checkbox';
+  return `<div class="concept"><label><input type="${type}" name="concept" value="${escH(c.id)}"${checked}> <span>${escH(c.name)}</span></label>`+
+    (showSrc&&c.source?`<span class="src">${escH(c.source)}</span>`:'')+
+    ((c.applies||{}).rows?`<span class="fires" data-fires="${escH(c.id)}"></span>`:'')+'</div>';
+}
+function conceptFold(key, title, list, inner, body){
+  const src = list.every(c=>c.source && c.source===list[0].source) ? list[0].source : '';
+  const holds = list.some(c=>c.id===st.drillId && st.mode==='drill');
+  if(st.open[key]===undefined) st.open[key] = !key.includes('/') && list.some(c=>!c.optIn);
+  const open = st.open[key] || holds;
+  const btns = st.mode==='mixed'
+    ? `<span class="cg-btns"><button type="button" class="cg-btn" data-set="all" data-key="${escH(key)}">all</button><button type="button" class="cg-btn" data-set="none" data-key="${escH(key)}">none</button></span>` : '';
+  return `<details class="cg" data-key="${escH(key)}"${open?' open':''}><summary><span class="cg-name">${escH(title)} <span class="cg-n">· ${list.length}</span></span>${btns}</summary>`+
+    (src&&!inner?`<span class="cg-src">${escH(src)}</span>`:'')+
+    body+'</details>';
+}
 function renderConcepts(){
   const groups=[];
   REGISTRY.forEach(c=>{ if(!groups.includes(c.group)) groups.push(c.group); });
-  el('concepts').innerHTML = groups.map(g=>
-    '<div class="cgroup">'+g+'</div>'+
-    REGISTRY.filter(c=>c.group===g).map(c=>{
-      const checked = st.mode==='drill' ? (st.drillId===c.id?' checked':'') : (st.checked.has(c.id)?' checked':'');
-      const type = st.mode==='drill' ? 'radio' : 'checkbox';
-      return `<div class="concept"><label><input type="${type}" name="concept" value="${c.id}"${checked}> <span>${c.name}</span></label>`+
-        (c.source?`<span class="src">${c.source}</span>`:'')+'</div>';
-    }).join('')).join('');
+  el('concepts').innerHTML = groups.map(g=>{
+    const list=REGISTRY.filter(c=>c.group===g);
+    const shared=list.every(c=>c.source && c.source===list[0].source);
+    const subs=[]; list.forEach(c=>{ if(c.subgroup && !subs.includes(c.subgroup)) subs.push(c.subgroup); });
+    const body = list.filter(c=>!c.subgroup).map(c=>conceptRow(c,!shared)).join('') +
+      subs.map(sg=>{ const sl=list.filter(c=>c.subgroup===sg);
+        return conceptFold(g+'/'+sg, sg, sl, shared, sl.map(c=>conceptRow(c,!shared)).join('')); }).join('');
+    return conceptFold(g, g, list, false, body);
+  }).join('');
+  const idsUnder = key => REGISTRY.filter(c=>c.group===key || c.group+'/'+c.subgroup===key).map(c=>c.id);
+  el('concepts').querySelectorAll('details').forEach(d=>d.addEventListener('toggle',()=>{ st.open[d.dataset.key]=d.open; }));
+  el('concepts').querySelectorAll('.cg-btn').forEach(b=>b.addEventListener('click',e=>{
+    e.preventDefault(); e.stopPropagation();            // a button in a summary must not fold the group
+    const ids=idsUnder(b.dataset.key), on=b.dataset.set==='all';
+    ids.forEach(id=>{ if(on) st.checked.add(id); else st.checked.delete(id); });
+    el('concepts').querySelectorAll('input[name=concept]').forEach(inp=>{ if(ids.includes(inp.value)) inp.checked=on; });
+    stop(); rebuild();
+  }));
   el('concepts').querySelectorAll('input').forEach(inp=>inp.addEventListener('change',()=>{
     if(st.mode==='drill') st.drillId=inp.value;
     else { if(inp.checked) st.checked.add(inp.value); else st.checked.delete(inp.value); }
     stop(); rebuild();
   }));
+  updateFires();
+}
+/* a concept with applies.rows reads differently over different chords, so its
+   info line says which rows it matched in the line on screen */
+function updateFires(){
+  el('concepts').querySelectorAll('[data-fires]').forEach(sp=>{
+    const labels=[];
+    if(st.line) st.line.concepts.forEach((c,i)=>{ const r=st.line.rows[i];
+      if(c && c.id===sp.dataset.fires && r && !labels.includes(r.label)) labels.push(r.label); });
+    sp.textContent = labels.length ? 'here: '+labels.join(' · ') : '';
+  });
 }
 function setMode(m){
   st.mode=m;
