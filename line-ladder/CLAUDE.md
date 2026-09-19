@@ -214,3 +214,6 @@ last version at tag-less commit d7b72bf. The rebuild reproduces its degree
 strings and rhythms exactly (checked against it: 100% match in scale mode,
 98%+ pitch-class match in arp mode); octave contours differ where they
 depended on fretboard positions, which are gone by design.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. `play()` calls `window.pfMetronomeStop()`: this tool has its own 2-and-4 metronome, and the strip's does not share its clock (William, 2026-09-19).

@@ -316,3 +316,6 @@ Inversion Drill) maps sus/sus4 suffixes to '7sus' **only where
 `QUAL['7sus']` exists**, so the drill still folds sus into plain 7.
 In the quiz it appears in Hard mode. p. 49 has no 7sus row — William
 requested the quality; the extension list is mine, awaiting his check.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. Strums are one-shots, not timekeeping, so nothing calls `pfMetronomeStop()`.

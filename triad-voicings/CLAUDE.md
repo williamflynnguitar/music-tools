@@ -155,3 +155,6 @@ displayable card (3,582 boxes + staffs: all closed cells, open
 defs/alts/8va, key-study runs) and checks every SVG element against its
 viewBox — re-run it after touching either renderer (it found 3,148
 instances of the two old cut-off classes, 0 after).
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. The Key study `play()` calls `window.pfMetronomeStop()`, so it stops the strip's metronome (William, 2026-09-19). The Key tab binds space to Play; while the Metronome panel is open the strip takes space first.

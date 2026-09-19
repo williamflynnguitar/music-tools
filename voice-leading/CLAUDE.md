@@ -136,3 +136,6 @@ mark before the style word. Voicing apps emit treble_8 staff + TAB with
 chord symbols (Δ7 for major 7); Box Buddy emits a slash-notation chart with
 `\fret-diagram-verbose` boxes above each chord. Render with
 `lilypond file.ly`.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. `play()` calls `window.pfMetronomeStop()`, so the trainer's own metronome stops the strip's (William, 2026-09-19).

@@ -78,6 +78,75 @@ round; stopping early scores the bars completed.
   constraint; would need an export/import string).
 - Per-student latency calibration routine.
 
+## Mini view (`?mini=1`) — the suite's Metronome panel
+
+From William's 2026-09-18 lesson with Sid: every practice tool carries a
+"Metronome" button in a bottom strip, and the panel it opens is **this page
+in an iframe** (`../two-and-four/index.html?mini=1`), so the suite has one
+scheduler and one click sound. William picked the iframe over a stamped
+inline copy on 2026-09-19, partly because he expects to add the dropout
+controls to the mini view later.
+
+- A one-line script in `<head>` puts `mini` on `<html>` before first paint;
+  CSS then hides everything in the body except `#mini`. The mini view uses
+  the *family* palette hardcoded (host panel `#10303a`, brass `#c9a44c`), not
+  this page's own slightly different tokens, so it sits seamlessly in the host.
+- `appMode = "mini"`; `scheduleBeat` dispatches to `miniScheduleBeat`. Same
+  scheduler (25 ms / 130 ms), same `VOICE.back` click on beats 2 and 4, the
+  same count-in (one bar; two at `TWO_BAR_COUNT_BPM` and up). No dropout, no
+  rounds, no chime, no end. Nothing is pushed to `visQ` and no paint loop
+  runs. Verified by logging the scheduled clicks: count bars, then 2 and 4
+  only, every hit on the grid.
+- **The count-in is always on and has no control** — my choice, flagged to
+  William: a 2-and-4 click that starts cold gives a phase-flipper nothing to
+  tell beat 2 from beat 1.
+- Tempo: number input + −5/+5, clamped 40–300, and it **takes effect on the
+  next beat** while running (unlike the full page, where a change waits for
+  the next session) — a student nudging +5 mid-exercise expects to hear it.
+- Contents are fixed by William's spec: tempo, start/stop, a status word
+  (stopped / counting in / running) and "Full Two-and-Four →" (opens a new
+  tab — `_top` would throw away the host tool's in-memory state). No
+  dropout, Training Wheels or random tempo in the mini view.
+- Host ↔ iframe is `postMessage` with `"*"`, because opened from `file://`
+  every page is its own origin. Messages carry `pf:"metro"`; the iframe
+  accepts them only from `parent`, the host only from the iframe's window.
+  Iframe → host: `{running, unlocked, bpm, refocus?}`. Host → iframe:
+  `cmd: "toggle" | "stop" | "hello"`.
+- `refocus` is sent after every button tap and when the tempo field blurs;
+  the host then blurs the iframe and focuses its own window. Without it the
+  host's keys (arrows in Arpeggio Practice) go dead after one tap in the panel.
+- **Gesture, measured in headless Chrome:** a tap inside the iframe always
+  unlocks audio. A start forwarded from the host's space bar works when host
+  and iframe share an origin (http, GitHub Pages) but under `file://`
+  `resume()` is refused and the context sits suspended — "running" with no
+  sound. `miniStart` checks `ctx.state` 400 ms later and, if it is not
+  running, stops and says "tap Start once to turn the sound on".
+- Collapsed-panel timing, measured: 10 s with the panel off screen and
+  `inert`, scheduler lead never under 126 ms, over http and `file://`. The
+  host only ever translates the panel off screen — never `display:none`,
+  never removes the iframe. **Not yet verified on iOS Safari or desktop
+  Safari** (no simulator on this Mac, Safari automation off); William checks
+  on his phone before the rollout.
+
+### Considered and rejected: a visual pulse in the mini view
+Sid asked to "have it pictured while you're doing it". William's ruling,
+2026-09-18: **no beat indicator, lamp or flash in the Metronome panel** —
+tempo number and a running/stopped word only. A flashing beat is exactly the
+moving time cue the suite avoids on principle (root `CLAUDE.md`, "Restrained
+motion"). If this is ever reversed it is a deliberate reversal by William,
+not an oversight to fix.
+
+### This page and the strip
+This page carries the strip block like the others, but the block drops the
+Metronome button here (`here === "two-and-four"`), and with no benchmarks
+list yet the whole strip hides itself. It will show Benchmarks only. In the
+mini view the block is hidden with everything else that is not `#mini`.
+
+### Mini view: deferred
+- Dropout controls in the mini view (William expects to want them).
+- Carrying the panel's tempo into the full page from the "Full Two-and-Four"
+  link.
+
 ## Timing: the lookahead scheduler
 
 Standard Web Audio lookahead pattern (see root CLAUDE.md):

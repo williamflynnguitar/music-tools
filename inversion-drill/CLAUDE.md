@@ -84,3 +84,6 @@ repeat of the first inversion ("so the cycle is visible") read as a fifth
 inversion at a glance and was removed per William. The key-study ladder
 below keeps its octave-tonic wrap (roman numerals make it read correctly
 there); flag it if that should go too.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. Strums are one-shots, not timekeeping, so nothing calls `pfMetronomeStop()`.

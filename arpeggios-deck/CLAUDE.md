@@ -150,3 +150,80 @@ Not linked from the landing page.
   neck; defer the card rebuild briefly.
 - Auto-move ruling (Sep 2026): Root-tab taps pin `scrollY` across the
   pane re-render, per William's pick of the proposals above.
+
+## Practice strip: Metronome and Benchmarks (Sep 2026)
+From the 2026-09-18 lesson with Sid. A slim fixed strip at the bottom of the
+page (`pf-` classes, one self-contained block between `===== practice strip
+=====` markers at the end of the body, hardcoded palette like the spine menu)
+carries **Metronome** and **Benchmarks**. This page is the canonical carrier:
+edit the block here and run `node scripts/strip-sync.js` (root `CLAUDE.md`,
+"Practice strip"). The Metronome is live; this page's benchmark list stays on
+the `footer-strip` branch until William has written it.
+
+### Metronome
+- The panel is Two-and-Four's mini view in an iframe — see
+  `../two-and-four/CLAUDE.md`, "Mini view", for the engine, the message
+  protocol and what was measured. The iframe is created by script **with the
+  page**, not on first open, so a practice room that has lost its wifi still
+  has a metronome. The block skips it when the page *is* Two-and-Four.
+- Collapsing never stops playback; Stop is in the panel. While it runs, the
+  strip button reads "Metronome · 120" in brass — static text, no pulse.
+- The panel is only ever translated off screen and made `inert`. Never
+  `display:none`, never removed: its iframe is keeping time.
+- 148px tall: 18% of an 812px phone, 26% of a 568px one (spec: a third at
+  most). Desktop: 380px wide, bottom right; the Benchmarks side sheet
+  shortens to sit on top of it, so both can be open. On a phone opening one
+  panel collapses the other (the metronome keeps playing).
+- **Space** goes to the metronome while its panel is open and to the page
+  when it is collapsed (William, 2026-09-19): a capture-phase listener that
+  stops propagation, skipping INPUT / TEXTAREA / SELECT / contenteditable —
+  which also leaves a focused benchmark checkbox alone. This page binds only
+  arrows and Home, so nothing collides here; Scale Practice, Charleston and
+  Composition Assignments bind space and get the same rule at rollout.
+- A mouse or touch click on a strip button blurs it afterwards (`e.detail`
+  is non-zero); otherwise the next space bar re-activates the button instead
+  of reaching the page. Keyboard activation keeps focus.
+- `window.pfMetronomeStop()` is the hook for pages with their own Play:
+  William's ruling is that a host's Play stops the mini metronome, since two
+  clicks that do not share a clock are worse than one. Nothing to wire on
+  this page — it has no Play.
+
+### Benchmarks
+- Page content lives outside the block, in `window.PF_BENCHMARKS = { draft,
+  lists: [{ name, on, items: [{ t, hint }] }] }` just above it. Two lists here,
+  Triads and 7th chords (William's ruling, 2026-09-19); `on()` marks the list
+  matching the Chord size control with the spine's brass bar. Both lists always
+  show — the mark moves, the order does not. A page with no `PF_BENCHMARKS`
+  gets no Benchmarks button.
+- **William writes the benchmarks.** The wording in the page is the draft from
+  `briefs/benchmarks-draft.md`; `draft: true` prints a warn-coloured "Draft
+  wording — not approved" line in the panel. Nothing with `draft: true` goes
+  to the live site.
+- Checks are session-only and live in the checkboxes themselves: rows are
+  built by script with `autocomplete="off"`, because browsers restore form
+  values across a reload (the Two-and-Four lesson) and the panel promises
+  "Checks reset when you reload". No storage. Nothing locks or unlocks on a
+  check — the panel is reference chrome.
+- Slide-up sheet under 720px (62% of the viewport at most, sits on the strip),
+  side sheet at 720px and up. Closes with the same button, the ×, Escape, or a
+  swipe down on the header on touch. Neither panel closes on an outside tap,
+  so they can stay open while the student works.
+- The desktop side sheet needs `z-index:10000`: the spine chip is 9999 and sat
+  on top of the sheet's close button.
+- No "card" or "deck" in any text a student sees in this panel.
+
+### Both
+- The strip is `position:fixed`, unlike the spine chip; a `.pf-space` spacer at
+  the end of the flow keeps it from covering the last of the page. Hidden in
+  print.
+- The preview pane reports `document.hidden: true` when it is not showing, and
+  CSS transitions never advance there — verify open/close states in headless
+  Chrome (visible page), not in the pane.
+
+### Deferred
+- Benchmarks wording: William's edit of `briefs/benchmarks-draft.md` (branch
+  `footer-strip`), then the list goes live here and on the other tools.
+- Desktop Safari was not separately confirmed; William's iOS Safari check
+  passed on 2026-09-19.
+- Starting the strip's metronome while a page's own Play is running is not
+  handled — only the other direction is (Play stops the metronome).

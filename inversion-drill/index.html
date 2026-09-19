@@ -863,5 +863,156 @@ function answerQ(b){
 
 init(); render();
 </script>
+<!-- ===== practice strip — keep this block byte-identical across all tool pages.
+     Metronome is Two-and-Four's mini view in an iframe (one scheduler for the suite);
+     Benchmarks come from window.PF_BENCHMARKS, set by the page just above this block. ===== -->
+<div class="pf-root">
+<style>
+  .pf-root{font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .pf-space{height:calc(53px + env(safe-area-inset-bottom,0px));}
+  .pf-strip{position:fixed;left:0;right:0;bottom:0;z-index:9000;display:flex;justify-content:flex-end;gap:8px;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));background:#0a1a20;border-top:1px solid #163f4b;}
+  .pf-btn{min-height:40px;padding:0 16px;background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-variant-numeric:tabular-nums;cursor:pointer;line-height:1;white-space:nowrap;}
+  .pf-btn:hover{color:#e9e2d2;background:#163f4b;}
+  .pf-btn:focus-visible,.pf-x:focus-visible{outline:2px solid #c9a44c;outline-offset:1px;}
+  .pf-btn[aria-expanded="true"]{border-color:#c9a44c;background:#10303a;}
+  .pf-btn[aria-expanded="true"],.pf-btn.pf-run{color:#c9a44c;}
+  .pf-sheet,.pf-metro{position:fixed;left:0;right:0;bottom:calc(53px + env(safe-area-inset-bottom,0px));background:#10303a;color:#e9e2d2;border:1px solid #163f4b;border-bottom:none;border-radius:10px 10px 0 0;box-shadow:0 -10px 30px rgba(4,12,16,.5);transform:translateY(calc(100% + 70px));}
+  .pf-sheet{z-index:8999;max-height:62vh;display:flex;flex-direction:column;visibility:hidden;transition:transform .16s ease-out,visibility 0s linear .16s;}
+  .pf-sheet.pf-open{transform:none;visibility:visible;transition:transform .16s ease-out;}
+  /* The metronome panel is only ever moved off screen, never hidden or removed:
+     its iframe is keeping time while the panel is collapsed. */
+  .pf-metro{z-index:8998;transition:transform .16s ease-out;}
+  .pf-metro.pf-open{transform:none;}
+  .pf-metro iframe{display:block;width:100%;height:98px;border:0;background:#10303a;}
+  .pf-head{display:flex;align-items:center;gap:10px;padding:12px 8px 10px 16px;border-bottom:1px solid #163f4b;touch-action:none;}
+  .pf-metro .pf-head{padding:4px 4px 4px 16px;}
+  .pf-head h2{margin:0;font:inherit;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e9e2d2;font-weight:500;}
+  .pf-x{margin-left:auto;width:40px;height:40px;background:transparent;color:#a9a597;border:none;border-radius:5px;font-family:inherit;font-size:20px;line-height:1;cursor:pointer;}
+  .pf-x:hover{color:#e9e2d2;background:#163f4b;}
+  .pf-body{overflow:auto;padding:4px 16px 8px;-webkit-overflow-scrolling:touch;}
+  .pf-list{margin:14px 0 2px;padding-left:10px;border-left:2px solid transparent;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#a9a597;}
+  .pf-list.pf-now{color:#c9a44c;border-left-color:#c9a44c;}
+  .pf-item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #163f4b;cursor:pointer;}
+  .pf-item:last-child{border-bottom:none;}
+  .pf-item input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:#c9a44c;cursor:pointer;}
+  .pf-t{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:16px;line-height:1.35;color:#e9e2d2;}
+  .pf-t small{display:block;margin-top:4px;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:11.5px;line-height:1.3;color:#a9a597;}
+  .pf-item input:checked + .pf-t{color:#a9a597;}
+  .pf-foot{margin:0;padding:9px 16px 11px;border-top:1px solid #163f4b;font-size:11px;color:#7d7767;}
+  .pf-draft{margin:10px 0 0;font-size:11px;color:#d86b4a;}
+  @media (min-width:720px){
+    .pf-sheet{z-index:10000;top:0;left:auto;right:0;width:380px;max-height:none;border-radius:0;border-top:none;border-right:none;box-shadow:-10px 0 30px rgba(4,12,16,.5);transform:translateX(100%);}
+    .pf-root.pf-m-open .pf-sheet{bottom:calc(201px + env(safe-area-inset-bottom,0px));border-bottom:1px solid #163f4b;}
+    .pf-metro{left:auto;right:0;width:380px;border-right:none;border-radius:10px 0 0 0;}
+    .pf-sheet .pf-head{touch-action:auto;}
+  }
+  @media (prefers-reduced-motion:reduce){ .pf-sheet,.pf-sheet.pf-open,.pf-metro{transition:none;} }
+  @media print{ .pf-root{display:none;} }
+</style>
+<div class="pf-space"></div>
+<div class="pf-strip" role="toolbar" aria-label="Practice panels">
+  <button class="pf-btn" type="button" data-pf="m" aria-expanded="false" aria-controls="pf-m">Metronome<span class="pf-tempo"></span></button>
+  <button class="pf-btn" type="button" data-pf="bm" aria-expanded="false" aria-controls="pf-bm">Benchmarks</button>
+</div>
+<section class="pf-metro" id="pf-m" aria-label="Metronome" inert>
+  <div class="pf-head"><h2>Metronome</h2><button class="pf-x" type="button" aria-label="Close metronome panel">&times;</button></div>
+</section>
+<aside class="pf-sheet" id="pf-bm" aria-label="Benchmarks" inert>
+  <div class="pf-head"><h2>Benchmarks</h2><button class="pf-x" type="button" aria-label="Close benchmarks">&times;</button></div>
+  <div class="pf-body"></div>
+  <p class="pf-foot">Checks reset when you reload</p>
+</aside>
+</div>
+<script>
+(() => {
+  const root = document.currentScript.previousElementSibling;
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const wide = matchMedia("(min-width:720px)");
+  const panels = {};
+  const isOpen = name => !!panels[name] && panels[name].el.classList.contains("pf-open");
+  const set = (name, on) => {
+    const p = panels[name]; if (!p || isOpen(name) === on) return;
+    // on a phone the two panels share the same ground: opening one collapses the other
+    if (on && !wide.matches) Object.keys(panels).forEach(n => { if (n !== name) set(n, false); });
+    if (on && p.onOpen) p.onOpen();
+    p.el.classList.toggle("pf-open", on); p.el.inert = !on;
+    p.btn.setAttribute("aria-expanded", String(on));
+    root.classList.toggle("pf-" + name + "-open", on);
+  };
+  const panel = (name, el, onOpen) => {
+    const btn = root.querySelector('[data-pf="' + name + '"]'), head = el.querySelector(".pf-head");
+    panels[name] = { btn, el, onOpen };
+    // e.detail is 0 for a keyboard activation: keyboard users keep their place, a mouse or touch
+    // click lets go of the button so the next space bar goes to the page, not back to the button
+    btn.addEventListener("click", e => { set(name, !isOpen(name)); if (e.detail) btn.blur(); });
+    el.querySelector(".pf-x").addEventListener("click", e => { set(name, false); if (!e.detail) btn.focus(); });
+    // swipe down on the header collapses the panel on touch
+    let y0 = null;
+    head.addEventListener("pointerdown", e => { y0 = e.pointerType === "mouse" ? null : e.clientY; });
+    head.addEventListener("pointerup", e => { if (y0 !== null && e.clientY - y0 > 40) set(name, false); y0 = null; });
+    head.addEventListener("pointercancel", () => { y0 = null; });
+  };
+  const drop = name => { root.querySelector('[data-pf="' + name + '"]').remove(); root.querySelector("#pf-" + name).remove(); };
+
+  /* ----- Metronome: Two-and-Four's mini view. Collapsing never stops it; Stop is in the panel. ----- */
+  if (here === "two-and-four") drop("m");
+  else {
+    const el = root.querySelector(".pf-metro"), btn = root.querySelector('[data-pf="m"]'), tempo = btn.querySelector(".pf-tempo");
+    // loaded with the page, not on first open: a practice room may have no wifi by then
+    const frame = document.createElement("iframe");
+    frame.title = "Metronome"; frame.allow = "autoplay"; frame.src = "../two-and-four/index.html?mini=1";
+    el.appendChild(frame);
+    panel("m", el);
+    const send = cmd => { try { frame.contentWindow.postMessage({ pf: "metro", cmd }, "*"); } catch (e) {} };
+    window.addEventListener("message", e => {
+      if (e.source !== frame.contentWindow || !e.data || e.data.pf !== "metro") return;
+      const run = !!e.data.running;
+      btn.classList.toggle("pf-run", run);
+      tempo.textContent = run && typeof e.data.bpm === "number" ? " · " + e.data.bpm : "";
+      if (e.data.refocus) { frame.blur(); window.focus(); }   // give the page its keys back
+    });
+    // A page with its own Play calls this when it starts: two clicks that do not share a clock are worse than one.
+    window.pfMetronomeStop = () => send("stop");
+    // Space belongs to the metronome while its panel is open, and to the page when it is collapsed.
+    window.addEventListener("keydown", e => {
+      if (e.code !== "Space" || !isOpen("m") || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target;
+      if (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (!e.repeat) send("toggle");
+    }, true);
+  }
+
+  /* ----- Benchmarks: reference, never a gate. Checks live in the checkboxes — built here, never
+     stored, autocomplete off so a browser does not bring them back after a reload. ----- */
+  const data = window.PF_BENCHMARKS;
+  if (!data || !data.lists || !data.lists.length) drop("bm");
+  else {
+    const sheet = root.querySelector(".pf-sheet"), body = sheet.querySelector(".pf-body");
+    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+    if (data.draft) body.appendChild(mk("p", "pf-draft", "Draft wording — not approved"));
+    const heads = data.lists.map(list => {
+      const h = list.name ? body.appendChild(mk("div", "pf-list", list.name)) : null;
+      list.items.forEach(it => {
+        const row = mk("label", "pf-item"), box = mk("input"), t = mk("span", "pf-t", it.t);
+        box.type = "checkbox"; box.autocomplete = "off";
+        if (it.hint) t.appendChild(mk("small", "", it.hint));
+        row.append(box, t); body.appendChild(row);
+      });
+      return h;
+    });
+    const mark = () => data.lists.forEach((list, i) => {
+      let now = false; try { now = !!(list.on && list.on()); } catch (e) {}
+      if (heads[i]) heads[i].classList.toggle("pf-now", now);
+    });
+    panel("bm", sheet, mark);
+    document.addEventListener("click", () => { if (isOpen("bm")) setTimeout(mark, 0); });
+  }
+
+  if (!Object.keys(panels).length) { root.hidden = true; return; }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") Object.keys(panels).forEach(n => set(n, false)); });
+})();
+</script>
+<!-- ===== end practice strip ===== -->
 </body>
 </html>

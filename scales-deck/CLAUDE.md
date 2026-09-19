@@ -333,3 +333,6 @@ previous commit), and concept 6's pinned run and shift counts did not move.
 ## Open questions for William
 None. Every concept/tier combination that can play does, and every design choice made along the
 way has been ruled on.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. The Player's start calls `window.pfMetronomeStop()`, so pressing Play stops the strip's metronome (William, 2026-09-19: two clicks that do not share a clock are worse than one). This page binds space to Play; while the Metronome panel is open the strip's capture-phase listener takes space first, and with the panel collapsed space is Play again.

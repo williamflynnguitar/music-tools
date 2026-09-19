@@ -137,3 +137,6 @@ specific to this set:
   Trainer chooser) instead of the fixed ii-V-I loop.
 - Density control: probability of a hit per cell, for free comping beyond
   the named shapes.
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. `play()` and `earPlay()` both call `window.pfMetronomeStop()`: this tool already clicks on 2 and 4, and the strip's metronome does not share its clock (William, 2026-09-19). This page binds space to Play; while the Metronome panel is open the strip takes space first, and with the panel collapsed space is Play again.

@@ -65,7 +65,8 @@ readable at arm's length, no sign-up, no loading spinner, works on first tap.
 
 - **One self-contained HTML file per tool.** All CSS and JS inline. No build
   step, no bundler, no npm dependencies, no framework. A tool must work when
-  opened as a local file with no server.
+  opened as a local file with no server. (The practice strip's Metronome is
+  the one reach across folders — see "Practice strip".)
 - **No browser storage APIs** (`localStorage`, `sessionStorage`, IndexedDB).
   They fail in some embedded preview contexts. Keep state in memory.
 - **External libraries only from a CDN**, and only when there is no reasonable
@@ -143,6 +144,44 @@ carrier. `node scripts/spine-sync.js --check` reports drift and also catches a
 tool that is on the landing page but not in the spine, or the reverse. The
 block hides itself in print — tools whose deliverable is paper (Box Buddy,
 Chartwright, Stage Plot) were printing the chip before Sep 2026.
+
+## Practice strip
+
+Every practice tool ends with a slim bar fixed to the bottom of the page
+(Sep 2026, from a lesson with Sid): **Metronome** and, where a page has a
+list, **Benchmarks**. One self-contained block (`pf-` classes, hardcoded
+family palette) between `===== practice strip =====` markers at the end of
+the body. Canonical page `arpeggios-deck/index.html`; run
+`node scripts/strip-sync.js`, with `--check` reporting drift, a tool with no
+block, a skipped page that carries one, and any page whose benchmarks are
+still `draft: true`. Not on Box Buddy, Stage Plot or Chartwright — they make
+paper, not practice. Hidden in print. Unlike the spine chip it is
+`position:fixed`; a spacer at the end of the flow keeps it off the content.
+
+- **Metronome** is Two-and-Four's mini view (`?mini=1`) in an iframe, so the
+  suite has one scheduler and one click sound — the one sanctioned exception
+  to "a tool is one file": the panel needs `../two-and-four/index.html`
+  beside it. Engine, message protocol and measurements are in
+  `two-and-four/CLAUDE.md`. The iframe loads with the page, not on first
+  open (no wifi in the practice room), and is only ever moved off screen,
+  never hidden or removed: it is keeping time while collapsed. Collapsing
+  never stops the click; Stop is in the panel. No pulse, no lamp — a
+  considered rejection, logged in `two-and-four/CLAUDE.md`. Two-and-Four
+  itself gets no Metronome button.
+- **Space** goes to the metronome while its panel is open and to the page
+  when it is collapsed (William, 2026-09-19) — a capture-phase listener, so
+  it wins over a page's own space binding without the page knowing.
+- **A page's own Play stops the mini metronome** (same ruling): two clicks
+  that do not share a clock are worse than one. Any function that starts
+  timekeeping calls `window.pfMetronomeStop && window.pfMetronomeStop();`.
+  A new Play in any tool needs that line.
+- **Benchmarks** are William's words, never generated: each page's list lives
+  in a `window.PF_BENCHMARKS` script just above the block, outside the synced
+  text. Checks are session-only ("Checks reset when you reload"), built by
+  script with autocomplete off so a browser cannot restore them. Reference
+  chrome, never a gate: nothing locks or unlocks on a check. No "card" or
+  "deck" in its text. Proposed lists wait in `briefs/benchmarks-draft.md` on
+  the `footer-strip` branch until he has rewritten them.
 
 ## Audio
 

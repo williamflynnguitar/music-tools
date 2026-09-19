@@ -165,3 +165,6 @@ time and `ctx.resume()` + a silent-buffer unlock on the first tap.
 - Form builder (32-bar modulations, odd phrases, harmonic-rhythm ruler)
 - Submission export (seed material as PDF alongside the student's score)
 - Groove capture-and-mutate tool
+
+## Practice strip (Sep 2026)
+Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. `Player.start()` calls `window.pfMetronomeStop()` — every seed tool's playback goes through it, so any Play stops the strip's metronome (William, 2026-09-19). Space triggers the master Play here; while the Metronome panel is open the strip takes space first. Proposed to carry no Benchmarks list: each prompt is already its own assignment.
