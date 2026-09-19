@@ -13,13 +13,19 @@
 //     exactly; romans V vi vii deg I ii iii IV V; harmonic-minor romans
 //  6. structure: all roots x qualities x sets x inversions enumerate clean
 //  7. the key-study .ly compiles under lilypond (if installed)
+//  8. Over a bass note (Introduction to Jazz Guitar, 2014, pp. 25-27): the major table
+//     against Ex. 21 cell by cell (read from the page at 400 dpi, Sep 2026), transposition,
+//     bass order and spelling, View 2 as the exact inverse of View 1, unruled qualities,
+//     every box on the selected set, Choose distractors, and no "card"/"deck" in any text
 const fs = require("fs"), path = require("path"), cp = require("child_process");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const chunks = src.split("<script>").map(c => c.split("</script>")[0]);
 const js = chunks.filter(c => c.includes("const OPEN =") || c.includes("function boxSVG")).join("\n");
 const E = new Function(js + `; return { OPEN, ROOTS, KEYS, TRI, INV, CSETS, OROWS, MAXF, OPEN_SPAN,
   toneNames, closedAll, closedLowest, openPlacements, openRow, diatonicTriads, keySpell,
-  entryNote, harmonizations, keyRun, lyDocument, boxSVG, chordStaffSVG, pcOf };`)();
+  entryNote, harmonizations, keyRun, lyDocument, boxSVG, chordStaffSVG, pcOf,
+  TBN, TBN_IV, TBN_TEXT, tbnRuled, tbnCells, tbnTriad, tbnSymbols, tbnLookup, tbnRule, tbnAnswer,
+  tbnShapes, tbnChoose, tbnBassMidi, tbnSystemSVG, tbnStaffBottom, tbnSymLines, pretty };`)();
 
 let fails = 0, checks = 0;
 const fail = m => { fails++; console.log("FAIL", m); };
@@ -231,6 +237,115 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
       ok(new Set(run.map(c => c.inv)).size === 1, `keyRun ${key}/${sk}/${set}/${ch}: inversion should be fixed`);
     });
   }
+// 8. Over a bass note
+{
+  // 8.1 Ex. 21, p. 27, in printed order — the B-flat cell carries both readings
+  const EX21 = [["E-7(♭6)"], ["E♭13(♭9)"], ["D9(sus4)"], ["D♭°Δ7"], ["CΔ7"], ["B7(♭9 ♭13 sus4)"],
+    ["B♭Δ9(♯11)", "B♭9(♯11)"], ["A-7"], ["A♭Δ7(♯5)"], ["G13(sus4)"], ["G♭7alt."], ["FΔ9"]];
+  const c21 = E.tbnCells(0, 'maj');
+  ok(c21.length === 12, "Ex. 21: twelve cells");
+  EX21.forEach((want, k) => ok(JSON.stringify(c21[k].labels) === JSON.stringify(want),
+    `Ex. 21 cell ${k + 1}: got ${c21[k].labels.join(" / ")}, book prints ${want.join(" / ")}`));
+  ok(c21.reduce((n, c) => n + c.labels.length, 0) === 13, "Ex. 21: thirteen applications");
+  // Ex. 20's staff: C-E-G written at C5, basses E4 down to F3 (sounding an octave lower)
+  ok(E.tbnTriad(0, 'maj').map(n => n.name + n.midi).join(" ") === "C60 E64 G67", "Ex. 20 triad register");
+  ok(c21[0].midi === 52 && c21[11].midi === 41, "Ex. 20 bass register: E down to F");
+  // 8.2 transposition
+  const over = (triad, bass) => E.tbnCells(E.pcOf(triad), 'maj').find(c => c.bassPc === E.pcOf(bass)).labels.join(" / ");
+  ok(over('F', 'G') === "G9(sus4)", "F major over G: " + over('F', 'G'));
+  ok(over('D', 'C') === "CΔ9(♯11) / C9(♯11)", "D major over C: " + over('D', 'C'));
+  ok(over('E', 'C') === "CΔ7(♯5)", "E major over C: " + over('E', 'C'));
+  ok(over('E', 'F#') === "F♯9(sus4)", "E major over F sharp is the slash chord as written: " + over('E', 'F#'));
+  // 8.3 bass order and spelling, every root and quality
+  for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) {
+    const cells = E.tbnCells(pc, q), names = E.toneNames(E.ROOTS[pc], q);
+    ok(cells[0].bassPc === (pc + 4) % 12, `bass order ${pc}/${q}: starts a major third above the root`);
+    cells.forEach((c, k) => {
+      ok(c.bassPc === (pc + 4 - k + 120) % 12 && c.midi === cells[0].midi - k, `bass order ${pc}/${q}: cell ${k} descends by half step`);
+      ok((pc - c.bassPc + 12) % 12 === c.iv, `interval ${pc}/${q}/${k}: triad root above the bass`);
+      ok(E.pcOf(c.bassName) === c.bassPc && c.bassName.length <= 2, `bass spelling ${pc}/${q}/${k}: ${c.bassName}`);
+      const tone = names.find(n => E.pcOf(n) === c.bassPc);
+      if (tone && tone.length <= 2 && !/^(E#|B#|Cb|Fb)$/.test(tone)) ok(c.bassName === tone, `one pitch, one spelling ${pc}/${q}: bass ${c.bassName} under ${tone}`);
+      c.labels.forEach(l => ok(!/♭♭|♯♯|bb|##|𝄫|𝄪/.test(l), `double accidental in ${l}`));
+    });
+    E.tbnTriad(pc, q).forEach(n => ok(n.name.length <= 2 && E.pcOf(n.name) === n.midi % 12, `triad spelling ${pc}/${q}: ${n.name}`));
+    // the staff itself: render at phone and desktop widths, look for a doubled accidental
+    for (const per of [12, 3]) for (let i = 0; i < 12; i += per) {
+      const svg = E.tbnSystemSVG(E.tbnTriad(pc, q), cells.slice(i, i + per), { wU: per === 12 ? 84 : 29, sel: 0, bottom: E.tbnStaffBottom(cells), prev: i ? cells[i - 1].bassName : '' });
+      ok(!/♭♭|♯♯|𝄫|𝄪/.test(svg), `staff ${pc}/${q}: double accidental drawn`);
+      ok((svg.match(/data-tb=/g) || []).length === per, `staff ${pc}/${q}: ${per} clickable cells`);
+    }
+  }
+  // 8.4 View 2 is the exact inverse of View 1
+  const syms = E.tbnSymbols();
+  ok(syms.length === 13, "View 2 offers the thirteen printed symbols: " + syms.length);
+  let pairs = 0;
+  for (let bass = 0; bass < 12; bass++) for (const sym of syms) for (const r of E.tbnLookup(bass, sym)) {
+    pairs++;
+    const cell = E.tbnCells(r.triadPc, r.q).find(c => c.bassPc === bass);
+    ok(cell && cell.syms.includes(sym) && cell.iv === r.iv, `inverse: bass ${bass} ${sym} -> ${r.triadName} ${r.q}, but View 1 shows ${cell && cell.syms}`);
+    ok(E.pcOf(r.triadName) === r.triadPc && E.toneNames(r.triadName, r.q).every(n => n.length <= 2), `View 2 triad spelling: ${r.triadName}`);
+  }
+  for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) for (const c of E.tbnCells(pc, q)) for (const sym of c.syms)
+    ok(E.tbnLookup(c.bassPc, sym).some(r => r.triadPc === pc && r.q === q), `inverse: View 1 ${pc}/${q} over ${c.bassPc} ${sym} missing from View 2`);
+  ok(pairs === 12 * 13, "View 2: every bass x symbol resolves to one major triad for now: " + pairs);
+  ok(E.tbnAnswer(E.tbnLookup(7, '13(sus4)')[0].triadName, 'maj', 5) === "C major triad, built a 4th above the root.", "brief's G13(sus4) sentence");
+  ok(E.tbnLookup(0, '7alt.')[0].triadName === 'Gb', "a flat 5 above C is G flat, by letter");
+  ok(E.tbnLookup(9, 'Δ7(♯5)')[0].triadName === 'C#', "a 3rd above A is C sharp, by letter");
+  // 8.5 unruled qualities: the not-yet-written state, and no drill prompt
+  for (const q of ['min', 'aug', 'dim']) {
+    ok(!E.tbnRuled(q), `${q} is not yet ruled`);
+    const cells = E.tbnCells(0, q);
+    ok(cells.every(c => !c.ruled && !c.labels.length), `${q}: no cell carries a symbol`);
+    ok(/not yet written/.test(E.tbnRule(q, cells[0].iv, cells[0], 'C')), `${q}: rule sentence says so`);
+    const svg = E.tbnSystemSVG(E.tbnTriad(0, q), cells, { wU: 84, sel: 0, bottom: E.tbnStaffBottom(cells) });
+    ok((svg.match(/<text/g) || []).length === 1, `${q}: staff draws no chord symbol`);   // the clef's 8
+  }
+  ok(/not yet written/i.test(E.TBN_TEXT.unruled), "unruled notice text");
+  let seed = 7; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let n = 0; n < 600; n++) {
+    const bass = Math.floor(rand() * 12), sym = syms[Math.floor(rand() * syms.length)];
+    const ch = E.tbnChoose(bass, sym, rand);
+    ok(ch && E.tbnRuled(ch.answer.q), "drill prompt from a ruled quality");
+    // 8.7 distractors: same bass note, same quality, never another right answer
+    ok(ch.distractors.length === 3, "three distractors");
+    ch.distractors.forEach(d => {
+      ok(d.q === ch.answer.q, "distractor shares the quality");
+      ok((d.triadPc - bass + 12) % 12 === d.iv && d.iv !== ch.answer.iv, "distractor is another interval above the same bass note");
+      ok(!E.TBN[d.q][d.iv].includes(sym), "distractor would also be right");
+    });
+    ok(new Set([ch.answer, ...ch.distractors].map(o => o.triadPc)).size === 4, "four different triads");
+  }
+  // 8.6 every box comes from closedAll / openRow for the selected set
+  let boxes = 0;
+  for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) {
+    for (const set of Object.keys(E.CSETS)) for (const v of E.tbnShapes(pc, q, 'closed', set)) {
+      boxes++;
+      ok(v.notes.map(n => n.s).join() === E.CSETS[set].strings.join(), `tbn box off set ${set}`);
+      ok(E.closedAll(pc, q, set, v.inv).some(c => sig(c.notes) === sig(v.notes)), "tbn closed box not from closedAll");
+    }
+    for (const row of Object.keys(E.OROWS)) for (const v of E.tbnShapes(pc, q, 'open', row)) {
+      boxes++;
+      ok(v.notes[2].s === E.OROWS[row].s, `tbn open box off row ${row}`);
+      ok(sig(E.openRow(pc, q, v.inv, E.OROWS[row].s).def.notes) === sig(v.notes), "tbn open box not openRow's default");
+    }
+  }
+  console.log(`over a bass note: ${pairs} lookups, ${boxes} boxes on their sets`);
+  // the sounding bass sits an octave or two under the triad
+  for (let low = 40; low <= 79; low++) for (let pc = 0; pc < 12; pc++) {
+    const m = E.tbnBassMidi(pc, low);
+    ok(m % 12 === pc && m >= 28 && m < low && low - m <= 23, `bass register: pc ${pc} under ${low} -> ${m}`);
+  }
+  // 8.9 no "card" or "deck" in anything a student reads
+  const words = /\b(card|deck)s?\b/i;
+  Object.entries(E.TBN_TEXT).forEach(([k, v]) => ok(!words.test(v), `TBN_TEXT.${k} says card/deck`));
+  const page = src.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<[^>]+>/g, " ");
+  ok(!words.test(page), "page text says card/deck");
+  const tbnJs = src.slice(src.indexOf("/* ---------- Over a bass note tab"), src.indexOf("/* ---------- wiring"));
+  ok(tbnJs.length > 500, "tab code found for the text scan");
+  (tbnJs.match(/(['"`])(?:\\.|(?!\1)[^\\])*\1/g) || []).filter(s => / /.test(s) && !/[<=]/.test(s))
+    .forEach(s => ok(!words.test(s), "tab string says card/deck: " + s));
+}
 // 7. lilypond round-trip
 {
   const run = E.keyRun('F', 'major', '234', 0);

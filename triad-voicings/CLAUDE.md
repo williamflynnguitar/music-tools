@@ -1,7 +1,8 @@
 # Triad Voicings
 
 Companion to JGTH pp. 39–43 (Triads in close and open position) and p. 81
-(Exploring Triads, Ex. 8). The triad counterpart to Inversion Drill; engine
+(Exploring Triads, Ex. 8), plus William's 2014 *Introduction to Jazz Guitar*
+pp. 25–27 for the "Over a bass note" tab (see its section below). The triad counterpart to Inversion Drill; engine
 code copied from inversion-drill (drill flow, key-study scaffolding, .ly
 export) and box-buddy (pitch-based voicing engine, chord-box renderer) per
 the no-build-step rule. Single self-contained `index.html`, no dependencies,
@@ -102,7 +103,103 @@ Shapes tab; no Through-changes tab in v1 (left out entirely, per brief).
   string distribution over the tightest span (the book's shape is always
   present as an alt chip).
 
+## Over a bass note (Sep 2026)
+
+Fourth tab, after Key study and before Drill. It answers what a triad is
+for on a gig: a 7th chord is a triad over a bass note (TBN), the bassist has
+the bass note, so a triad at the right interval above the root sounds the
+chord's color. Source: *Introduction to Jazz Guitar* (2014), pp. 25–27 —
+Ex. 19, Ex. 20 (p. 26), Ex. 21 and the four practice suggestions (p. 27).
+JGTH 3rd ed. has no equivalent passage, so the tab cites the 2014 book. The
+PDF is not in the repo (Dropbox, `Guitar Studio/OLD:UNUSED MATERIALS/`).
+Brief: `briefs/triad-voicings-over-a-bass-note-brief.md`.
+
+- **The table is a lookup of William's rulings, not a labeler.** `TBN` is
+  4 qualities × 12 cells; nothing is computed except transposition.
+  **Index = the interval of the triad's root above the bass note**, in
+  semitones (`TBN_IV`), which is how p. 27 tells the student to think ("a
+  major triad built a ♭6 above a given bass note results in X-7(♭6)"). A
+  cell is a list of readings, each the suffix after the bass note's name:
+  Ex. 21's B♭ cell carries two, hence the book's "thirteen applications".
+  `[]` is a cell ruled to have no reading; a quality left `null` is not yet
+  written.
+- **Do not port `briefs/symbols.py`.** It names a pitch set over a bass and
+  the quartal Function tab is built on it, so it looks like the obvious
+  move. Run against Ex. 21 it agreed with the book on 3 of 12 cells (it
+  returns "—" for the cell the book calls G13(sus4), and "6" for E♭13(♭9)).
+  Its rules were fitted to William's quartal tables and encode his judgment
+  about fourth stacks.
+- **Major is from Ex. 21**, confirmed cell by cell against the page at
+  400 dpi; check.js holds the thirteen printed strings. **Minor, augmented
+  and diminished are not in the book** (practice suggestion 1 leaves them
+  to the student), so they ship only when William rules them:
+  `tbn-worksheet.md` carries Claude's proposals for him to correct. Until
+  then those qualities draw Ex. 20's staff with no symbols and a "not yet
+  written" notice, still play, and appear in no drill prompt and not in
+  View 2's symbol list. Entering a ruled column is a data edit.
+- **Three questions open with William** (also at the top of the worksheet):
+  (1) Ex. 21 prints CΔ7 for the C triad over C, which has no 7th — keep the
+  printed label (current) or show plain X? (2) the ♭2 cell is printed as a
+  stacked alteration and set inline here as `X7(♭9 ♭13 sus4)` — is that the
+  order? (3) the three worksheet columns.
+- **View 1, One triad**: Ex. 20–21 as a live staff (`tbnSystemSVG`, on the
+  `NOTE_DEFS` glyphs). Bass order starts a major third above the triad's
+  root and descends twelve half steps; the triad's root sits in B♭3–A4
+  sounding so C lands where the book prints it (bass E down to F, three
+  ledger lines). Twelve cells do not fit a phone, so the row is cut into
+  equal systems (12/6/4/3/2 by width, re-cut on resize) with the triad
+  restated at the head of each — the one departure from the printed
+  layout. A symbol that does not fit its cell drops its parenthesis to a
+  second line, as the book stacks alterations. Clicking a cell selects it:
+  the rule sentence in William's phrasing, then the triad's three
+  inversions on the selected set (`tbnShapes` → `closedAll`, or `openRow`
+  defaults with the Open toggle — practice suggestion 3). The bass note is
+  named beside the boxes and never fretted.
+- **View 2, One chord**: the reverse lookup (`tbnLookup`), the one for the
+  stand. Chord root + a symbol from the distinct symbols in the ruled
+  tables → every triad that sounds it, stated both ways ("C major triad,
+  built a 4th above the root."). check.js walks all 12 basses × every
+  symbol both directions.
+- **Spelling.** Bass notes descend with flats as printed, with two
+  exceptions that stop a staff contradicting itself: a bass note that is
+  also a triad tone takes the triad's spelling (E over G♯, not A♭ under a
+  G♯), and pc 6 is F♯ under a triad written with sharps (E over F♯).
+  View 2 spells the triad's root by letter from the bass (a ♭5 above C is
+  G♭, a 3rd above A is C♯) when that triad spells clean, else the ring's
+  name. Consequence: View 1 prints G♭7alt. under a C triad, as the book
+  does, while View 2's root ring offers F♯ (suite rule) and so reads
+  F♯7alt. Flagged to William. No double accidental can be produced;
+  check.js asserts it on names, labels and the drawn staff.
+- **Playback**: the bass note sounds first and sustains an octave or two
+  below the triad's lowest voice (`tbnBassMidi`, never under E1; upper
+  partials so a phone speaker finds the pitch); the triad enters one beat
+  later at 80. Two events on the audio clock through the shared lookahead
+  pattern (`tbq`), on their own gain bus so the next click fades what is
+  still ringing. No visual change while it sounds. It is an audition, not
+  timekeeping, so it does not stop the strip's metronome.
+- **Its own drill** (the main Drill's tiers trace to the pp. 164–167
+  checklist, which has no TBN material, and are untouched). Reveal: a chord
+  symbol with its root, then triad name, rule and boxes. Choose: four boxes
+  on one set, one inversion; distractors are same-quality triads at other
+  intervals above the same bass note, never another bass note and never a
+  triad that would also be right (`tbnChoose`). A wrong pick is told what
+  chord it would have made. Streak in memory only.
+- `strumAt` gained an optional destination node; `setTab` now shows a
+  control when any of its tab classes matches (the old last-loop-wins
+  logic hid the chord-tones check on Shapes after a tab round trip).
+
 ## Next (unbuilt)
+
+**TBN Phase 2 — the bass note under the hand** (practice suggestion 4, for
+playing without a bassist): closed triads on sets 1-2-3 and 2-3-4 only, the
+bass note added on any lower string; enumerate by pitch as `openPlacements`
+does, fretted span ≤ 4, open strings free, bass below the triad's lowest
+voice. William cut 21 of 23 span-4 classes from the open triads by hand, so
+expect the same: generate a numbered review sheet of every grip class
+before any show in the app, and ship only what he keeps. Build after Views
+1 and 2 are accepted. Deferred with it: the same table for the intervallic
+voicing of the 2014 book's p. 33 (Ex. 29), a Through-changes mode comping
+with TBN substitutions, and open triads with a fretted bass note.
 
 Through changes with triad-reduced progressions; pre-rendered LilyPond
 cells per key via `notation/pipeline`; melodic minor tonality in the key

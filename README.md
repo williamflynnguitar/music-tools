@@ -16,7 +16,8 @@ From the handbook:
 - **inversion-drill/** — drop-2 and drop-3 inversions up the neck
 - **voice-leading/** — resolve to the nearest inversion instead of jumping
 - **quartal-voicings/** — fourths on every degree, planing, two tunes
-- **triad-voicings/** — closed and open triads on every string set
+- **triad-voicings/** — closed and open triads on every string set, and triads
+  over a bass note
 - **comping-rhythms/** — Charleston: swing comping rhythms in five families
 
 Stand-alone:

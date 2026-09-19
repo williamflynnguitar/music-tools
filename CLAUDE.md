@@ -33,7 +33,10 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   chapter: catalogue, modes, the Ex. 5–14 chord-symbol method, ii–V–I planing,
   Solar and Stella. Brief + spec in `briefs/`; pre-rendered cells in its own
   `notation/`
-- `triad-voicings/` — closed/open triads and the Ex. 8 key study (pp. 39–43, 81)
+- `triad-voicings/` — closed/open triads and the Ex. 8 key study (pp. 39–43, 81),
+  plus triads over a bass note: Ex. 20–21 of William's 2014 *Introduction to
+  Jazz Guitar* (pp. 25–27) as a lookup table of his rulings. Major is printed;
+  minor, augmented and diminished wait on `triad-voicings/tbn-worksheet.md`
 - `comping-rhythms/` — Charleston swing comping rhythms (pp. 83–84), five families
 - `box-buddy/` — chord-box handout generator for band directors (teacher tool,
   deliberately unlinked from the spine)

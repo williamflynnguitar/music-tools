@@ -20,7 +20,7 @@
 /* Repeated taps must not hand the browser a double-tap zoom (Sep 2026):
    tapping a chord twice to hear it again zoomed the page on iOS and the
    controls had to be pinched back out. Pinch zoom is untouched. */
-button,.card,.check,rect[data-cs]{touch-action:manipulation}
+button,.card,.check,rect[data-cs],rect[data-tb]{touch-action:manipulation}
 
 :root{
   --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
@@ -100,6 +100,17 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
 .harm button{text-align:left;background:transparent;border:1px solid var(--line);border-radius:3px;padding:7px 10px;cursor:pointer;font-size:14px}
 .harm button small{font-family:var(--mono);color:var(--bone-dim);font-size:11px;display:block}
 .harm button[aria-pressed=true]{border-color:var(--brass);background:var(--petrol-2)}
+/* Over a bass note */
+@media (max-width:520px){.modes{width:100%}.modes button{flex:1 1 auto;padding:8px 6px;font-size:14px}}
+.tbstaff svg{display:block;max-width:100%;height:auto;margin-bottom:4px}
+rect[data-tb]:focus{outline:none}
+rect[data-tb]:focus-visible{stroke:var(--brass);stroke-width:.16}
+.tbrule{font-size:16px;margin:14px 0 14px;max-width:64ch}
+.tbrule b,.tbrule .m{font-family:var(--mono);font-weight:400;font-size:.92em}
+.tbrule b{color:var(--brass)}
+.tbBass{font-family:var(--mono);font-size:12px;color:var(--bone-dim);width:92px;padding-top:36px;flex:none;line-height:1.45}
+.tbBass b{display:block;font-size:15px;font-weight:400;color:var(--bone);margin-bottom:2px}
+@media (max-width:520px){.setrow.tb{flex-direction:column;gap:6px}.setrow.tb .tbBass{width:auto;padding-top:0}}
 </style>
 </head>
 <body>
@@ -182,6 +193,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
   <div class="modes" role="group" aria-label="Tab">
     <button id="tShapes" aria-pressed="true">Shapes</button>
     <button id="tKey" aria-pressed="false">Key study</button>
+    <button id="tTbn" aria-pressed="false">Over a bass note</button>
     <button id="tDrill" aria-pressed="false">Drill</button>
   </div>
 </div>
@@ -240,6 +252,46 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
     </div>
   </div>
 
+  <div class="group tb-ctl" style="display:none">
+    <span class="lbl">Start from</span>
+    <div class="seg three" id="tbView">
+      <button data-v="one" aria-pressed="true">One triad</button>
+      <button data-v="two" aria-pressed="false">One chord</button>
+      <button data-v="drill" aria-pressed="false">Drill</button>
+    </div>
+  </div>
+  <div class="group tb-ctl" data-tv="one" style="display:none">
+    <span class="lbl">Triad root</span>
+    <div class="roots" id="tbRoots"></div>
+  </div>
+  <div class="group tb-ctl" data-tv="one" style="display:none">
+    <span class="lbl">Quality</span>
+    <div class="seg four" id="tbQuals"></div>
+  </div>
+  <div class="group tb-ctl" data-tv="two" style="display:none">
+    <span class="lbl">Chord root (the bass note)</span>
+    <div class="roots" id="tbBass"></div>
+  </div>
+  <div class="group tb-ctl" data-tv="two" style="display:none">
+    <span class="lbl">Chord symbol</span>
+    <div class="seg" id="tbSyms"></div>
+  </div>
+  <div class="group tb-ctl" data-tv="drill" style="display:none">
+    <span class="lbl">Ask me to</span>
+    <div class="seg" id="tbMode">
+      <button data-m="reveal" aria-pressed="true">Reveal it</button>
+      <button data-m="choose" aria-pressed="false">Choose it</button>
+    </div>
+  </div>
+  <div class="group tb-ctl" style="display:none">
+    <span class="lbl">Triad shapes</span>
+    <div class="seg" id="tbPos">
+      <button data-p="closed" aria-pressed="true">Closed</button>
+      <button data-p="open" aria-pressed="false">Open</button>
+    </div>
+    <div class="sets" id="tbSets" style="margin-top:6px"></div>
+  </div>
+
   <div class="group dr-ctl" style="display:none">
     <label class="lbl" for="tier">Tier</label>
     <select id="tier">
@@ -260,7 +312,7 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
   <div class="group dr-ctl" id="customGroup" style="display:none"></div>
 
   <div class="group">
-    <label class="check sh-ctl dr-ctl"><input type="checkbox" id="labels"> chord tones in the dots</label>
+    <label class="check sh-ctl dr-ctl tb-ctl"><input type="checkbox" id="labels"> chord tones in the dots</label>
     <label class="check"><input type="checkbox" id="sound" checked> play on click</label>
   </div>
 </aside>
@@ -277,6 +329,15 @@ select,input[type=number]{width:100%;background:var(--ink);border:1px solid var(
     <p class="sub" id="ksSub"></p>
     <div class="row" id="ksRow"></div>
     <p class="hint" id="ksHint"></p>
+  </div>
+  <div id="stTbn" style="display:none">
+    <h2 class="title" id="tbTitle"></h2>
+    <p class="sub" id="tbSub"></p>
+    <div id="tbBody"></div>
+    <div id="tbDrillBar" hidden>
+      <div class="score" id="tbScore">Streak 0</div>
+      <div style="margin-top:12px;display:flex;gap:8px"><button class="btn quiet" id="tbReveal">Reveal</button><button class="btn" id="tbNext">Next</button></div>
+    </div>
   </div>
   <div id="stDrill" style="display:none">
     <h2 class="title" id="qTitle"></h2>
@@ -536,6 +597,128 @@ function keyRunRaw(keyName, scaleKey, setId, h){
   }
   return out;
 }
+
+/* ---------- triads over a bass note (TBN) ----------
+   Source: Flynn, Introduction to Jazz Guitar (2014), pp. 25–27, Ex. 19–21. JGTH 3rd ed. has no
+   equivalent passage, so the tab cites the 2014 book.
+   THE TABLE IS A LOOKUP OF WILLIAM'S RULINGS — 4 qualities × 12 intervals — and nothing here is
+   computed except transposition. Do not port briefs/symbols.py (the quartal labeler): run against
+   Ex. 21 it agreed with the book on 3 of 12 cells, because its rules encode his judgment about
+   fourth stacks, not triads.
+   Index = the interval of the TRIAD'S ROOT ABOVE THE BASS NOTE in semitones, which is how p. 27
+   tells the student to think. Each cell is a list of readings (the suffix after the bass note's
+   name): Ex. 21's B♭ cell carries two, hence the book's "thirteen applications"; [] is a cell
+   ruled to have no 7th-chord reading. A quality left null is not yet written — the book prints
+   the major table only, and the other three ship when William returns tbn-worksheet.md. */
+const TBN_IV = ['R','♭2','2','♭3','3','4','♭5','5','♭6','6','♭7','7'];
+const TBN_IV_SAY = ['on','a ♭2 above','a 2nd above','a ♭3 above','a 3rd above','a 4th above','a ♭5 above',
+                    'a 5th above','a ♭6 above','a 6th above','a ♭7 above','a 7th above'];
+const TBN = {
+  maj: [['Δ7'], ['7(♭9 ♭13 sus4)'], ['Δ9(♯11)','9(♯11)'], ['-7'], ['Δ7(♯5)'], ['13(sus4)'],
+        ['7alt.'], ['Δ9'], ['-7(♭6)'], ['13(♭9)'], ['9(sus4)'], ['°Δ7']],      // Ex. 21, p. 27
+  min: null, aug: null, dim: null,
+};
+const TBN_TEXT = {
+  cite: 'Introduction to Jazz Guitar (2014), pp. 25–27',
+  one: 'A 7th chord is a triad over a bass note. The bassist has the bass note, so a triad placed at the right interval above it sounds the color of the chord. One triad over all twelve bass notes, in the order of Ex. 20–21. Click a bass note to hear it under the triad.',
+  two: 'Pick the chord on the chart. These are the triads that sound it while the bassist has the root.',
+  unruled: 'Not yet written. The book prints this table for the major triad only (Ex. 21) and leaves the other three qualities to the student: practice suggestion 1 on p. 27. Click a bass note to hear it under the triad, and name the chord yourself.',
+  noSyms: 'No chord symbols to look up yet.',
+  reveal: 'Play a triad that makes this chord over the bass note, then look.',
+  honor: 'Streak is for Choose mode. This one is on your honor.',
+  unfretted: 'bass note not fretted',
+};
+const pretty = n => n.replace(/b/g,'♭').replace(/#/g,'♯');      // note names only: 'Bb' → 'B♭'
+const tbnRuled = q => Array.isArray(TBN[q]);
+/* Spelling. Bass notes descend with flats, as Ex. 20 prints them, with two exceptions that keep a
+   staff from contradicting itself: a bass note that is also a tone of the triad takes the triad's
+   spelling (E major over G♯, not A♭ under a G♯), and pitch class 6 is F♯ under a triad that is
+   itself written with sharps (E over F♯, the slash chord everyone writes). Every name is a
+   natural or a single accidental; nothing here can produce a double. */
+const TBN_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const TBN_PLAIN = new Set(['C','D','E','F','G','A','B','C#','D#','F#','G#','A#','Db','Eb','Gb','Ab','Bb']);
+function tbnBassName(bassPc, triadNames){
+  const hit = triadNames.find(n=>pcOf(n)===bassPc);
+  if(hit && TBN_PLAIN.has(hit)) return hit;
+  if(bassPc===6 && triadNames.some(n=>n.includes('#'))) return 'F#';
+  return TBN_FLAT[bassPc];
+}
+/* the twelve cells of Ex. 20–21 for any triad: the bass starts a major third above the triad's
+   root and descends by half step. midi is the sounding pitch for the staff (written 8va, as all
+   guitar notation here): the triad's root sits in B♭3–A4 so that C lands where the book prints it. */
+function tbnCells(triadPc, q){
+  const names = toneNames(ROOTS[triadPc], q), table = TBN[q];
+  const rootMidi = 58 + ((triadPc-10+12)%12);
+  return Array.from({length:12}, (_,k)=>{
+    const bassPc = (triadPc+4-k+12)%12, iv = (triadPc-bassPc+12)%12;
+    const bassName = tbnBassName(bassPc, names), syms = table ? table[iv] : [];
+    return {k, bassPc, bassName, iv, ivLabel:TBN_IV[iv], ruled:!!table, syms,
+            labels: syms.map(s=>pretty(bassName)+s), midi: rootMidi-8-k};
+  });
+}
+function tbnTriad(triadPc, q){
+  const names = toneNames(ROOTS[triadPc], q), rootMidi = 58 + ((triadPc-10+12)%12);
+  return names.map((name,i)=>({name, midi:rootMidi+TRI[q].iv[i]}));
+}
+const tbnSymbols = () => [...new Set(Object.keys(TBN).filter(tbnRuled).flatMap(q=>TBN[q].flat()))];
+/* the reverse lookup: which triads sound this symbol over this bass note. The triad's root is
+   spelled by letter from the bass note (a ♭5 above C is G♭, not F♯) whenever that triad spells
+   without a double accidental or a root like E♯; otherwise it takes the ring's name. */
+const TBN_LET = [0,1,1,2,2,3,4,4,5,5,6,6];
+function tbnTriadRoot(bassName, iv, q){
+  const pc = (pcOf(bassName)+iv)%12;
+  const at = (from, steps, p)=>{ const L='CDEFGAB'[('CDEFGAB'.indexOf(from[0])+steps)%7];
+    let d=((p-LPC[L])%12+12)%12; if(d>6) d-=12; return L+(d>0?'#'.repeat(d):'b'.repeat(-d)); };
+  const root = at(bassName, TBN_LET[iv], pc);
+  const clean = TBN_PLAIN.has(root) && TRI[q].iv.every((v,i)=>at(root,[0,2,4][i],(pc+v)%12).length<=2);
+  return clean ? root : ROOTS[pc];
+}
+function tbnLookup(bassPc, sym){
+  const out = [];
+  for(const q of Object.keys(TBN)) if(tbnRuled(q))
+    TBN[q].forEach((cell,iv)=>{ if(cell.includes(sym))
+      out.push({q, iv, triadPc:(bassPc+iv)%12, triadName:tbnTriadRoot(ROOTS[bassPc], iv, q)}); });
+  return out;
+}
+const tbnAn = q => (/^[aeiou]/i.test(TRI[q].name)?'An ':'A ')+TRI[q].name.toLowerCase();
+function tbnRule(q, iv, cell, triadName){        // William's phrasing, p. 27
+  const where = iv===0 ? 'on the bass note itself' : TBN_IV_SAY[iv]+' the bass note';
+  if(!cell.ruled) return tbnAn(q)+' triad built '+where+': not yet written.';
+  if(!cell.syms.length) return tbnAn(q)+' triad built '+where+' has no 7th-chord reading here.';
+  return tbnAn(q)+' triad built '+where+' gives '+cell.syms.map(s=>'X'+s).join(' or ')+' — here '
+    +pretty(triadName)+TRI[q].sym+' over '+pretty(cell.bassName)+', '+cell.labels.join(' or ')+'.';
+}
+const tbnAnswer = (triadName, q, iv) => pretty(triadName)+' '+TRI[q].name.toLowerCase()+' triad, built '
+  +(iv===0 ? 'on the root itself' : TBN_IV_SAY[iv]+' the root')+'.';
+/* the boxes: the triad's three inversions on the selected set or open row, lowest placements,
+   running up the neck as the Shapes tab does. Always from closedAll / openRow. */
+function tbnShapes(pc, q, pos, where){
+  const vs = [0,1,2].map(inv=>{
+    if(pos==='closed') return closedAll(pc,q,where,inv)[0] || null;
+    const r = openRow(pc,q,inv,OROWS[where].s); return r && r.def;
+  }).filter(Boolean);
+  return vs.sort((a,b)=>a.low-b.low);
+}
+/* Choose mode: one triad that sounds the symbol, and three same-quality triads at other
+   intervals above the same bass note — never a triad that would also be right. */
+function tbnChoose(bassPc, sym, rand){
+  const answers = tbnLookup(bassPc, sym);
+  if(!answers.length) return null;
+  const answer = answers[Math.floor(rand()*answers.length)];
+  const pool = TBN[answer.q].map((cell,iv)=>iv).filter(iv=>!TBN[answer.q][iv].includes(sym));
+  const distractors = [];
+  while(distractors.length<3 && pool.length){
+    const iv = pool.splice(Math.floor(rand()*pool.length),1)[0];
+    distractors.push({q:answer.q, iv, triadPc:(bassPc+iv)%12, triadName:tbnTriadRoot(ROOTS[bassPc], iv, answer.q)});
+  }
+  return {answer, distractors};
+}
+/* the sounding bass note: an octave or two below the triad's lowest voice, never under E1 */
+function tbnBassMidi(bassPc, low){
+  let m = low-12; while(((m%12)+12)%12 !== bassPc) m--;
+  while(m < 28) m += 12;
+  return m;
+}
 </script>
 <script>
 /* ---------- renderers ---------- */
@@ -674,18 +857,86 @@ function neckSVG(sel, faint, rootPc){
   return o+'</svg>';
 }
 
+/* Ex. 20–21 as one system of a staff: the triad as stacked whole notes, then the bass notes as
+   filled heads, each under its chord symbol. Units are staff spaces, TBN_PPU px each. Twelve
+   cells do not fit a phone, so the caller cuts the row into equal systems and the triad is
+   restated at the head of each. A long parenthesis drops to its own line, as the book stacks
+   its alterations; a cell with two readings stacks them, as Ex. 21 does. */
+const TBN_PPU = 11;
+const tbnHeadY = (name, midi) => {
+  const natural = midi+12-(ACCV[name.slice(1)]||0), oct = Math.floor(natural/12)-1;
+  return 4-((oct*7+'CDEFGAB'.indexOf(name[0]))-30)*0.5;
+};
+function tbnSymLines(labels, cw){        // cw: the cell's width in staff spaces
+  const fits = t => t.length*0.62 <= cw-0.5;          // at full size
+  if(labels.length !== 1) return labels.slice();
+  const s = labels[0], i = s.indexOf('(');
+  if(i < 0 || fits(s)) return [s];
+  const head = s.slice(0,i), par = s.slice(i), sp = par.lastIndexOf(' ');
+  return fits(par) || sp<0 ? [head, par] : [head, par.slice(0,sp), par.slice(sp+1)];
+}
+const tbnPerSystem = widthPx => [12,6,4,3,2].find(n=>7.6*TBN_PPU + n*68 <= widthPx) || 2;
+function tbnSystemSVG(triad, cells, o){        // o: {wU, sel, bottom, prev}
+  const use = (id,x,y)=>`<use href="#${id}" transform="translate(${x.toFixed(2)},${y.toFixed(2)}) scale(0.004,-0.004)"/>`;
+  const acc = (a,x,y)=> a==='#' ? use('sharp',x,y) : a==='b' ? use('flat',x+0.1,y) : a==='n' ? use('natural',x+0.15,y) : '';
+  const ledgers = (x,y)=>{ let s='';
+    for(let ly=5; ly<=y; ly++) s+=`<line x1="${(x-0.45).toFixed(2)}" y1="${ly}" x2="${(x+1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    for(let ly=-1; ly>=y; ly--) s+=`<line x1="${(x-0.45).toFixed(2)}" y1="${ly}" x2="${(x+1.9).toFixed(2)}" y2="${ly}" stroke="currentColor" stroke-width="0.18"/>`;
+    return s; };
+  const heads = triad.map(n=>({...n, acc:n.name.slice(1), y:tbnHeadY(n.name,n.midi)}));
+  const placed = [];
+  heads.slice().sort((a,b)=>a.y-b.y).forEach(h=>{ if(!h.acc) return;
+    let col=0; while(placed.some(p=>p.col===col && Math.abs(p.y-h.y)<2.4)) col++;
+    placed.push({y:h.y,col}); h.accCol=col; });
+  const accW = placed.length ? (Math.max(...placed.map(p=>p.col))+1)*1.5 : 0;
+  const X = 4.2+accW, lead = X+3.4, cw = (o.wU-lead)/cells.length;
+  const ruled = cells.some(c=>c.ruled);
+  const top = Math.min(ruled ? -6.1 : -2.6, ...heads.map(h=>h.y-(h.acc?2.4:1.4))), bottom = o.bottom;   // a flat stands 1.9 above its head
+  let s = '';
+  cells.forEach((c,i)=>{ if(c.k===o.sel) s+=`<rect x="${(lead+i*cw+0.15).toFixed(2)}" y="${(top+0.15).toFixed(2)}" width="${(cw-0.3).toFixed(2)}" height="${(bottom-top-0.3).toFixed(2)}" rx="0.45" fill="var(--petrol-2)"/>`; });
+  for(let i=0;i<5;i++) s+=`<line x1="0" y1="${i}" x2="${o.wU.toFixed(2)}" y2="${i}" stroke="currentColor" stroke-width="0.11"/>`;
+  s += use('clef',0.5,3)+`<text x="0.85" y="6.05" font-family="serif" font-style="italic" font-size="1.15" text-anchor="middle" fill="currentColor">8</text>`;
+  heads.forEach(h=>{ s += ledgers(X,h.y);
+    if(h.acc) s += acc(h.acc, X-1.35-h.accCol*1.5, h.y);
+    s += `<ellipse cx="${(X+0.72).toFixed(2)}" cy="${h.y.toFixed(2)}" rx="0.82" ry="0.52" transform="rotate(-18 ${(X+0.72).toFixed(2)} ${h.y.toFixed(2)})" fill="none" stroke="currentColor" stroke-width="0.26"/>`; });
+  let prev = o.prev || '';
+  cells.forEach((c,i)=>{
+    const cx = lead+(i+0.5)*cw, hx = cx-0.65, y = tbnHeadY(c.bassName, c.midi), on = c.k===o.sel;
+    // a natural is owed when the note before it altered the same letter (F♯ then F)
+    const a = c.bassName.slice(1) || (prev[0]===c.bassName[0] && prev.length>1 ? 'n' : '');
+    prev = c.bassName;
+    s += ledgers(hx,y) + acc(a, hx-1.35, y) + use('nh', hx, y);
+    const lines = tbnSymLines(c.labels, cw);
+    lines.forEach((ln,j)=>{
+      const fs = Math.min(1.15, (cw-0.5)/(Math.max(ln.length,1)*0.62));
+      s += `<text x="${cx.toFixed(2)}" y="${(-1.25-(lines.length-1-j)*1.5).toFixed(2)}" font-family="var(--mono)" font-size="${fs.toFixed(2)}" text-anchor="middle" fill="${on?'var(--brass)':'currentColor'}">${ln}</text>`; });
+    s += `<rect data-tb="${c.k}" tabindex="0" role="button" aria-pressed="${on}" aria-label="bass note ${c.bassName.replace('b',' flat').replace('#',' sharp')}${c.labels.length?': '+c.labels.join(' or '):''}" x="${(lead+i*cw).toFixed(2)}" y="${top.toFixed(2)}" width="${cw.toFixed(2)}" height="${(bottom-top).toFixed(2)}" fill="transparent" style="cursor:pointer"/>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(o.wU*TBN_PPU)}" viewBox="0 ${top.toFixed(2)} ${o.wU.toFixed(2)} ${(bottom-top).toFixed(2)}" style="color:var(--bone)">${s}</svg>`;
+}
+const tbnStaffBottom = cells => Math.max(6.4, ...cells.map(c=>tbnHeadY(c.bassName,c.midi)+1.7));
+
 /* ---------- audio: strum + lookahead scheduler (shared pattern) ---------- */
 let ac=null; const ctx=()=>ac=ac||new (window.AudioContext||window.webkitAudioContext)();
-function strumAt(notes, at, dur){
-  const c=ctx(); dur=dur||1.6;
+function strumAt(notes, at, dur, dest){
+  const c=ctx(); dur=dur||1.6; dest=dest||c.destination;
   [...notes].sort((a,b)=>b.s-a.s).forEach((n,i)=>{
     const f=440*Math.pow(2,(OPEN[n.s]+n.f-69)/12);
     const o=c.createOscillator(), g=c.createGain(), o2=c.createOscillator(), g2=c.createGain();
     o.type='triangle'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*2; g2.gain.value=.25;
     const t=at+i*0.04;
     g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.2,t+.008); g.gain.exponentialRampToValueAtTime(.0008,t+dur);
-    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination); o.start(t); o2.start(t); o.stop(t+dur+.05); o2.stop(t+dur+.05);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(dest); o.start(t); o2.start(t); o.stop(t+dur+.05); o2.stop(t+dur+.05);
   });
+}
+/* a sustained bass note; upper partials so a phone speaker can find the pitch */
+function bassAt(midi, at, dur, dest){
+  const c=ctx(), f=440*Math.pow(2,(midi-69)/12), g=c.createGain();
+  g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(.3,at+.015); g.gain.exponentialRampToValueAtTime(.001,at+dur);
+  [['triangle',1,1],['sine',2,.5],['sine',3,.22]].forEach(([type,mult,lvl])=>{
+    const o=c.createOscillator(), pg=c.createGain(); o.type=type; o.frequency.value=f*mult; pg.gain.value=lvl;
+    o.connect(pg); pg.connect(g); o.start(at); o.stop(at+dur+.05); });
+  g.connect(dest||c.destination);
 }
 function strum(notes){ if(!el('sound').checked) return; const c=ctx(); c.resume(); strumAt(notes, c.currentTime+0.02, 2.0); }
 function click(at,hz,g0){ const c=ctx(); const o=c.createOscillator(), g=c.createGain(); o.type='square'; o.frequency.value=hz;
@@ -752,6 +1003,7 @@ function lyDownload(text, filename){
 /* ===== ui ===== */
 const st = {tab:'shapes', pc:7, q:'maj', pos:'closed', set:'123', row:'top', sel:0, oct:{},
             key:'F', scaleKey:'major', ksSet:'234', ksChoice:0,
+            tbn:{view:'one', pc:0, q:'maj', cell:0, bassPc:7, sym:'13(sus4)', pos:'closed', set:'123', row:'middle', card:'0:0', mode:'reveal'},
             tier:'1', drMode:'reveal', custom:{pos:['closed'], sets:['123','234'], rows:['middle','bottom'], quals:['maj','min','dim','aug'], invs:[0,1,2]}};
 const el = id=>document.getElementById(id);
 const fmt = (root,sym)=>root+(sym?'<span class="q">'+sym+'</span>':'');
@@ -970,6 +1222,147 @@ function answerChoose(i){
   el('score').textContent = 'Streak '+quiz.streak+(quiz.best?' · best '+quiz.best:'');
 }
 
+/* ---------- Over a bass note tab ---------- */
+/* Hearing the color is the point, so every click sounds the bass note first and brings the
+   triad in a beat later (the book asks for these over a pedal). Events go through the shared
+   lookahead pattern — 25 ms interval, 130 ms window, times on the audio clock — and a new
+   click fades whatever is still ringing. Nothing on screen moves while it sounds. */
+const TBN_BPM = 80;
+const tbq = {timer:null, ev:[], bus:null};
+function tbnHush(){
+  tbq.ev = [];
+  if(tbq.bus){ const c=ctx(), b=tbq.bus; b.gain.cancelScheduledValues(c.currentTime); b.gain.setTargetAtTime(0, c.currentTime, .03);
+    setTimeout(()=>b.disconnect(), 400); tbq.bus=null; }
+}
+function tbnTick(){
+  const c=ctx();
+  while(tbq.ev.length && tbq.ev[0].t < c.currentTime+0.13){ const e=tbq.ev.shift(); e.fn(e.t); }
+  if(!tbq.ev.length){ clearInterval(tbq.timer); tbq.timer=null; }
+}
+function tbnAudition(bassPc, notes){
+  if(!el('sound').checked) return;
+  const c=ctx(); c.resume(); tbnHush();
+  const bus=c.createGain(); bus.connect(c.destination); tbq.bus=bus;
+  const beat=60/TBN_BPM, t0=c.currentTime+0.05;
+  const low = notes.length ? Math.min(...notes.map(n=>OPEN[n.s]+n.f)) : 52;
+  tbq.ev = [{t:t0, fn:t=>bassAt(tbnBassMidi(bassPc, low), t, beat*5, bus)}];
+  if(notes.length) tbq.ev.push({t:t0+beat, fn:t=>strumAt(notes, t, beat*4, bus)});
+  if(!tbq.timer) tbq.timer=setInterval(tbnTick,25);
+}
+const tquiz = {cur:null, opts:null, streak:0, best:0};
+const tbnWhere = () => st.tbn.pos==='closed' ? st.tbn.set : st.tbn.row;
+const tbnWhereName = () => st.tbn.pos==='closed' ? CSETS[st.tbn.set].name.toLowerCase() : OROWS[st.tbn.row].name.toLowerCase()+', open position';
+const fmtP = (root,sym) => fmt(pretty(root), sym);
+/* set the musical tokens of a sentence in mono (the serif face spaces ♭ badly): brass ones first */
+function tbnMark(text, brass, mono){
+  const toks = [...brass, ...mono].filter(Boolean).sort((a,b)=>b.length-a.length);
+  if(!toks.length) return text;
+  const re = new RegExp(toks.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
+  return text.replace(re, m=>brass.includes(m) ? '<b>'+m+'</b>' : '<span class="m">'+m+'</span>');
+}
+function tbnBoxes(triadName, q, bassPc, bassName, r){    // the triad's inversions on the set; the bass note is named, not fretted
+  const vs = tbnShapes(pcOf(triadName), q, st.tbn.pos, tbnWhere());
+  const head = `<div class="tbBass"><b>${pretty(triadName)+TRI[q].sym} over ${pretty(bassName)}</b>${tbnWhereName()}<br>${TBN_TEXT.unfretted}</div>`;
+  if(!vs.length) return `<div class="setrow tb">${head}<p class="hint" style="margin-top:36px">No voicing of this triad on the ${tbnWhereName()}.</p></div>`;
+  return `<div class="setrow tb">${head}<div class="row">`+vs.map((v,i)=>{
+    const named = toneNamed(v, triadName, q);
+    return `<div class="card ${st.tbn.card===r+':'+i?'sel':''}" data-tbv="${r}:${i}" data-bass="${bassPc}" data-notes='${JSON.stringify(named.notes)}'>
+      <div class="nm">${fmtP(triadName, TRI[q].sym)}</div><div class="tag">${INV[v.inv]} · ${v.top} on top</div>
+      ${boxSVG(named, el('labels').checked)}</div>`; }).join('')+'</div></div>';
+}
+function renderTbn(){
+  const t = st.tbn;
+  el('tbView').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.v===t.view));
+  document.querySelectorAll('[data-tv]').forEach(x=>x.hidden = x.dataset.tv!==t.view);
+  el('tbRoots').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.pc===t.pc));
+  el('tbBass').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.pc===t.bassPc));
+  el('tbQuals').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.q===t.q));
+  el('tbSyms').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.s===t.sym));
+  el('tbPos').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.p===t.pos));
+  el('tbMode').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.m===t.mode));
+  el('tbSets').innerHTML = (t.pos==='closed'
+    ? Object.entries(CSETS).map(([k,s])=>`<button data-id="${k}" aria-pressed="${k===t.set}">${s.name}<small>${s.tag}</small></button>`)
+    : Object.entries(OROWS).map(([k,r])=>`<button data-id="${k}" aria-pressed="${k===t.row}">${r.name}<small>${r.tag}</small></button>`)).join('');
+  el('tbDrillBar').hidden = t.view!=='drill';
+  if(t.view==='one') renderTbnOne(); else if(t.view==='two') renderTbnTwo(); else renderTbnDrill();
+}
+function renderTbnOne(){
+  const t = st.tbn, rootName = ROOTS[t.pc], cells = tbnCells(t.pc, t.q), triad = tbnTriad(t.pc, t.q);
+  const cell = cells[t.cell] || cells[0];
+  el('tbTitle').innerHTML = fmtP(rootName, TRI[t.q].sym)+' <span style="font-size:.6em;color:var(--bone-dim)">'+TRI[t.q].name.toLowerCase()+' triad over twelve bass notes</span>';
+  el('tbSub').textContent = TBN_TEXT.cite+', Ex. 20–21. '+TBN_TEXT.one;
+  const W = el('tbBody').clientWidth || 640, per = tbnPerSystem(W), bottom = tbnStaffBottom(cells);
+  t.per = per;
+  let staff = '';
+  for(let i=0;i<12;i+=per) staff += tbnSystemSVG(triad, cells.slice(i,i+per), {wU:W/TBN_PPU, sel:cell.k, bottom, prev:i?cells[i-1].bassName:''});
+  el('tbBody').innerHTML = `<div class="tbstaff">${staff}</div>`
+    + (tbnRuled(t.q) ? '' : `<p class="hint" style="margin-top:6px">${TBN_TEXT.unruled}</p>`)
+    + `<p class="tbrule">${tbnMark(tbnRule(t.q, cell.iv, cell, rootName), cell.syms.map(s=>'X'+s), [...cell.labels, 'a '+TBN_IV[cell.iv]+' above', pretty(rootName)+TRI[t.q].sym+' over '+pretty(cell.bassName)])}</p>`
+    + tbnBoxes(rootName, t.q, cell.bassPc, cell.bassName, 0);
+}
+function renderTbnTwo(){
+  const t = st.tbn, bassName = ROOTS[t.bassPc], syms = tbnSymbols();
+  if(!syms.includes(t.sym)) t.sym = syms[0];
+  el('tbTitle').innerHTML = syms.length ? pretty(bassName)+t.sym : pretty(bassName);
+  el('tbSub').textContent = TBN_TEXT.cite+'. '+TBN_TEXT.two;
+  const rs = syms.length ? tbnLookup(t.bassPc, t.sym) : [];
+  el('tbBody').innerHTML = rs.length ? rs.map((r,i)=>`<p class="tbrule">${tbnMark(tbnAnswer(r.triadName, r.q, r.iv), [pretty(r.triadName)+' '+TRI[r.q].name.toLowerCase()+' triad'], [TBN_IV_SAY[r.iv]])}</p>`+tbnBoxes(r.triadName, r.q, t.bassPc, bassName, i)).join('')
+    : `<p class="hint">${TBN_TEXT.noSyms}</p>`;
+}
+/* the drill: prompts come only from ruled tables; Reveal is on your honor, Choose keeps a streak */
+function tbnNewQ(){
+  const syms = tbnSymbols();
+  if(!syms.length){ tquiz.cur=null; return renderTbn(); }
+  const bassPc = Math.floor(Math.random()*12), sym = rnd(syms);
+  tquiz.cur = {bassPc, bassName:ROOTS[bassPc], sym, label:pretty(ROOTS[bassPc])+sym, shown:false, done:false, opts:null};
+  renderTbn();
+}
+function tbnVoicing(o, inv){
+  if(st.tbn.pos==='closed') return closedAll(o.triadPc, o.q, st.tbn.set, inv)[0] || null;
+  const r = openRow(o.triadPc, o.q, inv, OROWS[st.tbn.row].s); return r && r.def;
+}
+function renderTbnDrill(){
+  const c = tquiz.cur;
+  if(!c){ el('tbTitle').textContent=''; el('tbSub').textContent=TBN_TEXT.noSyms; el('tbBody').innerHTML=''; return; }
+  el('tbTitle').textContent = c.label;
+  const choose = st.tbn.mode==='choose';
+  el('tbReveal').style.display = choose ? 'none' : '';
+  if(!choose){
+    el('tbSub').textContent = TBN_TEXT.reveal;
+    el('tbScore').textContent = TBN_TEXT.honor;
+    el('tbBody').innerHTML = !c.shown ? '' : tbnLookup(c.bassPc, c.sym).map((r,i)=>
+      `<p class="tbrule">${tbnMark(tbnAnswer(r.triadName, r.q, r.iv), [pretty(r.triadName)+' '+TRI[r.q].name.toLowerCase()+' triad'], [TBN_IV_SAY[r.iv]])}</p>`+tbnBoxes(r.triadName, r.q, c.bassPc, c.bassName, i)).join('');
+    return;
+  }
+  if(!c.opts){      // four boxes on one set, one inversion, the same bass note under all of them
+    const ch = tbnChoose(c.bassPc, c.sym, Math.random);
+    for(const inv of [0,1,2].sort(()=>Math.random()-.5)){
+      const opts = [{...ch.answer, right:true}, ...ch.distractors].map(o=>({...o, v:tbnVoicing(o, inv)}));
+      if(opts.every(o=>o.v)){ c.opts = opts.sort(()=>Math.random()-.5); c.inv = inv; break; }
+    }
+    c.opts = c.opts || [];
+  }
+  const qn = c.opts.length ? TRI[c.opts[0].q].name.toLowerCase() : '';
+  if(!c.done) el('tbSub').textContent = 'Which '+qn+' triad makes '+c.label+' over '+pretty(c.bassName)+' in the bass? All four are '+INV[c.inv]+' on the '+tbnWhereName()+'.';
+  el('tbBody').innerHTML = '<div class="choices4">'+c.opts.map((o,i)=>{
+    const named = toneNamed(o.v, o.triadName, o.q);
+    const cls = c.done ? (o.right?' right':(i===c.pick?' wrong':'')) : '';
+    return `<div class="card${cls}" data-tc="${i}" data-bass="${c.bassPc}" data-notes='${JSON.stringify(named.notes)}'>${c.done?`<div class="nm">${fmtP(o.triadName, TRI[o.q].sym)}</div>`:''}${boxSVG(named, c.done, 150)}</div>`;
+  }).join('')+'</div>';
+  el('tbScore').textContent = 'Streak '+tquiz.streak+(tquiz.best?' · best '+tquiz.best:'');
+}
+function tbnAnswerChoose(i){
+  const c = tquiz.cur; if(!c || c.done) return;
+  c.done = true; c.pick = i;
+  const o = c.opts[i], a = c.opts.find(x=>x.right), bass = pretty(c.bassName);
+  const said = x => pretty(x.triadName)+' '+TRI[x.q].name.toLowerCase()+', '+(x.iv===0 ? 'on '+bass+' itself' : TBN_IV_SAY[x.iv]+' '+bass);
+  if(o.right){ tquiz.streak++; tquiz.best=Math.max(tquiz.best,tquiz.streak); } else tquiz.streak=0;
+  const made = TBN[o.q][o.iv].map(s=>bass+s).join(' or ');
+  el('tbSub').textContent = o.right ? 'Yes — '+said(a)+'.'
+    : 'That was '+said(o)+(made ? ', which makes '+made : '')+'. The answer: '+said(a)+'.';
+  renderTbnDrill();
+}
+
 /* ---------- wiring ---------- */
 function syncControls(){
   el('roots').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.pc===st.pc));
@@ -984,16 +1377,17 @@ function syncControls(){
     + Object.entries(OROWS).map(([k,r])=>`<button data-id="open-${k}" aria-pressed="${'open-'+k===st.ksSet}">Open · ${r.name.toLowerCase().replace(' row','')}<small>${r.tag}</small></button>`).join('');
 }
 function setTab(t){
-  st.tab=t; stop();
-  [['tShapes','shapes'],['tKey','key'],['tDrill','drill']].forEach(([id,k])=>el(id).setAttribute('aria-pressed',k===t));
+  st.tab=t; stop(); tbnHush();
+  [['tShapes','shapes'],['tKey','key'],['tTbn','tbn'],['tDrill','drill']].forEach(([id,k])=>el(id).setAttribute('aria-pressed',k===t));
   el('stShapes').style.display = t==='shapes'?'':'none';
   el('stKey').style.display = t==='key'?'':'none';
+  el('stTbn').style.display = t==='tbn'?'':'none';
   el('stDrill').style.display = t==='drill'?'':'none';
-  document.querySelectorAll('.sh-ctl').forEach(x=>x.style.display=t==='shapes'?'':'none');
-  document.querySelectorAll('.ks-ctl').forEach(x=>x.style.display=t==='key'?'':'none');
-  document.querySelectorAll('.dr-ctl').forEach(x=>x.style.display=t==='drill'?'':'none');
+  // a control can belong to several tabs (the chord-tones check): show it when any of its tabs is up
+  const cls = {shapes:'sh-ctl', key:'ks-ctl', tbn:'tb-ctl', drill:'dr-ctl'}[t];
+  document.querySelectorAll('.sh-ctl,.ks-ctl,.tb-ctl,.dr-ctl').forEach(x=>x.style.display = x.classList.contains(cls)?'':'none');
   el('customGroup').style.display = (t==='drill' && st.tier==='custom')?'':'none';
-  if(t==='shapes') renderShapes(); else if(t==='key') renderKey(); else newQ();
+  if(t==='shapes') renderShapes(); else if(t==='key') renderKey(); else if(t==='tbn') renderTbn(); else newQ();
 }
 function renderCustom(){
   const g=el('customGroup'); const c=st.custom;
@@ -1026,12 +1420,38 @@ function renderCustom(){
   el('ksSets').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.ksSet=b.dataset.id; st.ksChoice=0; renderKey(); }});
   el('harm').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b){ st.ksChoice=+b.dataset.h; renderKey(); }});
   el('allSets').addEventListener('change', renderShapes);
-  el('labels').addEventListener('change',()=>{ if(st.tab==='shapes') renderShapes(); else if(st.tab==='key') renderKey(); });
+  el('labels').addEventListener('change',()=>{ if(st.tab==='shapes') renderShapes(); else if(st.tab==='key') renderKey(); else if(st.tab==='tbn') renderTbn(); });
   el('scale').addEventListener('change',e=>{ st.scaleKey=e.target.value; st.ksChoice=0; renderKey(); });
   el('descend').addEventListener('change', renderKey);
   el('tShapes').addEventListener('click',()=>setTab('shapes'));
   el('tKey').addEventListener('click',()=>setTab('key'));
   el('tDrill').addEventListener('click',()=>setTab('drill'));
+  /* Over a bass note */
+  el('tTbn').addEventListener('click',()=>setTab('tbn'));
+  el('tbRoots').innerHTML = ROOTS.map((r,i)=>`<button data-pc="${i}">${r}</button>`).join('');
+  el('tbBass').innerHTML = ROOTS.map((r,i)=>`<button data-pc="${i}">${r}</button>`).join('');
+  el('tbQuals').innerHTML = Object.entries(TRI).map(([k,q])=>`<button data-q="${k}">${q.sym||'maj'}</button>`).join('');
+  el('tbSyms').innerHTML = tbnSymbols().map(s=>`<button data-s="${s}">${s}</button>`).join('');
+  const pick = (id, fn) => el(id).addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; fn(b); st.tbn.card='0:0'; renderTbn(); });
+  pick('tbView', b=>{ st.tbn.view=b.dataset.v; tbnHush(); if(b.dataset.v==='drill' && !tquiz.cur) tbnNewQ(); });
+  pick('tbRoots', b=>{ st.tbn.pc=+b.dataset.pc; });
+  pick('tbQuals', b=>{ st.tbn.q=b.dataset.q; });
+  pick('tbBass', b=>{ st.tbn.bassPc=+b.dataset.pc; });
+  pick('tbSyms', b=>{ st.tbn.sym=b.dataset.s; });
+  pick('tbPos', b=>{ st.tbn.pos=b.dataset.p; if(tquiz.cur && !tquiz.cur.done) tquiz.cur.opts=null; });
+  pick('tbSets', b=>{ if(st.tbn.pos==='closed') st.tbn.set=b.dataset.id; else st.tbn.row=b.dataset.id; if(tquiz.cur && !tquiz.cur.done) tquiz.cur.opts=null; });
+  pick('tbMode', b=>{ st.tbn.mode=b.dataset.m; tbnNewQ(); });
+  el('tbNext').addEventListener('click', tbnNewQ);
+  el('tbReveal').addEventListener('click',()=>{ const c=tquiz.cur; if(!c) return; c.shown=true; renderTbn();
+    const card=el('tbBody').querySelector('.card[data-notes]'); tbnAudition(c.bassPc, card?JSON.parse(card.dataset.notes):[]); });
+  const tbnCell = k => { st.tbn.cell=k; renderTbn();
+    const card = el('tbBody').querySelector('.card.sel') || el('tbBody').querySelector('.card[data-notes]');
+    tbnAudition(tbnCells(st.tbn.pc, st.tbn.q)[k].bassPc, card?JSON.parse(card.dataset.notes):[]);
+    const r = el('tbBody').querySelector('rect[data-tb="'+k+'"]'); if(r) r.focus({preventScroll:true}); };
+  el('tbBody').addEventListener('click',e=>{ const r=e.target.closest('rect[data-tb]'); if(r) tbnCell(+r.dataset.tb); });
+  el('tbBody').addEventListener('keydown',e=>{ const r=e.target.closest && e.target.closest('rect[data-tb]');
+    if(r && (e.key==='Enter' || e.code==='Space')){ e.preventDefault(); tbnCell(+r.dataset.tb); } });
+  window.addEventListener('resize',()=>{ if(st.tab==='tbn' && st.tbn.view==='one' && tbnPerSystem(el('tbBody').clientWidth||640)!==st.tbn.per) renderTbn(); });
   el('tier').addEventListener('change',e=>{ st.tier=e.target.value; el('customGroup').style.display=st.tier==='custom'?'':'none'; if(st.tier==='custom') renderCustom(); newQ(); });
   el('drMode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; st.drMode=b.dataset.m;
     el('drMode').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); newQ(); });
@@ -1054,6 +1474,11 @@ function renderCustom(){
       renderShapes(); e.stopPropagation(); return; }
     const card=e.target.closest('.card[data-notes]');
     if(!card) return;
+    if(st.tab==='tbn'){      // bass note first, triad a beat later
+      tbnAudition(+card.dataset.bass, JSON.parse(card.dataset.notes));
+      if(card.dataset.tc!==undefined) tbnAnswerChoose(+card.dataset.tc);
+      else if(card.dataset.tbv!==undefined){ st.tbn.card=card.dataset.tbv; el('tbBody').querySelectorAll('.card').forEach(x=>x.classList.toggle('sel', x===card)); }
+      return; }
     if(card.dataset.c!==undefined && st.tab==='drill'){ strum(JSON.parse(card.dataset.notes)); answerChoose(+card.dataset.c); return; }
     if(card.dataset.i!==undefined && st.tab==='shapes'){ st.sel=+card.dataset.i; renderShapes(); }
     strum(JSON.parse(card.dataset.notes));
