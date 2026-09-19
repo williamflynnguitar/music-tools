@@ -30,7 +30,8 @@ window.LL_CONCEPTS = window.LL_CONCEPTS || [];
       { qualities: ["m7","7"], offsets: [7,9,10,2], label: "5-6-♭7-9" },
       /* ♭5 of half-diminished (Locrian) · ♭5 of altered dominant. The book
          prints the ø line's tones as ♭3-4-♭5-♭7, repeating the minor column's
-         label; a major cell on the ♭5 of Bø is F G A C. */
+         label; a major cell on the ♭5 of Bø is F G A C (correction
+         confirmed by William, 2026-09-19). */
       { qualities: ["m7b5","7"], offsets: [6,8,10,1], label: "♭5-♯5-♭7-♭9" } ]),
 
     placement("cell-from-9", "1-2-3-5 from the 9th", "1235/9", [2,3,4,6], [

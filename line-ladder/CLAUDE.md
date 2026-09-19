@@ -268,7 +268,8 @@ registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
 - **D5. The assembled routine is not built** — the four components ship as
   separate concepts, each at its exact beat length.
 - The book's ♭5-of-ø line prints its tones as ♭3-4-♭5-♭7, repeating the minor
-  column; the row uses the corrected ♭5-♯5-♭7-♭9 (F G A C on Bø).
+  column; the row uses the corrected ♭5-♯5-♭7-♭9 (F G A C on Bø) — confirmed
+  by William, 2026-09-19. The book is wrong there, not the row.
 - The brief gave routine-1/2 the bar labels `→5` / `→9`, and rung 4 the mark
   `→5`. One bar could then read "→5 →5", so the labels are `sc→5` / `sc→9`
   (`check.js` §12 asserts no label reads as a rung mark).
@@ -285,7 +286,7 @@ root as a whole note in bar 7: six bars plus the landing note, which is what
 the text's "6-bar phrase" counts. `routine-3`'s degree string already holds
 both passes of the triad, as the notation beams them into one bar.
 
-**Question for William:** the ♭5-of-ø correction above — confirm.
+Both of the brief's questions for William are now ruled; none is open.
 
 ## Open questions for William (carried over)
 
