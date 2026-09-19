@@ -157,8 +157,7 @@ page (`pf-` classes, one self-contained block between `===== practice strip
 =====` markers at the end of the body, hardcoded palette like the spine menu)
 carries **Metronome** and **Benchmarks**. This page is the canonical carrier:
 edit the block here and run `node scripts/strip-sync.js` (root `CLAUDE.md`,
-"Practice strip"). The Metronome is live; this page's benchmark list stays on
-the `footer-strip` branch until William has written it.
+"Practice strip"). Both panels are live.
 
 ### Metronome
 - The panel is Two-and-Four's mini view in an iframe — see
@@ -189,16 +188,16 @@ the `footer-strip` branch until William has written it.
   this page — it has no Play.
 
 ### Benchmarks
-- Page content lives outside the block, in `window.PF_BENCHMARKS = { draft,
-  lists: [{ name, on, items: [{ t, hint }] }] }` just above it. Two lists here,
-  Triads and 7th chords (William's ruling, 2026-09-19); `on()` marks the list
-  matching the Chord size control with the spine's brass bar. Both lists always
-  show — the mark moves, the order does not. A page with no `PF_BENCHMARKS`
-  gets no Benchmarks button.
-- **William writes the benchmarks.** The wording in the page is the draft from
-  `briefs/benchmarks-draft.md`; `draft: true` prints a warn-coloured "Draft
-  wording — not approved" line in the panel. Nothing with `draft: true` goes
-  to the live site.
+- The list is generated from `briefs/benchmarks.md` by
+  `scripts/benchmarks-sync.js` into a `window.PF_BENCHMARKS = { lists: [{ name,
+  on, items: [{ t, hint }] }] }` script just above the strip block. Two lists
+  here, Triads and 7th chords (William's ruling, 2026-09-19); `on()` — set in
+  the sync script's `ON` table, since it is page code, not prose — marks the
+  list matching the Chord size control with the spine's brass bar. Both lists
+  always show: the mark moves, the order does not.
+- The Triads list is one item, William's own sentence. Nothing sourced exists
+  to add: the handbook has no triad arpeggio pages and the year lists name
+  only 7th-chord arpeggios.
 - Checks are session-only and live in the checkboxes themselves: rows are
   built by script with `autocomplete="off"`, because browsers restore form
   values across a reload (the Two-and-Four lesson) and the panel promises
@@ -221,9 +220,8 @@ the `footer-strip` branch until William has written it.
   Chrome (visible page), not in the pane.
 
 ### Deferred
-- Benchmarks wording: William's edit of `briefs/benchmarks-draft.md` (branch
-  `footer-strip`), then the list goes live here and on the other tools.
 - Desktop Safari was not separately confirmed; William's iOS Safari check
   passed on 2026-09-19.
 - Starting the strip's metronome while a page's own Play is running is not
   handled — only the other direction is (Play stops the metronome).
+- More Triads benchmarks: William's to write.

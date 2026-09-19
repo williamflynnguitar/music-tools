@@ -193,4 +193,4 @@ fingerings, descending ids included, were removed on Sep 10 (187a369), and
 the same rule now serves Full range.
 
 ## Practice strip (Sep 2026)
-Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. No Play of its own, so nothing to wire.
+Carries the shared bottom strip (Metronome and Benchmarks; this page's list is generated from `briefs/benchmarks.md` — edit it there and run `node scripts/benchmarks-sync.js`) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. No Play of its own, so nothing to wire.

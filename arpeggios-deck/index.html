@@ -1350,6 +1350,22 @@ rebuild(true);
 initBrowser();
 switchTab("shapes");
 </script>
+<!-- ===== benchmarks — generated from briefs/benchmarks.md by scripts/benchmarks-sync.js; edit the list there, not here ===== -->
+<script>
+window.PF_BENCHMARKS = { lists: [
+  { name: "Triads", on: () => state.size === "triad", items: [
+    { t: "Play the diatonic triads of C major (C, Dm, Em, F, G, Am, B°) in one octave, ascending and descending, starting from any position on the neck." }
+  ] },
+  { name: "7th chords", on: () => state.size === "seventh", items: [
+    { t: "Pick one 7th-chord shape (say index-finger maj7) and play it everywhere it falls in one key, lowest to highest.", hint: "Practice → Parallel · one key (p. 76, Ex. 1)" },
+    { t: "Take that same shape through all twelve keys around the cycle of 4ths.", hint: "Practice → Parallel · through the keys (p. 76, Ex. 2)" },
+    { t: "HDA: play the seven diatonic 2-octave arpeggios of a major key from the index finger, roots on the 6th string; then again with roots on the 5th.", hint: "Practice → HDA (p. 77, Ex. 3)" },
+    { t: "VDA: inside one major scale fingering, play every diatonic arpeggio without leaving the position by more than a note or two. Do it in two fingerings, one from the 6th string and one from the 5th.", hint: "Practice → VDA (p. 78, Ex. 4)" },
+    { t: "HDA again in harmonic minor: 2-octave, index finger, roots on the 6th and 5th strings." }
+  ] }
+] };
+</script>
+<!-- ===== end benchmarks ===== -->
 <!-- ===== practice strip — keep this block byte-identical across all tool pages.
      Metronome is Two-and-Four's mini view in an iframe (one scheduler for the suite);
      Benchmarks come from window.PF_BENCHMARKS, set by the page just above this block. ===== -->

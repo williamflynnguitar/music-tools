@@ -318,4 +318,4 @@ In the quiz it appears in Hard mode. p. 49 has no 7sus row — William
 requested the quality; the extension list is mine, awaiting his check.
 
 ## Practice strip (Sep 2026)
-Carries the shared bottom strip (Metronome; Benchmarks once William has written this page's list) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. Strums are one-shots, not timekeeping, so nothing calls `pfMetronomeStop()`.
+Carries the shared bottom strip (Metronome and Benchmarks; this page's list is generated from `briefs/benchmarks.md` — edit it there and run `node scripts/benchmarks-sync.js`) — see root `CLAUDE.md`, "Practice strip". Synced from `arpeggios-deck` by `scripts/strip-sync.js`; never hand-edit the copy. Strums are one-shots, not timekeeping, so nothing calls `pfMetronomeStop()`.

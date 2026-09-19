@@ -138,8 +138,10 @@ not an oversight to fix.
 
 ### This page and the strip
 This page carries the strip block like the others, but the block drops the
-Metronome button here (`here === "two-and-four"`), and with no benchmarks
-list yet the whole strip hides itself. It will show Benchmarks only. In the
+Metronome button here (`here === "two-and-four"`), so the strip shows
+**Benchmarks only**. The list (from `briefs/benchmarks.md`) has no handbook
+source: it leans on the one checkable target this app defines, the Training
+Wheels Ready badge. In the
 mini view the block is hidden with everything else that is not `#mini`.
 
 ### Mini view: deferred

@@ -154,7 +154,8 @@ family palette) between `===== practice strip =====` markers at the end of
 the body. Canonical page `arpeggios-deck/index.html`; run
 `node scripts/strip-sync.js`, with `--check` reporting drift, a tool with no
 block, a skipped page that carries one, and any page whose benchmarks are
-still `draft: true`. Not on Box Buddy, Stage Plot or Chartwright — they make
+marked `draft: true` (the panel then prints a warning line; unused since the
+lists became generated, kept for a hand-made trial list). Not on Box Buddy, Stage Plot or Chartwright — they make
 paper, not practice. Hidden in print. Unlike the spine chip it is
 `position:fixed`; a spacer at the end of the flow keeps it off the content.
 
@@ -175,13 +176,21 @@ paper, not practice. Hidden in print. Unlike the spine chip it is
   that do not share a clock are worse than one. Any function that starts
   timekeeping calls `window.pfMetronomeStop && window.pfMetronomeStop();`.
   A new Play in any tool needs that line.
-- **Benchmarks** are William's words, never generated: each page's list lives
-  in a `window.PF_BENCHMARKS` script just above the block, outside the synced
-  text. Checks are session-only ("Checks reset when you reload"), built by
-  script with autocomplete off so a browser cannot restore them. Reference
-  chrome, never a gate: nothing locks or unlocks on a check. No "card" or
-  "deck" in its text. Proposed lists wait in `briefs/benchmarks-draft.md` on
-  the `footer-strip` branch until he has rewritten them.
+- **Benchmarks** belong to William. The one place they are written is
+  `briefs/benchmarks.md`; `node scripts/benchmarks-sync.js` turns it into each
+  page's `window.PF_BENCHMARKS` script (between `===== benchmarks =====`
+  markers just above the strip, outside the synced block), and `--check`
+  reports a page out of step with the file. Never edit a page's list by hand,
+  and never invent a benchmark: a new one needs a source (handbook page, the
+  First–Fourth Year lists on pp. 164–167, one of his handouts) or his say-so,
+  recorded on the item's `src:` line. The first set shipped 2026-09-19 as
+  Claude's sourced draft, on his instruction, for him to edit as students use
+  them — the `conf: guess` items are the ones he is likeliest to rewrite. A
+  page with no items gets no Benchmarks button (Composition Assignments).
+  Checks are session-only ("Checks reset when you reload"), built by script
+  with autocomplete off so a browser cannot restore them. Reference chrome,
+  never a gate: nothing locks or unlocks on a check. No "card" or "deck" in
+  its text. Text goes through `JSON.stringify`, so prose cannot break a page.
 
 ## Audio
 
