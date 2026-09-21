@@ -239,9 +239,10 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
   }
 // 8. Over a bass note
 {
-  // 8.1 Ex. 21, p. 27, in printed order — the B-flat cell carries both readings
+  // 8.1 Ex. 21, p. 27, in printed order — the B-flat cell carries both readings. One departure
+  // from print, ruled by William 2026-09-21: the book's G-flat 7alt. is written F-sharp 7alt.
   const EX21 = [["E-7(♭6)"], ["E♭13(♭9)"], ["D9(sus4)"], ["D♭°Δ7"], ["CΔ7"], ["B7(♭9 ♭13 sus4)"],
-    ["B♭Δ9(♯11)", "B♭9(♯11)"], ["A-7"], ["A♭Δ7(♯5)"], ["G13(sus4)"], ["G♭7alt."], ["FΔ9"]];
+    ["B♭Δ9(♯11)", "B♭9(♯11)"], ["A-7"], ["A♭Δ7(♯5)"], ["G13(sus4)"], ["F♯7alt."], ["FΔ9"]];
   const c21 = E.tbnCells(0, 'maj');
   ok(c21.length === 12, "Ex. 21: twelve cells");
   EX21.forEach((want, k) => ok(JSON.stringify(c21[k].labels) === JSON.stringify(want),
@@ -265,7 +266,8 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
       ok((pc - c.bassPc + 12) % 12 === c.iv, `interval ${pc}/${q}/${k}: triad root above the bass`);
       ok(E.pcOf(c.bassName) === c.bassPc && c.bassName.length <= 2, `bass spelling ${pc}/${q}/${k}: ${c.bassName}`);
       const tone = names.find(n => E.pcOf(n) === c.bassPc);
-      if (tone && tone.length <= 2 && !/^(E#|B#|Cb|Fb)$/.test(tone)) ok(c.bassName === tone, `one pitch, one spelling ${pc}/${q}: bass ${c.bassName} under ${tone}`);
+      if (c.bassPc === 6) ok(c.bassName === 'F#', `pitch class 6 in the bass is F sharp, always (${pc}/${q}: ${c.bassName})`);
+      else if (tone && tone.length <= 2 && !/^(E#|B#|Cb|Fb)$/.test(tone)) ok(c.bassName === tone, `one pitch, one spelling ${pc}/${q}: bass ${c.bassName} under ${tone}`);
       c.labels.forEach(l => ok(!/♭♭|♯♯|bb|##|𝄫|𝄪/.test(l), `double accidental in ${l}`));
     });
     E.tbnTriad(pc, q).forEach(n => ok(n.name.length <= 2 && E.pcOf(n.name) === n.midi % 12, `triad spelling ${pc}/${q}: ${n.name}`));
@@ -288,6 +290,10 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
   }
   for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) for (const c of E.tbnCells(pc, q)) for (const sym of c.syms)
     ok(E.tbnLookup(c.bassPc, sym).some(r => r.triadPc === pc && r.q === q), `inverse: View 1 ${pc}/${q} over ${c.bassPc} ${sym} missing from View 2`);
+  // both views name the same chord the same way: View 2 reads ROOTS[bass] + symbol
+  for (let pc = 0; pc < 12; pc++) for (const c of E.tbnCells(pc, 'maj')) if (!E.toneNames(E.ROOTS[pc], 'maj').some(n => E.pcOf(n) === c.bassPc))
+    c.labels.forEach((l, i) => ok(l === E.pretty(E.ROOTS[c.bassPc]) + c.syms[i], `View 1 ${l} vs View 2 ${E.pretty(E.ROOTS[c.bassPc]) + c.syms[i]}`));
+  ok(E.tbnCells(0, 'maj')[10].labels[0] === E.pretty(E.ROOTS[6]) + '7alt.', "F sharp 7alt. in both views");
   ok(pairs === 12 * 13, "View 2: every bass x symbol resolves to one major triad for now: " + pairs);
   ok(E.tbnAnswer(E.tbnLookup(7, '13(sus4)')[0].triadName, 'maj', 5) === "C major triad, built a 4th above the root.", "brief's G13(sus4) sentence");
   ok(E.tbnLookup(0, '7alt.')[0].triadName === 'Gb', "a flat 5 above C is G flat, by letter");
@@ -302,6 +308,8 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
     ok((svg.match(/<text/g) || []).length === 1, `${q}: staff draws no chord symbol`);   // the clef's 8
   }
   ok(/not yet written/i.test(E.TBN_TEXT.unruled), "unruled notice text");
+  for (let pc = 0; pc < 12; pc++) for (const c of E.tbnCells(pc, 'maj'))
+    ok(!/\.\./.test(E.tbnRule('maj', c.iv, c, E.ROOTS[pc])), "rule sentence ends with two periods: " + E.tbnRule('maj', c.iv, c, E.ROOTS[pc]));
   let seed = 7; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   for (let n = 0; n < 600; n++) {
     const bass = Math.floor(rand() * 12), sym = syms[Math.floor(rand() * syms.length)];

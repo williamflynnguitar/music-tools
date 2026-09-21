@@ -161,14 +161,19 @@ Brief: `briefs/triad-voicings-over-a-bass-note-brief.md`.
   built a 4th above the root."). check.js walks all 12 basses × every
   symbol both directions.
 - **Spelling.** Bass notes descend with flats as printed, with two
-  exceptions that stop a staff contradicting itself: a bass note that is
-  also a triad tone takes the triad's spelling (E over G♯, not A♭ under a
-  G♯), and pc 6 is F♯ under a triad written with sharps (E over F♯).
+  exceptions. **Pitch class 6 in the bass is F♯, always (William,
+  2026-09-21):** Ex. 21 prints G♭7alt. under the C triad, and the app
+  writes F♯7alt. in both views — the one cell where check.js departs from
+  the printed string. It wins even over a G♭ in the triad above it (C°,
+  E♭-, E♭°: all unruled today, so look at those staves when they are
+  ruled). And a bass note that is also a triad tone takes the triad's
+  spelling (E over G♯, not A♭ under a G♯).
   View 2 spells the triad's root by letter from the bass (a ♭5 above C is
   G♭, a 3rd above A is C♯) when that triad spells clean, else the ring's
-  name. Consequence: View 1 prints G♭7alt. under a C triad, as the book
-  does, while View 2's root ring offers F♯ (suite rule) and so reads
-  F♯7alt. Flagged to William, not yet ruled. No double accidental can be produced;
+  name — that is the triad's name, not the chord's, and is untouched by
+  the F♯ ruling. Apart from a bass note borrowing a sharp triad tone's
+  spelling (G♯, D♯, A♯, C♯), View 1 and View 2 name every chord alike;
+  check.js asserts it. No double accidental can be produced;
   check.js asserts it on names, labels and the drawn staff.
 - **Playback**: the bass note sounds first and sustains an octave or two
   below the triad's lowest voice (`tbnBassMidi`, never under E1; upper
