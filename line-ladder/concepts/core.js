@@ -11,6 +11,7 @@ window.LL_CONCEPTS.push(
     source: "JGTH 3rd ed., pp. 86–95 (2-beat chords)",
     tags: [],
     applies: { qualities: ["maj7","6","7","sus7","m7","m6","m7b5","mMaj7","maj7s5"], minBeats: 2, maxBeats: 2 },
+    cell: true,                     // a 2-beat cell: with "two cells a bar" on, it can share a bar
     degrees: [1,2,3,5],
     against: "scale",
     rhythm: "eighths",

@@ -224,6 +224,10 @@ textarea{width:100%;font-family:var(--mono);font-size:13px;resize:vertical}
   </div>
   <p class="hint" id="modeHint" style="margin:0 0 4px">Drill: one concept through the whole progression.</p>
   <div id="concepts"></div>
+  <div class="rung" id="pairRow" style="margin-top:14px">
+    <label class="check" style="margin:0"><input type="checkbox" id="pair"> two cells a bar</label>
+    <span class="exp" id="pairExp"></span>
+  </div>
   <div class="group" style="margin-top:14px">
     <button class="btn quiet" id="reroll" hidden>Reroll</button>
     <p class="hint" id="lockHint" hidden>Click a bar in the score to lock or unlock it; locked bars keep their concepts on reroll.</p>
@@ -720,25 +724,54 @@ function planSequences(chords, active){
   plan.chords=out;
   return plan;
 }
+/* ---------- two cells a bar (opts.pair). p. 58: a 1-2-3-5 pattern in eighths
+   "occupies two beats… If two patterns are combined, they can efficiently
+   define a chord occupying a full measure." The book prints no pairs, so none
+   are data here: a concept marked `cell: true` is a 2-beat cell that can share
+   a bar with another, and with pairing on a 4-beat chord on a barline is cut
+   2 + 2 wherever a cell in play applies to its half — the drilled concept in
+   Drill (the same cell twice), the checked cells in Mixed (each half draws its
+   own). Each half's assignment is held to that pool, so the bar is two cells
+   and nothing else. A chord a sequence has claimed is left alone. No draw
+   decides a cut, so a reroll never moves the bars a lock points at. */
+function planCells(plan, inPlay){
+  const cells=inPlay.filter(c=>c && c.cell);
+  if(!cells.length) return plan;
+  const chords=[], forced={}, pool={}, map=[]; let at=0;
+  plan.chords.forEach((ch,i)=>{
+    map[i]=chords.length;
+    const fit = !plan.forced[i] && ch.beats===4 && at%4===0
+      ? cells.filter(c=>appliesTo(c, makeSegments([{...ch, beats:2}])[0], undefined)) : [];
+    at+=ch.beats;
+    if(plan.forced[i]) forced[chords.length]=plan.forced[i];
+    if(!fit.length){ chords.push(ch); return; }
+    for(let h=0;h<2;h++){ pool[chords.length]=fit; chords.push({...ch, beats:2}); }
+  });
+  map[plan.chords.length]=chords.length;
+  return {chords, forced, pool,
+    spans:plan.spans.map(q=>({id:q.id, from:map[q.from], to:map[q.to+1]-1}))};
+}
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 /* Drill: the chosen concept everywhere it applies; elsewhere the first
    applicable concept in registry order. Mixed: a seeded random draw per
    segment from the checked applicable set; locked segments keep theirs. */
-function assignConcepts(segs, opts, forced){
+function assignConcepts(segs, opts, forced, pool){
   const checked = REGISTRY.filter(c=>opts.checked.has(c.id));
   const rng = mulberry32((opts.seed||1)>>>0);
   return segs.map((seg,i)=>{
     const next=segs[i+1];
     if(forced && forced[i]){ if(opts.mode!=='drill') rng(); return forced[i]; }   // a sequence's part; the draw is still spent
+    const only = pool && pool[i];            // half of a paired bar: held to the cells that fit it
+    const ok = c => (!only || only.includes(c)) && appliesTo(c,seg,next);
     if(opts.mode==='drill'){
       const drill = conceptById(opts.drillId);
-      if(drill && appliesTo(drill,seg,next)) return drill;
-      return REGISTRY.find(c=>appliesTo(c,seg,next)) || null;
+      if(drill && ok(drill)) return drill;
+      return (only||REGISTRY).find(c=>appliesTo(c,seg,next)) || null;
     }
     const draw = rng();
     const locked = opts.locks && opts.locks[i] && conceptById(opts.locks[i]);
-    if(locked && appliesTo(locked,seg,next)) return locked;
-    const apply = checked.filter(c=>appliesTo(c,seg,next));
+    if(locked && ok(locked)) return locked;
+    const apply = checked.filter(ok);
     if(!apply.length) return REGISTRY.find(c=>appliesTo(c,seg,next)) || null;
     return apply[Math.floor(draw*apply.length)];
   });
@@ -1013,9 +1046,10 @@ function buildLine(opts){
      lock points at) */
   const active=(opts.mode==='drill' ? [conceptById(opts.drillId)] : REGISTRY.filter(c=>opts.checked.has(c.id)))
     .filter(c=>c && c.sequence);
-  const plan=planSequences(opts.chords, active);
+  let plan=planSequences(opts.chords, active);
+  if(opts.pair) plan=planCells(plan, opts.mode==='drill' ? [conceptById(opts.drillId)] : REGISTRY.filter(c=>opts.checked.has(c.id)));
   const segs=makeSegments(plan.chords);
-  const concepts=assignConcepts(segs, opts, plan.forced);
+  const concepts=assignConcepts(segs, opts, plan.forced, plan.pool);
   const marks=segs.map(()=>new Set());
   const total=segs.reduce((a,s)=>a+s.beats*2,0);
   const barMarks=Array.from({length:Math.ceil(total/8)},()=>new Set());
@@ -1376,6 +1410,12 @@ function currentRange(){
   if(lo==null||hi==null||hi<=lo) return {lo:57, hi:83};
   return {lo, hi};
 }
+/* what "two cells a bar" will do depends on the mode, so the line under it says */
+function pairHint(){
+  el('pairExp').textContent = st.mode==='drill'
+    ? 'a 1-2-3-5 cell on a 4-beat chord is played twice, filling the bar, instead of once with its last note held'
+    : 'a 4-beat chord is cut in half and each half draws its own 1-2-3-5 cell from the ones you have checked';
+}
 function currentRungs(){ return {fold:el('rFold').checked, near:el('rNear').checked, app:el('rApp').checked, seam:el('rSeam').checked}; }
 function currentChords(){
   const text=el('progtext').value.trim();
@@ -1389,9 +1429,15 @@ function rebuild(){
   catch(err){ el('chart').innerHTML='<p class="sub err">'+String(err.message).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</p>'; st.line=st.bars=null; return; }
   try{
     st.line=buildLine({chords:src.chords, range:currentRange(), rungs:currentRungs(),
-      mode:st.mode, drillId:st.drillId, checked:st.checked, seed:st.seed, locks:st.locks});
+      mode:st.mode, drillId:st.drillId, checked:st.checked, seed:st.seed, locks:st.locks, pair:el('pair').checked});
     st.bars=toBars(st.line);
   } catch(err){ el('chart').innerHTML='<p class="sub err">'+String(err.message).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</p>'; st.line=st.bars=null; return; }
+  /* locks are segment indices. Checking a sequence or a cell can re-cut the
+     bars, and then every index after the cut means a different chord — so a
+     change in the cut drops the locks rather than let them land elsewhere. */
+  const cutSig=st.line.segs.map(sg=>sg.beats).join();
+  if(st.cutSig!==undefined && st.cutSig!==cutSig && Object.keys(st.locks).length){ st.cutSig=cutSig; st.locks={}; return rebuild(); }
+  st.cutSig=cutSig;
   st.name=src.name;
   el('title').textContent = src.name;
   const dc=conceptById(st.drillId);
@@ -1504,6 +1550,7 @@ function setMode(m){
   el('mMixed').setAttribute('aria-pressed', m==='mixed');
   el('modeHint').textContent = m==='drill' ? 'Drill: one concept through the whole progression.' : 'Mixed: a random checked concept per chord.';
   el('reroll').hidden = el('lockHint').hidden = m!=='mixed';
+  pairHint();
   renderConcepts(); stop(); rebuild();
 }
 
@@ -1555,6 +1602,10 @@ function scheduleBeat(beat, time){
   });
   ['rangeLo','rangeHi'].forEach(id=>el(id).addEventListener('change',()=>{ el('rangesel').value='custom'; rebuild(); }));
   ['rFold','rNear','rApp','rSeam'].forEach(id=>el(id).addEventListener('change',()=>{ stop(); rebuild(); }));
+  /* cutting bars renumbers the segments a lock points at, so the locks go */
+  el('pair').addEventListener('change',()=>{ st.locks={}; stop(); rebuild(); });
+  el('pairRow').hidden = !REGISTRY.some(c=>c.cell);
+  pairHint();
   el('mDrill').addEventListener('click',()=>setMode('drill'));
   el('mMixed').addEventListener('click',()=>setMode('mixed'));
   el('reroll').addEventListener('click',()=>{ st.seed=(Math.random()*0x7fffffff)|0; rebuild(); });

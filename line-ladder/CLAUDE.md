@@ -21,7 +21,9 @@ apply, including the lookahead scheduler. Headless tests: `node check.js`.
 progression (preset or typed)
   → plan     active sequences re-cut a run of one chord into their parts'
              lengths and force each part's concept (see Sequences); with no
-             sequence active the chord list passes through untouched
+             sequence active the chord list passes through untouched.
+             With "two cells a bar" on, 4-beat chords a cell in play fits
+             are then cut 2 + 2 (see Two cells a bar)
   → segment  one segment per chord: {ch, beats, at, cs: chordScale(ch)}
   → assign   Drill (one concept everywhere it applies; elsewhere the first
              applicable concept in REGISTRY order) or Mixed (seeded random
@@ -71,6 +73,8 @@ must fall back to 1-2-3-5, reproducing the old Scale mode).
                                   // after another over one chord (Sequences)
   beats?,                         // a part's exact length, if its applies
                                   // does not already fix it (min === max)
+  cell?: true,                    // a 2-beat cell that can share a bar with
+                                  // another (Two cells a bar)
   against: "chord" | "scale",     // "scale" needs cs.steps, so it never
                                   // applies to º7 (chordScale returns {arp})
   rhythm: "eighths" | "eighths-hold" | "quarters",
@@ -133,6 +137,48 @@ the book's brackets: `sc→5 | sc→5 | sc→9 | | tri | arp9 | R`.
 
 Adding it changed nothing else: 0 of 83,200 builds of the other 46 concepts
 differ (every preset, all 16 rung sets, two ranges, Drill and Mixed).
+
+### Two cells a bar
+
+p. 58's whole statement on pairing is one sentence: "If two patterns are
+combined, they can efficiently define a chord occupying a full measure." It
+prints no pairs and no notation (Example 18 is just the major and the minor
+cell), so **no pair is data** — naming pairs would be inventing the book's
+content. What the sentence licenses is a cut: a concept marked `cell: true`
+(`digital-1235`, the four placements, the 23 permutations) is a 2-beat cell,
+and with the *two cells a bar* option on (`opts.pair`, off by default, so D4's
+held note is still what a student first sees) `planCells` cuts a 4-beat chord
+on a barline into 2 + 2 wherever a cell **in play** applies to its half:
+
+- **Drill** — in play is the drilled concept, so the bar is that cell twice
+  (A B C E A B C E). Where D1 silences it the bar is not cut and falls back as
+  it always did. It is also the only way 1-2-3-5 itself reaches a 4-beat chord.
+- **Mixed** — in play are the checked cells; each half draws its own, so the
+  pairs are the student's choice of pool and the draw, relabelled per half and
+  lockable per bar. Each half is held to the cells that fit it (`plan.pool`):
+  a checked R–3–5–7 never lands in a half, so the bar is two cells and nothing
+  else. With no cell checked, or none that fits, nothing is cut.
+
+Only 4-beat chords are cut — the text says a full measure. The 8-beat I of the
+ii–V–I cycles stays whole (three merged bars are a 12-beat chord, not three
+bars of pairs), as D4 already kept cells off it. A chord a sequence has claimed
+is left alone, and the sequence's span is re-indexed past any cut before it.
+No draw decides a cut, so a reroll never moves a lock; but checking or
+unchecking a cell or a sequence *can* change the cut, and `rebuild` drops the
+locks when it does (`st.cutSig`) rather than let them point at other chords.
+
+To every rung a paired bar is exactly the same two halves typed out as 2-beat
+chords (`check.js` §22 asserts the outputs are identical), so rung 2 rotates a
+placement in the second half as it would on any 2-beat chord, and a
+permutation moves by octaves only. Ascending cells end at their top, so with
+rung 2 on the line climbs to the ceiling and then drops: rung 2 ranks "stays
+inside the range" above "nearest". That is its documented behaviour on any
+string of 2-beat chords, not something pairing adds.
+
+**Open for William:** (1) Drill gives the same cell twice — the most literal
+reading. If he has particular pairs in mind (root then 5th; a cell then its
+retrograde), they can be `sequence` entries over a 4-beat chord, but he has to
+name them. (2) Whether 8-beat chords should take four cells.
 
 Chord-tone pitches map through `ARPQ_TONES`: −6 is its own R–♭3–5–6
 (William, 2026-09 — the 6 fills the "7" slot, so R–3–5–7 on Gm6 reads
@@ -358,7 +404,8 @@ Both of the brief's questions for William are now ruled; none is open.
 
 Imposed placements that override the chord-scale ruling (D1) · a
 late-placement template putting a Way in the last two beats of a 4-beat chord
-(D2) · two 1-2-3-5 cells paired across a 4-beat chord (p. 58) · student-authored Ways (practice
+(D2) · named 1-2-3-5 pairs, if William specifies any (the generic pairing of
+p. 58 is built — see Two cells a bar) · student-authored Ways (practice
 suggestion 5 — belongs with the lick journal) ·
 TAB post-pass · MUSC 120 grouping view (tags are already in the schema) ·
 handout-cell pack · etude assembly / weighted fill / lick journal ·

@@ -5,7 +5,10 @@
    sounds on a IV and stays silent on a I. The table's "root of" lines are
    digital-1235 in core.js. Loaded after digital.js; registry order is the
    Drill fallback order and these packs come last so that it does not change.
-   optIn: a concept that starts unchecked in Mixed. */
+   optIn: a concept that starts unchecked in Mixed.
+   cell: a 2-beat cell. p. 58 says two patterns combined define a full bar and
+   prints no pairs, so there are none here: with "two cells a bar" on, the
+   engine cuts a 4-beat chord in half and each half takes a cell in play. */
 window.LL_CONCEPTS = window.LL_CONCEPTS || [];
 (function(){
   const SRC = "Introduction to Jazz Guitar (2014), p. 59";
@@ -16,6 +19,7 @@ window.LL_CONCEPTS = window.LL_CONCEPTS || [];
     source: SRC,
     tags: [],
     optIn: true,
+    cell: true,
     applies: { rows, minBeats: 2, maxBeats: 4 },
     degrees,
     against: "scale",
@@ -64,6 +68,7 @@ window.LL_CONCEPTS = window.LL_CONCEPTS || [];
     source: SRC,
     tags: [],
     optIn: true,
+    cell: true,
     fixed: true,
     applies: { qualities: ["maj7","6","7","sus7","m7","m6","m7b5","mMaj7","maj7s5"], minBeats: 2, maxBeats: 4 },
     degrees: digits.split("").map(Number),

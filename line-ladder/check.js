@@ -17,6 +17,7 @@
 //     features fixed / applies.rows / applies.next / lands, the p. 59
 //     placements and permutations, the Ways, the routine components
 //  21. sequences: the assembled routine laid over a run of one chord
+//  22. two cells a bar (p. 58): a 4-beat chord cut 2 + 2, each half a cell in play
 const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const blocks = src.split("<script>").slice(1).map(b => b.split("</script>")[0]);
@@ -544,6 +545,86 @@ const fires = (text, drillId) => { const l = drillOne(text, drillId); return l.c
   const ly = E.lyExport(c, E.toBars(c), { part: "bb", key: "C", bpm: 120, name: "routine" });
   ok(ly.includes("chordChanges = ##t"), "LilyPond: an unchanged chord is not restated");
   ok(ly.includes("d8 e8 fis8 g8 a8 g8 fis8 e8 |") || ly.includes("d'8 e'8 fis'8 g'8 a'8 g'8 fis'8 e'8 |"), "LilyPond B♭ part: the routine in D");
+}
+
+// 22. two cells a bar — p. 58: "If two patterns are combined, they can efficiently
+//     define a chord occupying a full measure." The book prints no pairs, so none are data.
+{
+  const P = "Dm7@ii/C | G7@V/C | Cmaj7@I/C | Fmaj7@IV/C";
+  const barText = l => E.toBars(l).map(b => b.notes.filter(n => !n.tieFrom).map(n => n.name).join(" "));
+  const cut = l => l.segs.map(x => x.beats).join();
+  const cells = E.REGISTRY.filter(c => c.cell);
+  ok(cells.length === 1 + 4 + 23 && cells.every(c => c.degrees.length === 4 && E.appliesTo(c, E.makeSegments(E.parseProg("Dm7@ii/C Dm7@ii/C"))[0]) !== undefined),
+    "the cells are 1-2-3-5, its four placements and its 23 permutations: " + cells.length);
+  ok(cells.every(c => (c.applies.minBeats || 0) <= 2), "every cell fits a 2-beat half");
+  // off is the default, and D4 stands: one cell, last note held
+  ok(cut(drillOne(P, "cell-from-5")) === "4,4,4,4" && barText(drillOne(P, "cell-from-5"))[0] === "A B C E", "pairing off: one cell, held (D4)");
+  // Drill: the drilled cell twice, wherever it applies
+  const d = drillOne(P, "cell-from-5", { pair: 1 });
+  ok(cut(d) === "2,2,2,2,2,2,2,2" && barText(d).join(" | ") === "A B C E A B C E | D E F A D E F A | G A B D G A B D | C D E G C D E G",
+    "Drill from the 5th, paired: " + barText(d).join(" | "));
+  ok(E.toBars(d).every(b => b.rests.length === 0 && b.notes.every(n => n.len === 1) && b.chords.length === 1 && b.labels.length === 2),
+    "a paired bar is eight eighths, one chord symbol, a label on each half");
+  // D1 still rules: where the drilled placement is silent the bar is not cut
+  const d9 = drillOne(P, "cell-from-9", { pair: 1 });
+  ok(cut(d9) === "4,4,4,2,2" && d9.concepts.slice(0, 3).every(c => c.id === "arp-r357") && barText(d9)[3] === "G A B D G A B D",
+    "from the 9th pairs on the IV only: " + cut(d9));
+  ok(cut(drillOne(P, "digital-1235", { pair: 1 })) === "2,2,2,2,2,2,2,2" && barText(drillOne(P, "digital-1235", { pair: 1 }))[2] === "C D E G C D E G",
+    "1-2-3-5 itself reaches a 4-beat chord only as a pair");
+  ok(barText(drillOne(P, "perm-5321", { pair: 1 }))[0] === "A F E D A F E D", "a permutation pairs with itself");
+  // what is not a cell is not cut, and neither is a chord that is not one bar long
+  for (const id of ["arp-r357", "scale-run", "way-in-1", "routine-1", "routine"])
+    ok(JSON.stringify(drillOne(P, id, { pair: 1 }).evs) === JSON.stringify(drillOne(P, id).evs), `${id}: pairing changes nothing`);
+  ok(cut(drillOne("Dm7@ii/C G7@V/C | Cmaj7@I/C | Cmaj7@I/C", "digital-1235", { pair: 1 })) === "2,2,8", "2-beat and 8-beat chords are left as they are");
+  ok(cut(drillOne("Dm7@ii/C | Dm7@ii/C | Dm7@ii/C", "digital-1235", { pair: 1 })) === "12", "three bars of one chord is a 12-beat chord, not three bars of pairs");
+  // Mixed: each half draws its own cell from the checked cells that fit, and from nothing else
+  const pool = ["digital-1235", "cell-from-5", "cell-from-9", "cell-from-3", "cell-from-6"];
+  const FIT = { "D-7": ["digital-1235", "cell-from-5", "cell-from-3"], "G7": ["digital-1235", "cell-from-5"],
+    "CΔ7": ["digital-1235", "cell-from-5", "cell-from-6"], "FΔ7": ["digital-1235", "cell-from-5", "cell-from-9", "cell-from-3", "cell-from-6"] };
+  const seen = new Set(); let differ = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const m = build(E.parseProg(P), { mode: "mixed", seed, pair: 1, checked: new Set(pool.concat("arp-r357", "scale-run")) });
+    ok(cut(m) === "2,2,2,2,2,2,2,2", `seed ${seed}: every bar is cut`);
+    m.segs.forEach((sg, i) => { ok(FIT[sg.sym].includes(m.concepts[i].id), `seed ${seed}: ${m.concepts[i].id} on ${sg.sym}`); seen.add(sg.sym + ":" + m.concepts[i].id); });
+    for (let b = 0; b < 4; b++) if (m.concepts[2 * b].id !== m.concepts[2 * b + 1].id) differ++;
+    const again = build(E.parseProg(P), { mode: "mixed", seed, pair: 1, checked: new Set(pool.concat("arp-r357", "scale-run")) });
+    ok(JSON.stringify(again.evs) === JSON.stringify(m.evs), `seed ${seed}: reproducible`);
+  }
+  ok(Object.entries(FIT).every(([sym, ids]) => ids.every(id => seen.has(sym + ":" + id))), "over 40 draws every cell that fits a chord turns up on it");
+  ok(differ > 60, "most bars pair two different cells: " + differ + " of 160");
+  // no checked cell fits, or none is checked: the bar is not cut and draws as it always did
+  const none = { mode: "mixed", seed: 5, checked: new Set(["arp-r357", "scale-run"]) };
+  ok(JSON.stringify(build(E.parseProg(P), Object.assign({ pair: 1 }, none)).evs) === JSON.stringify(build(E.parseProg(P), none).evs), "Mixed with no cell checked: pairing changes nothing");
+  // a lock holds through rerolls, and a lock naming something that is not a cell does not get into a half
+  const first = build(E.parseProg(P), { mode: "mixed", seed: 1, pair: 1, checked: new Set(pool) });
+  for (let seed = 2; seed <= 8; seed++) {
+    const r = build(E.parseProg(P), { mode: "mixed", seed, pair: 1, checked: new Set(pool), locks: { 4: first.concepts[4].id, 5: first.concepts[5].id } });
+    ok(r.concepts[4].id === first.concepts[4].id && r.concepts[5].id === first.concepts[5].id && cut(r) === cut(first), `seed ${seed}: the locked bar keeps its pair`);
+  }
+  ok(build(E.parseProg(P), { mode: "mixed", seed: 1, pair: 1, checked: new Set(pool), locks: { 0: "arp-r357" } }).concepts[0].cell, "a half takes a cell even if a stale lock names something else");
+  // a sequence's bars are not cut, and its span still points at the right segments after a cut before it
+  const sq = build(E.parseProg("Dm7@ii/C | " + Array(7).fill("Cmaj7@I/C").join(" | ") + " | Dm7@ii/C"), { mode: "mixed", seed: 1, pair: 1, checked: new Set(pool.concat("routine")) });
+  ok(cut(sq) === "2,2,4,4,8,4,4,4,2,2" && sq.seqs[0].from === 2 && sq.seqs[0].to === 7 && sq.concepts[2].id === "routine-1" && sq.concepts[7].id === "routine-land",
+    "the routine keeps its seven bars between two paired bars: " + cut(sq) + " " + JSON.stringify(sq.seqs));
+  // the rungs treat the halves as they treat any two chords; permutations still move by octaves only
+  const pr = drillOne(P, "perm-2513", { pair: 1 }), ps = drillOne(P, "perm-2513", { pair: 1, rungs: { fold: 1, near: 1, app: 1, seam: 1 } });
+  pr.evs.forEach((l, i) => ok(ps.evs[i].every((e, j) => (e.midi - l[j].midi) % 12 === 0 && e.name === l[j].name), `paired permutation, all rungs: half ${i} moved by octaves only`));
+  // a paired bar is, to every rung, the same two halves typed out as 2-beat chords — nothing of its own
+  const TYPED = "Dm7@ii/C Dm7@ii/C | G7@V/C G7@V/C | Cmaj7@I/C Cmaj7@I/C | Fmaj7@IV/C Fmaj7@IV/C";
+  for (const rungs of RUNGSETS) for (const seed of [1, 2, 3]) {
+    const a = build(E.parseProg(P), { mode: "mixed", seed, pair: 1, checked: new Set(pool), rungs });
+    const b = build(E.parseProg(TYPED), { mode: "mixed", seed, checked: new Set(pool), rungs });
+    ok(JSON.stringify(a.evs) === JSON.stringify(b.evs) && JSON.stringify(E.toBars(a).map(x => x.labels)) === JSON.stringify(E.toBars(b).map(x => x.labels)),
+      `paired vs typed 2 + 2, seed ${seed} ${JSON.stringify(rungs)}`);
+  }
+  // every preset, every cell, paired, all rung sets: bars still sum to 8 eighths, no doubles
+  for (const progId of Object.keys(E.PROGRESSIONS))
+  for (const c of cells.filter((_, i) => i < 6 || i % 5 === 0))
+  for (const rungs of [{}, { fold: 1, near: 1, app: 1, seam: 1 }]) {
+    const bars = E.toBars(build(E.PROGRESSIONS[progId].chords, { drillId: c.id, pair: 1, rungs }));
+    bars.forEach(bar => { ok(bar.notes.reduce((a, n) => a + n.len, 0) + bar.rests.reduce((a, r) => a + r.len, 0) === 8, `${progId}/${c.id} paired: bar ${bar.n}`);
+      ok(bar.notes.every(n => n.name.length <= 2), `${progId}/${c.id} paired: double accidental in bar ${bar.n}`); });
+  }
 }
 
 console.log(checks + " checks, " + fails + " failures");
