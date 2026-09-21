@@ -632,27 +632,23 @@ const TBN_TEXT = {
 };
 const pretty = n => n.replace(/b/g,'♭').replace(/#/g,'♯');      // note names only: 'Bb' → 'B♭'
 const tbnRuled = q => Array.isArray(TBN[q]);
-/* Spelling. Bass notes descend with flats, as Ex. 20 prints them, with two exceptions. Pitch
-   class 6 is F♯, always (William, 2026-09-21): Ex. 21 prints G♭7alt. under the C triad, but the
-   chord is F♯7alt. in both views, as in every root ring of the suite — this one wins even over
-   a G♭ in the triad above it. And a bass note that is also a tone of the triad takes the
-   triad's spelling, so a staff does not contradict itself (E major over G♯, not A♭ under a G♯).
+/* Spelling. A bass note takes the root ring's name for its pitch class, in both views (William,
+   2026-09-21): flats as Ex. 20 prints them, except that pitch class 6 is F♯ — the book's
+   G♭7alt. is F♯7alt. here, as in every root ring of the suite. The ring's name holds even when
+   the triad above spells the same pitch the other way (E major over A♭, under a G♯): a chord
+   has one name wherever the student meets it, and that outranks a tidy staff. An earlier build
+   let the bass borrow the triad's spelling, and the two views named the same chord differently.
    Every name is a natural or a single accidental; nothing here can produce a double. */
-const TBN_FLAT = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const TBN_PLAIN = new Set(['C','D','E','F','G','A','B','C#','D#','F#','G#','A#','Db','Eb','Gb','Ab','Bb']);
-function tbnBassName(bassPc, triadNames){
-  const hit = triadNames.find(n=>pcOf(n)===bassPc);
-  return bassPc!==6 && hit && TBN_PLAIN.has(hit) ? hit : TBN_FLAT[bassPc];
-}
 /* the twelve cells of Ex. 20–21 for any triad: the bass starts a major third above the triad's
    root and descends by half step. midi is the sounding pitch for the staff (written 8va, as all
    guitar notation here): the triad's root sits in B♭3–A4 so that C lands where the book prints it. */
 function tbnCells(triadPc, q){
-  const names = toneNames(ROOTS[triadPc], q), table = TBN[q];
+  const table = TBN[q];
   const rootMidi = 58 + ((triadPc-10+12)%12);
   return Array.from({length:12}, (_,k)=>{
     const bassPc = (triadPc+4-k+12)%12, iv = (triadPc-bassPc+12)%12;
-    const bassName = tbnBassName(bassPc, names), syms = table ? table[iv] : [];
+    const bassName = ROOTS[bassPc], syms = table ? table[iv] : [];
     return {k, bassPc, bassName, iv, ivLabel:TBN_IV[iv], ruled:!!table, syms,
             labels: syms.map(s=>pretty(bassName)+s), midi: rootMidi-8-k};
   });

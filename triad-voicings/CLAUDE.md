@@ -160,20 +160,20 @@ Brief: `briefs/triad-voicings-over-a-bass-note-brief.md`.
   tables → every triad that sounds it, stated both ways ("C major triad,
   built a 4th above the root."). check.js walks all 12 basses × every
   symbol both directions.
-- **Spelling.** Bass notes descend with flats as printed, with two
-  exceptions. **Pitch class 6 in the bass is F♯, always (William,
-  2026-09-21):** Ex. 21 prints G♭7alt. under the C triad, and the app
-  writes F♯7alt. in both views — the one cell where check.js departs from
-  the printed string. It wins even over a G♭ in the triad above it (C°,
-  E♭-, E♭°: all unruled today, so look at those staves when they are
-  ruled). And a bass note that is also a triad tone takes the triad's
-  spelling (E over G♯, not A♭ under a G♯).
+- **Spelling.** **A bass note takes the root ring's name for its pitch
+  class, in both views (William, 2026-09-21, two rulings):** flats as
+  Ex. 20 prints them, except pc 6 is F♯ — Ex. 21's G♭7alt. is F♯7alt.
+  here, the one cell where check.js departs from the printed string. The
+  ring's name holds even when the triad above spells that pitch the other
+  way, so E major over its own 3rd is A♭-7(♭6) with an A♭ under a G♯ on
+  the staff. He chose one name per chord over a tidy staff; do not bring
+  back the first build's rule that let the bass borrow the triad's
+  spelling, which made View 1 say G♯-7(♭6) where View 2 said A♭-7(♭6).
   View 2 spells the triad's root by letter from the bass (a ♭5 above C is
   G♭, a 3rd above A is C♯) when that triad spells clean, else the ring's
   name — that is the triad's name, not the chord's, and is untouched by
-  the F♯ ruling. Apart from a bass note borrowing a sharp triad tone's
-  spelling (G♯, D♯, A♯, C♯), View 1 and View 2 name every chord alike;
-  check.js asserts it. No double accidental can be produced;
+  the ring rulings. View 1 and View 2 name every chord alike; check.js
+  asserts it for every root, quality and cell. No double accidental can be produced;
   check.js asserts it on names, labels and the drawn staff.
 - **Playback**: the bass note sounds first and sustains an octave or two
   below the triad's lowest voice (`tbnBassMidi`, never under E1; upper

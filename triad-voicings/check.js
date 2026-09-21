@@ -257,17 +257,17 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
   ok(over('D', 'C') === "CΔ9(♯11) / C9(♯11)", "D major over C: " + over('D', 'C'));
   ok(over('E', 'C') === "CΔ7(♯5)", "E major over C: " + over('E', 'C'));
   ok(over('E', 'F#') === "F♯9(sus4)", "E major over F sharp is the slash chord as written: " + over('E', 'F#'));
+  ok(over('E', 'Ab') === "A♭-7(♭6)", "E major over its own 3rd takes the ring's A flat, not the triad's G sharp: " + over('E', 'Ab'));
   // 8.3 bass order and spelling, every root and quality
   for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) {
-    const cells = E.tbnCells(pc, q), names = E.toneNames(E.ROOTS[pc], q);
+    const cells = E.tbnCells(pc, q);
     ok(cells[0].bassPc === (pc + 4) % 12, `bass order ${pc}/${q}: starts a major third above the root`);
     cells.forEach((c, k) => {
       ok(c.bassPc === (pc + 4 - k + 120) % 12 && c.midi === cells[0].midi - k, `bass order ${pc}/${q}: cell ${k} descends by half step`);
       ok((pc - c.bassPc + 12) % 12 === c.iv, `interval ${pc}/${q}/${k}: triad root above the bass`);
       ok(E.pcOf(c.bassName) === c.bassPc && c.bassName.length <= 2, `bass spelling ${pc}/${q}/${k}: ${c.bassName}`);
-      const tone = names.find(n => E.pcOf(n) === c.bassPc);
-      if (c.bassPc === 6) ok(c.bassName === 'F#', `pitch class 6 in the bass is F sharp, always (${pc}/${q}: ${c.bassName})`);
-      else if (tone && tone.length <= 2 && !/^(E#|B#|Cb|Fb)$/.test(tone)) ok(c.bassName === tone, `one pitch, one spelling ${pc}/${q}: bass ${c.bassName} under ${tone}`);
+      // the bass note takes the root ring's name, whatever the triad above it spells (William, 2026-09-21)
+      ok(c.bassName === E.ROOTS[c.bassPc], `bass takes the ring's name ${pc}/${q}/${k}: ${c.bassName}`);
       c.labels.forEach(l => ok(!/♭♭|♯♯|bb|##|𝄫|𝄪/.test(l), `double accidental in ${l}`));
     });
     E.tbnTriad(pc, q).forEach(n => ok(n.name.length <= 2 && E.pcOf(n.name) === n.midi % 12, `triad spelling ${pc}/${q}: ${n.name}`));
@@ -291,7 +291,7 @@ for (const key of ["C","F","Bb","Eb","Ab","Db","F#","B","E","A","D","G"])
   for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) for (const c of E.tbnCells(pc, q)) for (const sym of c.syms)
     ok(E.tbnLookup(c.bassPc, sym).some(r => r.triadPc === pc && r.q === q), `inverse: View 1 ${pc}/${q} over ${c.bassPc} ${sym} missing from View 2`);
   // both views name the same chord the same way: View 2 reads ROOTS[bass] + symbol
-  for (let pc = 0; pc < 12; pc++) for (const c of E.tbnCells(pc, 'maj')) if (!E.toneNames(E.ROOTS[pc], 'maj').some(n => E.pcOf(n) === c.bassPc))
+  for (let pc = 0; pc < 12; pc++) for (const q of Object.keys(E.TRI)) for (const c of E.tbnCells(pc, q))
     c.labels.forEach((l, i) => ok(l === E.pretty(E.ROOTS[c.bassPc]) + c.syms[i], `View 1 ${l} vs View 2 ${E.pretty(E.ROOTS[c.bassPc]) + c.syms[i]}`));
   ok(E.tbnCells(0, 'maj')[10].labels[0] === E.pretty(E.ROOTS[6]) + '7alt.', "F sharp 7alt. in both views");
   ok(pairs === 12 * 13, "View 2: every bass x symbol resolves to one major triad for now: " + pairs);
