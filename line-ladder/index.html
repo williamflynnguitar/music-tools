@@ -594,6 +594,11 @@ function parseProg(text){
   return chords;
 }
 Object.entries(TUNES).forEach(([k,t])=>{ PROGRESSIONS['tune_'+k]={name:t.name, source:t.source, group:'tune', chords:parseProg(t.text)}; });
+/* one chord for seven bars, in every key: room for the assembled
+   scale/arpeggio routine. Parsed like typed changes, so a stretch reads here
+   exactly as the same bars typed in would (16 + 12 beats). */
+PROGRESSIONS.static7 = {name:'One major tonality, seven bars a key, around the cycle', source:'Introduction to Jazz Guitar (2014), p. 86', group:'cycle',
+  chords: parseProg(C4.map(k=>Array(7).fill(k+'maj7@I/'+k).join(' | ')).join(' |\n'))};
 
 function chordSym(ch){
   const q=QUAL[ch.q];
@@ -650,6 +655,7 @@ function matchRow(c, seg){
 /* next is the following segment (undefined on the last chord): applies.next
    narrows a concept to a root motion, and optionally to what it moves to */
 function appliesTo(c, seg, next){
+  if(c.sequence) return false;               // laid over a run of chords by planSequences, never one segment
   const a=c.applies||{};
   if(a.rows){ if(!matchRow(c,seg)) return false; }
   else if(a.qualities && !a.qualities.includes(seg.ch.q)) return false;
@@ -663,15 +669,67 @@ function appliesTo(c, seg, next){
   }
   return true;
 }
+/* ---------- sequences: a concept made of other concepts played one after
+   another over a single chord — `sequence: [part, part, …]`, each part a
+   registry id or an inline concept object, each with an exact length
+   (`beats`, or applies.minBeats === maxBeats). Nothing in the engine could give
+   the bars inside one static stretch different concepts, and a static stretch
+   is not one segment anyway (typed changes merge identical bars only up to 16
+   beats, so seven bars of one chord arrive as 16 + 12). So this runs before
+   segmentation, on the chord list: a run of identical chords that starts on a
+   barline and is long enough is re-cut into the parts' lengths, as many whole
+   passes as fit, and each new chord's concept is forced. What is left of the
+   run is re-cut the way typed changes would have merged it and assigned as
+   usual. With no active sequence the chord list comes back untouched. */
+const sameChord = (a,b) => a.root===b.root && a.q===b.q && (a.ext||[]).join()===(b.ext||[]).join() &&
+  JSON.stringify(a.fn)===JSON.stringify(b.fn);
+const seqParts = c => c.sequence.map(p=>typeof p==='string' ? conceptById(p) : p);
+const partBeats = p => { const a=(p&&p.applies)||{}; return (p&&p.beats) || (a.minBeats && a.minBeats===a.maxBeats ? a.minBeats : 0); };
+const seqBeats = c => seqParts(c).reduce((t,p)=>t+partBeats(p), 0);
+function planSequences(chords, active){
+  const plan={chords, forced:{}, spans:[]};
+  if(!active.length) return plan;
+  const out=[]; let at=0, i=0;
+  while(i<chords.length){
+    /* a run that begins mid-bar hands its first chords through untouched:
+       the sequence starts at the run's first barline */
+    while(i<chords.length && at%4!==0 && chords[i+1] && sameChord(chords[i+1],chords[i])){ out.push(chords[i]); at+=chords[i].beats; i++; }
+    let j=i, run=0;
+    while(j<chords.length && sameChord(chords[j],chords[i])){ run+=chords[j].beats; j++; }
+    const ch=chords[i];
+    /* the first active sequence, in registry order, whose every part is
+       defined, has a length, and applies to this chord at that length */
+    const seq = at%4===0 && active.find(c=>{
+      const parts=seqParts(c), T=seqBeats(c);
+      return T>0 && T<=run && parts.every(p=>p && partBeats(p) &&
+        appliesTo(p, makeSegments([{...ch, beats:partBeats(p)}])[0], undefined));
+    });
+    if(!seq){ for(let k=i;k<j;k++) out.push(chords[k]); }
+    else{
+      const parts=seqParts(seq), T=seqBeats(seq);
+      let left=run;
+      while(left>=T){
+        plan.spans.push({id:seq.id, from:out.length, to:out.length+parts.length-1});
+        parts.forEach(p=>{ plan.forced[out.length]=p; out.push({...ch, beats:partBeats(p)}); });
+        left-=T;
+      }
+      while(left>0){ const b=Math.min(left,16); out.push({...ch, beats:b}); left-=b; }
+    }
+    at+=run; i=j;
+  }
+  plan.chords=out;
+  return plan;
+}
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 /* Drill: the chosen concept everywhere it applies; elsewhere the first
    applicable concept in registry order. Mixed: a seeded random draw per
    segment from the checked applicable set; locked segments keep theirs. */
-function assignConcepts(segs, opts){
+function assignConcepts(segs, opts, forced){
   const checked = REGISTRY.filter(c=>opts.checked.has(c.id));
   const rng = mulberry32((opts.seed||1)>>>0);
   return segs.map((seg,i)=>{
     const next=segs[i+1];
+    if(forced && forced[i]){ if(opts.mode!=='drill') rng(); return forced[i]; }   // a sequence's part; the draw is still spent
     if(opts.mode==='drill'){
       const drill = conceptById(opts.drillId);
       if(drill && appliesTo(drill,seg,next)) return drill;
@@ -950,8 +1008,14 @@ function seamPass(segs, evs, range, concepts, marks){
    per bar: after each rung, whatever actually changed stamps the bars it
    touched with that rung's mark. ---------- */
 function buildLine(opts){
-  const segs=makeSegments(opts.chords);
-  const concepts=assignConcepts(segs, opts);
+  /* sequences in play: the drilled concept if it is one; in Mixed, the checked
+     ones in registry order (no draw — a reroll must not re-cut the bars a
+     lock points at) */
+  const active=(opts.mode==='drill' ? [conceptById(opts.drillId)] : REGISTRY.filter(c=>opts.checked.has(c.id)))
+    .filter(c=>c && c.sequence);
+  const plan=planSequences(opts.chords, active);
+  const segs=makeSegments(plan.chords);
+  const concepts=assignConcepts(segs, opts, plan.forced);
   const marks=segs.map(()=>new Set());
   const total=segs.reduce((a,s)=>a+s.beats*2,0);
   const barMarks=Array.from({length:Math.ceil(total/8)},()=>new Set());
@@ -978,7 +1042,7 @@ function buildLine(opts){
   const anyFlag=segs.some(s=>s.cs.flag);
   /* which applies.rows line each segment's concept matched, if it has rows */
   const rows=segs.map((seg,i)=>concepts[i]?matchRow(concepts[i],seg):null);
-  return {segs, concepts, evs, marks, barMarks, anyFlag, rows};
+  return {segs, concepts, evs, marks, barMarks, anyFlag, rows, seqs:plan.spans};
 }
 
 /* ---------- bars: split held notes at barlines into tied pieces, fill the
@@ -1286,7 +1350,7 @@ function lyExport(line, bars, opts){
 mus = { \\clef "${part==='bass'?'bass':'treble'}" \\key ${lyKeyName(writtenKey)} \\major \\numericTimeSignature \\time 4/4 \\accidentalStyle modern ${tempo}
   ${mus.join('\n  ')} \\bar "|." }
 \\score { <<
-  \\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } } \\chordmode {
+  \\new ChordNames \\with { majorSevenSymbol = \\markup { "Δ7" } chordChanges = ##t } \\chordmode {
   ${chords.join(' ')}
   }
   \\new Staff { \\mus }
@@ -1331,11 +1395,13 @@ function rebuild(){
   st.name=src.name;
   el('title').textContent = src.name;
   const dc=conceptById(st.drillId);
-  const drillFires = st.line.concepts.some(c=>c&&c.id===st.drillId);
+  const drillFires = st.line.concepts.some(c=>c&&c.id===st.drillId) || st.line.seqs.some(q=>q.id===st.drillId);
   el('sub').textContent = st.mode==='drill'
     ? (drillFires
         ? (dc?dc.name:'')+' through every chord it applies to; other chords fall back to the first applicable concept.'
-        : (dc?dc.name:'This concept')+' applies to no chord in this progression, so every chord has fallen back to the first applicable concept.')
+        : dc&&dc.sequence
+          ? dc.name+' needs '+(seqBeats(dc)/4)+' bars on one chord, starting on a barline. This progression has no such stretch, so every chord has fallen back to the first applicable concept.'
+          : (dc?dc.name:'This concept')+' applies to no chord in this progression, so every chord has fallen back to the first applicable concept.')
     : 'Each chord draws a concept at random from the checked set. Reroll for a new draw; click a bar to lock it.';
   updateFires();
   const lockedBars=new Set();

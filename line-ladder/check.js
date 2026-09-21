@@ -16,6 +16,7 @@
 //  12-19. concept pack 2 (briefs/line-ladder-concept-pack-2.md): the schema
 //     features fixed / applies.rows / applies.next / lands, the p. 59
 //     placements and permutations, the Ways, the routine components
+//  21. sequences: the assembled routine laid over a run of one chord
 const fs = require("fs"), path = require("path");
 const src = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
 const blocks = src.split("<script>").slice(1).map(b => b.split("</script>")[0]);
@@ -247,7 +248,7 @@ const fires = (text, drillId) => { const l = drillOne(text, drillId); return l.c
   const ids = E.REGISTRY.map(c => c.id).filter(id => id !== "test-pack-concept");
   ok(ids.slice(0, 8).join() === "digital-1235,arp-r357,scale-run,digital-12345321,digital-12345765,digital-15321235,arp-3579,arp-up-scale-down",
     "core.js and digital.js still lead the registry: " + ids.slice(0, 8).join());
-  ok(ids.length === 8 + 27 + 7 + 4, "46 concepts in the five packs: " + ids.length);
+  ok(ids.length === 8 + 27 + 7 + 5, "47 concepts in the five packs: " + ids.length);
   ok(new Set(ids).size === ids.length, "concept ids are unique");
   const shorts = E.REGISTRY.map(c => c.short);
   ok(new Set(shorts).size === shorts.length, "bar labels are unique");
@@ -304,13 +305,13 @@ const fires = (text, drillId) => { const l = drillOne(text, drillId); return l.c
   // and its label says what the offsets are
   const DEGNAME = ["R", "♭9", "9", "♭3", "3", "4", "♭5", "5", "♯5", "6", "♭7", "7"];
   const ALT = { 3: ["♭3", "♯9"], 5: ["4", "11"], 6: ["♭5", "♯11"], 9: ["6", "13"], 8: ["♯5", "♭13"] };
-  E.REGISTRY.filter(c => c.applies.rows).forEach(c => c.applies.rows.forEach(r => {
+  E.REGISTRY.filter(c => (c.applies || {}).rows).forEach(c => c.applies.rows.forEach(r => {
     const parts = r.label.split("-");
     ok(parts.length === 4 && parts.every((pt, j) => (ALT[r.offsets[j]] || [DEGNAME[r.offsets[j]]]).includes(pt)),
       `${c.id} row label ${r.label} does not describe offsets ${r.offsets.join(" ")}`);
   }));
   // placements are not fixed: rung 2 may rotate them, as it does digital-1235
-  ok(E.REGISTRY.filter(c => c.applies.rows).every(c => !c.fixed), "placements rotate");
+  ok(E.REGISTRY.filter(c => (c.applies || {}).rows).every(c => !c.fixed), "placements rotate");
 }
 
 // 15. permutations: all 23, realized in order, octave-only under rung 2
@@ -476,6 +477,73 @@ const fires = (text, drillId) => { const l = drillOne(text, drillId); return l.c
     for (const part of ["c", "bb", "eb"])
       E.transposeBars(bars, part).forEach(bar => bar.notes.forEach(n => ok(n.name.length <= 2, `${c.id} on ${text} (${part}): ${n.name}`)));
   }
+}
+
+// 21. sequences — the assembled Scale/Arpeggio Routine (p. 86; William's ruling
+//     of 2026-09-19: the notation is right, components 1 and 3 repeat)
+{
+  const seven = (k, n) => Array(n || 7).fill(k).join(" | ");
+  const barText = l => E.toBars(l).map(b => b.notes.filter(n => !n.tieFrom).map(n => n.name).join(" "));
+  const shorts = l => l.concepts.map(c => c ? c.short : "-").join(" ");
+  const PLAN = "sc→5 sc→5 sc→9 tri arp9 R";
+  // the printed seven bars, in C
+  const c = drillOne(seven("Cmaj7@I/C"), "routine");
+  ok(barText(c).join(" | ") === "C D E F G F E D | C D E F G F E D | C D E F G A B C | D C B A G F E D | C E G E C E G E | C E G B D B G E | C",
+    "the assembled routine in C: " + barText(c).join(" | "));
+  ok(c.segs.map(s => s.beats).join() === "4,4,8,4,4,4" && shorts(c) === PLAN, "seven bars re-cut 4 4 8 4 4 4: " + shorts(c));
+  const last = c.evs[5] || [];
+  ok(last.length === 1 && last[0].dur === 8 && last[0].midi === c.evs[0][0].midi, "the landing note is the root, a whole note, in the octave it started in");
+  ok(c.evs.slice(0, 5).every(l => l.every(e => e.dur === 1)), "everything before it is eighth notes, no rests");
+  ok(E.toBars(c).every(b => b.rests.length === 0), "no rests anywhere in the phrase");
+  ok(E.toBars(c).map(b => b.chords.length).join("") === "1000000", "the chord symbol is written once");
+  ok(E.toBars(c).map(b => b.labels.map(x => x.text).join()).join("|") === "sc→5|sc→5|sc→9||tri|arp9|R", "each bar is labelled with its component");
+  ok(c.seqs.length === 1 && c.seqs[0].id === "routine" && c.seqs[0].from === 0 && c.seqs[0].to === 5, "the line reports where the sequence lies");
+  // "the components can be altered to fit any other 7-note scale": it follows the chord scale
+  ok(barText(drillOne(seven("Dm7@ii/C"), "routine")).join(" | ") === "D E F G A G F E | D E F G A G F E | D E F G A B C D | E D C B A G F E | D F A F D F A F | D F A C E C A F | D",
+    "the routine in D Dorian");
+  ok(barText(drillOne(seven("G7@iv/Dmel"), "routine"))[2] === "G A B C# D E F G", "the routine in G Lydian dominant");
+  ok(barText(drillOne(seven("Cm6@i/Cm"), "routine"))[5] === "C Eb G A D A G Eb", "on a -6 the arpeggio carries the 6: " + barText(drillOne(seven("Cm6@i/Cm"), "routine"))[5]);
+  // where it does and does not lie
+  ok(shorts(drillOne(seven("Cmaj7@I/C", 6), "routine")) === "R357 R357", "six bars are too few: " + shorts(drillOne(seven("Cmaj7@I/C", 6), "routine")));
+  ok(shorts(drillOne(seven("Cmaj7@I/C", 8), "routine")) === PLAN + " R357", "an eighth bar is assigned as usual");
+  ok(shorts(drillOne(seven("Cmaj7@I/C", 14), "routine")) === PLAN + " " + PLAN, "fourteen bars hold it twice");
+  ok(shorts(drillOne(seven("Dm11@ii/C", 16), "routine")) === PLAN + " " + PLAN + " R357", "sixteen bars: twice, and two bars over");
+  ok(shorts(drillOne("Dm7@ii/C G7@V/C | " + seven("Cmaj7@I/C"), "routine")) === "1235 1235 " + PLAN, "it starts where the chord starts");
+  ok(shorts(drillOne("G7@V/C Cmaj7@I/C | " + seven("Cmaj7@I/C"), "routine")) === "1235 1235 " + PLAN, "a run that begins mid-bar starts it at the next barline");
+  ok(shorts(drillOne("G7@V/C Cmaj7@I/C | " + seven("Cmaj7@I/C", 6), "routine")) === "1235 1235 R357 R357", "and six and a half bars are still too few");
+  ok(!shorts(drillOne(seven("Bdim7"), "routine")).includes("sc→5"), "no routine on a º7 — its parts refuse the chord");
+  ok(!shorts(drillOne(seven("Cmaj7@I/C", 3) + " | " + seven("Cmaj7@IV/G", 4), "routine")).includes("sc→5"), "the same symbol under two rulings is two chords");
+  // the preset: twelve keys, the routine in each, no flags, no doubles
+  const p = build(E.PROGRESSIONS.static7.chords, { drillId: "routine" });
+  ok(p.seqs.length === 12 && shorts(p) === Array(12).fill(PLAN).join(" "), "the seven-bar preset holds the routine in all twelve keys");
+  ok(E.toBars(p).length === 84 && !p.anyFlag, "84 bars, fully annotated");
+  ok(E.toBars(p).filter((_, i) => i % 7 === 6).map(b => b.notes[0].name).join(" ") === "C F Bb Eb Ab Db F# B E A D G", "each key lands on its own root");
+  ok(JSON.stringify(E.PROGRESSIONS.static7.chords.slice(0, 2).map(x => x.beats)) === JSON.stringify(E.parseProg(seven("Cmaj7@I/C")).map(x => x.beats)),
+    "the preset reads exactly as the same bars typed in");
+  // a sequence is never one segment's concept, and an inactive one changes nothing
+  ok(E.REGISTRY.filter(x => x.sequence).every(x => !E.appliesTo(x, E.makeSegments(E.parseProg("Cmaj7@I/C"))[0])), "a sequence is never assigned to a single segment");
+  ok(JSON.stringify(drillOne(seven("Cmaj7@I/C"), "arp-r357").segs.map(x => x.beats)) === "[16,12]", "another drill leaves the bars as they were (16 + 12)");
+  // Mixed: checked, it takes the stretch; a reroll cannot re-cut it; unchecked, nothing changes
+  const four = ["routine-1", "routine-2", "routine-3", "routine-4"];
+  for (const seed of [1, 2, 3, 4]) {
+    const m = build(E.parseProg("Dm7@ii/C | G7@V/C | " + seven("Cmaj7@I/C")), { mode: "mixed", seed, checked: new Set(four.concat("routine")) });
+    ok(shorts(m).split(" ").slice(2).join(" ") === PLAN, `Mixed seed ${seed}: the checked routine takes the seven bars`);
+    ok(four.includes(m.concepts[0].id) && four.includes(m.concepts[1].id), `Mixed seed ${seed}: the other chords still draw`);
+    const off = build(E.parseProg(seven("Cmaj7@I/C")), { mode: "mixed", seed, checked: new Set(four) });
+    ok(off.segs.map(x => x.beats).join() === "16,12", `Mixed seed ${seed}: unchecked, the bars are not re-cut`);
+  }
+  // the rungs: every part is fixed, so smoothing moves octaves only, and marks stay honest
+  const raw = drillOne(seven("Cmaj7@I/C"), "routine");
+  for (const rungs of [{ near: 1 }, { seam: 1 }, { fold: 1, near: 1, app: 1, seam: 1 }]) {
+    const sm = drillOne(seven("Cmaj7@I/C"), "routine", { rungs });
+    ok(JSON.stringify(sm.evs) === JSON.stringify(raw.evs), `${JSON.stringify(rungs)}: inside the range the routine is already as smooth as it gets`);
+  }
+  const low = drillOne(seven("Cmaj7@I/C"), "routine", { rungs: { fold: 1, near: 1, app: 1, seam: 1 }, range: { lo: 40, hi: 67 } });
+  low.evs.forEach((l, i) => ok(l.every((e, j) => (e.midi - raw.evs[i][j].midi) % 12 === 0 && e.name === raw.evs[i][j].name), `bass range: part ${i} moved by octaves only`));
+  // the LilyPond export does not restate the unchanged chord over every re-cut bar
+  const ly = E.lyExport(c, E.toBars(c), { part: "bb", key: "C", bpm: 120, name: "routine" });
+  ok(ly.includes("chordChanges = ##t"), "LilyPond: an unchanged chord is not restated");
+  ok(ly.includes("d8 e8 fis8 g8 a8 g8 fis8 e8 |") || ly.includes("d'8 e'8 fis'8 g'8 a'8 g'8 fis'8 e'8 |"), "LilyPond B♭ part: the routine in D");
 }
 
 console.log(checks + " checks, " + fails + " failures");

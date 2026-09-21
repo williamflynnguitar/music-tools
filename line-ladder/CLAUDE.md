@@ -19,6 +19,9 @@ apply, including the lookahead scheduler. Headless tests: `node check.js`.
 
 ```
 progression (preset or typed)
+  → plan     active sequences re-cut a run of one chord into their parts'
+             lengths and force each part's concept (see Sequences); with no
+             sequence active the chord list passes through untouched
   → segment  one segment per chord: {ch, beats, at, cs: chordScale(ch)}
   → assign   Drill (one concept everywhere it applies; elsewhere the first
              applicable concept in REGISTRY order) or Mixed (seeded random
@@ -64,6 +67,10 @@ must fall back to 1-2-3-5, reproducing the old Scale mode).
                                   // floor-mod), so 5-3-1-7 falling is [5,3,1,0]
   fixed?: true,                   // never rotated; rungs move it by octaves
   lands?: 3 | 5,                  // rung 4: the next segment starts here
+  sequence?: [id | {concept}],    // instead of degrees: other concepts, one
+                                  // after another over one chord (Sequences)
+  beats?,                         // a part's exact length, if its applies
+                                  // does not already fix it (min === max)
   against: "chord" | "scale",     // "scale" needs cs.steps, so it never
                                   // applies to º7 (chordScale returns {arp})
   rhythm: "eighths" | "eighths-hold" | "quarters",
@@ -87,6 +94,45 @@ The four pack-2 schema features are generic — none names a concept:
   `motion` semitones up and, if given, whose quality is listed. `appliesTo`
   takes the next segment as a third argument; every caller passes it.
 - **`lands`** — see rung 4.
+
+### Sequences
+
+A concept with `sequence` instead of `degrees` is other concepts played one
+after another over a single chord — the assembled Scale/Arpeggio Routine is
+the one so far. Each part is a registry id or an inline concept object (the
+routine's landing note is inline: it is not one of the four components, so it
+is not a checklist entry), and each has an exact length.
+
+Nothing in the engine could give the bars inside one static stretch different
+concepts, and a static stretch is not one segment anyway: `parseProg` merges
+identical bars only up to 16 beats, so seven bars of one chord arrive as
+16 + 12 (the pack-2 brief's "one 28-beat segment" was wrong about that). So
+`planSequences` runs *before* segmentation, on the chord list:
+
+- a **run** is consecutive chords equal in root, quality, extensions and
+  annotation (the same symbol under two rulings is two chords);
+- it starts at the run's first barline — chords of the run that begin mid-bar
+  pass through untouched;
+- the first active sequence, in registry order, whose total fits and whose
+  every part applies to the chord at its length (`appliesTo` on a probe
+  segment, no next chord — a part with `applies.next` refuses) is laid down as
+  many whole times as fit. Sixteen bars of Dm11 hold the routine twice;
+- what is left of the run is re-cut the way typed changes would have merged
+  it (16s, then the rest) and assigned as usual.
+
+Active means: in Drill, the drilled concept if it is a sequence; in Mixed, the
+checked sequences — first in registry order, **no draw**, because a reroll
+that re-cut the bars would move every lock after it. A forced part still
+spends its segment's draw, so the other chords draw as they would have.
+`appliesTo` refuses a sequence outright, so one is never a single segment's
+concept and never the Drill fallback. `buildLine` returns `seqs`
+(`{id, from, to}` in segment indices); the sub line under the title uses it,
+and tells a student whose progression has no such stretch how many bars the
+sequence needs. Every bar is labelled with its part's `short`, which reads like
+the book's brackets: `sc→5 | sc→5 | sc→9 | | tri | arp9 | R`.
+
+Adding it changed nothing else: 0 of 83,200 builds of the other 46 concepts
+differ (every preset, all 16 rung sets, two ranges, Drill and Mixed).
 
 Chord-tone pitches map through `ARPQ_TONES`: −6 is its own R–♭3–5–6
 (William, 2026-09 — the 6 fills the "7" slot, so R–3–5–7 on Gm6 reads
@@ -233,8 +279,13 @@ chord symbols left-aligned and not restated unless changed, numeric 4/4,
 bar number under every bar. Bass clef and rests are hand-drawn paths. No
 TAB staff, no fingerings, no moving cursor during playback (bar rects exist
 only as Mixed-mode lock targets — brass stroke when locked). `lyExport`
-keeps the Argue head; parts wrap in `\transpose c d` / `\transpose c a`,
-bass gets `\clef bass`, `\key` from the key selector.
+keeps the Argue head; parts are transposed in JS (see Minor spelling — never a
+`\transpose` wrapper), bass gets `\clef bass`, `\key` from the key selector.
+`chordChanges = ##t` (Sep 2026): an unchanged chord is not restated, as on
+screen — a sequence re-cuts one chord into six, and the export was printing
+CΔ7 over every one of them. It also stops tunes restating a chord that simply
+continues (Impressions' Dm11 every four bars); LilyPond still restates at the
+start of a line.
 
 ## Metronome
 
@@ -248,8 +299,8 @@ Brief: `briefs/line-ladder-concept-pack-2.md`. Source: William's
 *Introduction to Jazz Guitar* (2014) — 1-2-3-5 placements and permutations
 (p. 59), Mike Steinel's "Three Ways In, Two Ways Out" (Appendix E, pp. 84–85),
 the four components of Stan Smith's Scale/Arpeggio Routine (Appendix F, p. 86).
-Every degree string was re-read against the rasterized pages. 38 entries; the
-registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
+Every degree string was re-read against the rasterized pages. 38 entries plus
+the assembled routine (added 2026-09-21); the registry holds 47.
 
 - **D1. Placements obey the chord-scale rulings.** "1-2-3-5 on the 9th of
   maj7" needs a ♯11, so it fires on `@IV` and is silent on `@I`. "5th of tonic
@@ -265,8 +316,14 @@ registry holds 46 (the brief counted 47 — core + digital are 8, not 9).
 - **D4. Permutations and placements run 2–4 beats** (`eighths-hold`);
   `digital-1235` stays 2-beat `eighths` because the Drill fallback depends on
   it. So none of them fires on a merged 8-beat chord.
-- **D5. The assembled routine is not built** — the four components ship as
-  separate concepts, each at its exact beat length.
+- **D5.** The four components are separate concepts, each at its exact beat
+  length. The assembled routine was deferred in the brief and built two days
+  later (2026-09-21) as a `sequence` — see Sequences above. It follows the
+  chord scale, so seven bars of Dm7@ii/C give it in D Dorian ("the components
+  can be altered to fit any other 7-note scale", p. 86). Preset for it:
+  *One major tonality, seven bars a key, around the cycle* (`static7`), parsed
+  like typed changes so it reads exactly as the same bars typed in. Other
+  tonalities are typed: `Dm7@ii/C | % | % | % | % | % | %`.
 - The book's ♭5-of-ø line prints its tones as ♭3-4-♭5-♭7, repeating the minor
   column; the row uses the corrected ♭5-♯5-♭7-♭9 (F G A C on Bø) — confirmed
   by William, 2026-09-19. The book is wrong there, not the row.
@@ -301,10 +358,7 @@ Both of the brief's questions for William are now ruled; none is open.
 
 Imposed placements that override the chord-scale ruling (D1) · a
 late-placement template putting a Way in the last two beats of a 4-beat chord
-(D2) · two 1-2-3-5 cells paired across a 4-beat chord (p. 58) · the assembled
-seven-bar routine (its order is ruled — see Concept pack 2 — so what it still
-needs is a way to give the bars inside one long static segment different
-concepts) · student-authored Ways (practice
+(D2) · two 1-2-3-5 cells paired across a 4-beat chord (p. 58) · student-authored Ways (practice
 suggestion 5 — belongs with the lick journal) ·
 TAB post-pass · MUSC 120 grouping view (tags are already in the schema) ·
 handout-cell pack · etude assembly / weighted fill / lick journal ·
