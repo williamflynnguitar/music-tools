@@ -146,6 +146,7 @@ mini view the block is hidden with everything else that is not `#mini`.
 
 ### Mini view: deferred
 - Dropout controls in the mini view (William expects to want them).
+- The "4 only" click option (William, 2026-10-21: full page only for now).
 - Carrying the panel's tempo into the full page from the "Full Two-and-Four"
   link.
 
