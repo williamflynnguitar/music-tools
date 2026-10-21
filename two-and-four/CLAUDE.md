@@ -167,7 +167,13 @@ subdivisions anywhere.
   next **`AHEAD` = 0.13 s** onto `ctx.currentTime`, advancing
   `nextNoteTime` by `60/bpm` per beat. Scheduling granularity is one
   quarter note; `beatInBar` cycles 0–3 and clicks fire only when it is
-  1 or 3 (i.e. beats 2 and 4).
+  1 or 3 (i.e. beats 2 and 4) — or 3 alone when the **Click on** control
+  is set to "4 only" (`S.click = "4"`, Oct 2026, for fast tempos where
+  2 & 4 is too dense to float over). The scheduler reads `S.click` on every
+  beat, so the switch is heard on the next beat mid-round; the dropout
+  pattern is unchanged, a silent bar stays silent. The lamp row follows it
+  (beat 2 loses its `backbeat` class). Standard mode only: Training Wheels
+  keeps 2 & 4 on every rung, and the mini view has no control for it.
 - Round-end is detected inside `scheduleBeat` at a bar boundary
   (`beatInBar === 0`): when `t - playStart >= duration` it calls
   `endRound(t)` and returns false, which aborts the fill loop so no

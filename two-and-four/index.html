@@ -462,7 +462,7 @@ html.mini body > *:not(#mini){display:none!important;}
         <div class="lamp backbeat" data-b="1"></div>
         <div class="lamp" data-b="2"></div>
         <div class="lamp backbeat" data-b="3"></div>
-        <span class="lamp-note">clicks on 2 &amp; 4</span>
+        <span class="lamp-note" id="lampNote">clicks on 2 &amp; 4</span>
       </div>
     </div>
   </section>
@@ -573,6 +573,14 @@ html.mini body > *:not(#mini){display:none!important;}
         <div class="field">
           <label for="step">Step <span class="val"><b id="stepVal">5</b> bpm</span></label>
           <input type="range" id="step" min="1" max="20" step="1" value="5">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Click on <span class="val" id="clickVal">2 &amp; 4</span></label>
+        <div class="seg" role="group">
+          <button id="clickBoth" aria-pressed="true">2 &amp; 4</button>
+          <button id="clickFour" aria-pressed="false">4 only</button>
         </div>
       </div>
 
@@ -715,7 +723,7 @@ const PLAN_COLS = 6;   // sample columns drawn in the plan chart
 const S = {
   bpm:120, minBpm:70, maxBpm:220, step:5,
   rounds:4, duration:180, rest:15,
-  random:false, mode:"phrase", phrase:8, floor:25, vol:0.85,
+  random:false, click:"24", mode:"phrase", phrase:8, floor:25, vol:0.85,
   settle:90, curve:"linear",
   countIn:true, showTempo:true, blind:false, lamps:false
 };
@@ -899,8 +907,11 @@ function scheduleBeat(t, spb){
     bar++;
   }
 
+  // The backbeat click lands on 2 and 4, or on 4 alone (S.click = "4" —
+  // half the clicks, for fast tempos where 2 & 4 is too dense to float over).
+  // Read per beat, so the switch takes effect on the next beat mid-round.
   let audible = false;
-  if(beatInBar === 1 || beatInBar === 3){
+  if(beatInBar === 3 || (beatInBar === 1 && S.click === "24")){
     if(S.mode === "phrase"){
       audible = barAudible;
     } else {
@@ -1667,6 +1678,15 @@ segment("srcFixed","srcRandom", isRandom => {
   $("fixedField").style.display  = isRandom ? "none" : "";
   $("randomFields").style.display = isRandom ? "" : "none";
   if(phase === "idle") stopSession(false);
+});
+// Click placement: 2 & 4, or 4 only. Live — the scheduler reads S.click on
+// every beat, so a mid-round switch is heard on the next beat. The lamp row
+// follows it: beat 2 is a backbeat lamp only while it clicks.
+segment("clickBoth","clickFour", fourOnly => {
+  S.click = fourOnly ? "4" : "24";
+  $("clickVal").textContent = fourOnly ? "4 only" : "2 & 4";
+  $("lampNote").textContent = fourOnly ? "clicks on 4" : "clicks on 2 & 4";
+  document.querySelector('.lamp[data-b="1"]').classList.toggle("backbeat", !fourOnly);
 });
 segment("modePhrase","modeThin", isThin => {
   S.mode = isThin ? "thin" : "phrase";
