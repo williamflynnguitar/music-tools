@@ -131,7 +131,7 @@ after any edit to prose that lives inside a JS string.
 
 ## Spine menu
 
-Every tool page opens with a slim right-aligned "☰ tools" chip — in normal flow at the top of the page, never fixed, so it cannot cover app headers — opening a menu of
+Every tool page opens with a slim bar: a "← williamflynnmusic.com" chip at the left (the way back to William's site, which links in; added 2026-10-25 so a visitor is not left with the browser's back button) and a right-aligned "☰ tools" chip — in normal flow at the top of the page, never fixed, so it cannot cover app headers — opening a menu of
 the landing page's spine: a home header row, then the handbook group
 (Scales / Arpeggios / Chord voicings sub-sections, page refs mirroring the
 index cards' source labels) and the stand-alone group, current page marked

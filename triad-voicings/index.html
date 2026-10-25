@@ -117,9 +117,11 @@ rect[data-tb]:focus-visible{stroke:var(--brass);stroke-width:.16}
 <!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
      Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
 <style>
-  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:flex-end;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
   .sp-anchor{position:relative;}
-  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .sp-site{display:inline-block;background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;white-space:nowrap;}
+  .sp-site:hover{color:#e9e2d2;border-color:#c9a44c;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
   .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
   .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
   .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
@@ -142,8 +144,11 @@ rect[data-tb]:focus-visible{stroke:var(--brass);stroke-width:.16}
     .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
     .sp-sec{display:none;}
   }
+  @media (max-width:360px){
+    .sp-site{letter-spacing:.06em;padding:9px 9px;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  }
 </style>
-<nav class="sp-menu" aria-label="Jazz Guitar Practice Tools"><div class="sp-anchor">
+<nav class="sp-menu" aria-label="Jazz Guitar Practice Tools"><a class="sp-site" href="https://williamflynnmusic.com/">&#8592; williamflynnmusic.com</a><div class="sp-anchor">
   <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
   <div class="sp-panel" hidden>
     <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Jazz Guitar Practice Tools</a>
