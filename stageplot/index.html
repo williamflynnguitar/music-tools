@@ -2736,9 +2736,9 @@ function renderInspector(p){
       for (const o of [it, other]) if (o) for (const own of ownersOf(q, o)) settleDI(q, own);   // every owner: a shared keyboard settles both players
   });
   el.querySelectorAll("[data-owner]").forEach(c => c.onchange = () => mut(() => {
-    /* The id is in data-owner; the box has no value attribute, so c.value is
-       "on" — which is what this read until 2026-11-02, when every tick stored
-       "on", matched no player, and re-rendered unchecked. */
+    /* The id is in data-owner; the box has no value attribute, so its value
+       property is "on" — which is what this read until 2026-11-02, when every
+       tick stored "on", matched no player, and re-rendered unchecked. */
     const id = c.dataset.owner, ids = (sel.ownerPositionIds || []).filter(x => x !== id);
     sel.ownerPositionIds = c.checked ? ids.concat([id]) : ids;
   }));
