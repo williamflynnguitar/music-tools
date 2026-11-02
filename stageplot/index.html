@@ -661,9 +661,10 @@ function iemOf(pos){ return !!pos.iem; }
    wedges) and the wedge nearest that group's dealt spot or the player
    themself, within WEDGE_REACH. It goes only when nobody else in the group
    still wants it — a wedge shared by a horn row stays until the whole row
-   is on in-ears. Going back to a wedge adds none: wedges are dealt once,
-   and + wedge on the Wedges tab is one click. Returns the wedge removed,
-   or null. */
+   is on in-ears. Going back to a wedge deals the group one again
+   (William, 2026-11-02) — at the group's usual spot, with the lowest free
+   mix number — unless the group still has one. Returns the wedge removed
+   or dealt, or null. */
 const WEDGE_REACH = 72;
 function wedgeFor(plot, pos){
   const groups = monitorGroups(plot), gi = groups.findIndex(g => g.list.includes(pos));
@@ -675,7 +676,14 @@ function wedgeFor(plot, pos){
   return mine.length ? { wedge:mine[0], group:groups[gi] } : null;
 }
 function setIem(plot, pos, on){
-  if (!on){ delete pos.iem; return null; }
+  if (!on){
+    delete pos.iem;
+    if (wedgeFor(plot, pos)) return null;                             // the group kept its wedge
+    const g = monitorGroups(plot).find(g => g.list.includes(pos)); if (!g) return null;
+    const w = Object.assign({ id:nextIdE("w"), number:nextWedgeNumber(plot), moved:false }, wedgeSpot(plot, g.list));
+    plot.wedges.push(w);
+    return w;
+  }
   pos.iem = true;
   const hit = wedgeFor(plot, pos); if (!hit) return null;
   if (hit.group.list.some(p => !iemOf(p))) return null;           // someone in the group still uses it
@@ -2548,7 +2556,7 @@ function renderPanel(p){
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="-1" title="one music stand fewer"' + (standsOf(p, pos) ? "" : " disabled") + '>− stand</button>' +
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="1" title="one more music stand">+ stand</button></div>' +
         '<div class="pline"><span class="ct">' + (iemOf(pos) ? "in-ears" : "wedge") + '</span>' +
-        '<button class="btn sm" data-iem="' + pos.id + '" aria-pressed="' + iemOf(pos) + '" title="this player is on in-ear monitors: their own pack, a mix from the console, and their wedge comes off the stage">in-ears</button></div></div>');
+        '<button class="btn sm" data-iem="' + pos.id + '" aria-pressed="' + iemOf(pos) + '" title="this player is on in-ear monitors: their own pack, a mix from the console, and their wedge comes off the stage; press again and it comes back">in-ears</button></div></div>');
     }
     H.push('</div>');
   }
@@ -2569,7 +2577,7 @@ function renderPanel(p){
     H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
     const iems = iemPlayers(p);
     if (iems.length) H.push('<p class="note"><b>On in-ears:</b> ' + esc(iems.map(x => posText2(p, x, labels)).join(", ")) + ' — ' + (iems.length === 1 ? "their own pack takes a mix and needs no wedge" : "their own packs each take a mix and need no wedge") +
-      ', so this plot asks for ' + mixCount(p) + ' of ' + VENUE.monitorMixes + ' mixes. Their wedge went when they went on in-ears; one they share with players still on wedges stays. Set it per player on the Positions tab.</p>');
+      ', so this plot asks for ' + mixCount(p) + ' of ' + VENUE.monitorMixes + ' mixes. Their wedge went when they went on in-ears, and comes back when they go back to a wedge; one they share with players still on wedges stays. Set it per player on the Positions tab.</p>');
     const clashes = wedgeClashes(p), clashOf = w => clashes.find(c => c.wedges.includes(w));
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
       const c = clashOf(w);
@@ -2752,7 +2760,7 @@ function renderInspector(p){
     H.push('<div class="fld"><span class="lbl">Music stands</span><div class="insprow"><span class="ct stands" style="font-family:var(--mono);font-size:13px;min-width:80px">' + standText(ns) + '</span>' +
       '<button class="btn sm" data-stand="' + sel.id + '" data-d="-1"' + (ns ? "" : " disabled") + '>− stand</button><button class="btn sm" data-stand="' + sel.id + '" data-d="1">+ stand</button></div></div>');
     H.push('<div class="fld"><span class="lbl">Monitor</span><div class="seg2">' +
-      '<button class="btn sm" data-iem="wedge" aria-pressed="' + !iemOf(sel) + '">Wedge<span>a house wedge, placed on the Wedges tab</span></button>' +
+      '<button class="btn sm" data-iem="wedge" aria-pressed="' + !iemOf(sel) + '">Wedge<span>a house wedge, dealt to its usual spot</span></button>' +
       '<button class="btn sm" data-iem="iem" aria-pressed="' + iemOf(sel) + '">In-ears<span>own pack; a mix from the console; their wedge comes off</span></button></div></div>');
     H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
     H.push('<div class="fld"><span class="lbl">Doubles</span>');
@@ -3135,7 +3143,7 @@ function helpSections(){
       'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead. The house upright piano is miked: select it and add a mic.'])],
     ["Monitor wedges", ul([
       'Place each wedge where it goes.',
-      'A player on in-ear monitors gets no wedge: press <b>in-ears</b> on their card (Positions tab) or in the panel under the stage, and their wedge comes off the stage — unless they share it with someone still on a wedge, when it stays until everyone on it is on in-ears. They bring the pack; the console gives them a mix, which counts toward the room\'s five. The page lists them under Monitors as in-ears and the pack under Musicians provide. Back to a wedge is <b>+ wedge</b> on the Wedges tab.',
+      'A player on in-ear monitors gets no wedge: press <b>in-ears</b> on their card (Positions tab) or in the panel under the stage, and their wedge comes off the stage — unless they share it with someone still on a wedge, when it stays until everyone on it is on in-ears. They bring the pack; the console gives them a mix, which counts toward the room\'s five. The page lists them under Monitors as in-ears and the pack under Musicians provide. Press it again and they get a wedge back, dealt to its usual spot with the lowest free mix number.',
       'The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it.',
       'Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab.',
       'Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'])],

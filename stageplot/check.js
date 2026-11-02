@@ -858,9 +858,14 @@ for (const t of E.TEMPLATES){
   eq(mon.iems.map(r => r.who).join("|"), "Gtr", "…and adds an in-ears row for the player");
   ok(E.byoList(band).some(b => /In-ear monitor pack/.test(b.what) && b.who === "Gtr"), "the pack is the player's own, under Musicians provide");
   ok(E.posShortLines(band, gtr, labels).some(l => l.text === "in-ears"), "the diagram says in-ears under the chair");
-  eq(E.setIem(band, gtr, false), null, "back to a wedge adds none — wedges are dealt once, + wedge is one click");
-  eq(band.wedges.length, w0 - 1, "…so the count stays");
+  const back = E.setIem(band, gtr, false);
+  ok(back && band.wedges.includes(back), "back to a wedge deals the player one again");
+  eq(band.wedges.length, w0, "…so the count is what it was");
+  eq(back.number, gone.number, "…with the lowest free mix number, which is the one that went");
+  ok(Math.abs(back.x - gone.x) < .5 && Math.abs(back.y - gone.y) < .5 && !back.moved, "…at the group's usual spot, undragged");
   ok(!("iem" in gtr), "turning it off removes the field");
+  eq(E.setIem(band, gtr, false), null, "off when already off deals nothing");
+  eq(band.wedges.length, w0, "…and the count holds");
   // a shared wedge stays until the whole group is on in-ears
   const bb = T("bigband"), sax1 = bb.positions.find(x => E.roleOf(bb, x).family === "sax");
   const shared = E.wedgeFor(bb, sax1);
@@ -870,6 +875,10 @@ for (const t of E.TEMPLATES){
   eq(bb.wedges.length, wb, "a section's wedge stays while one of them is still on it");
   ok(E.setIem(bb, row[row.length - 1], true) === shared.wedge, "…and goes with the last of them");
   eq(bb.wedges.length, wb - 1, "…one wedge fewer");
+  const dealt = E.setIem(bb, row[0], false);
+  ok(dealt && bb.wedges.length === wb, "the first of them back on a wedge gets the section's wedge dealt again");
+  eq(E.setIem(bb, row[1], false), null, "…and the second shares it: nothing more is dealt");
+  eq(bb.wedges.length, wb, "…so the count holds");
   const far = T("rock"), fk = far.positions.find(x => x.roleId === "keys"), fw = E.wedgeFor(far, fk).wedge;
   fw.x = 2; fw.y = far.deck.depthFt * 12 - 2; fw.moved = true;
   ok(E.setIem(far, fk, true) === null && far.wedges.includes(fw), "a wedge dragged far from its player and its dealt spot is not assumed to be theirs");

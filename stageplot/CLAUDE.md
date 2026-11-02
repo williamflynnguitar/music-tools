@@ -574,9 +574,12 @@ player's group in `monitorGroups()` — the grouping that dealt the wedges —
 and the wedge nearest that group's `wedgeSpot()` or the player, within
 `WEDGE_REACH` (72″); a wedge dragged further than that is not assumed to be
 theirs. It goes only when nobody in the group still uses it, so a horn
-row's shared wedge stays until the whole row is on in-ears. Going back to
-a wedge adds none — wedges are dealt once, and + wedge is one click; undo
-covers a slip. The deferred item was "per-person monitor requests
+row's shared wedge stays until the whole row is on in-ears. **Going back
+to a wedge deals the group one again** (William, the same day) at the
+group's `wedgeSpot()` with the lowest free mix number, `moved:false` like
+any dealt wedge — unless the group still has one, as a section does while
+one of its players is on a wedge. This is the one exception to "wedges are
+dealt once": it only ever restores what in-ears took. The deferred item was "per-person monitor requests
 for IEMs"; this is the IEM, not the request — what goes in the mix is still
 settled at soundcheck.
 
@@ -894,7 +897,7 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 724 assertions: the role library, every template (builds,
+`node check.js` — 731 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, a vocal mic for any
