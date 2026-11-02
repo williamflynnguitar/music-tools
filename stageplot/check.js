@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -783,6 +783,40 @@ for (const t of E.TEMPLATES){
      "changeover: the house kit comes off and the band's kit comes on");
   const none = E.blankPlot();
   eq(E.houseNeeds(none).length, 0, "a blank plot asks the house for nothing");
+}
+
+/* ---- 19d. a vocal mic for anyone (William, 2026-11-02): no Voice chair needed ---- */
+{
+  const band = E.makeFromParts([["guitar",1],["keys",1],["bass",1],["drums",1]], null, "Singing trio");
+  const labels = labelsOf(band), gtr = band.positions.find(x => x.roleId === "guitar"), keys = band.positions.find(x => x.roleId === "keys"), bass = band.positions.find(x => x.roleId === "bass");
+  ok(!band.positions.some(x => x.roleId === "voice"), "a band with no Voice position…");
+  const vm = E.addVocalMic(band, gtr);
+  eq(E.micsOn(band).length, 1, "…hands its guitarist a vocal mic: one mic on the deck");
+  eq(vm.label, "Vocal", "…labelled Vocal — not Vox (the chair) and not VOX (the amp)");
+  eq(E.micText(band, vm, labels), "Vocal", "…and drawn as Vocal under the lollipop");
+  eq(E.ownerOf(band, vm), gtr, "…belonging to the guitarist");
+  ok(vm.moved, "…pinned where it landed");
+  const f = E.footprintOf(gtr, band);
+  ok(Math.abs(vm.x - gtr.x) < .5 && Math.abs(vm.y - (gtr.y - f.d / 2 - E.VOCAL_GAP)) < .5, "…standing " + E.VOCAL_GAP + "″ downstage of their footprint, where a singing player's stand is");
+  const amp = band.items.find(i => (i.ownerPositionIds || []).includes(gtr.id) && i.ref !== "mic" && i.ref !== "di");
+  ok(amp && Math.hypot(vm.x - amp.x, vm.y - amp.y) > 24, "…not at their amp");
+  const km = E.addVocalMic(band, keys), korg = E.findBackline(band, keys, E.roleOf(band, keys));
+  ok(korg && korg.y < keys.y, "a keys player has the keyboard in front of them…");
+  ok(Math.abs(km.y - (E.rectOf(korg, band).y0 - E.VOCAL_GAP)) < .5 && km.y < E.rectOf(korg, band).y0, "…so their vocal mic stands downstage of the keyboard, not on it");
+  E.addVocalMic(band, bass);
+  eq(E.micsOn(band).length, 3, "three singers are three vocal mics");
+  const list = E.micList(band);
+  eq(list.map(m => m.label).join("|"), "Vocal|Vocal|Vocal", "the page lists each as Vocal…");
+  eq(list.map(m => m.who).join("|"), "Gtr|Keys|Bass", "…against the chair it belongs to");
+  eq(E.consoleCount(band), 3 + E.disOn(band).length, "…and each is one console channel");
+  band.positions = band.positions.filter(x => x !== keys); band.items = band.items.filter(i => !(i.ownerPositionIds || []).includes(keys.id));   // what removePosition does to an owner's gear
+  eq(E.micsOn(band).length, 2, "a singer who leaves takes their vocal mic (owner's gear goes with the owner)");
+  const loose = E.addVocalMic(band, null, { x:100, y:100 });
+  eq(E.micText(band, loose, labelsOf(band)), "Vocal", "with nobody selected a vocal mic still says Vocal…");
+  eq(loose.x + "," + loose.y, "100,100", "…and lands where it is told, belonging to nobody");
+  ok(/\+ Vocal mic/.test(src) && /data-vocal/.test(src), "the Mics & DIs tab offers + Vocal mic");
+  ok(/Anyone can sing/.test(src), "…and says that anyone can sing, in the tab and in the help");
+  ok(!/\+ mic\b|− mic\b|own channel|48V/.test(src), "…without bringing back per-player mic controls");
 }
 
 /* ---- 19e. mics and DI boxes are objects on the deck (C1/C2, Tim Shade 2026-09-16) ---- */

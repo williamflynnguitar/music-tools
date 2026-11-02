@@ -507,6 +507,29 @@ land — "Right now it goes to Alto 1" from the selection, or, with nothing
 selected, that it lands mid-stage belonging to nobody (`freeSpot()`). The
 help's Microphones entry leads with the same sentence.
 
+## A vocal mic for anyone (2026-11-02)
+
+**Nobody has to be the singer.** In William's own band the guitarist, the
+bass player and the keys player all sing and there is no Voice chair, so a
+vocal mic cannot hang off a vocalist position. The Mics & DIs tab has a third
+button, **+ Vocal mic**, beside + Mic and + DI: select the player who sings
+(or their amp — the mic still goes to the player, never to the amp) and
+click it. `addVocalMic()` places an ordinary house mic (`ref:"mic"`, so it
+counts against the house's eight like any other and the button is off when
+none are left) labelled **Vocal** — not "Vox", which is the vocalist's chair,
+and not "VOX", which is the amp — belonging to the player, `VOCAL_GAP` (10″)
+downstage of their footprint, where a singing player's stand is. A keys
+player's goes downstage of the keyboard in front of them instead, since a
+mic between a player and their Korg is on the keys. Pinned where it lands;
+drag it from there. The page lists it against the chair — *Vocal — Gtr (Sam
+Ortiz)* — and the tab's On stage list now says whose a labelled mic is the
+same way. One click per singer; two people sharing a mic is one vocal mic
+dragged between them. No schema change: a vocal mic is a mic with a label,
+exactly what the help always said to do by hand, and an old file with a
+hand-labelled "vocal" mic is unaffected. The "no per-player mic controls"
+check (B1) still holds: the control lives on the Mics & DIs tab, after a
+selection, like every other mic.
+
 ## Music stands (2026-09-16)
 
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
@@ -793,10 +816,12 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 652 assertions: the role library, every template (builds,
+`node check.js` — 672 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
-name parsing, doubles and shared chairs, a custom role, the layout engine's
+name parsing, doubles and shared chairs, a custom role, a vocal mic for any
+player (labelled Vocal, at the player and not their amp, in front of a keys
+player's keyboard, listed against the chair), the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,
 backline by category (two guitarists on two amps, five on an amber over-count

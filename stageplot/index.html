@@ -594,6 +594,27 @@ function addMicItem(plot, at, label, ownerIds, moved){
   plot.items.push(it);
   return it;
 }
+/* A vocal mic for anyone (William, 2026-11-02). Nobody has to be the
+   singer: in a band where the guitarist, the bass player and the keys
+   player all sing there is no Voice chair, so any player can be handed a
+   vocal mic. It is an ordinary mic on the deck, labelled "Vocal" (not "Vox",
+   which is the vocalist's chair, and not "VOX", which is the amp), belonging
+   to the player so the page lists it against their chair — "Vocal — Gtr
+   (Sam Ortiz)" — and so it goes when they go. It stands VOCAL_GAP inches
+   downstage of the player, where a singing player's stand is — or, for a
+   keys player, downstage of the keyboard in front of them, since a mic
+   between a player and their keyboard is on the keys — until someone drags
+   it; with no player it lands wherever it is told. */
+const VOCAL_LABEL = "Vocal", VOCAL_GAP = 10;
+function addVocalMic(plot, pos, at){
+  let spot = at;
+  if (pos){
+    const r = roleOf(plot, pos), gear = r.gearSide === "down" ? findBackline(plot, pos, r) : null;
+    const front = gear && gear.y <= pos.y ? gear : pos;      // the keyboard only if it really is in front
+    spot = { x:pos.x, y:rectOf(front, plot).y0 - VOCAL_GAP };
+  }
+  return addMicItem(plot, spot, VOCAL_LABEL, pos ? [pos.id] : [], true);
+}
 /* Where a DI box sits when nobody has dragged it: on the stage-left side of
    the player's backline if they have one, else of the player, DI_GAP inches
    off its edge. It was 14″ until 2026-09-16, from when the label was drawn
@@ -2343,7 +2364,7 @@ function roleOptions(p, selected){
       esc(r.pick || r.label) + '</option>').join("") + '</optgroup>';
   }).join("");
 }
-function addHouse(ref){
+function addHouse(ref, opts){
   commit(() => {
     const p = plot(), labels = positionLabels(p);
     if (ref === "mic" || ref === "di"){         // at the selected player or amp, if there is one, else centre-deck
@@ -2351,6 +2372,10 @@ function addHouse(ref){
       const gear = sel && sel.kind === "house" && !["mic","di"].includes(sel.ref) ? sel : null;
       const owner = pos || (gear && ownerOf(p, gear)) || null;
       let it;
+      if (ref === "mic" && opts && opts.vocal){   // a vocal mic stands at the singer, never at their amp — even with the amp selected
+        it = addVocalMic(p, owner, freeSpot(p, p.items.length));
+        it.id = nextId("i"); S.sel = it.id; return;
+      }
       if (ref === "di" && owner){ it = addDI(p, owner, pos ? labels[pos.id].short : (itemDef(gear) || {}).short); placeDI(p, it); it.moved = true; }
       else {
         const anchor = pos || gear, f = anchor ? footprintOf(anchor, p) : null;
@@ -2469,13 +2494,25 @@ function renderPanel(p){
       '<p class="note">To attach a mic or a DI to an instrument or a piece of equipment, <b>select that player or that piece of equipment on the stage first</b>, then add the mic or DI here. ' +
       (at ? "Right now it goes to <b>" + esc(at) + "</b>." : "Nothing is selected, so it lands mid-stage, belonging to nobody.") + "</p><div class='plist'>");
     for (const h of VENUE.house.filter(h => ["mic","di"].includes(h.cat))) H.push(houseRowHTML(p, h, labels, '+ ' + esc(h.label) + (at ? ' <span class="role">at ' + esc(at) + '</span>' : "")));
-    H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. A mic lands in front of whoever was selected; drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>');
+    /* Anyone can sing. The vocal mic is a house mic like any other, so it
+       counts against the house's stock the same way and is off when none
+       are left; what it adds is the label and the spot — in front of the
+       player, never at their amp. */
+    const singer = selPos || (selItem && ownerOf(p, selItem)) || null, singerText = singer ? posText2(p, singer, labels) : null;
+    const micDef = VENUE.house.find(h => h.id === "mic"), micsLeft = houseCount(micDef) - placedCount(p, "mic");
+    H.push('<button class="pitem" data-vocal="1"' + (micsLeft <= 0 ? ' disabled title="the house has none left"' : "") + '><span>+ Vocal mic' +
+      (singerText ? ' <span class="role">for ' + esc(singerText) + '</span>' : "") + '</span><span class="ct' + (micsLeft < 0 ? " over" : "") + '">' +
+      (micsLeft < 0 ? (-micsLeft) + " over" : micsLeft === 0 ? "none left" : "a mic, labelled Vocal") + '</span></button>');
+    H.push('</div><p class="note">One mic is one stand: two trumpets sharing a mic is one mic, labelled “tpt 1+2”. A mic lands in front of whoever was selected; drag it to where the stand goes. A DI box for bass, keys and the like is placed with the player — an amp that is miked instead gets a mic at the amp.</p>' +
+      '<p class="note"><b>Anyone can sing.</b> A band needs no Voice position for its vocals: select the guitarist, the bass player or whoever sings and click <b>+ Vocal mic</b>. It stands in front of them, labelled Vocal, and the page lists it against their chair. Do it once per singer; two people on one mic is one vocal mic, dragged between them.</p>');
     const mics = micsOn(p), dis = disOn(p);
     if (mics.length || dis.length){
       H.push("<h3>On stage — " + mics.length + " mic" + (mics.length === 1 ? "" : "s") + ", " + dis.length + " DI" + (dis.length === 1 ? "" : "s") + "</h3><div class='plist'>");
-      for (const it of mics.concat(dis))
-        H.push('<div class="prow"><span class="nm">' + (it.ref === "mic" ? "Mic" : "DI") + ' <span class="role">' + esc(it.ref === "mic" ? micText(p, it, labels) : (it.label || "")) + '</span></span>' +
+      for (const it of mics.concat(dis)){
+        const own = ownerOf(p, it), whose = it.ref === "mic" && own && String(it.label || "").trim() ? " — " + posText2(p, own, labels) : "";   // a labelled mic says whose it is, as the page does: "Vocal — Gtr"; a DI's label is already the instrument
+        H.push('<div class="prow"><span class="nm">' + (it.ref === "mic" ? "Mic" : "DI") + ' <span class="role">' + esc((it.ref === "mic" ? micText(p, it, labels) : (it.label || "")) + whose) + '</span></span>' +
           '<button class="btn sm" data-wsel="' + it.id + '">edit</button><button class="btn sm x" data-idel="' + it.id + '">×</button></div>');
+      }
       H.push("</div>");
     }
   }
@@ -2517,6 +2554,7 @@ function renderPanel(p){
   el.querySelectorAll("[data-chair]").forEach(b => b.onclick = () => commit(() => { const q = plot(), pos = find(q, b.dataset.chair); if (pos) setChairs(q, pos, chairsOf(q, pos) + (+b.dataset.d)); }));
   el.querySelectorAll("[data-stand]").forEach(b => b.onclick = () => commit(() => { const q = plot(), pos = find(q, b.dataset.stand); if (pos) setStands(q, pos, standsOf(q, pos) + (+b.dataset.d)); }));
   el.querySelectorAll("[data-house]").forEach(b => b.onclick = () => addHouse(b.dataset.house));
+  el.querySelectorAll("[data-vocal]").forEach(b => b.onclick = () => addHouse("mic", { vocal:true }));
   el.querySelectorAll("[data-byo]").forEach(b => b.onclick = () => addByo(b.dataset.byo));
   el.querySelectorAll("[data-psel]").forEach(b => b.onclick = () => { S.sel = b.dataset.psel; render(); });
   el.querySelectorAll("[data-pdel]").forEach(b => b.onclick = () => commit(() => {
@@ -2920,6 +2958,7 @@ function helpSections(){
       'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI.',
       'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes.',
       'Label it — “vocal”, “tpt 1+2”, “snare”.',
+      'Anyone can sing: select the player who sings — the guitarist, the bass player, anyone — and click <b>+ Vocal mic</b>. It lands in front of them, labelled Vocal, listed against their chair. No Voice position needed.',
       'One mic is one stand, however many share it.',
       'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead. The house upright piano is miked: select it and add a mic.'])],
     ["Monitor wedges", ul([
