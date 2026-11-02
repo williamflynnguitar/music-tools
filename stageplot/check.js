@@ -815,6 +815,8 @@ for (const t of E.TEMPLATES){
   eq(E.micText(band, loose, labelsOf(band)), "Vocal", "with nobody selected a vocal mic still says Vocal…");
   eq(loose.x + "," + loose.y, "100,100", "…and lands where it is told, belonging to nobody");
   ok(/\+ Vocal mic/.test(src) && /data-vocal/.test(src), "the Mics & DIs tab offers + Vocal mic");
+  const ownerHandler = src.slice(src.indexOf('querySelectorAll("[data-owner]")'), src.indexOf("$(\"bRot\")"));
+  ok(/c\.dataset\.owner/.test(ownerHandler) && !/c\.value/.test(ownerHandler), "the inspector's Belongs to boxes read the player id from data-owner, not a value the box never had");
   ok(/Anyone can sing/.test(src), "…and says that anyone can sing, in the tab and in the help");
   ok(!/\+ mic\b|− mic\b|own channel|48V/.test(src), "…without bringing back per-player mic controls");
 }
