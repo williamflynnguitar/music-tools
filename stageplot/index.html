@@ -558,7 +558,7 @@ function kitIsByo(plot, pos){ return backlineCat(roleOf(plot, pos)) === "kit" &&
    and, optionally, the position they belong to, so they go when the player
    goes. One mic object is one physical stand: two trumpets sharing a mic is
    one mic labelled for both. Nothing is counted from anywhere else. */
-function micsOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "mic"); }
+function micsOn(plot){ return plot.items.filter(i => (i.kind === "house" && i.ref === "mic") || (i.kind === "byo" && (byoDef(i.ref) || {}).cat === "mic")); }   // the house's stands and the band's own clip-ons: each is a channel
 function disOn(plot){ return plot.items.filter(i => i.kind === "house" && i.ref === "di"); }
 function ownerOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).find(Boolean) || null; }
 function ownersOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.positions.find(p => p.id === id)).filter(Boolean); }   // every owner: a shared keyboard has two
@@ -566,7 +566,7 @@ function ownersOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.p
    placed, with the chair it belongs to. Counted from the deck, nowhere else. */
 function micList(plot){
   const labels = positionLabels(plot);
-  return micsOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim();
+  return micsOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim() || (it.kind === "byo" ? (itemDef(it) || {}).label : "");   // the band's own mic says what it is
     return { label:t || (own ? posText2(plot, own, labels) : "Mic"), who:own && t ? posText2(plot, own, labels) : "" }; });
 }
 function diList(plot){
@@ -575,10 +575,11 @@ function diList(plot){
     return { label:t || (own ? posText2(plot, own, labels) : "DI"), who:own && t ? posText2(plot, own, labels) : "" }; });
 }
 function consoleCount(plot){ return micsOn(plot).length + disOn(plot).length; }   // one channel each; the only channel arithmetic left
-function micText(plot, it, labels){          // "tpt 1+2" or, unlabelled, the owner's chair, or just "Mic"
-  const def = houseDef(it.ref), own = ownerOf(plot, it);
+function micText(plot, it, labels){          // "tpt 1+2" or, unlabelled, the owner's chair, or just "Mic"; the band's own mic says its kind
+  const def = itemDef(it) || {}, own = ownerOf(plot, it);
   const t = String(it.label || "").trim();
   if (t) return t;
+  if (it.kind === "byo") return def.short;
   return own ? posText2(plot, own, labels) : def.short;
 }
 /* A DI instrument arrives with its DI box, beside its gear — an electric
@@ -654,7 +655,33 @@ function kitLine(pos){ const t = String(pos.kitLabel || "").trim(); return t ? "
    packs — so it prints under Musicians provide. The diagram says "in-ears"
    under the chair, with the doubles and the names. */
 function iemOf(pos){ return !!pos.iem; }
-function setIem(plot, pos, on){ if (on) pos.iem = true; else delete pos.iem; }
+/* Going on in-ears takes the player's wedge away (William, 2026-11-02). A
+   wedge records nobody, so "theirs" is reconstructed: the monitor group
+   they belong to (monitorGroups(), the same grouping that dealt the
+   wedges) and the wedge nearest that group's dealt spot or the player
+   themself, within WEDGE_REACH. It goes only when nobody else in the group
+   still wants it — a wedge shared by a horn row stays until the whole row
+   is on in-ears. Going back to a wedge adds none: wedges are dealt once,
+   and + wedge on the Wedges tab is one click. Returns the wedge removed,
+   or null. */
+const WEDGE_REACH = 72;
+function wedgeFor(plot, pos){
+  const groups = monitorGroups(plot), gi = groups.findIndex(g => g.list.includes(pos));
+  if (gi < 0 || !plot.wedges.length) return null;
+  const spots = groups.map(g => wedgeSpot(plot, g.list));
+  const near = (w, i) => Math.min(Math.hypot(w.x - spots[i].x, w.y - spots[i].y), ...groups[i].list.map(p => Math.hypot(w.x - p.x, w.y - p.y)));
+  const owner = w => { let b = -1, bd = WEDGE_REACH; for (let i = 0; i < groups.length; i++){ const d = near(w, i); if (d <= bd){ bd = d; b = i; } } return b; };   // a wedge belongs to the group it is nearest — a neighbour's wedge is not this player's
+  const mine = plot.wedges.filter(w => owner(w) === gi).sort((a, b) => near(a, gi) - near(b, gi));
+  return mine.length ? { wedge:mine[0], group:groups[gi] } : null;
+}
+function setIem(plot, pos, on){
+  if (!on){ delete pos.iem; return null; }
+  pos.iem = true;
+  const hit = wedgeFor(plot, pos); if (!hit) return null;
+  if (hit.group.list.some(p => !iemOf(p))) return null;           // someone in the group still uses it
+  plot.wedges = plot.wedges.filter(w => w !== hit.wedge);
+  return hit.wedge;
+}
 function iemPlayers(plot){ return plot.positions.filter(iemOf); }
 function mixCount(plot){ return plot.wedges.length + iemPlayers(plot).length; }   // every wedge and every pack is a mix off the console
 /* The band's own gear, placed for a player: it belongs to them, so it prints
@@ -669,6 +696,7 @@ function addByoItem(plot, kind, pos, at){
   const def = byoDef(kind) || {};
   let spot = at;
   if (pos && def.cat === "misc" && /pedals/.test(kind)) spot = { x:pos.x, y:rectOf(pos, plot).y0 - PEDAL_GAP - (def.d || 12) / 2 };
+  if (pos && def.cat === "mic") spot = { x:pos.x, y:rectOf(pos, plot).y0 - VOCAL_GAP };                                   // a clip-on: at the bell, in front of the player
   const it = { id:nextIdE("i"), kind:"byo", ref:kind, label:"", x:spot.x, y:spot.y, rot:0, moved:true, ownerPositionIds:pos ? [pos.id] : [], inputs:[], notes:"" };
   plot.items.push(it);
   if (def.direct){
@@ -782,6 +810,7 @@ const BYO_KINDS = [
   { id:"byo-acoustic",label:"Acoustic guitar",short:"Ac gtr",  cat:"guitar",w:18, d:10 },
   { id:"byo-upright", label:"Upright bass",  short:"Upright",  cat:"bass",  w:24, d:24 },
   { id:"byo-misc",    label:"Misc",          short:"Misc",     cat:"misc",  w:18, d:18 },
+  { id:"byo-hornmic", label:"Horn mic (own clip-on)", short:"Horn mic", cat:"mic", w:12, d:12 },   // a player's own clip-on (William, 2026-11-02): drawn as a mic, dashed; counted with the mics, listed with what the band brings
 ];
 
 function houseDef(ref){ return VENUE.house.find(h => h.id === ref); }
@@ -1916,8 +1945,8 @@ function kitPieces(f, col, dim, fill, dashed){
 
 /* A mic on a stand, in plan: the standard stage-plot lollipop — a circle for
    the capsule with a stem for the boom. Shared by the diagram and the key. */
-function micGlyph(cx, cy, r, ink, fill){
-  return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"/>' +
+function micGlyph(cx, cy, r, ink, fill, dash){
+  return '<circle cx="' + (+cx).toFixed(1) + '" cy="' + (cy - r * .4).toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.2"' + (dash || "") + '/>' +
          '<path d="M' + (+cx).toFixed(1) + ',' + (cy + r * .6).toFixed(1) + 'v' + (r * 1.4).toFixed(1) + '" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" fill="none"/>';
 }
 /* A wedge in plan: a trapezoid whose WIDE end is the grille, where the sound
@@ -2036,7 +2065,7 @@ function diagramSVG(plot, opt){
     const f = footprintOf(it, plot), dash = it.kind === "byo" ? ' stroke-dasharray="6 4"' : "";
     const isMic = def.cat === "mic", isDI = def.cat === "di", kitItem = it.kind === "byo" && it.ref === "byo-kit", isStand = it.kind === "house" && it.ref === "musicstand";
     const hitRect = '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" fill="none" pointer-events="all"' + (bad(it) || ' stroke="none"') + '/>';   // an invisible footprint: grabbable, outlined when over the edge
-    let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), houseFill)
+    let body = isMic ? hitRect + micGlyph(0, 0, f.w * .34, stroke(it), it.kind === "byo" ? (print ? "#fff" : "#0d232b") : houseFill, dash)   // the band's own mic: dashed, like everything else it brings
       : isStand ? hitRect + '<rect x="' + (-STAND.w / 2) + '" y="-1.5" width="' + STAND.w + '" height="' + STAND.thick + '" rx="1" fill="' + ink + '"/>'   // a stand that belongs to nobody: the bar, no label — the key says what it is
       : kitItem ? hitRect
       : '<rect x="' + (-f.w/2) + '" y="' + (-f.d/2) + '" width="' + f.w + '" height="' + f.d + '" rx="2" fill="' +
@@ -2055,7 +2084,7 @@ function diagramSVG(plot, opt){
     draw(it, body);
     const px = g.sx(it.x), py = g.sy(it.y), R = rectOf(it, plot);
     const belowY = py + R.d / 2 + g.pt(DRAW.smallPt) * 1.1;   // the outside fallback: under the shape, whatever its rotation
-    const name = it.kind === "byo" ? (def.short || def.label) : isMic ? micText(plot, it, labels) : isDI ? "DI" : def.short;   // inside: the short name; dashed already says BYO
+    const name = isMic ? micText(plot, it, labels) : it.kind === "byo" ? (def.short || def.label) : isDI ? "DI" : def.short;   // inside: the short name; dashed already says BYO
     const outsideName = it.kind === "byo" ? "BYO " + def.label : name;
     let gl = "", insideFit = false;
     if (isStand){}                                                      // the bar is the label
@@ -2519,7 +2548,7 @@ function renderPanel(p){
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="-1" title="one music stand fewer"' + (standsOf(p, pos) ? "" : " disabled") + '>− stand</button>' +
         '<button class="btn sm" data-stand="' + pos.id + '" data-d="1" title="one more music stand">+ stand</button></div>' +
         '<div class="pline"><span class="ct">' + (iemOf(pos) ? "in-ears" : "wedge") + '</span>' +
-        '<button class="btn sm" data-iem="' + pos.id + '" aria-pressed="' + iemOf(pos) + '" title="this player is on in-ear monitors: their own pack, a mix from the console, no wedge">in-ears</button></div></div>');
+        '<button class="btn sm" data-iem="' + pos.id + '" aria-pressed="' + iemOf(pos) + '" title="this player is on in-ear monitors: their own pack, a mix from the console, and their wedge comes off the stage">in-ears</button></div></div>');
     }
     H.push('</div>');
   }
@@ -2533,13 +2562,14 @@ function renderPanel(p){
     const selPos = isPosition(find(p, S.sel)) ? find(p, S.sel) : null;
     for (const b of BYO_KINDS) H.push('<button class="pitem" data-byo="' + b.id + '"><span>' + esc(b.label) + (selPos ? ' <span class="role">for ' + esc(posText2(p, selPos, labels)) + '</span>' : "") + '</span></button>');
     H.push("</div><p class='note'>Select the player first and the item is theirs — it prints against their chair, and a pedalboard lands at their feet. Then select the placed item to say what it is: “Fender Twin Reverb” prints as <i>BYO: Guitar amp — Fender Twin Reverb</i>.</p>" +
+      "<p class='note'><b>Horn mic</b> is a player's own clip-on. Select the player and add it: it lands at the bell, drawn as a mic but dashed, counts as a channel with the mics, and prints under both Microphones and Musicians provide.</p>" +
       "<p class='note'><b>Pedalboard, direct to house</b> is a board or modeler that goes straight to the console with no amp. It arrives with a DI box labelled Pedals; if the board has XLR outs, select the box and delete it. Describe the board — model and outputs — once it is placed, so the tech knows what is coming down the line. The house amp stays unless you remove it: wet/dry rigs use both.</p>");
   }
   if (S.tab === "wedges"){
     H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
     const iems = iemPlayers(p);
     if (iems.length) H.push('<p class="note"><b>On in-ears:</b> ' + esc(iems.map(x => posText2(p, x, labels)).join(", ")) + ' — ' + (iems.length === 1 ? "their own pack takes a mix and needs no wedge" : "their own packs each take a mix and need no wedge") +
-      ', so this plot asks for ' + mixCount(p) + ' of ' + VENUE.monitorMixes + ' mixes. If a wedge was dealt for them, delete it. Set it per player on the Positions tab.</p>');
+      ', so this plot asks for ' + mixCount(p) + ' of ' + VENUE.monitorMixes + ' mixes. Their wedge went when they went on in-ears; one they share with players still on wedges stays. Set it per player on the Positions tab.</p>');
     const clashes = wedgeClashes(p), clashOf = w => clashes.find(c => c.wedges.includes(w));
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
       const c = clashOf(w);
@@ -2723,7 +2753,7 @@ function renderInspector(p){
       '<button class="btn sm" data-stand="' + sel.id + '" data-d="-1"' + (ns ? "" : " disabled") + '>− stand</button><button class="btn sm" data-stand="' + sel.id + '" data-d="1">+ stand</button></div></div>');
     H.push('<div class="fld"><span class="lbl">Monitor</span><div class="seg2">' +
       '<button class="btn sm" data-iem="wedge" aria-pressed="' + !iemOf(sel) + '">Wedge<span>a house wedge, placed on the Wedges tab</span></button>' +
-      '<button class="btn sm" data-iem="iem" aria-pressed="' + iemOf(sel) + '">In-ears<span>own pack; a mix from the console, no wedge</span></button></div></div>');
+      '<button class="btn sm" data-iem="iem" aria-pressed="' + iemOf(sel) + '">In-ears<span>own pack; a mix from the console; their wedge comes off</span></button></div></div>');
     H.push('<div class="fld"><label>Name(s) — optional, one per occupant</label><input type="text" id="iNames" placeholder="e.g. Sam Ortiz / Dana Bell"></div>');
     H.push('<div class="fld"><span class="lbl">Doubles</span>');
     (sel.doubles || []).forEach((d, i) => H.push('<div class="inputrow" style="grid-template-columns:1fr auto"><span>' +
@@ -3094,7 +3124,8 @@ function helpSections(){
     ["What the band brings", ul([
       'Select the player first, then the item on <b>Band brings</b>: it is theirs, prints against their chair, and goes when they go. A pedalboard lands at their feet.',
       'Select the placed item to describe it — the model, and for a board its outputs. The description prints after the kind: <i>Pedalboard, direct to house — HX Stomp, stereo XLR</i>.',
-      '<b>Pedalboard, direct to house</b> is a board or modeler that runs straight to the console with no amp. It arrives with a DI box labelled Pedals; delete the box if the board has XLR outs. The house amp stays unless you remove it.'])],
+      '<b>Pedalboard, direct to house</b> is a board or modeler that runs straight to the console with no amp. It arrives with a DI box labelled Pedals; delete the box if the board has XLR outs. The house amp stays unless you remove it.',
+      '<b>Horn mic</b> is a player\'s own clip-on: select the player and add it, and it lands at the bell, dashed. It counts as a channel with the mics and prints under both Microphones and Musicians provide.'])],
     ["Microphones", ul([
       'To attach a mic or a DI to an instrument or a piece of equipment, select that player or that piece of equipment on the stage first, then add the mic or DI.',
       'Every mic is an object on the stage: select the player (or the amp), open <b>Mics &amp; DIs</b>, click <b>+ Mic</b>, and drag it to where the stand goes.',
@@ -3104,7 +3135,7 @@ function helpSections(){
       'Bass, keys and the like arrive with a DI box; an amp you want miked gets a mic at the amp instead. The house upright piano is miked: select it and add a mic.'])],
     ["Monitor wedges", ul([
       'Place each wedge where it goes.',
-      'A player on in-ear monitors gets no wedge: press <b>in-ears</b> on their card (Positions tab) or in the panel under the stage. They bring the pack; the console gives them a mix, which counts toward the room\'s five. The page lists them under Monitors as in-ears and the pack under Musicians provide.',
+      'A player on in-ear monitors gets no wedge: press <b>in-ears</b> on their card (Positions tab) or in the panel under the stage, and their wedge comes off the stage — unless they share it with someone still on a wedge, when it stays until everyone on it is on in-ears. They bring the pack; the console gives them a mix, which counts toward the room\'s five. The page lists them under Monitors as in-ears and the pack under Musicians provide. Back to a wedge is <b>+ wedge</b> on the Wedges tab.',
       'The wide end with the lines is the grille, where the sound comes out; every wedge is placed with it facing the players it serves — a downstage wedge faces upstage, a wedge beside a section faces into it.',
       'Its number is the mix, and mix 1 is the tech\'s first priority — double-click a wedge on the stage and type a number to renumber it, or type it on the <b>Wedges</b> tab.',
       'Anything you must say ahead of time goes in the notes on <b>Details</b>; what goes in each mix is settled at soundcheck.'])],

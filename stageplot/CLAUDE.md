@@ -567,9 +567,16 @@ the console, so `mixCount()` — wedges plus packs — is what the meta row and
 the over-count warning read against `VENUE.monitorMixes`; the Monitors table
 prints an *in-ears* row per player after the wedge rows; the diagram says
 *in-ears* under the chair with the doubles and the names; and the Wedges
-tab lists who is on them. Wedges are still dealt once and record nobody, so
-a wedge dealt for a player who then goes on in-ears is not removed — the
-tab says to delete it. The deferred item was "per-person monitor requests
+tab lists who is on them. **Going on in-ears takes the player's wedge off
+the stage** (William, the same day: "delete their wedge automatically").
+A wedge records nobody, so `wedgeFor()` reconstructs whose it is: the
+player's group in `monitorGroups()` — the grouping that dealt the wedges —
+and the wedge nearest that group's `wedgeSpot()` or the player, within
+`WEDGE_REACH` (72″); a wedge dragged further than that is not assumed to be
+theirs. It goes only when nobody in the group still uses it, so a horn
+row's shared wedge stays until the whole row is on in-ears. Going back to
+a wedge adds none — wedges are dealt once, and + wedge is one click; undo
+covers a slip. The deferred item was "per-person monitor requests
 for IEMs"; this is the IEM, not the request — what goes in the mix is still
 settled at soundcheck.
 
@@ -583,6 +590,16 @@ The house amp stays: a wet/dry rig uses both, and taking the amp away
 is one click. The description is the item's `label`, the same field
 every band-brought item has; the inspector labels it "model and outputs"
 and prints as *Pedalboard, direct to house — HX Stomp, stereo XLR — Gtr*.
+
+**Horn mic** (`byo-hornmic`, `cat:"mic"`) is a player's own clip-on, the
+one band-brought kind that is a mic: `micsOn()` counts it with the house
+stands (each is a channel), `micText()` names it by its kind, `micList()`
+prints it under Microphones as *Horn mic (own clip-on) — Tpt 1* and
+`byoList()` under Musicians provide as well, and it never counts against
+the house's eight. Drawn as the mic glyph, dashed, placed at the bell —
+`VOCAL_GAP` in front of the player — when the player is selected. The
+inside-fit check skips mic kinds, since a mic's label sits below the
+capsule like the house's.
 
 **Band-brought gear is placed for the selected player** (`addByoItem()`):
 select the player, then the kind, and the item is theirs — it prints
@@ -877,14 +894,16 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 700 assertions: the role library, every template (builds,
+`node check.js` — 724 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, a vocal mic for any
 player (labelled Vocal, at the player and not their amp, in front of a keys
 player's keyboard, listed against the chair), the rubber-band group
 selection's hit test, in-ears per player and the direct-to-house
-pedalboard with its DI box, the layout engine's
+pedalboard with its DI box, a player's wedge going when they go on
+in-ears (and a shared one staying), the band's own horn mic, the layout
+engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,
 backline by category (two guitarists on two amps, five on an amber over-count

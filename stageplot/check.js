@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, wedgeFor, WEDGE_REACH, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -845,17 +845,43 @@ for (const t of E.TEMPLATES){
   const band = T("rock"), labels = labelsOf(band), gtr = band.positions.find(x => x.roleId === "guitar"), keys = band.positions.find(x => x.roleId === "keys");
   const w0 = band.wedges.length, saved = JSON.stringify(band);
   ok(!E.iemOf(gtr) && E.iemPlayers(band).length === 0, "nobody is on in-ears until someone is put there");
-  E.setIem(band, gtr, true);
+  ok(E.byoList(band).length === 0 || !E.byoList(band).some(b => /In-ear/.test(b.what)), "no pack listed before anyone is on in-ears");
+  const theirs = E.wedgeFor(band, gtr);
+  ok(theirs && theirs.group.list.length === 1 && theirs.group.list[0] === gtr, "the guitarist's wedge is found again from the monitor group that dealt it");
+  const gone = E.setIem(band, gtr, true);
   ok(E.iemOf(gtr) && gtr.iem === true, "in-ears is a flag on the player");
-  eq(E.mixCount(band), w0 + 1, "…and a pack is a mix off the console, counted with the wedges");
+  ok(gone === theirs.wedge && !band.wedges.includes(gone), "…and going on in-ears takes that wedge off the stage");
+  eq(band.wedges.length, w0 - 1, "…one wedge fewer");
+  eq(E.mixCount(band), w0, "…so the mix count is unchanged: the pack took the wedge's mix");
   const mon = E.monitorTable(band);
-  eq(mon.rows.length, w0, "the Monitors table keeps its wedge rows…");
+  eq(mon.rows.length, w0 - 1, "the Monitors table drops the wedge row…");
   eq(mon.iems.map(r => r.who).join("|"), "Gtr", "…and adds an in-ears row for the player");
   ok(E.byoList(band).some(b => /In-ear monitor pack/.test(b.what) && b.who === "Gtr"), "the pack is the player's own, under Musicians provide");
   ok(E.posShortLines(band, gtr, labels).some(l => l.text === "in-ears"), "the diagram says in-ears under the chair");
-  E.setIem(band, gtr, false);
-  ok(!("iem" in gtr) && JSON.stringify(band) === saved, "turning it off removes the field, so an untouched plot saves byte-identical");
+  eq(E.setIem(band, gtr, false), null, "back to a wedge adds none — wedges are dealt once, + wedge is one click");
+  eq(band.wedges.length, w0 - 1, "…so the count stays");
+  ok(!("iem" in gtr), "turning it off removes the field");
+  // a shared wedge stays until the whole group is on in-ears
+  const bb = T("bigband"), sax1 = bb.positions.find(x => E.roleOf(bb, x).family === "sax");
+  const shared = E.wedgeFor(bb, sax1);
+  ok(shared && shared.group.list.length > 1, "in a big band the saxes share a wedge: " + (shared || {}).group?.name);
+  const wb = bb.wedges.length, row = shared.group.list;
+  for (const x of row.slice(0, -1)) E.setIem(bb, x, true);
+  eq(bb.wedges.length, wb, "a section's wedge stays while one of them is still on it");
+  ok(E.setIem(bb, row[row.length - 1], true) === shared.wedge, "…and goes with the last of them");
+  eq(bb.wedges.length, wb - 1, "…one wedge fewer");
+  const far = T("rock"), fk = far.positions.find(x => x.roleId === "keys"), fw = E.wedgeFor(far, fk).wedge;
+  fw.x = 2; fw.y = far.deck.depthFt * 12 - 2; fw.moved = true;
+  ok(E.setIem(far, fk, true) === null && far.wedges.includes(fw), "a wedge dragged far from its player and its dealt spot is not assumed to be theirs");
+  const nb = T("rock"), nk = nb.positions.find(x => x.roleId === "keys"), nbass = nb.positions.find(x => x.roleId === "bass");
+  const kw = E.wedgeFor(nb, nk).wedge, bw = E.wedgeFor(nb, nbass).wedge;
+  ok(kw !== bw, "the keys player's wedge and the bass player's are different wedges");
+  E.setIem(nb, nk, true);
+  ok(!nb.wedges.includes(kw) && nb.wedges.includes(bw), "…and the keys player going on in-ears takes theirs, not the bass player's");
+  { const fresh = T("rock"), j = JSON.stringify(fresh); E.setIem(fresh, fresh.positions[0], false); ok(JSON.stringify(fresh) === j, "…so a plot that never used it saves byte-identical"); }
   const heavy = T("rock"); for (const x of heavy.positions) E.setIem(heavy, x, true);
+  eq(heavy.wedges.length, 0, "everyone on in-ears leaves no wedge on the stage");
+  heavy.wedges = T("rock").wedges;   // hand-placed extras on top of five packs
   ok(E.mixCount(heavy) > E.VENUE.monitorMixes && E.warnings(heavy).some(w => /in-ears/.test(w.text) && /mixes/.test(w.text)), "five wedges plus five packs is more mixes than the room runs, and the warning says so: " + (E.warnings(heavy)[0] || {}).text);
   ok(E.stepDone(heavy, "wedges") && E.stepDone(Object.assign(T("rock"), { wedges:[] }), "wedges") === false, "a plot with in-ears players has its monitors step started");
 
@@ -879,6 +905,21 @@ for (const t of E.TEMPLATES){
   const loose = E.addByoItem(band, "byo-pedals-direct", null, { x:50, y:50 });
   ok(loose.ownerPositionIds.length === 0 && E.disOn(band).filter(d => d.label === "Pedals").length === 2 && E.disOn(band).every(d => !d.ownerPositionIds.includes(null)), "with nobody selected the board and its box belong to nobody");
   ok(/data-iem/.test(src) && /byo-pedals-direct/.test(src) && /Line 6 HX Stomp, stereo XLR out/.test(src), "the Positions tab and the inspector offer in-ears; the direct board's description field says what to write");
+
+  // a player's own horn mic
+  const horn = E.byoDef("byo-hornmic");
+  ok(horn && horn.cat === "mic", "the band can bring a horn mic");
+  const funk = T("combo"), tpt = funk.positions.find(x => x.roleId === "trumpet"), m0 = E.micsOn(funk).length;
+  const hm = E.addByoItem(funk, "byo-hornmic", tpt, { x:0, y:0 });
+  ok(hm.kind === "byo" && hm.ownerPositionIds[0] === tpt.id && Math.abs(hm.x - tpt.x) < .5 && hm.y < E.rectOf(tpt, funk).y0, "placed for the trumpet it is theirs, at the bell");
+  eq(E.micsOn(funk).length, m0 + 1, "…counted with the mics");
+  eq(E.consoleCount(funk), m0 + 1 + E.disOn(funk).length, "…one channel");
+  eq(E.micText(funk, hm, labelsOf(funk)), "Horn mic", "…drawn as Horn mic");
+  const ml = E.micList(funk).find(m => /Horn mic/.test(m.label));
+  ok(ml && ml.who === "Tpt", "…listed under Microphones against the chair: " + (ml || {}).label + " — " + (ml || {}).who);
+  ok(E.byoList(funk).some(b => /Horn mic/.test(b.what) && b.who === "Tpt"), "…and under Musicians provide");
+  ok(E.legendKeys(funk).some(k => k.id === "mic") && E.legendKeys(funk).some(k => k.id === "byo"), "the key shows a mic and the dashed band-brought swatch");
+  ok(!E.houseNeeds(funk).mic, "…and it never counts against the house's mics");
 }
 
 /* ---- 19e. mics and DI boxes are objects on the deck (C1/C2, Tim Shade 2026-09-16) ---- */
@@ -1291,7 +1332,7 @@ for (const t of E.TEMPLATES){
   ok(/gl = ts\("DI", px, py \+ g\.pt\(fit\.pt\) \* \.36, fit\.pt, "dim"\); insideFit = true;/.test(src) && /"DI" \+ \(String\(it\.label \|\| ""\)\.trim\(\) \? " · "/.test(src),
      "DI reads inside the box; far from any source it says which, outside");
   ok(!/labelAngle\(it\.rot\)/.test(src), "gear labels stay upright, whatever the rotation");
-  const byoFits = E.BYO_KINDS.filter(b => b.id !== "byo-kit").map(b => [b.short, !!E.fitLabel(g, b.short, b.w - 2, b.d - 2, 9.5)]);
+  const byoFits = E.BYO_KINDS.filter(b => b.id !== "byo-kit" && b.cat !== "mic").map(b => [b.short, !!E.fitLabel(g, b.short, b.w - 2, b.d - 2, 9.5)]);   // a mic's label sits below the capsule, like the house's
   eq(byoFits.filter(x => !x[1]).map(x => x[0]).join(","), "Laptop,Ac gtr", "the band-brought palette holds its names inside, but for the laptop and the acoustic guitar (logged fallbacks)");
   const amp = bb.items.find(i => E.refCat(i.ref) === "gtramp"), ab = E.insideBox(amp, bb);
   ok(E.fitLabel(g, "VOX", ab.w, ab.h, 9.5) !== null && E.fitLabel(g, "Deluxe", ab.w - 2, ab.h - 1, 9.5) !== null, "VOX and Deluxe fit inside their amps — the short names are what the shape holds");
