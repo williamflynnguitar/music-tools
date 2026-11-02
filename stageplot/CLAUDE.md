@@ -530,6 +530,31 @@ hand-labelled "vocal" mic is unaffected. The "no per-player mic controls"
 check (B1) still holds: the control lives on the Mics & DIs tab, after a
 selection, like every other mic.
 
+## Moving several things at once (2026-11-02)
+
+**Drag a box on empty deck and everything it touches is picked** (William:
+"click drag to highlight multiple objects to move them all"). The group is
+`S.multi`, a list of ids kept beside `S.sel`, which stays the one object the
+inspector and the tabs read — so nothing that reads the selection had to
+change, and a group has no inspector. `isSel()` is what the diagram marks in
+brass; `selectedIds()` is what the keyboard acts on. A box that touches one
+thing is an ordinary selection; a press on empty deck with no drag still
+means "select nothing". `marqueeHits()` picks by footprint overlap
+(`rectOf`), a text label by its point. Shift-click adds an object to the
+group or takes it out. Dragging any member drags them all: the pressed
+object is the one that snaps to the 6″ grid, the rest keep their offsets
+from it, the move is refused if any of them would land on the PA or the
+stairs, and one undo step covers the lot. Arrows nudge the group, Delete
+removes it (a position still takes its gear), Escape or a click anywhere
+else lets go. R turns only a single selection — spinning each member about
+its own centre is not what anyone means by rotating a group. A plain click
+on anything replaces the group (`render()` enforces it: a `S.sel` set
+anywhere, by any tab button, clears a group it is not part of); undo and
+redo clear it too, and `render()` drops ids that no longer exist. The ⊗
+delete handle draws only for a single selection. The band is an SVG rect
+appended to the stage for the drag and removed on release; the stage is
+not re-rendered until the pointer comes up.
+
 ## Music stands (2026-09-16)
 
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
@@ -816,12 +841,13 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 672 assertions: the role library, every template (builds,
+`node check.js` — 679 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, a vocal mic for any
 player (labelled Vocal, at the player and not their amp, in front of a keys
-player's keyboard, listed against the chair), the layout engine's
+player's keyboard, listed against the chair), the rubber-band group
+selection's hit test, the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,
 backline by category (two guitarists on two amps, five on an amber over-count

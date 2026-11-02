@@ -821,6 +821,25 @@ for (const t of E.TEMPLATES){
   ok(!/\+ mic\b|− mic\b|own channel|48V/.test(src), "…without bringing back per-player mic controls");
 }
 
+/* ---- 19d2. a group selection: drag a box, move them all (William, 2026-11-02) ---- */
+{
+  const M = new Function("rectOf", src.slice(src.indexOf("function marqueeHits("), src.indexOf("document.addEventListener(\"keydown\"", src.indexOf("function marqueeHits("))) +
+    "; return marqueeHits;")(E.rectOf);   // the function reads rectOf from scope; hand it the engine's
+  const combo = T("combo"), labels = labelsOf(combo), gtr = combo.positions.find(x => x.roleId === "guitar");
+  const amp = combo.items.find(i => (i.ownerPositionIds || []).includes(gtr.id) && i.ref !== "di" && i.ref !== "mic");
+  const r1 = E.rectOf(gtr, combo), r2 = E.rectOf(amp, combo);
+  const box = { x0:Math.min(r1.x0, r2.x0) - 2, x1:Math.max(r1.x1, r2.x1) + 2, y0:Math.min(r1.y0, r2.y0) - 2, y1:Math.max(r1.y1, r2.y1) + 2 };
+  const hits = M(combo, box);
+  ok(hits.includes(gtr.id) && hits.includes(amp.id), "a box drawn round the guitarist and their amp picks both");
+  const graze = { x0:r1.x1 - 2, x1:r1.x1 + 30, y0:r1.y0, y1:r1.y1 };
+  ok(M(combo, graze).includes(gtr.id), "…touching a footprint is enough: the band needn't enclose it");
+  eq(M(combo, { x0:-40, x1:-10, y0:-40, y1:-10 }).length, 0, "…and a box over nothing picks nothing");
+  combo.items.push({ id:"lbl1", kind:"label", label:"stage box", x:50, y:50, rot:0, moved:true, ownerPositionIds:[] });
+  ok(M(combo, { x0:45, x1:55, y0:45, y1:55 }).includes("lbl1") && !M(combo, { x0:60, x1:70, y0:45, y1:55 }).includes("lbl1"), "a text label is picked by its point");
+  ok(/S\.multi/.test(src) && /setAttribute\("class", "marquee"\)/.test(src) && /e\.shiftKey && !S\.readOnly/.test(src), "the canvas keeps a group (S.multi), draws the band, and shift-click edits the group");
+  ok(/To move several at once, drag a box across empty deck/.test(src), "…and the help says how");
+}
+
 /* ---- 19e. mics and DI boxes are objects on the deck (C1/C2, Tim Shade 2026-09-16) ---- */
 {
   eq(E.VENUE.house.find(h => h.id === "mic").label, "Mic (on stand)", "one mic object, on a stand");
@@ -1019,7 +1038,8 @@ for (const t of E.TEMPLATES){
   const walker = E.addPosition(p, "voice");
   ok(E.onFixture(p, walker, 6, 96) && E.onFixture(p, walker, 282, 207) && E.onFixture(p, walker, 24, 12), "a player dropped on the stairs or the PA is refused");
   ok(!E.onFixture(p, walker, 144, 120), "…and the middle of the deck is fine");
-  ok(/onFixture\(p, obj, x, y\)\) return;/.test(src) && /onFixture\(p, sel, sel\.x \+ dx, sel\.y \+ dy\)\) return;/.test(src), "…both the drag and the arrow keys check it");
+  ok(/group\.some\(o => o\.kind !== "label" && onFixture\(p, o, origin\.get\(o\.id\)\.x \+ dx, origin\.get\(o\.id\)\.y \+ dy\)\)\) return;/.test(src) &&
+     /group\.some\(o => o\.kind !== "label" && onFixture\(p, o, o\.x \+ dx, o\.y \+ dy\)\)\) return;/.test(src), "…both the drag and the arrow keys check it, for every member of a group");
   for (const t of E.TEMPLATES){
     const q = T(t.id), hits = collisions(q).hard.filter(h => /fixture/.test(h));
     ok(hits.length === 0, t.name + ": nothing is laid out on the PA or the stairs" + (hits.length ? ": " + hits.join("; ") : ""));

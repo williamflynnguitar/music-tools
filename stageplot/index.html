@@ -140,6 +140,7 @@ svg.deck .hit{cursor:grab}
 svg.deck g.sel rect,svg.deck g.sel circle,svg.deck g.sel path{stroke:var(--brass);stroke-width:2.4}
 svg.deck g.sel text{fill:var(--brass)}
 svg.deck .hit:active{cursor:grabbing}
+svg.deck rect.marquee{fill:rgba(201,162,74,.12);stroke:var(--brass);stroke-width:1;stroke-dasharray:4 3;pointer-events:none}
 svg.deck .delx{cursor:pointer}
 svg.deck .delx:hover circle{fill:#d4715f}
 .inspector{margin-top:12px;border:1px solid var(--line);border-radius:5px;padding:10px 12px}
@@ -1807,7 +1808,13 @@ function migratePlot(p){
 </script>
 <script>
 /* ================= session state ================= */
-const S = { plots:[], active:0, tab:"positions", sel:null, snap:true, readOnly:false, undo:[], redo:[] };
+const S = { plots:[], active:0, tab:"positions", sel:null, multi:[], snap:true, readOnly:false, undo:[], redo:[] };
+/* sel is the one selected object — the inspector and the tabs read it.
+   multi is a group picked by dragging a box on empty deck or shift-clicking
+   (2026-11-02): drag any member and they all move, arrows nudge them all,
+   Delete removes them all. A plain click on anything replaces the group. */
+const isSel = id => S.sel === id || S.multi.includes(id);
+const selectedIds = () => S.multi.length ? S.multi.slice() : S.sel ? [S.sel] : [];
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 const plot = () => S.plots[S.active];
@@ -1826,7 +1833,7 @@ function commit(fn){                                   // every mutation goes th
 }
 function undo(){ if (!S.undo.length) return; const now = snapshot(); S.redo.push(now); restore(S.undo.pop()); }
 function redo(){ if (!S.redo.length) return; const now = snapshot(); S.undo.push(now); restore(S.redo.pop()); }
-function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migratePlot); S.active = Math.min(o.active, S.plots.length - 1); S.sel = null; render(); }
+function restore(json){ const o = JSON.parse(json); S.plots = o.plots.map(migratePlot); S.active = Math.min(o.active, S.plots.length - 1); S.sel = null; S.multi = []; render(); }
 
 /* ================= the stage diagram ================= */
 /* A drum kit in plan view, drawn to whatever footprint the role carries
@@ -1922,7 +1929,7 @@ function diagramSVG(plot, opt){
      the grab hand across it and dragging the name drags the player. Absolute
      coordinates, so the drag handler shifts it by a delta (data-abs). */
   const labelled = (obj, px, py, inner) => P.push(print ? inner :
-    '<g class="hit' + (S.sel === obj.id ? " sel" : "") + '" data-id="' + obj.id + '" data-abs="1" data-sx="' +
+    '<g class="hit' + (isSel(obj.id) ? " sel" : "") + '" data-id="' + obj.id + '" data-abs="1" data-sx="' +
     px.toFixed(1) + '" data-sy="' + py.toFixed(1) + '">' + inner + '</g>');
 
   // deck, grid, fixed context
@@ -1967,12 +1974,12 @@ function diagramSVG(plot, opt){
   const clashing = new Set(wedgeClashes(plot).flatMap(c => c.wedges.map(w => w.id)));   // two wedges on one mix number: both outlined red
   const bad = obj => offDeck(obj, plot) || clashing.has(obj.id) ? ' stroke="#c0392b" stroke-width="2.4"' : "";
   const draw = (obj, body) => {
-    const sel = !print && S.sel === obj.id;
+    const sel = !print && isSel(obj.id);
     P.push('<g transform="translate(' + g.sx(obj.x).toFixed(1) + ',' + g.sy(obj.y).toFixed(1) + ') rotate(' + (obj.rot || 0) + ')"' +
       (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '" data-rot="' + (obj.rot || 0) + '"') + '>' + body + '</g>');
   };
-  const stroke = obj => (!print && S.sel === obj.id) ? "#c9a24a" : ink;
-  const swid = obj => (!print && S.sel === obj.id) ? 2.5 : 1.3;
+  const stroke = obj => (!print && isSel(obj.id)) ? "#c9a24a" : ink;
+  const swid = obj => (!print && isSel(obj.id)) ? 2.5 : 1.3;
 
   // wedges first, so people and gear sit on top
   for (const w of plot.wedges){
@@ -2230,6 +2237,8 @@ function render(opt){
   $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
   renderTabs();
   if (!p){ $("warns").innerHTML = ""; $("sheet").innerHTML = ""; $("panel").innerHTML = ""; $("canvashead").innerHTML = ""; return; }
+  S.multi = S.multi.filter(id => find(p, id));                       // whatever was deleted or undone away is out of the group
+  if (S.sel && !S.multi.includes(S.sel)) S.multi = [];               // a selection made anywhere else replaces the group
   renderWarnings(p);
   renderCanvas(p);
   renderSheet(p);
@@ -2267,7 +2276,7 @@ function renderCanvas(p){
     };
   }
   $("deck").outerHTML = diagramSVG(p, { mode:"screen" }).replace("<svg ", '<svg class="deck" id="deck" ');
-  $("legendnote").textContent = "The audience is at the bottom, and stage left and right are the performer's. Click a palette item to place it, drag to move. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
+  $("legendnote").textContent = "The audience is at the bottom, and stage left and right are the performer's. Click a palette item to place it, drag to move. Drag a box on empty deck (or shift-click) to pick several, then drag any one of them to move them all. Arrows nudge, R rotates 45° (shift-R back). To remove something, select it and click its ⊗ or press Delete.";
   if (!S.readOnly) wireCanvas();
 }
 /* The plot's own read-only link, for the printed page: this one plot, as it
@@ -2798,10 +2807,51 @@ function wireCanvas(){
   svg.addEventListener("pointerdown", e => {
     const del = e.target.closest("g[data-del]");
     if (del){ e.preventDefault(); commit(() => removeObject(plot(), del.dataset.del)); return; }
+    const p = plot(), D = deckIn(p), geo = diagramGeom(p);
+    const pt = svg.createSVGPoint();
+    const toSvg = ev => { pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+    const toDeck = ev => { const q = toSvg(ev); return { x:D.w - (q.x - geo.M), y:D.d - (q.y - geo.M) }; };
+    const listen = (move, up) => {
+      const done = ev => { svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", done); svg.removeEventListener("pointercancel", done); up(ev); };
+      svg.setPointerCapture(e.pointerId);
+      svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", done); svg.addEventListener("pointercancel", done);
+    };
     const g = e.target.closest("g[data-id]");
-    if (!g){ if (S.sel){ S.sel = null; render(); } lastPress = { id:null, t:0 }; return; }
-    const p = plot(), id = g.dataset.id, obj = find(p, id);
+    if (!g){
+      /* Empty deck. A press is "select nothing"; a drag is a rubber band
+         that picks every object it touches (2026-11-02). */
+      lastPress = { id:null, t:0 };
+      if (S.readOnly){ if (S.sel || S.multi.length){ S.sel = null; S.multi = []; render(); } return; }
+      const s0 = toSvg(e), d0 = toDeck(e);
+      let band = null;
+      const move = ev => {
+        const s1 = toSvg(ev);
+        if (!band){
+          if (Math.hypot(s1.x - s0.x, s1.y - s0.y) < 3) return;
+          band = document.createElementNS("http://www.w3.org/2000/svg", "rect"); band.setAttribute("class", "marquee"); svg.appendChild(band);
+        }
+        band.setAttribute("x", Math.min(s0.x, s1.x)); band.setAttribute("y", Math.min(s0.y, s1.y));
+        band.setAttribute("width", Math.abs(s1.x - s0.x)); band.setAttribute("height", Math.abs(s1.y - s0.y));
+      };
+      const up = ev => {
+        if (!band){ if (S.sel || S.multi.length){ S.sel = null; S.multi = []; render(); } return; }
+        band.remove();
+        const d1 = toDeck(ev), box = { x0:Math.min(d0.x, d1.x), x1:Math.max(d0.x, d1.x), y0:Math.min(d0.y, d1.y), y1:Math.max(d0.y, d1.y) };
+        const ids = marqueeHits(p, box);
+        S.sel = ids.length === 1 ? ids[0] : null; S.multi = ids.length > 1 ? ids : [];
+        render();
+      };
+      listen(move, up);
+      return;
+    }
+    const id = g.dataset.id, obj = find(p, id);
     if (!obj) return;
+    if (e.shiftKey && !S.readOnly){                      // shift-click: in or out of the group, no drag
+      e.preventDefault(); lastPress = { id:null, t:0 };
+      const cur = selectedIds(), ids = cur.includes(id) ? cur.filter(x => x !== id) : cur.concat([id]);
+      S.sel = ids.length === 1 ? ids[0] : null; S.multi = ids.length > 1 ? ids : [];
+      render(); return;
+    }
     const now = performance.now(), twice = lastPress.id === id && now - lastPress.t < 450;
     lastPress = { id, t:now };
     if (twice && !obj.kind && !isPosition(obj) && !S.readOnly){   // a wedge pressed twice: renumber it in place
@@ -2809,37 +2859,55 @@ function wireCanvas(){
       editWedgeOnStage(svg.querySelector('g[data-id="' + id + '"]:not([data-abs])') || g, obj);
       return;
     }
-    S.sel = id;
-    svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
-    svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => el.classList.add("sel"));
-    renderInspector(p);
-    const before = snapshot(), D = deckIn(p), geo = diagramGeom(p);
-    const pt = svg.createSVGPoint();
-    const toDeck = ev => { pt.x = ev.clientX; pt.y = ev.clientY; const q = pt.matrixTransform(svg.getScreenCTM().inverse());
-      return { x:D.w - (q.x - geo.M), y:D.d - (q.y - geo.M) }; };
+    /* Pressing a member of the group drags the group; pressing anything
+       else makes it the one selection. Either way the pressed object is
+       the one that snaps, and the rest keep their offsets from it. */
+    const inGroup = S.multi.includes(id);
+    if (!inGroup){
+      S.sel = id; S.multi = [];
+      svg.querySelectorAll("g.sel").forEach(el => el.classList.remove("sel"));
+      svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => el.classList.add("sel"));
+      renderInspector(p);
+    }
+    const group = (inGroup ? S.multi : [id]).map(i => find(p, i)).filter(Boolean);
+    const origin = new Map(group.map(o => [o.id, { x:o.x, y:o.y }]));
+    const before = snapshot();
     const start = toDeck(e), ox = obj.x, oy = obj.y;
     let moved = false;
+    const place = (o, x, y) => {
+      o.x = x; o.y = y;
+      const nx = geo.sx(x), ny = geo.sy(y);
+      svg.querySelectorAll('[data-id="' + o.id + '"]').forEach(el => {
+        if (el.dataset.abs) el.setAttribute("transform", "translate(" + (nx - el.dataset.sx).toFixed(1) + "," + (ny - el.dataset.sy).toFixed(1) + ")");
+        else el.setAttribute("transform", "translate(" + nx.toFixed(1) + "," + ny.toFixed(1) + ") rotate(" + (o.rot || 0) + ")");
+      });
+    };
     const move = ev => {
       const q = toDeck(ev);
       let x = ox + (q.x - start.x), y = oy + (q.y - start.y);
       if (S.snap){ x = Math.round(x / 6) * 6; y = Math.round(y / 6) * 6; }
       if (Math.abs(x - obj.x) < .01 && Math.abs(y - obj.y) < .01) return;
-      if (obj.kind !== "label" && onFixture(p, obj, x, y)) return;   // the PA and the stairs are not floor
-      obj.x = x; obj.y = y; moved = true;
-      const nx = geo.sx(x), ny = geo.sy(y);
-      svg.querySelectorAll('[data-id="' + id + '"]').forEach(el => {
-        if (el.dataset.abs) el.setAttribute("transform", "translate(" + (nx - el.dataset.sx).toFixed(1) + "," + (ny - el.dataset.sy).toFixed(1) + ")");
-        else el.setAttribute("transform", "translate(" + nx.toFixed(1) + "," + ny.toFixed(1) + ") rotate(" + (obj.rot || 0) + ")");
-      });
+      const dx = x - ox, dy = y - oy;
+      if (group.some(o => o.kind !== "label" && onFixture(p, o, origin.get(o.id).x + dx, origin.get(o.id).y + dy))) return;   // the PA and the stairs are not floor — for any of them
+      for (const o of group) place(o, origin.get(o.id).x + dx, origin.get(o.id).y + dy);
+      moved = true;
     };
     const up = () => {
-      svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); svg.removeEventListener("pointercancel", up);
-      if (moved){ obj.moved = true; S.undo.push(before); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; }
+      if (moved){ for (const o of group) o.moved = true; S.undo.push(before); if (S.undo.length > 50) S.undo.shift(); S.redo.length = 0; }
       render();
     };
-    svg.setPointerCapture(e.pointerId);
-    svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
+    listen(move, up);
   });
+}
+/* Everything the rubber band touches: a footprint that overlaps the box, or
+   a text label whose point is inside it. */
+function marqueeHits(p, box){
+  const hit = o => {
+    if (o.kind === "label") return o.x >= box.x0 && o.x <= box.x1 && o.y >= box.y0 && o.y <= box.y1;
+    const r = rectOf(o, p);
+    return Math.min(r.x1, box.x1) - Math.max(r.x0, box.x0) > 0 && Math.min(r.y1, box.y1) - Math.max(r.y0, box.y0) > 0;
+  };
+  return p.positions.concat(p.items, p.wedges).filter(hit).map(o => o.id);
 }
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && !$("helpDlg").hidden){ $("helpDlg").hidden = true; return; }
@@ -2847,16 +2915,17 @@ document.addEventListener("keydown", e => {
   const meta = e.metaKey || e.ctrlKey;
   if (meta && e.key.toLowerCase() === "z"){ e.preventDefault(); if (e.target.blur) e.target.blur(); e.shiftKey ? redo() : undo(); return; }
   if (typing || S.readOnly || !plot()) return;
-  const p = plot(), sel = find(p, S.sel); if (!sel) return;
+  const p = plot(), group = selectedIds().map(id => find(p, id)).filter(Boolean), sel = group.length === 1 ? group[0] : null;
+  if (!group.length) return;
   const step = e.shiftKey ? 12 : (S.snap ? 6 : 1);
-  const nudge = (dx, dy) => { e.preventDefault(); if (sel.kind !== "label" && onFixture(p, sel, sel.x + dx, sel.y + dy)) return; commit(() => { sel.x += dx; sel.y += dy; sel.moved = true; }); };
+  const nudge = (dx, dy) => { e.preventDefault(); if (group.some(o => o.kind !== "label" && onFixture(p, o, o.x + dx, o.y + dy))) return; commit(() => { for (const o of group){ o.x += dx; o.y += dy; o.moved = true; } }); };
   if (e.key === "ArrowLeft")  nudge(step, 0);          // page left is stage right
   else if (e.key === "ArrowRight") nudge(-step, 0);
   else if (e.key === "ArrowUp")    nudge(0, step);
   else if (e.key === "ArrowDown")  nudge(0, -step);
-  else if (e.key.toLowerCase() === "r") commit(() => { sel.rot = (((sel.rot || 0) + (e.shiftKey ? -45 : 45)) % 360 + 360) % 360; sel.moved = true; });
-  else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); commit(() => removeObject(p, sel.id)); }
-  else if (e.key === "Escape"){ S.sel = null; render(); }
+  else if (e.key.toLowerCase() === "r"){ if (sel) commit(() => { sel.rot = (((sel.rot || 0) + (e.shiftKey ? -45 : 45)) % 360 + 360) % 360; sel.moved = true; }); }   // one thing turns; a group does not
+  else if (e.key === "Delete" || e.key === "Backspace"){ e.preventDefault(); commit(() => { for (const o of group) removeObject(p, o.id); S.multi = []; }); }
+  else if (e.key === "Escape"){ S.sel = null; S.multi = []; render(); }
 });
 
 /* ================= files, links, print ================= */
@@ -2943,6 +3012,7 @@ function helpSections(){
       'They are counted for the house.'])],
     ["Moving things", ul([
       'Click to select, drag to move — dragging a name drags the player.',
+      'To move several at once, drag a box across empty deck: everything it touches is picked, outlined in brass. ' + k("shift") + '-click adds one more or takes one out. Then drag any one of them and they all move together; arrows nudge them all, Delete removes them all. Click anywhere else to let go of the group.',
       'Arrow keys nudge 6″ (' + k("shift") + ' for a foot).',
       'The audience is at the bottom, and stage left and right are the performer\'s.',
       'The PA and the stairs are not floor: nothing will drop onto them.'])],
