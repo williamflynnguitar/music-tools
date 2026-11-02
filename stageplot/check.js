@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -838,6 +838,47 @@ for (const t of E.TEMPLATES){
   ok(M(combo, { x0:45, x1:55, y0:45, y1:55 }).includes("lbl1") && !M(combo, { x0:60, x1:70, y0:45, y1:55 }).includes("lbl1"), "a text label is picked by its point");
   ok(/S\.multi/.test(src) && /setAttribute\("class", "marquee"\)/.test(src) && /e\.shiftKey && !S\.readOnly/.test(src), "the canvas keeps a group (S.multi), draws the band, and shift-click edits the group");
   ok(/To move several at once, drag a box across empty deck/.test(src), "…and the help says how");
+}
+
+/* ---- 19d3. in-ears for a player, and a pedalboard straight to the console (William, 2026-11-02) ---- */
+{
+  const band = T("rock"), labels = labelsOf(band), gtr = band.positions.find(x => x.roleId === "guitar"), keys = band.positions.find(x => x.roleId === "keys");
+  const w0 = band.wedges.length, saved = JSON.stringify(band);
+  ok(!E.iemOf(gtr) && E.iemPlayers(band).length === 0, "nobody is on in-ears until someone is put there");
+  E.setIem(band, gtr, true);
+  ok(E.iemOf(gtr) && gtr.iem === true, "in-ears is a flag on the player");
+  eq(E.mixCount(band), w0 + 1, "…and a pack is a mix off the console, counted with the wedges");
+  const mon = E.monitorTable(band);
+  eq(mon.rows.length, w0, "the Monitors table keeps its wedge rows…");
+  eq(mon.iems.map(r => r.who).join("|"), "Gtr", "…and adds an in-ears row for the player");
+  ok(E.byoList(band).some(b => /In-ear monitor pack/.test(b.what) && b.who === "Gtr"), "the pack is the player's own, under Musicians provide");
+  ok(E.posShortLines(band, gtr, labels).some(l => l.text === "in-ears"), "the diagram says in-ears under the chair");
+  E.setIem(band, gtr, false);
+  ok(!("iem" in gtr) && JSON.stringify(band) === saved, "turning it off removes the field, so an untouched plot saves byte-identical");
+  const heavy = T("rock"); for (const x of heavy.positions) E.setIem(heavy, x, true);
+  ok(E.mixCount(heavy) > E.VENUE.monitorMixes && E.warnings(heavy).some(w => /in-ears/.test(w.text) && /mixes/.test(w.text)), "five wedges plus five packs is more mixes than the room runs, and the warning says so: " + (E.warnings(heavy)[0] || {}).text);
+  ok(E.stepDone(heavy, "wedges") && E.stepDone(Object.assign(T("rock"), { wedges:[] }), "wedges") === false, "a plot with in-ears players has its monitors step started");
+
+  const direct = E.byoDef("byo-pedals-direct");
+  ok(direct && direct.direct && direct.label === "Pedalboard, direct to house", "the band can bring a pedalboard that goes straight to the console");
+  const g = E.diagramGeom(band);
+  ok(E.fitLabel(g, direct.short, direct.w - 2, direct.d - 2, 9.5), "…whose short name fits its box: " + direct.short);
+  const nDI = E.disOn(band).length;
+  const board = E.addByoItem(band, "byo-pedals-direct", gtr, { x:0, y:0 });
+  ok(board.kind === "byo" && board.ref === "byo-pedals-direct" && board.ownerPositionIds[0] === gtr.id && board.moved, "placed for the guitarist it is theirs, pinned");
+  ok(Math.abs(board.x - gtr.x) < .5 && Math.abs(board.y - (E.rectOf(gtr, band).y0 - E.PEDAL_GAP - direct.d / 2)) < .5, "…at their feet, downstage of the footprint");
+  eq(E.disOn(band).length, nDI + 1, "…and it arrives with a DI box");
+  const di = E.disOn(band).find(d => d.label === "Pedals");
+  ok(di && di.ownerPositionIds[0] === gtr.id && di.x < board.x && Math.abs(di.y - board.y) < .5 && di.moved, "…labelled Pedals, the guitarist's, on the board's stage-left side");
+  board.label = "HX Stomp, stereo XLR";
+  const line = E.byoList(band).find(b => /direct to house/.test(b.what));
+  eq(line && line.what + " / " + line.who, "Pedalboard, direct to house — HX Stomp, stereo XLR / Gtr", "the page prints the kind, the description and the chair");
+  const plain = E.addByoItem(band, "byo-gtramp", keys, { x:100, y:100 });
+  ok(plain.x === 100 && plain.y === 100 && plain.ownerPositionIds[0] === keys.id, "any other item lands where it is told and still belongs to the player");
+  eq(E.disOn(band).length, nDI + 1, "…without a DI box");
+  const loose = E.addByoItem(band, "byo-pedals-direct", null, { x:50, y:50 });
+  ok(loose.ownerPositionIds.length === 0 && E.disOn(band).filter(d => d.label === "Pedals").length === 2 && E.disOn(band).every(d => !d.ownerPositionIds.includes(null)), "with nobody selected the board and its box belong to nobody");
+  ok(/data-iem/.test(src) && /byo-pedals-direct/.test(src) && /Line 6 HX Stomp, stereo XLR out/.test(src), "the Positions tab and the inspector offer in-ears; the direct board's description field says what to write");
 }
 
 /* ---- 19e. mics and DI boxes are objects on the deck (C1/C2, Tim Shade 2026-09-16) ---- */

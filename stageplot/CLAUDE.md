@@ -555,6 +555,41 @@ delete handle draws only for a single selection. The band is an SVG rect
 appended to the stage for the drag and removed on release; the stage is
 not re-rendered until the pointer comes up.
 
+## In-ears, and a pedalboard straight to the console (2026-11-02)
+
+**In-ear monitors.** `pos.iem = true` marks a player on in-ears; absent is a
+wedge, and `setIem()` deletes the field rather than writing false, so a
+plot that never used it saves byte-identical. The toggle is **in-ears** on
+the player's card (Positions tab) and a Wedge / In-ears segment in the
+inspector. What it does: the player's pack is their own (Somewhere Works has
+wedges, not packs), so it prints under Musicians provide; it needs a mix off
+the console, so `mixCount()` — wedges plus packs — is what the meta row and
+the over-count warning read against `VENUE.monitorMixes`; the Monitors table
+prints an *in-ears* row per player after the wedge rows; the diagram says
+*in-ears* under the chair with the doubles and the names; and the Wedges
+tab lists who is on them. Wedges are still dealt once and record nobody, so
+a wedge dealt for a player who then goes on in-ears is not removed — the
+tab says to delete it. The deferred item was "per-person monitor requests
+for IEMs"; this is the IEM, not the request — what goes in the mix is still
+settled at soundcheck.
+
+**Pedalboard, direct to house** (`byo-pedals-direct`, `direct:true`) is a
+board or modeler that runs straight to the console with no amp. It is a
+band-brought kind like the others, drawn dashed and labelled *Direct*
+(the one word that fits a 24″ × 12″ board; "Pedals DI" does not), and it
+arrives with a house DI box labelled *Pedals* on its stage-left side —
+a board with XLR outs needs none, and the note says to delete the box.
+The house amp stays: a wet/dry rig uses both, and taking the amp away
+is one click. The description is the item's `label`, the same field
+every band-brought item has; the inspector labels it "model and outputs"
+and prints as *Pedalboard, direct to house — HX Stomp, stereo XLR — Gtr*.
+
+**Band-brought gear is placed for the selected player** (`addByoItem()`):
+select the player, then the kind, and the item is theirs — it prints
+against their chair and goes when they go. A pedalboard (either kind) lands
+at their feet, `PEDAL_GAP` downstage of the footprint; everything else at
+the free spot as before, now owned. With nobody selected nothing changed.
+
 ## Music stands (2026-09-16)
 
 `pos.stands`, absent = 0, with `standsOf()` / `setStands()` / `standCount()`
@@ -799,7 +834,8 @@ browser's own pagination — a good guide, not gospel.
 
 ## Deferred — not built, on purpose
 
-From the v1 brief, still deferred: per-person monitor requests for IEMs;
+From the v1 brief, still deferred: per-person monitor *requests* for IEMs
+(the IEM itself is a per-player flag since 2026-11-02);
 a guided first-run tour (the help panel is the next best thing);
 lighting and video-capture
 areas; importing rosters from the ensemble Airtable base; a venue-editor UI for
@@ -841,13 +877,14 @@ New in v2:
    are marked `ASSUMED` in the VENUE table and print verbatim, so do not guess.)
 ## Checks
 
-`node check.js` — 679 assertions: the role library, every template (builds,
+`node check.js` — 700 assertions: the role library, every template (builds,
 fits, deterministic, no two footprints in one place), the big band with no
 names, building from counts, names on/off, bulk
 name parsing, doubles and shared chairs, a custom role, a vocal mic for any
 player (labelled Vocal, at the player and not their amp, in front of a keys
 player's keyboard, listed against the chair), the rubber-band group
-selection's hit test, the layout engine's
+selection's hit test, in-ears per player and the direct-to-house
+pedalboard with its DI box, the layout engine's
 pinning and re-layout, deck re-layout, changeover, the v1 migration against
 `samples/v1/expected.json`, the shipped samples, save/load round trip,
 backline by category (two guitarists on two amps, five on an amber over-count
