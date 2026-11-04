@@ -89,7 +89,7 @@ counts and the deck are still placeholders.
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
 | `mic` 8, `musicstand` 20, `di` 8, `chair` 40 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
 | power strips, risers | removed 2026-09-16 | Somewhere Works handles power; there are no risers. An old file's power/riser items are dropped on load |
-| `wedgesDealt: 5`, `consoleChannels: 32` | confirmed | the engine deals at most five wedges, the room's usual count. **Not a limit**: Somewhere Works said a sixth wedge is no problem (William, 2026-11-04), so the amber over-count warning, the "/ 5" in the meta row and `extraWedgesFrom` (Shocker Studios) went that day. `warnChannelsAt: 28` is our own headroom line |
+| `wedgesDealt: 5`, `consoleChannels: 32` | confirmed | the engine deals at most five wedges, the room's usual count. **Not a limit**: Somewhere Works said a sixth wedge is no problem (William, 2026-11-04), so the amber over-count warning, the "/ 5" in the meta row and `extraWedgesFrom` (Shocker Studios) went that day. The house `wedge` item's `count` is `Infinity` for the same reason: five on hand and more can be added, so "6 × Wedge (house) needed; Somewhere Works has 5" never prints, the palette says "no limit", and `houseRoom()` always has one to place. `warnChannelsAt: 28` is our own headroom line |
 
 Footprints are approximate on purpose: they only have to draw at a sensible
 size on a 24′ deck, and the tech is not measuring off this page.
