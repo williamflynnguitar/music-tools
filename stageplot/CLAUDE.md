@@ -250,10 +250,14 @@ instrument, add a row; nothing else in the file enumerates instruments.
   and the bass and keys packed toward the stage-right wall to make room;
   `wedgeGap` went from 30″ to 44″ so a seated player's chair and label fit
   between the row and its wedge.
-- **A row's labels take one side.** `labelBoxes()` groups players at the
-  same depth and, if any label would have to flip upstage, flips the whole
-  row (`positionLabelBox(…, force)`), so a section never reads with names
-  above some chairs and below others.
+- **A row's labels take one side.** `labelBoxes()` groups players within
+  `LABEL_ROW` (12″, half a chair) of the same depth and, if any label would
+  have to flip upstage, flips the whole row (`positionLabelBox(…, force)`),
+  so a section never reads with names above some chairs and below others.
+  The tolerance was an inch until 2026-11-04, which only ever matched a row
+  the engine had just laid: a singer dragged a few inches out of line kept
+  their own side, and their name came down onto the vocal mic they had
+  dragged downstage.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → a house guitar amp,
@@ -281,7 +285,9 @@ instrument, add a row; nothing else in the file enumerates instruments.
   `plot.customRoles`, so an odd instrument travels inside the saved file and
   needs no code change. `roleDef()` looks there first.
 - Doubles are generic: `position.doubles = [{roleId}]` or `[{label}]`. They
-  print on the diagram (`Alto / Flute`) and nothing more.
+  print on the diagram and nothing more: *+ Flute* on its own line under
+  the chair (a plus since 2026-11-04 — the tables' `Alto / Flute` slash read
+  as a stray mark outside the circle).
 
 `ROLE_MATCH` turns free text into a role id ("Sam — bass trombone"), most
 specific pattern first. It is used by bulk name entry and the v1 migration.
@@ -529,6 +535,50 @@ exactly what the help always said to do by hand, and an old file with a
 hand-labelled "vocal" mic is unaffected. The "no per-player mic controls"
 check (B1) still holds: the control lives on the Mics & DIs tab, after a
 selection, like every other mic.
+
+**On the diagram a singer's own vocal mic carries no name** (William,
+2026-11-04: four singers in a row read Vocal Vocal Vocal Vocal). `micDrawnName()`
+is what the diagram writes under a mic: nothing for a mic named Vocal whose
+owner is the nearest player to it, and `micText()` for every other mic — one
+dragged over in front of somebody else says Vocal again, and one placed with
+nobody selected always does. The key's mic entry grows "; a singer's own vocal
+mic carries no name" while the plot has one. The Mics tab and the printed
+tables still say Vocal.
+
+## Not used in this performance (2026-11-04)
+
+A concert sets the stage once for every act on the bill, and one act may not
+use everything on it: the second keyboard, the Deluxe, wedge 4 (William,
+2026-11-04). **`unused:true`** on a position, an item or a wedge says so. The
+thing stays exactly where it is — the set is the set — and is drawn faint
+(`DRAW.ghost`, .32, the group's `opacity`, label and all, on screen and on
+paper) with a key entry, *not used in this performance*, while the plot has
+one. The lists keep it, with **not used** against it: the monitor row, the
+mic and DI lines, the band-brings line, and the meta line's *Mics 2 (1 not
+used)*. Nothing counts it out — House equipment needed is the set, and the
+house still puts it there; the mix-count and channel warnings count it too,
+because it is physically there.
+
+- **A player's gear follows the player.** `unusedOf()` is the one question
+  to ask: the object's own flag, or, for an item with owners, every owner
+  flagged. Derived, never stored on the gear, so a player put back in use
+  brings their amp, DI box and mics with them; an amp flagged on its own
+  leaves its player in use. Text labels are never unused. `setUnused()`
+  writes `true` or deletes the key; `migratePlot()` settles whatever a file
+  holds to that.
+- **The inspector** has the toggle, *This performance: In use / Not used*,
+  for positions, items and wedges, with "its player is not used, so neither
+  is it" when the state is inherited.
+- **One plot per performance.** The same set is marked differently in each
+  tab; **Duplicate** in the top bar (`duplicatePlot()`, a deep copy with its
+  own plot id and " (copy)" on the name, object ids kept — they are only
+  ever looked up within one plot) copies the set into the next tab. The
+  changeover sheet treats an unused thing as in place: gear and wedges go
+  under *Stays, not used by <act>* and *Back in use* (`items.use`,
+  `wedges.use`), never under comes off or struck; a chair not used has
+  nobody in it, so its occupant comes off like anyone who is not playing.
+- Not built: marking a multi-selection in one go, and printing every
+  performance's page at once (print-all is deferred anyway).
 
 ## Moving several things at once (2026-11-02)
 

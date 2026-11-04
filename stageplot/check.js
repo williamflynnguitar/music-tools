@@ -15,13 +15,13 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   roleDef, roleOf, roleIdFromText, positionLabels, posText2, posShortLines, posNames,
   blankPlot, addPosition, makeFromParts, makeFromTemplate, autoLayout, monitorGroups, resetIds,
   parseNameList, applyNameList, migratePlot, migrateV1,
-  monitorTable, houseNeeds, byoList, warnings, changeover,
+  monitorTable, houseNeeds, byoList, warnings, changeover, unusedOf, setUnused, anyUnused, duplicatePlot,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, itemDef,
-  diagramGeom, labelBoxes, positionLabelBox,
+  diagramGeom, labelBoxes, positionLabelBox, LABEL_ROW,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, wedgeFor, WEDGE_REACH, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, micDrawnName, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, wedgeFor, WEDGE_REACH, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -292,7 +292,7 @@ for (const t of E.TEMPLATES){
   const p = E.makeFromParts([["alto",1],["drums",1]], null, "Doubles");
   const alto = p.positions.find(x => x.roleId === "alto"), drums = p.positions.find(x => x.roleId === "drums");
   alto.doubles = [{ roleId:"flute" }];
-  ok(/Flute/.test(E.posShortLines(p, alto).map(l => l.text).join(" ")), "a double prints on the diagram");
+  ok(E.posShortLines(p, alto).some(l => /^\+ Flute/.test(l.text)), "a double prints on the diagram as + Flute (2026-11-04: the slash read as a stray mark)");
   drums.names = ["Jo Fischer", "Riley Nunez"];
   ok(/Jo Fischer \/ Riley Nunez/.test(E.posText2(p, drums)), "both names print: " + E.posText2(p, drums));
   eq(E.houseNeeds(p).find(n => n.id === "kit").need, 1, "and one house kit, not two");
@@ -793,7 +793,12 @@ for (const t of E.TEMPLATES){
   const vm = E.addVocalMic(band, gtr);
   eq(E.micsOn(band).length, 1, "…hands its guitarist a vocal mic: one mic on the deck");
   eq(vm.label, "Vocal", "…labelled Vocal — not Vox (the chair) and not VOX (the amp)");
-  eq(E.micText(band, vm, labels), "Vocal", "…and drawn as Vocal under the lollipop");
+  eq(E.micText(band, vm, labels), "Vocal", "…named Vocal on the Mics tab and the page");
+  eq(E.micDrawnName(band, vm, labels), "", "…and drawn with no name, in front of its own singer (William, 2026-11-04)");
+  ok(E.legendKeys(band).some(k => k.id === "mic" && /vocal mic carries no name/.test(k.text)), "…which the key explains");
+  vm.x = bass.x; vm.y = bass.y - 12;
+  eq(E.micDrawnName(band, vm, labels), "Vocal", "…dragged over in front of the bass player it says Vocal again");
+  vm.x = gtr.x; vm.y = gtr.y - 21;
   eq(E.ownerOf(band, vm), gtr, "…belonging to the guitarist");
   ok(vm.moved, "…pinned where it landed");
   const f = E.footprintOf(gtr, band);
@@ -813,6 +818,11 @@ for (const t of E.TEMPLATES){
   eq(E.micsOn(band).length, 2, "a singer who leaves takes their vocal mic (owner's gear goes with the owner)");
   const loose = E.addVocalMic(band, null, { x:100, y:100 });
   eq(E.micText(band, loose, labelsOf(band)), "Vocal", "with nobody selected a vocal mic still says Vocal…");
+  eq(E.micDrawnName(band, loose, labelsOf(band)), "Vocal", "…on the diagram too, belonging to nobody");
+  ok(!E.legendKeys(E.makeFromParts([["trumpet",1]], null, "x")).some(k => /carries no name/.test(k.text)), "a plot with no unnamed mic keeps the short key entry");
+  const own = E.addByoItem(band, "byo-hornmic", gtr); own.label = "Vocal";
+  eq(E.micDrawnName(band, own, labelsOf(band)), "", "the band's own mic, labelled Vocal in front of its owner, carries no name either…");
+  ok(/it\.kind === "byo" && it\.label && !isMic/.test(src), "…and the diagram's band-brings line skips a mic, whose label is its name, so nothing writes it twice");
   eq(loose.x + "," + loose.y, "100,100", "…and lands where it is told, belonging to nobody");
   ok(/\+ Vocal mic/.test(src) && /data-vocal/.test(src), "the Mics & DIs tab offers + Vocal mic");
   const ownerHandler = src.slice(src.indexOf('querySelectorAll("[data-owner]")'), src.indexOf("$(\"bRot\")"));
@@ -1294,6 +1304,94 @@ for (const t of E.TEMPLATES){
      "the Mics & DIs tab opens with the select-first instruction, and the help repeats it");
   ok(/Nothing is selected, so it lands mid-stage, belonging to nobody\./.test(src) && /Right now it goes to <b>/.test(src), "…and says where the next mic or DI will land");
   eq(E.standCount(E.migratePlot(JSON.parse(JSON.stringify(bb)))), 19, "stands survive save and load");
+}
+
+/* ---- 19n2. a dragged row still labels on one side (2026-11-04) ---- */
+{
+  /* Four singers with vocal mics in front of them, so every name goes
+     upstage. One singer dragged half a chair out of line, with their mic
+     dragged well downstage — William's plot, 2026-11-04 — is still in the
+     row: the name goes up with the others, not down onto the mic. */
+  const p = E.makeFromParts([["voice",4],["guitar",1],["bass",1],["drums",1]], null, "Four voices");
+  const L = E.positionLabels(p), vox = p.positions.filter(q => q.roleId === "voice");
+  for (const v of vox){ v.names = ["Pat Q"]; E.addVocalMic(p, v); }
+  const jack = vox.find(v => L[v.id].short === "Vox 4"), mic = E.micsOn(p).find(m => m.ownerPositionIds.includes(jack.id));
+  jack.y += 10; jack.moved = true;              // dragged 10″ out of line, well within LABEL_ROW
+  mic.y = jack.y - 40; mic.moved = true;        // and the mic dragged 40″ downstage, leaving room under the chair
+  const LB = E.labelBoxes(p, E.diagramGeom(p));
+  const sides = new Set(vox.map(v => LB[v.id].side));
+  ok(sides.size === 1 && LB[jack.id].side === "up", "a singer dragged 10″ out of line labels with the row (" + [...sides].join(",") + ")");
+  jack.y += 20;                                 // 30″ out of line is another row
+  const LB2 = E.labelBoxes(p, E.diagramGeom(p));
+  eq(LB2[jack.id].side, "down", "…and one dragged 30″ downstage is on their own, with room under the chair");
+  ok(E.LABEL_ROW === 12, "LABEL_ROW is half a chair (" + E.LABEL_ROW + "″)");
+  /* Rows are disjoint. A staggered chain — singers at 100″, 110″ and 120″,
+     mics in front of the first two only — is two rows cut at the seed: the
+     first two go up together (their mics are in the way), the third is on
+     their own with room below. Nobody is placed twice, so `taken` holds one
+     box per label and no stale one. */
+  const q = E.makeFromParts([["voice",3],["guitar",1],["bass",1],["drums",1]], null, "Three voices");
+  const v3 = q.positions.filter(x => x.roleId === "voice").sort((a, b) => a.x - b.x);
+  v3.forEach((v, i) => { v.names = ["Pat Q"]; v.y = 100 + 10 * i; v.moved = true; });
+  E.addVocalMic(q, v3[0]); E.addVocalMic(q, v3[1]);
+  const g3 = E.diagramGeom(q), LB3 = E.labelBoxes(q, g3);
+  eq(v3.map(v => LB3[v.id].side).join(","), "up,up,down", "a staggered chain is two rows cut at the seed: the first two up with their mics, the third on their own");
+  const again = E.labelBoxes(q, g3);
+  ok(v3.every(v => again[v.id].side === LB3[v.id].side), "…and the same every time");
+}
+
+/* ---- 19p. not used in this performance (William, 2026-11-04) ---- */
+{
+  /* A concert sets the stage once; an act marks what it does not use. The
+     thing stays in place, drawn faint, and the lists keep it with "not used"
+     against it. A player's gear follows the player. */
+  const p = E.makeFromParts([["voice",1],["guitar",1],["bass",1],["drums",1]], null, "Set");
+  const L = labelsOf(p), by = id => p.positions.find(x => x.roleId === id);
+  const vox = by("voice"), gtr = by("guitar"), bass = by("bass");
+  const amp = E.findBackline(p, gtr, E.roleOf(p, gtr)), bassDI = E.disOn(p).find(i => i.ownerPositionIds.includes(bass.id));
+  const vm = E.addVocalMic(p, vox), own = E.addByoItem(p, "byo-pedals", gtr);
+  ok(!E.anyUnused(p) && !E.legendKeys(p).some(k => k.id === "unused"), "a fresh plot has nothing not used, and no key entry for it");
+  E.setUnused(p, gtr, true);
+  ok(gtr.unused === true, "Not used sets unused:true on the player…");
+  ok(E.unusedOf(p, gtr) && E.unusedOf(p, amp) && E.unusedOf(p, own) && amp.unused === undefined, "…and their amp and their pedalboard follow, derived, not stored");
+  ok(!E.unusedOf(p, bass) && !E.unusedOf(p, bassDI) && !E.unusedOf(p, vm), "…while the bass player, their DI and the singer's mic are untouched");
+  E.setUnused(p, gtr, false);
+  ok(gtr.unused === undefined && !E.unusedOf(p, amp), "In use removes the flag, and the gear comes back with the player");
+  E.setUnused(p, amp, true);
+  ok(E.unusedOf(p, amp) && !E.unusedOf(p, gtr), "an amp marked not used on its own leaves its player in use");
+  ok(E.legendKeys(p).some(k => k.id === "unused" && /not used in this performance/.test(k.text)), "…and the key explains the faint drawing");
+  const w = p.wedges[0]; E.setUnused(p, w, true); E.setUnused(p, vox, true);
+  const mon = E.monitorTable(p);
+  ok(mon.rows.find(r => r.n === w.number).unused === true && mon.rows.some(r => !r.unused), "the monitor table marks the dead wedge and no other");
+  ok(E.micList(p).find(m => m.label === "Vocal").unused === true, "the mic list marks the singer's mic as not used, through its owner");
+  ok(E.diList(p).every(d => !d.unused), "…and the DI list marks nothing — the bass is in use");
+  ok(E.byoList(p).find(b => /Pedalboard/.test(b.what)).unused === undefined && E.byoList(p).find(b => /Pedalboard/.test(b.what)) && (E.setUnused(p, gtr, true), E.byoList(p).find(b => /Pedalboard/.test(b.what)).unused === true), "the band-brings list carries the flag, and only when it is so");
+  E.setUnused(p, gtr, false);
+  ok(/r\.unused \? ' <b>— not used<\/b>'/.test(src) && /m\.unused \? ' <b>\(not used\)<\/b>'/.test(src) && /unusedNote\(mics\.concat\(dis\)\)/.test(src),
+     "the page says not used against a wedge, a mic, a DI and in the meta line (sheetHTML is outside the engine, so the source is read)");
+  ok(E.houseNeeds(p).some(n => n.id === amp.ref), "the house still sets the amp: not used counts nothing out");
+  // the changeover sheet: in place either way, dead or live for the next act
+  const a = E.makeFromParts([["voice",1],["guitar",1],["bass",1],["drums",1]], null, "Act one");
+  const b = E.duplicatePlot(a);
+  ok(b.id !== a.id && b.name === "Act one (copy)" && b.positions.length === a.positions.length && b.positions[0] !== a.positions[0], "Duplicate is a deep copy with its own id, named as a copy");
+  E.setUnused(b, b.positions.find(x => x.roleId === "guitar"), true); E.setUnused(b, b.wedges[0], true);
+  const co = E.changeover(a, b);
+  ok(co.items.use.length === 1 && !co.items.use[0].used && /\(Gtr\)/.test(co.items.use[0].what), "the guitar amp stays in place but goes dead for act two (" + (co.items.use[0] || {}).what + ")");
+  ok(co.items.leave.length === 0 && co.items.stay.some(x => /\(Gtr\)/.test(x)), "…listed under stays put, never under comes off");
+  ok(co.people.leave.some(x => x.role === "Guitar"), "the guitarist's chair is empty for act two, so they come off");
+  ok(co.wedges.use.length === 1 && co.wedges.use[0].n === b.wedges[0].number && !co.wedges.use[0].used && co.wedges.leave.length === 0, "wedge " + b.wedges[0].number + " stays and goes dead, not struck");
+  ok(/"Stays, not used by " \+ esc\(co\.to\)/.test(src) && /' stays, not used by ' \+ esc\(co\.to\)/.test(src) && /"Back in use"/.test(src), "the changeover sheet says so for gear and for a wedge, and says back in use the other way");
+  const back = E.changeover(b, a);
+  ok(back.items.use[0].used && back.wedges.use[0].used, "…the other way round, the amp and the wedge are back in use");
+  // save and load: true or absent, never on a text label
+  const file = JSON.parse(JSON.stringify(b));
+  file.items.push({ id:"lbl1", kind:"label", label:"stage door", x:10, y:10, rot:0, moved:true, unused:true });
+  file.wedges[0].unused = 0;
+  const m = E.migratePlot(file);
+  ok(m.positions.find(x => x.roleId === "guitar").unused === true, "unused:true survives save and load");
+  ok(m.wedges[0].unused === undefined && m.items.find(i => i.kind === "label").unused === undefined, "…a falsy flag and a flag on a text label are dropped");
+  ok(/data-unused="1"/.test(src) && /id="bDup"/.test(src) && /opacity="' \+ DRAW\.ghost/.test(src), "the inspector offers Not used, the top bar offers Duplicate, and the diagram ghosts at DRAW.ghost");
+  ok(E.DRAW.ghost > 0 && E.DRAW.ghost < .5, "ghosted means faint, not gone (" + E.DRAW.ghost + ")");
 }
 
 /* ---- 19o. labels inside shapes, and the stand as a bar (William, 2026-09-16) ---- */
