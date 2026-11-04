@@ -903,6 +903,9 @@ for (const t of E.TEMPLATES){
   heavy.wedges = T("rock").wedges;   // hand-placed extras on top of five packs
   ok(E.mixCount(heavy) === 10 && !E.warnings(heavy).some(w => /mixes/.test(w.text)), "five wedges plus five packs is ten mixes, counted and not warned about — the room can add wedges (William, 2026-11-04)");
   ok(E.VENUE.monitorMixes === undefined && !/monitorMixes|extraWedgesFrom|normally runs/.test(src), "no mix limit is left anywhere in the page");
+  const seven = T("rock"); for (let i = 0; i < 7; i++) seven.wedges.push({ id:"wx" + i, number:10 + i, x:20 + 20 * i, y:20, rot:0, moved:true });
+  ok(!E.warnings(seven).some(w => /Wedge/.test(w.text)) && E.houseNeeds(seven).some(n => n.id === "wedge" && n.need === 12 && !n.over), "twelve wedges on the deck: listed for the house, never an over-count (the room can add wedges)");
+  ok(E.houseRoom(seven, "wedge") && /left === Infinity \? "no limit"/.test(src), "…so there is always a wedge left to place, and the palette says no limit rather than a number");
   ok(E.stepDone(heavy, "wedges") && E.stepDone(Object.assign(T("rock"), { wedges:[] }), "wedges") === false, "a plot with in-ears players has its monitors step started");
 
   const direct = E.byoDef("byo-pedals-direct");

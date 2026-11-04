@@ -413,7 +413,7 @@ const VENUE = {
     // what a third keys player gets. acoustic: it is miked, never DI'd, so a player swapped onto it loses their
     // DI box (settleDI). Footprint ASSUMED — a typical upright, not measured; the bench is the player's own 22″.
     { id:"piano",   label:"House upright piano",                              short:"Piano",      cat:"keys", bcat:"keys",   w:58, d:24, acoustic:true },
-    { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:5 },
+    { id:"wedge",   label:"Wedge (house)",    short:"Wedge",   cat:"monitor", w:22, d:18, count:Infinity },   // five on hand and more can be added (Somewhere Works, via William, 2026-11-04): no over-count, ever. Was 5
     { id:"mic",     label:"Mic (on stand)",   short:"Mic",     cat:"mic",     w:12, d:12, count:8 },   // ASSUMED count. One object = one stand, whoever shares it
     { id:"musicstand", label:"Music stand",   short:"Stand",   cat:"stand",   w:18, d:12, count:20 },  // ASSUMED count
     { id:"di",      label:"DI box (house)",   short:"DI",      cat:"di",      w:10, d:10, count:8 },   // ASSUMED count. 10″: just enough to hold "DI" at the minimum type size
@@ -2497,7 +2497,7 @@ function houseRowHTML(p, h, labels, nameHTML){
   for (const it of p.items) if (it.kind === "house" && it.ref === h.id) for (const id of (it.ownerPositionIds || [])) if (labels[id]) whose.push(labels[id].short);
   for (const pos of p.positions){ const r = roleOf(p, pos); if (r.stance === "object" && objectRef(r) === h.id && !kitIsByo(p, pos) && labels[pos.id]) whose.push(labels[pos.id].short); }
   const on = used ? '<span class="ondeck">✓ ' + (used === 1 ? "on the deck" : used + " on the deck") + (whose.length ? " · " + esc(whose.join(", ")) : "") + '</span>' : "";
-  const ct = left < 0 ? (-left) + " over" : left === 0 ? "none left" : left + " left";
+  const ct = left === Infinity ? "no limit" : left < 0 ? (-left) + " over" : left === 0 ? "none left" : left + " left";
   return '<button class="pitem" data-house="' + h.id + '"' + (left <= 0 ? ' disabled title="the house has none left"' : "") + '>' +
     '<span>' + nameHTML + on + '</span><span class="ct' + (left < 0 ? " over" : "") + '">' + ct + '</span></button>';
 }
