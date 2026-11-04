@@ -389,8 +389,7 @@ const VENUE = {
   leadDays: null,                            // ASSUMED — lead time not confirmed; null prints "as far in advance as possible"
   editNotice: "Somewhere Works may adjust placements and monitor assignments to fit the room.",   // printed under the link on every page
   deck: { widthFt: 24, depthFt: 20 },        // Tim Shade, 2026-09-16: the published spec says 20 × 20 of 4 × 8 platforms; he doesn't think it is square and calls it 24 wide × 20 deep
-  monitorMixes: 5,                           // confirmed: 5 wedges, 5 mixes typical; extras possible via Shocker Studios
-  extraWedgesFrom: "Shocker Studios",        // confirmed: where extra wedges might come from
+  wedgesDealt: 5,                            // how many wedges the layout engine deals at most, one per monitor group: the room's usual five. Not a limit — Somewhere Works said a sixth wedge is no problem (William, 2026-11-04), so nothing warns above it; until then it was a limit, with an amber over-count warning
   consoleChannels: 32,                       // confirmed
   warnChannelsAt: 28,                        // leave headroom for talkback/spare
   house: [
@@ -1258,7 +1257,7 @@ function monitorGroups(plot){
   add("trombones", low); add("trumpets", high);
   add("strings", fam("strings").filter(p => roleOf(plot, p).id !== "acoustic"));
   add("other", plot.positions.filter(p => roleOf(plot, p).family === "other" && roleOf(plot, p).zone !== "rhythm"));
-  while (groups.length > VENUE.monitorMixes){
+  while (groups.length > VENUE.wedgesDealt){
     // the lead voices are the last mix anyone should have to share
     const cost = g => g.list.length + (/voice/.test(g.name) ? 4 : 0);
     let best = 0, bestSize = Infinity;
@@ -1680,11 +1679,7 @@ function legendKeys(plot){
 }
 function warnings(plot){
   const out = [];
-  if (mixCount(plot) > VENUE.monitorMixes){
-    const ie = iemPlayers(plot).length;
-    out.push({ level:"amber", text:plot.wedges.length + " wedges placed" + (ie ? " and " + ie + " on in-ears, " + mixCount(plot) + " mixes" : "") + "; " + VENUE.shortName + " normally runs " + VENUE.monitorMixes +
-      ". Extras may be available from " + VENUE.extraWedgesFrom + " — ask the tech." });
-  }
+  // no mix over-count: the room can add a wedge (William, 2026-11-04); mixCount() still prints so the tech sees the number
   const ch = consoleCount(plot);
   if (ch > VENUE.consoleChannels)
     out.push({ level:"red", text:ch + " mics and DI boxes on the deck — the console has " + VENUE.consoleChannels + " channels." });
@@ -2290,7 +2285,7 @@ function sheetHTML(p, opt){
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
     '<span>Prepared ' + fmtDate(todayISO()) + '</span>' +
     '<span>Mics ' + mics.length + ' · DI boxes ' + dis.length + (unusedNote(mics.concat(dis)) ? ' · ' + unusedNote(mics.concat(dis)) : "") + '</span>' +
-    '<span>Monitor mixes ' + mixCount(p) + " / " + VENUE.monitorMixes + (mon.iems.length ? " (" + mon.iems.length + " in-ears)" : "") + '</span>' +
+    '<span>Monitor mixes ' + mixCount(p) + (mon.iems.length ? " (" + mon.iems.length + " in-ears)" : "") + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
   H.push('<div class="diagram">' + diagramSVG(p, { mode:"print" }) + '</div>');
@@ -2641,10 +2636,10 @@ function renderPanel(p){
       "<p class='note'><b>Pedalboard, direct to house</b> is a board or modeler that goes straight to the console with no amp. It arrives with a DI box labelled Pedals; if the board has XLR outs, select the box and delete it. Describe the board — model and outputs — once it is placed, so the tech knows what is coming down the line. The house amp stays unless you remove it: wet/dry rigs use both.</p>");
   }
   if (S.tab === "wedges"){
-    H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " runs " + VENUE.monitorMixes + " wedges. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
+    H.push('<h3>Monitor wedges</h3><p class="note">' + VENUE.shortName + " usually runs " + VENUE.wedgesDealt + " wedges and can add a sixth. Place each one where it goes; the number is the mix. What goes in a mix is settled at soundcheck — anything the band must say ahead of time goes in the notes on the Details tab.</p>");
     const iems = iemPlayers(p);
     if (iems.length) H.push('<p class="note"><b>On in-ears:</b> ' + esc(iems.map(x => posText2(p, x, labels)).join(", ")) + ' — ' + (iems.length === 1 ? "their own pack takes a mix and needs no wedge" : "their own packs each take a mix and need no wedge") +
-      ', so this plot asks for ' + mixCount(p) + ' of ' + VENUE.monitorMixes + ' mixes. Their wedge went when they went on in-ears, and comes back when they go back to a wedge; one they share with players still on wedges stays. Set it per player on the Positions tab.</p>');
+      ', so this plot asks for ' + mixCount(p) + ' mixes. Their wedge went when they went on in-ears, and comes back when they go back to a wedge; one they share with players still on wedges stays. Set it per player on the Positions tab.</p>');
     const clashes = wedgeClashes(p), clashOf = w => clashes.find(c => c.wedges.includes(w));
     for (const w of p.wedges.slice().sort((a, b) => a.number - b.number)){
       const c = clashOf(w);
@@ -3254,7 +3249,7 @@ function openStart(){
   dlg.innerHTML = '<div class="dlg wide"><h2>New plot</h2>' +
     '<div class="pickgrid" style="margin-top:12px"><button class="btn hi" id="bStartHelp">How it works<span class="sub">the seven steps, then select, drag, rotate, mics, wedges, print</span></button></div>' +
     '<h3 class="dlgh">Build the instrumentation</h3>' +
-    '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals against Somewhere Works: 5 mixes</span></button>' +
+    '<div class="pickgrid"><button class="btn" id="bStartBuild">Choose instruments and counts<span class="sub">running totals: positions and mixes</span></button>' +
     '<button class="btn" data-tpl="">Blank plot<span class="sub">empty deck</span></button></div>' +
     '<h3 class="dlgh">Start from a shape</h3><div class="pickgrid">' +
     TEMPLATES.map(t => '<button class="btn" data-tpl="' + t.id + '">' + esc(t.name) + '<span class="sub">' + esc(t.note || "") + '</span></button>').join("") +
@@ -3286,7 +3281,7 @@ function openInstrumentation(target){
     const mixes = preview.wedges.length, pos = preview.positions.length;
     dlg.innerHTML = '<div class="dlg wide"><h2>' + (target ? "Bulk add players" : "Build the instrumentation") + '</h2>' +
       '<p>Set how many of each. Wedges and backline are worked out from these numbers.</p>' +
-      '<div class="totals"><span><b>' + pos + '</b> positions</span><span><b>' + mixes + '</b> / ' + VENUE.monitorMixes + ' mixes</span></div>' +
+      '<div class="totals"><span><b>' + pos + '</b> positions</span><span><b>' + mixes + '</b> mixes</span></div>' +
       '<div class="instr">' + entries().map(([id, n]) => {
         const r = roleDef(target, id);
         return '<div class="instrrow"><span>' + esc(r.pick || r.label) + '</span>' +

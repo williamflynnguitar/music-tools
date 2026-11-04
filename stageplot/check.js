@@ -81,7 +81,7 @@ for (const t of E.TEMPLATES){
   const hits = collisions(p);
   ok(hits.hard.length === 0, t.name + " has no two things in the same place:\n        " + hits.hard.join("\n        "));
   if (hits.soft.length) say(t.name + " label crossings: " + hits.soft.join("; "));
-  ok(p.wedges.length <= E.VENUE.monitorMixes, t.name + " asks for no more than " + E.VENUE.monitorMixes + " mixes (" + p.wedges.length + ")");
+  ok(p.wedges.length <= E.VENUE.wedgesDealt, t.name + " is dealt no more than " + E.VENUE.wedgesDealt + " wedges (" + p.wedges.length + ")");
   const again = T(t.id);
   eq(JSON.stringify(p.positions.map(x => [x.roleId, Math.round(x.x), Math.round(x.y)])),
      JSON.stringify(again.positions.map(x => [x.roleId, Math.round(x.x), Math.round(x.y)])),
@@ -901,7 +901,8 @@ for (const t of E.TEMPLATES){
   const heavy = T("rock"); for (const x of heavy.positions) E.setIem(heavy, x, true);
   eq(heavy.wedges.length, 0, "everyone on in-ears leaves no wedge on the stage");
   heavy.wedges = T("rock").wedges;   // hand-placed extras on top of five packs
-  ok(E.mixCount(heavy) > E.VENUE.monitorMixes && E.warnings(heavy).some(w => /in-ears/.test(w.text) && /mixes/.test(w.text)), "five wedges plus five packs is more mixes than the room runs, and the warning says so: " + (E.warnings(heavy)[0] || {}).text);
+  ok(E.mixCount(heavy) === 10 && !E.warnings(heavy).some(w => /mixes/.test(w.text)), "five wedges plus five packs is ten mixes, counted and not warned about — the room can add wedges (William, 2026-11-04)");
+  ok(E.VENUE.monitorMixes === undefined && !/monitorMixes|extraWedgesFrom|normally runs/.test(src), "no mix limit is left anywhere in the page");
   ok(E.stepDone(heavy, "wedges") && E.stepDone(Object.assign(T("rock"), { wedges:[] }), "wedges") === false, "a plot with in-ears players has its monitors step started");
 
   const direct = E.byoDef("byo-pedals-direct");
