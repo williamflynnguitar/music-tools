@@ -545,6 +545,41 @@ nobody selected always does. The key's mic entry grows "; a singer's own vocal
 mic carries no name" while the plot has one. The Mics tab and the printed
 tables still say Vocal.
 
+## Not used in this performance (2026-11-04)
+
+A concert sets the stage once for every act on the bill, and one act may not
+use everything on it: the second keyboard, the Deluxe, wedge 4 (William,
+2026-11-04). **`unused:true`** on a position, an item or a wedge says so. The
+thing stays exactly where it is — the set is the set — and is drawn faint
+(`DRAW.ghost`, .32, the group's `opacity`, label and all, on screen and on
+paper) with a key entry, *not used in this performance*, while the plot has
+one. The lists keep it, with **not used** against it: the monitor row, the
+mic and DI lines, the band-brings line, and the meta line's *Mics 2 (1 not
+used)*. Nothing counts it out — House equipment needed is the set, and the
+house still puts it there; the mix-count and channel warnings count it too,
+because it is physically there.
+
+- **A player's gear follows the player.** `unusedOf()` is the one question
+  to ask: the object's own flag, or, for an item with owners, every owner
+  flagged. Derived, never stored on the gear, so a player put back in use
+  brings their amp, DI box and mics with them; an amp flagged on its own
+  leaves its player in use. Text labels are never unused. `setUnused()`
+  writes `true` or deletes the key; `migratePlot()` settles whatever a file
+  holds to that.
+- **The inspector** has the toggle, *This performance: In use / Not used*,
+  for positions, items and wedges, with "its player is not used, so neither
+  is it" when the state is inherited.
+- **One plot per performance.** The same set is marked differently in each
+  tab; **Duplicate** in the top bar (`duplicatePlot()`, a deep copy with its
+  own plot id and " (copy)" on the name, object ids kept — they are only
+  ever looked up within one plot) copies the set into the next tab. The
+  changeover sheet treats an unused thing as in place: gear and wedges go
+  under *Stays, not used by <act>* and *Back in use* (`items.use`,
+  `wedges.use`), never under comes off or struck; a chair not used has
+  nobody in it, so its occupant comes off like anyone who is not playing.
+- Not built: marking a multi-selection in one go, and printing every
+  performance's page at once (print-all is deferred anyway).
+
 ## Moving several things at once (2026-11-02)
 
 **Drag a box on empty deck and everything it touches is picked** (William:

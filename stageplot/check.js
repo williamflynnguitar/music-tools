@@ -15,7 +15,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   roleDef, roleOf, roleIdFromText, positionLabels, posText2, posShortLines, posNames,
   blankPlot, addPosition, makeFromParts, makeFromTemplate, autoLayout, monitorGroups, resetIds,
   parseNameList, applyNameList, migratePlot, migrateV1,
-  monitorTable, houseNeeds, byoList, warnings, changeover,
+  monitorTable, houseNeeds, byoList, warnings, changeover, unusedOf, setUnused, anyUnused, duplicatePlot,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, itemDef,
   diagramGeom, labelBoxes, positionLabelBox, LABEL_ROW,
   bigBandSeats, legendKeys,
@@ -1338,6 +1338,60 @@ for (const t of E.TEMPLATES){
   eq(v3.map(v => LB3[v.id].side).join(","), "up,up,down", "a staggered chain is two rows cut at the seed: the first two up with their mics, the third on their own");
   const again = E.labelBoxes(q, g3);
   ok(v3.every(v => again[v.id].side === LB3[v.id].side), "…and the same every time");
+}
+
+/* ---- 19p. not used in this performance (William, 2026-11-04) ---- */
+{
+  /* A concert sets the stage once; an act marks what it does not use. The
+     thing stays in place, drawn faint, and the lists keep it with "not used"
+     against it. A player's gear follows the player. */
+  const p = E.makeFromParts([["voice",1],["guitar",1],["bass",1],["drums",1]], null, "Set");
+  const L = labelsOf(p), by = id => p.positions.find(x => x.roleId === id);
+  const vox = by("voice"), gtr = by("guitar"), bass = by("bass");
+  const amp = E.findBackline(p, gtr, E.roleOf(p, gtr)), bassDI = E.disOn(p).find(i => i.ownerPositionIds.includes(bass.id));
+  const vm = E.addVocalMic(p, vox), own = E.addByoItem(p, "byo-pedals", gtr);
+  ok(!E.anyUnused(p) && !E.legendKeys(p).some(k => k.id === "unused"), "a fresh plot has nothing not used, and no key entry for it");
+  E.setUnused(p, gtr, true);
+  ok(gtr.unused === true, "Not used sets unused:true on the player…");
+  ok(E.unusedOf(p, gtr) && E.unusedOf(p, amp) && E.unusedOf(p, own) && amp.unused === undefined, "…and their amp and their pedalboard follow, derived, not stored");
+  ok(!E.unusedOf(p, bass) && !E.unusedOf(p, bassDI) && !E.unusedOf(p, vm), "…while the bass player, their DI and the singer's mic are untouched");
+  E.setUnused(p, gtr, false);
+  ok(gtr.unused === undefined && !E.unusedOf(p, amp), "In use removes the flag, and the gear comes back with the player");
+  E.setUnused(p, amp, true);
+  ok(E.unusedOf(p, amp) && !E.unusedOf(p, gtr), "an amp marked not used on its own leaves its player in use");
+  ok(E.legendKeys(p).some(k => k.id === "unused" && /not used in this performance/.test(k.text)), "…and the key explains the faint drawing");
+  const w = p.wedges[0]; E.setUnused(p, w, true); E.setUnused(p, vox, true);
+  const mon = E.monitorTable(p);
+  ok(mon.rows.find(r => r.n === w.number).unused === true && mon.rows.some(r => !r.unused), "the monitor table marks the dead wedge and no other");
+  ok(E.micList(p).find(m => m.label === "Vocal").unused === true, "the mic list marks the singer's mic as not used, through its owner");
+  ok(E.diList(p).every(d => !d.unused), "…and the DI list marks nothing — the bass is in use");
+  ok(E.byoList(p).find(b => /Pedalboard/.test(b.what)).unused === undefined && E.byoList(p).find(b => /Pedalboard/.test(b.what)) && (E.setUnused(p, gtr, true), E.byoList(p).find(b => /Pedalboard/.test(b.what)).unused === true), "the band-brings list carries the flag, and only when it is so");
+  E.setUnused(p, gtr, false);
+  ok(/r\.unused \? ' <b>— not used<\/b>'/.test(src) && /m\.unused \? ' <b>\(not used\)<\/b>'/.test(src) && /unusedNote\(mics\.concat\(dis\)\)/.test(src),
+     "the page says not used against a wedge, a mic, a DI and in the meta line (sheetHTML is outside the engine, so the source is read)");
+  ok(E.houseNeeds(p).some(n => n.id === amp.ref), "the house still sets the amp: not used counts nothing out");
+  // the changeover sheet: in place either way, dead or live for the next act
+  const a = E.makeFromParts([["voice",1],["guitar",1],["bass",1],["drums",1]], null, "Act one");
+  const b = E.duplicatePlot(a);
+  ok(b.id !== a.id && b.name === "Act one (copy)" && b.positions.length === a.positions.length && b.positions[0] !== a.positions[0], "Duplicate is a deep copy with its own id, named as a copy");
+  E.setUnused(b, b.positions.find(x => x.roleId === "guitar"), true); E.setUnused(b, b.wedges[0], true);
+  const co = E.changeover(a, b);
+  ok(co.items.use.length === 1 && !co.items.use[0].used && /\(Gtr\)/.test(co.items.use[0].what), "the guitar amp stays in place but goes dead for act two (" + (co.items.use[0] || {}).what + ")");
+  ok(co.items.leave.length === 0 && co.items.stay.some(x => /\(Gtr\)/.test(x)), "…listed under stays put, never under comes off");
+  ok(co.people.leave.some(x => x.role === "Guitar"), "the guitarist's chair is empty for act two, so they come off");
+  ok(co.wedges.use.length === 1 && co.wedges.use[0].n === b.wedges[0].number && !co.wedges.use[0].used && co.wedges.leave.length === 0, "wedge " + b.wedges[0].number + " stays and goes dead, not struck");
+  ok(/"Stays, not used by " \+ esc\(co\.to\)/.test(src) && /' stays, not used by ' \+ esc\(co\.to\)/.test(src) && /"Back in use"/.test(src), "the changeover sheet says so for gear and for a wedge, and says back in use the other way");
+  const back = E.changeover(b, a);
+  ok(back.items.use[0].used && back.wedges.use[0].used, "…the other way round, the amp and the wedge are back in use");
+  // save and load: true or absent, never on a text label
+  const file = JSON.parse(JSON.stringify(b));
+  file.items.push({ id:"lbl1", kind:"label", label:"stage door", x:10, y:10, rot:0, moved:true, unused:true });
+  file.wedges[0].unused = 0;
+  const m = E.migratePlot(file);
+  ok(m.positions.find(x => x.roleId === "guitar").unused === true, "unused:true survives save and load");
+  ok(m.wedges[0].unused === undefined && m.items.find(i => i.kind === "label").unused === undefined, "…a falsy flag and a flag on a text label are dropped");
+  ok(/data-unused="1"/.test(src) && /id="bDup"/.test(src) && /opacity="' \+ DRAW\.ghost/.test(src), "the inspector offers Not used, the top bar offers Duplicate, and the diagram ghosts at DRAW.ghost");
+  ok(E.DRAW.ghost > 0 && E.DRAW.ghost < .5, "ghosted means faint, not gone (" + E.DRAW.ghost + ")");
 }
 
 /* ---- 19o. labels inside shapes, and the stand as a bar (William, 2026-09-16) ---- */

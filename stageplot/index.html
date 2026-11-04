@@ -330,6 +330,7 @@ body.ro .pagerail{border:0;padding:0;width:100%;max-width:8.2in;margin:0 auto}
   <div class="grow"></div>
   <div class="bar-actions" id="topActions">
     <button class="btn" id="bNew">New</button>
+    <button class="btn" id="bDup" title="this plot again in a new tab — the same set, to mark up for the next performance">Duplicate</button>
     <button class="btn" id="bLoad">Load</button>
     <button class="btn" id="bSave">Save</button>
     <button class="btn" id="bShare">Share link</button>
@@ -567,12 +568,12 @@ function ownersOf(plot, it){ return (it.ownerPositionIds || []).map(id => plot.p
 function micList(plot){
   const labels = positionLabels(plot);
   return micsOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim() || (it.kind === "byo" ? (itemDef(it) || {}).label : "");   // the band's own mic says what it is
-    return { label:t || (own ? posText2(plot, own, labels) : "Mic"), who:own && t ? posText2(plot, own, labels) : "" }; });
+    return flagUnused(plot, it, { label:t || (own ? posText2(plot, own, labels) : "Mic"), who:own && t ? posText2(plot, own, labels) : "" }); });
 }
 function diList(plot){
   const labels = positionLabels(plot);
   return disOn(plot).map(it => { const own = ownerOf(plot, it), t = String(it.label || "").trim();
-    return { label:t || (own ? posText2(plot, own, labels) : "DI"), who:own && t ? posText2(plot, own, labels) : "" }; });
+    return flagUnused(plot, it, { label:t || (own ? posText2(plot, own, labels) : "DI"), who:own && t ? posText2(plot, own, labels) : "" }); });
 }
 function consoleCount(plot){ return micsOn(plot).length + disOn(plot).length; }   // one channel each; the only channel arithmetic left
 function micText(plot, it, labels){          // "tpt 1+2" or, unlabelled, the owner's chair, or just "Mic"; the band's own mic says its kind
@@ -703,6 +704,27 @@ function setIem(plot, pos, on){
   return hit.wedge;
 }
 function iemPlayers(plot){ return plot.positions.filter(iemOf); }
+/* Not used in this performance (William, 2026-11-04). A concert sets the
+   stage once for every act on the bill, and one act may not use everything
+   that is set: the second keyboard, the Deluxe, wedge 4. `unused:true` on a
+   position, a piece of gear or a wedge says so. It stays exactly where it
+   is — the set is the set — drawn faint on the deck and on the page, and
+   the lists keep it with "not used" against it, so the tech knows which
+   channels and mixes are dead for this act. Nothing counts it out: the
+   house still has to put it there. One plot per performance, so the same
+   set is marked differently in each tab; Duplicate copies the set.
+   A player's own gear follows the player — an amp with nobody at it is
+   not used either — which unusedOf() derives rather than stores, so a
+   player put back in use brings their gear with them. */
+function unusedOf(plot, o){
+  if (!o || o.kind === "label") return false;
+  if (o.unused) return true;
+  if (o.kind && (o.ownerPositionIds || []).length){ const owners = ownersOf(plot, o); return owners.length > 0 && owners.every(q => !!q.unused); }
+  return false;
+}
+function setUnused(plot, o, on){ if (on) o.unused = true; else delete o.unused; return o; }
+function anyUnused(plot){ return plot.positions.concat(plot.items, plot.wedges).some(o => unusedOf(plot, o)); }
+function flagUnused(plot, o, row){ if (unusedOf(plot, o)) row.unused = true; return row; }   // a list row says so only when it is so, so every other row keeps its shape
 function mixCount(plot){ return plot.wedges.length + iemPlayers(plot).length; }   // every wedge and every pack is a mix off the console
 /* The band's own gear, placed for a player: it belongs to them, so it prints
    against their chair and goes when they go. A pedalboard sits at their
@@ -800,7 +822,7 @@ const AMP_IDS_BEFORE = { gtramp1:"vox", gtramp2:"vox", gtramp3:"deluxe", gtramp4
 function renameOldAmps(plot){ for (const it of plot.items) if (it.kind === "house" && AMP_IDS_BEFORE[it.ref]) it.ref = AMP_IDS_BEFORE[it.ref]; return plot; }
 
 /* Drawing constants — not venue facts, so they live outside VENUE. */
-const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7, pianoKeys: 10 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller; pianoKeys: the depth of the upright piano's key strip, along the player's edge
+const DRAW = { person: 22, margin: 18, marginBottom: 27, labelPt: 12, smallPt: 9.5, tinyPt: 8, minPt: 7, pianoKeys: 10, ghost: .32 };   // the bottom holds AUDIENCE (the PA moved onto the deck, D2); minPt: no text is ever drawn smaller; pianoKeys: the depth of the upright piano's key strip, along the player's edge; ghost: the opacity of something not used in this performance, on screen and on paper
 /* A music stand, top-down: a solid bar in front of the player (William,
    2026-09-16 — the side-view icon read as a monitor and collided with the
    neighbours). Every bar is the same size, w × thick inches, whoever it
@@ -1583,9 +1605,10 @@ function labelBoxes(plot, g){
 
 /* ---- wedges, house gear, and everything derived from the deck ----- */
 function monitorTable(plot){                    // one row per wedge, in mix order: the number and where it stands; then one per in-ears player
-  const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => ({ n:w.number, id:w.id, where:posText(w, plot) }));
+  const flag = (o, row) => { if (unusedOf(plot, o)) row.unused = true; return row; };   // not used in this performance: on the row only when so, so a row keeps its shape otherwise
+  const rows = plot.wedges.slice().sort((a, b) => a.number - b.number).map(w => flag(w, { n:w.number, id:w.id, where:posText(w, plot) }));
   const labels = positionLabels(plot);
-  const iems = iemPlayers(plot).map(pos => ({ id:pos.id, who:posText2(plot, pos, labels) }));
+  const iems = iemPlayers(plot).map(pos => flag(pos, { id:pos.id, who:posText2(plot, pos, labels) }));
   return { rows, iems };
 }
 function houseNeeds(plot){
@@ -1626,13 +1649,13 @@ function byoList(plot){
   for (const it of plot.items) if (it.kind === "byo"){
     const def = byoDef(it.ref);
     const who = (it.ownerPositionIds || []).map(id => { const p = plot.positions.find(x => x.id === id); return p ? posText2(plot, p, labels) : null; }).filter(Boolean).join(" / ");
-    out.push({ what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who });
+    out.push(flagUnused(plot, it, { what:(def ? def.label : "Item") + (it.label ? " — " + it.label : ""), who }));
   }
   for (const p of plot.positions) if (kitIsByo(plot, p))
-    out.push({ what:"Drum kit" + kitLine(p), who:posText2(plot, p, labels) });
+    out.push(flagUnused(plot, p, { what:"Drum kit" + kitLine(p), who:posText2(plot, p, labels) }));
   for (const p of plot.positions) for (const b of (p.byo || [])) if (String(b).trim())
-    out.push({ what:String(b).trim(), who:posText2(plot, p, labels) });
-  for (const p of iemPlayers(plot)) out.push({ what:"In-ear monitor pack (needs a mix, no wedge)", who:posText2(plot, p, labels) });
+    out.push(flagUnused(plot, p, { what:String(b).trim(), who:posText2(plot, p, labels) }));
+  for (const p of iemPlayers(plot)) out.push(flagUnused(plot, p, { what:"In-ear monitor pack (needs a mix, no wedge)", who:posText2(plot, p, labels) }));
   return out;
 }
 /* The diagram's key: only the symbols this plot actually draws, in the
@@ -1648,6 +1671,7 @@ function legendKeys(plot){
   has("wedge",   "wedge, numbered by mix; the lined end is the grille, facing the player", plot.wedges.length);
   has("house",   "house gear", plot.items.some(i => i.kind === "house") || pos.some(p => stance(p) === "object"));
   has("byo",     "the band brings it", plot.items.some(i => i.kind === "byo") || pos.some(p => kitIsByo(plot, p)));
+  has("unused",  "not used in this performance", anyUnused(plot));   // short: the key has to stay on one line on a big band's page
   has("mic",     "mic on a stand" + (micsOn(plot).some(m => !micDrawnName(plot, m, positionLabels(plot))) ? "; a singer's own vocal mic carries no name" : ""), micsOn(plot).length);
   has("di",      "DI box", disOn(plot).length);
   has("kitparts", "drum (thick) / cymbal (thin)", pos.some(p => roleOf(plot, p).id === "drums") || plot.items.some(i => i.kind === "byo" && i.ref === "byo-kit"));
@@ -1707,8 +1731,8 @@ function indexItems(plot){
 function changeover(a, b){
   const SAME = 6;                                // within half a foot counts as "stays put"
   const la = positionLabels(a), lb = positionLabels(b);
-  const out = { from:a.name, to:b.name, items:{ stay:[], move:[], leave:[], arrive:[] },
-                people:{ stay:[], leave:[], arrive:[] }, wedges:{ change:[], leave:[], arrive:[] } };
+  const out = { from:a.name, to:b.name, items:{ stay:[], move:[], leave:[], arrive:[], use:[] },
+                people:{ stay:[], leave:[], arrive:[] }, wedges:{ change:[], leave:[], arrive:[], use:[] } };
   const ia = indexItems(a), ib = indexItems(b);
   for (const [k, it] of ia){
     const other = ib.get(k);
@@ -1716,6 +1740,7 @@ function changeover(a, b){
     if (Math.abs(it.x - other.x) <= SAME && Math.abs(it.y - other.y) <= SAME && (it.rot || 0) === (other.rot || 0))
       out.items.stay.push(itemLabelFor(other, b));
     else out.items.move.push({ what:itemLabelFor(other, b), from:posText(it, a), to:posText(other, b) });
+    if (unusedOf(a, it) !== unusedOf(b, other)) out.items.use.push({ what:itemLabelFor(other, b), used:!unusedOf(b, other) });   // in place either way; dead or live for the next act
   }
   for (const [k, it] of ib) if (!ia.has(k)) out.items.arrive.push(itemLabelFor(it, b));
 
@@ -1723,6 +1748,7 @@ function changeover(a, b){
   const occupants = (plot, labels) => {
     const list = [];
     for (const pos of plot.positions){
+      if (unusedOf(plot, pos)) continue;           // a chair not used in this performance has nobody in it
       const names = posNames(pos);
       if (names.length) for (const n of names) list.push({ key:n.toLowerCase(), name:n, role:labels[pos.id].full, pos });
       else list.push({ key:"chair:" + labels[pos.id].full.toLowerCase(), name:labels[pos.id].full, role:labels[pos.id].full, pos });
@@ -1746,12 +1772,24 @@ function changeover(a, b){
     if (!wb.has(n)) { out.wedges.leave.push(n); continue; }
     const wB = wb.get(n);
     if (Math.abs(wA.x - wB.x) > SAME || Math.abs(wA.y - wB.y) > SAME) out.wedges.change.push({ n, from:posText(wA, a), to:posText(wB, b) });
+    if (unusedOf(a, wA) !== unusedOf(b, wB)) out.wedges.use.push({ n, used:!unusedOf(b, wB) });
   }
   for (const [n] of wb) if (!wa.has(n)) out.wedges.arrive.push(n);
   return out;
 }
 
 /* ---- files, and reading a v1 file --------------------------------- */
+/* The same plot again, in the next tab: a concert sets the stage once, and
+   each act on the bill marks what it does not use (William, 2026-11-04).
+   A deep copy with its own id; the name says it is a copy until the Details
+   tab says otherwise. Object ids are kept — they are only ever looked up
+   within one plot, and the changeover sheet matches on labels, names and
+   mix numbers, never on ids. */
+function duplicatePlot(p){
+  const q = JSON.parse(JSON.stringify(p));
+  q.id = nextIdE("plot"); q.name = (p.name || "Plot") + " (copy)";
+  return q;
+}
 function plotFileName(plot){
   const slug = (plot.name || "plot").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   return "SW-plot-" + slug + "-" + (plot.date || todayISO()) + ".json";
@@ -1880,6 +1918,7 @@ function migratePlot(p){
   for (const it of p.items){ it.ownerPositionIds = it.ownerPositionIds || []; it.rot = it.rot || 0; }
   settleBackline(renameOldAmps(p));     // a file saved when every guitarist got gtramp1, or when the amps were four named boxes
   for (const w of p.wedges){ w.rot = w.rot || 0; delete w.assignees; delete w.request; }   // a wedge is a spot on the deck (2026-09-16)
+  for (const o of p.positions.concat(p.items, p.wedges)) setUnused(p, o, !!o.unused && o.kind !== "label");   // not used in this performance: true or absent, never on a text label
   if ("skipped" in p){ const list = Array.isArray(p.skipped) ? p.skipped.filter(x => SKIPPABLE.includes(x)) : []; if (list.length) p.skipped = list; else delete p.skipped; }
   for (const pos of p.positions) delete pos.wedgeId;
   if (!p.schemaVersion || p.schemaVersion < 3){
@@ -2010,6 +2049,7 @@ function legendHTML(plot, print){
     di:      '<rect x="7" y="4" width="8" height="8" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/>',
     kitparts:'<circle cx="6.5" cy="8" r="4.4" fill="' + ground + '" stroke="' + ink + '" stroke-width="2.4"/><circle cx="16.5" cy="8" r="4.4" fill="none" stroke="' + dim + '" stroke-width=".7"/>',
     off:     '<rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + ground + '" stroke="#c0392b" stroke-width="2"/>',
+    unused:  '<g opacity="' + DRAW.ghost + '"><rect x="2.5" y="3" width="17" height="10.5" rx="1.5" fill="' + fill + '" stroke="' + ink + '" stroke-width="1.1"/></g>',
   };
   return legendKeys(plot).map(k => '<span><svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true">' + sw[k.id] + '</svg>' + esc(k.text) + '</span>').join("");
 }
@@ -2027,9 +2067,10 @@ function diagramSVG(plot, opt){
   /* A label belongs to the thing it names: same data-id, so the pointer keeps
      the grab hand across it and dragging the name drags the player. Absolute
      coordinates, so the drag handler shifts it by a delta (data-abs). */
-  const labelled = (obj, px, py, inner) => P.push(print ? inner :
+  const ghost = obj => unusedOf(plot, obj) ? ' opacity="' + DRAW.ghost + '"' : "";   // not used in this performance: faint, in place, label and all
+  const labelled = (obj, px, py, inner) => P.push(print ? (ghost(obj) ? '<g' + ghost(obj) + '>' + inner + '</g>' : inner) :
     '<g class="hit' + (isSel(obj.id) ? " sel" : "") + '" data-id="' + obj.id + '" data-abs="1" data-sx="' +
-    px.toFixed(1) + '" data-sy="' + py.toFixed(1) + '">' + inner + '</g>');
+    px.toFixed(1) + '" data-sy="' + py.toFixed(1) + '"' + ghost(obj) + '>' + inner + '</g>');
 
   // deck, grid, fixed context
   P.push('<rect x="' + g.M + '" y="' + g.M + '" width="' + D.w + '" height="' + D.d + '" fill="' + deckFill + '" stroke="' + ink + '" stroke-width="1.6"/>');
@@ -2075,7 +2116,7 @@ function diagramSVG(plot, opt){
   const draw = (obj, body) => {
     const sel = !print && isSel(obj.id);
     P.push('<g transform="translate(' + g.sx(obj.x).toFixed(1) + ',' + g.sy(obj.y).toFixed(1) + ') rotate(' + (obj.rot || 0) + ')"' +
-      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '" data-rot="' + (obj.rot || 0) + '"') + '>' + body + '</g>');
+      (print ? "" : ' class="hit' + (sel ? " sel" : "") + '" data-id="' + obj.id + '" data-rot="' + (obj.rot || 0) + '"') + ghost(obj) + '>' + body + '</g>');
   };
   const stroke = obj => (!print && isSel(obj.id)) ? "#c9a24a" : ink;
   const swid = obj => (!print && isSel(obj.id)) ? 2.5 : 1.3;
@@ -2241,13 +2282,14 @@ function deliverLine(p){
 }
 function sheetHTML(p, opt){
   const link = opt && opt.link;
+  const unusedNote = list => { const n = list.filter(m => m.unused).length; return n ? n + " not used" : ""; };   // "Mics 2 · DI boxes 3 · 2 not used"
   const mon = monitorTable(p), needs = houseNeeds(p), byo = byoList(p), mics = micList(p), dis = diList(p), labels = positionLabels(p), H = [];
   H.push('<h1>' + esc(p.name || "Stage plot") + (p.showName ? ' <span style="font-size:11pt">— ' + esc(p.showName) + '</span>' : "") + '</h1>');
   H.push('<p class="subhead">' + esc(VENUE.name) + ' · ' + esc(VENUE.address) + '</p>');
   H.push('<p class="meta">' + (p.director ? '<span>Band leader/director: ' + esc(p.director) + '</span>' : "") +
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
     '<span>Prepared ' + fmtDate(todayISO()) + '</span>' +
-    '<span>Mics ' + mics.length + ' · DI boxes ' + dis.length + '</span>' +
+    '<span>Mics ' + mics.length + ' · DI boxes ' + dis.length + (unusedNote(mics.concat(dis)) ? ' · ' + unusedNote(mics.concat(dis)) : "") + '</span>' +
     '<span>Monitor mixes ' + mixCount(p) + " / " + VENUE.monitorMixes + (mon.iems.length ? " (" + mon.iems.length + " in-ears)" : "") + '</span>' +
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
@@ -2258,8 +2300,8 @@ function sheetHTML(p, opt){
   const left = [], right = [];
   left.push('<h2>Monitors</h2><table><thead><tr><th style="width:12%">Mix</th><th>Where</th></tr></thead><tbody>');
   if (!mon.rows.length && !mon.iems.length) left.push('<tr><td colspan="2" class="empty">No wedges placed.</td></tr>');
-  for (const r of mon.rows) left.push('<tr><td class="num">' + r.n + '</td><td>' + esc(r.where) + '</td></tr>');
-  for (const r of mon.iems) left.push('<tr><td class="num">in-ears</td><td>' + esc(r.who) + ' — own pack, needs a mix, no wedge</td></tr>');
+  for (const r of mon.rows) left.push('<tr><td class="num">' + r.n + '</td><td>' + esc(r.where) + (r.unused ? ' <b>— not used</b>' : "") + '</td></tr>');
+  for (const r of mon.iems) left.push('<tr><td class="num">in-ears</td><td>' + esc(r.who) + (r.unused ? ' <b>— not used</b>' : ' — own pack, needs a mix, no wedge') + '</td></tr>');
   left.push('</tbody></table>');
 
   if (needs.length){                              // nothing from the house: no section at all (Tim Shade, 2026-09-16)
@@ -2272,13 +2314,13 @@ function sheetHTML(p, opt){
   const gearList = (title, list) => {              // Microphones — 3, one line each, counted from the deck
     right.push('<h2>' + title + ' — ' + list.length + '</h2>');
     if (!list.length) right.push('<p class="empty" style="margin:1px 0">None on the deck.</p>');
-    else right.push('<ul>' + list.map(m => '<li>' + esc(m.label) + (m.who ? ' <span style="color:#555">— ' + esc(m.who) + '</span>' : "") + '</li>').join("") + '</ul>');
+    else right.push('<ul>' + list.map(m => '<li>' + esc(m.label) + (m.who ? ' <span style="color:#555">— ' + esc(m.who) + '</span>' : "") + (m.unused ? ' <b>(not used)</b>' : "") + '</li>').join("") + '</ul>');
   };
   gearList("Microphones", mics);
   gearList("DI boxes", dis);
   right.push('<h2>Musicians provide</h2><ul>');
   if (!byo.length) right.push('<li class="empty">Nothing — all house gear.</li>');
-  for (const b of byo) right.push('<li>' + esc(b.what) + (b.who ? " — " + esc(b.who) : "") + '</li>');
+  for (const b of byo) right.push('<li>' + esc(b.what) + (b.who ? " — " + esc(b.who) : "") + (b.unused ? ' <b>(not used)</b>' : "") + '</li>');
   right.push('</ul>');
   H.push('<div class="cols"><div>' + left.join("") + '</div><div>' + right.join("") + '</div></div>');
 
@@ -2316,10 +2358,13 @@ function changeoverHTML(co){
   h += list("Moves", co.items.move, a => esc(a.what) + (a.from === a.to ? ", within " + esc(a.to) : ": " + esc(a.from) + " → " + esc(a.to)));
   h += list("Comes on", co.items.arrive, a => esc(a));
   h += list("Comes off", co.items.leave, a => esc(a));
+  h += list("Stays, not used by " + esc(co.to), co.items.use.filter(a => !a.used), a => esc(a.what));
+  h += list("Back in use", co.items.use.filter(a => a.used), a => esc(a.what));
   h += '</div></div>';
-  if (co.wedges.change.length || co.wedges.arrive.length || co.wedges.leave.length){
+  if (co.wedges.change.length || co.wedges.arrive.length || co.wedges.leave.length || co.wedges.use.length){
     h += '<h2>Monitor changes</h2><ul>' +
       co.wedges.change.map(w => '<li>Wedge ' + w.n + (w.from === w.to ? ' moves, within ' + esc(w.to) : ': ' + esc(w.from) + ' → ' + esc(w.to)) + '</li>').join("") +
+      co.wedges.use.map(w => '<li>Wedge ' + w.n + (w.used ? ' back in use' : ' stays, not used by ' + esc(co.to)) + '</li>').join("") +
       (co.wedges.arrive.length ? '<li>Wedge ' + co.wedges.arrive.join(", ") + " added</li>" : "") +
       (co.wedges.leave.length ? '<li>Wedge ' + co.wedges.leave.join(", ") + " struck</li>" : "") +
       '</ul>';
@@ -2335,6 +2380,7 @@ function render(opt){
   $("venueLine").innerHTML = esc(VENUE.name) + "<br>" + esc(VENUE.address);
   document.body.classList.toggle("ro", S.readOnly);
   for (const id of ["bNew","bSave","bShare","bUndo","bRedo","bLoad","bHelp"]) $(id).hidden = S.readOnly && id !== "bSave";
+  $("bDup").hidden = S.readOnly || !S.plots.length;
   $("bEditCopy").hidden = !S.readOnly;
   $("bChange").hidden = S.plots.length < 2;
   $("bUndo").disabled = !S.undo.length; $("bRedo").disabled = !S.redo.length;
@@ -2825,6 +2871,12 @@ function renderInspector(p){
     }
   }
   if (isPosition(sel)) H.push('<div class="fld"><label>Notes</label><input type="text" id="iNotes"></div>');
+  if (sel.kind !== "label"){                       // not used in this performance: the set stays, this act doesn't play it
+    const un = !!sel.unused, viaOwner = !un && unusedOf(p, sel);
+    H.push('<div class="fld"><span class="lbl">This performance</span><div class="seg2">' +
+      '<button class="btn sm" data-unused="0" aria-pressed="' + !un + '">In use<span>' + (viaOwner ? "its player is not used, so neither is it" : "plays in this performance") + '</span></button>' +
+      '<button class="btn sm" data-unused="1" aria-pressed="' + un + '">Not used<span>stays in place, drawn faint; this performance doesn\'t use it</span></button></div></div>');
+  }
   H.push('<div class="insprow"><button class="btn sm" id="bRot" title="clockwise 45° — R">rotate ⟳ (R)</button><button class="btn sm" id="bRotL" title="counter-clockwise 45° — shift-R">rotate ⟲ (⇧R)</button><button class="btn sm" id="bDel">delete</button>' +
     '<button class="btn sm" id="bDesel">done</button></div>');
   el.innerHTML = H.join("");
@@ -2839,6 +2891,7 @@ function renderInspector(p){
   el.querySelectorAll("[data-stand]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); if (pos) setStands(q, pos, standsOf(q, pos) + (+b.dataset.d)); }));
   el.querySelectorAll("[data-kit]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); pos.kit = b.dataset.kit; }));
   el.querySelectorAll("[data-iem]").forEach(b => b.onclick = () => mut(() => { const q = plot(), pos = find(q, sel.id); if (pos) setIem(q, pos, b.dataset.iem === "iem"); }));
+  el.querySelectorAll("[data-unused]").forEach(b => b.onclick = () => mut(() => { const q = plot(), o = find(q, sel.id); if (o) setUnused(q, o, b.dataset.unused === "1"); }));
   if ($("iKitLabel")) bindText($("iKitLabel"), () => sel.kitLabel, v => sel.kitLabel = v);
   if ($("iRole")) $("iRole").onchange = () => mut(() => {
     const q = plot(), pos = find(q, sel.id);
@@ -3141,6 +3194,11 @@ function helpSections(){
     ["Turning things", ul([
       k("R") + ' turns the selected object 45° clockwise, ' + k("shift") + '+' + k("R") + ' counter-clockwise, or use the two rotate buttons in the panel under the stage.',
       'Anything turns: players, the kit, a keyboard, a wedge, a mic.'])],
+    ["Not used in this performance", ul([
+      'A concert sets the stage once for every act on the bill, and one act may not use everything on it. Select the thing — a player, an amp or keyboard, a wedge — and press <b>Not used</b> in the panel under the stage.',
+      'It stays exactly where it is, drawn faint on the deck and on the page, and the lists keep it with “not used” against it, so the tech knows which channels and mixes are dead for this act. The house still sets it.',
+      'A player marked not used takes their own gear with them; put them back in use and it comes back.',
+      'One plot per performance: <b>Duplicate</b> in the top bar copies this plot into a new tab, the same set, to mark up for the next act. The changeover sheet then says what stays in place but goes dead, and what comes back.'])],
     ["Removing things", ul([
       'Select it and click its ⊗, or press ' + k("Delete") + '.',
       '<b>clear stage</b> empties the deck.',
@@ -3334,6 +3392,7 @@ function openChangeover(){
 
 /* ================= wiring ================= */
 $("bNew").onclick = openStart;
+$("bDup").onclick = () => commit(() => { S.plots.splice(S.active + 1, 0, duplicatePlot(plot())); S.active++; S.sel = null; S.multi = []; });
 $("bLoad").onclick = () => $("fileIn").click();
 $("fileIn").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => loadJSON(t, f.name)); e.target.value = ""; };
 $("bSave").onclick = () => {
