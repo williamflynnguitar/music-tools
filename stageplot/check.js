@@ -17,7 +17,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   parseNameList, applyNameList, migratePlot, migrateV1,
   monitorTable, houseNeeds, byoList, warnings, changeover,
   offDeck, rectOf, footprintOf, deckIn, posText, zoneOf, plotFileName, itemDef,
-  diagramGeom, labelBoxes, positionLabelBox,
+  diagramGeom, labelBoxes, positionLabelBox, LABEL_ROW,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
@@ -1294,6 +1294,27 @@ for (const t of E.TEMPLATES){
      "the Mics & DIs tab opens with the select-first instruction, and the help repeats it");
   ok(/Nothing is selected, so it lands mid-stage, belonging to nobody\./.test(src) && /Right now it goes to <b>/.test(src), "…and says where the next mic or DI will land");
   eq(E.standCount(E.migratePlot(JSON.parse(JSON.stringify(bb)))), 19, "stands survive save and load");
+}
+
+/* ---- 19n2. a dragged row still labels on one side (2026-11-04) ---- */
+{
+  /* Four singers with vocal mics in front of them, so every name goes
+     upstage. One singer dragged half a chair out of line, with their mic
+     dragged well downstage — William's plot, 2026-11-04 — is still in the
+     row: the name goes up with the others, not down onto the mic. */
+  const p = E.makeFromParts([["voice",4],["guitar",1],["bass",1],["drums",1]], null, "Four voices");
+  const L = E.positionLabels(p), vox = p.positions.filter(q => q.roleId === "voice");
+  for (const v of vox){ v.names = ["Pat Q"]; E.addVocalMic(p, v); }
+  const jack = vox.find(v => L[v.id].short === "Vox 4"), mic = E.micsOn(p).find(m => m.ownerPositionIds.includes(jack.id));
+  jack.y += 10; jack.moved = true;              // dragged 10″ out of line, well within LABEL_ROW
+  mic.y = jack.y - 40; mic.moved = true;        // and the mic dragged 40″ downstage, leaving room under the chair
+  const LB = E.labelBoxes(p, E.diagramGeom(p));
+  const sides = new Set(vox.map(v => LB[v.id].side));
+  ok(sides.size === 1 && LB[jack.id].side === "up", "a singer dragged 10″ out of line labels with the row (" + [...sides].join(",") + ")");
+  jack.y += 20;                                 // 30″ out of line is another row
+  const LB2 = E.labelBoxes(p, E.diagramGeom(p));
+  eq(LB2[jack.id].side, "down", "…and one dragged 30″ downstage is on their own, with room under the chair");
+  ok(E.LABEL_ROW === 12, "LABEL_ROW is half a chair (" + E.LABEL_ROW + "″)");
 }
 
 /* ---- 19o. labels inside shapes, and the stand as a bar (William, 2026-09-16) ---- */

@@ -1540,14 +1540,19 @@ function positionLabelBox(plot, pos, g, taken, labels, force){
   return clash(up) ? down : up;
 }
 /* Place them in order; each dodges the ones already down. A row of players
-   (same depth, within an inch) takes one side for all of its labels: if any
-   label in the row has to flip upstage, the whole row flips, so a section
-   never reads with names above some chairs and below others (William,
-   2026-09-16). */
+   takes one side for all of its labels: if any label in the row has to flip
+   upstage, the whole row flips, so a section never reads with names above
+   some chairs and below others (William, 2026-09-16). A row is players
+   within LABEL_ROW inches of the same depth — an inch until 2026-11-04,
+   which held only for a row the engine had just laid: a singer dragged half
+   a chair out of line kept their own side, and their name landed on the
+   vocal mic they had dragged downstage. Half a chair is still well inside
+   the engine's narrowest row gap. */
+const LABEL_ROW = 12;
 function labelBoxes(plot, g){
   const map = {}, taken = [], labels = positionLabels(plot);
   const list = plot.positions.filter(pos => !(roleOf(plot, pos).stance === "object" && !posShortLines(plot, pos, labels).length));
-  const rowOf = pos => list.filter(o => Math.abs(o.y - pos.y) < 1);
+  const rowOf = pos => list.filter(o => Math.abs(o.y - pos.y) < LABEL_ROW);
   const done = new Set();
   for (const pos of list){
     if (done.has(pos.id)) continue;

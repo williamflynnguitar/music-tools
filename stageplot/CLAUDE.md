@@ -250,10 +250,14 @@ instrument, add a row; nothing else in the file enumerates instruments.
   and the bass and keys packed toward the stage-right wall to make room;
   `wedgeGap` went from 30″ to 44″ so a seated player's chair and label fit
   between the row and its wedge.
-- **A row's labels take one side.** `labelBoxes()` groups players at the
-  same depth and, if any label would have to flip upstage, flips the whole
-  row (`positionLabelBox(…, force)`), so a section never reads with names
-  above some chairs and below others.
+- **A row's labels take one side.** `labelBoxes()` groups players within
+  `LABEL_ROW` (12″, half a chair) of the same depth and, if any label would
+  have to flip upstage, flips the whole row (`positionLabelBox(…, force)`),
+  so a section never reads with names above some chairs and below others.
+  The tolerance was an inch until 2026-11-04, which only ever matched a row
+  the engine had just laid: a singer dragged a few inches out of line kept
+  their own side, and their name came down onto the vocal mic they had
+  dragged downstage.
 - `pick` is the longer name shown in the instrument picker when `label` is the
   short table-friendly one ("Drums" / "Drum kit").
 - **Backline is implied, not placed by hand**: guitar → a house guitar amp,
