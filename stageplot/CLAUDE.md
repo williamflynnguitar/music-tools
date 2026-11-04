@@ -285,7 +285,9 @@ instrument, add a row; nothing else in the file enumerates instruments.
   `plot.customRoles`, so an odd instrument travels inside the saved file and
   needs no code change. `roleDef()` looks there first.
 - Doubles are generic: `position.doubles = [{roleId}]` or `[{label}]`. They
-  print on the diagram (`Alto / Flute`) and nothing more.
+  print on the diagram and nothing more: *+ Flute* on its own line under
+  the chair (a plus since 2026-11-04 — the tables' `Alto / Flute` slash read
+  as a stray mark outside the circle).
 
 `ROLE_MATCH` turns free text into a role id ("Sam — bass trombone"), most
 specific pattern first. It is used by bulk name entry and the v1 migration.
@@ -533,6 +535,15 @@ exactly what the help always said to do by hand, and an old file with a
 hand-labelled "vocal" mic is unaffected. The "no per-player mic controls"
 check (B1) still holds: the control lives on the Mics & DIs tab, after a
 selection, like every other mic.
+
+**On the diagram a singer's own vocal mic carries no name** (William,
+2026-11-04: four singers in a row read Vocal Vocal Vocal Vocal). `micDrawnName()`
+is what the diagram writes under a mic: nothing for a mic named Vocal whose
+owner is the nearest player to it, and `micText()` for every other mic — one
+dragged over in front of somebody else says Vocal again, and one placed with
+nobody selected always does. The key's mic entry grows "; a singer's own vocal
+mic carries no name" while the plot has one. The Mics tab and the printed
+tables still say Vocal.
 
 ## Moving several things at once (2026-11-02)
 

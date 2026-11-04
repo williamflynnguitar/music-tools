@@ -21,7 +21,7 @@ const E = new Function(src.slice(A, B) + `; return { VENUE, DRAW, ROLES, LAYOUT,
   bigBandSeats, legendKeys,
   BACKLINE_CATS, houseCat, backlineCat, refCat, objectRef,
   pickBackline, findBackline, settleBackline, settleDI, houseUsed, houseRoom, houseCount, renameOldAmps, orderNum, ordinal, scheduleLines, fmtDate, labelAngle, kitIsByo, kitLine,
-  micsOn, disOn, ownerOf, ownersOf, micText, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, wedgeFor, WEDGE_REACH, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
+  micsOn, disOn, ownerOf, ownersOf, micText, micDrawnName, addMicItem, addVocalMic, VOCAL_LABEL, VOCAL_GAP, iemOf, setIem, iemPlayers, mixCount, wedgeFor, WEDGE_REACH, addByoItem, byoDef, PEDAL_GAP, addDI, placeDI, placeInputs, micList, diList, consoleCount, setWedgeNumber, nextWedgeNumber, wedgeClashes, wedgeClashText, venueFixtures,
   onFixture, SKIPPABLE, isSkipped, setSkipped, stepDone, stepState, chairsOf, setChairs, chairCount, chairText, standsOf, setStands, standCount, standText, defaultStands,
   STAND, DRUMMER, drummerAt, drummerBox, fitLabel, insideBox, labelPlan, labelClear, textWidth, breakTwo };`)();
 
@@ -292,7 +292,7 @@ for (const t of E.TEMPLATES){
   const p = E.makeFromParts([["alto",1],["drums",1]], null, "Doubles");
   const alto = p.positions.find(x => x.roleId === "alto"), drums = p.positions.find(x => x.roleId === "drums");
   alto.doubles = [{ roleId:"flute" }];
-  ok(/Flute/.test(E.posShortLines(p, alto).map(l => l.text).join(" ")), "a double prints on the diagram");
+  ok(E.posShortLines(p, alto).some(l => /^\+ Flute/.test(l.text)), "a double prints on the diagram as + Flute (2026-11-04: the slash read as a stray mark)");
   drums.names = ["Jo Fischer", "Riley Nunez"];
   ok(/Jo Fischer \/ Riley Nunez/.test(E.posText2(p, drums)), "both names print: " + E.posText2(p, drums));
   eq(E.houseNeeds(p).find(n => n.id === "kit").need, 1, "and one house kit, not two");
@@ -793,7 +793,12 @@ for (const t of E.TEMPLATES){
   const vm = E.addVocalMic(band, gtr);
   eq(E.micsOn(band).length, 1, "…hands its guitarist a vocal mic: one mic on the deck");
   eq(vm.label, "Vocal", "…labelled Vocal — not Vox (the chair) and not VOX (the amp)");
-  eq(E.micText(band, vm, labels), "Vocal", "…and drawn as Vocal under the lollipop");
+  eq(E.micText(band, vm, labels), "Vocal", "…named Vocal on the Mics tab and the page");
+  eq(E.micDrawnName(band, vm, labels), "", "…and drawn with no name, in front of its own singer (William, 2026-11-04)");
+  ok(E.legendKeys(band).some(k => k.id === "mic" && /vocal mic carries no name/.test(k.text)), "…which the key explains");
+  vm.x = bass.x; vm.y = bass.y - 12;
+  eq(E.micDrawnName(band, vm, labels), "Vocal", "…dragged over in front of the bass player it says Vocal again");
+  vm.x = gtr.x; vm.y = gtr.y - 21;
   eq(E.ownerOf(band, vm), gtr, "…belonging to the guitarist");
   ok(vm.moved, "…pinned where it landed");
   const f = E.footprintOf(gtr, band);
@@ -813,6 +818,8 @@ for (const t of E.TEMPLATES){
   eq(E.micsOn(band).length, 2, "a singer who leaves takes their vocal mic (owner's gear goes with the owner)");
   const loose = E.addVocalMic(band, null, { x:100, y:100 });
   eq(E.micText(band, loose, labelsOf(band)), "Vocal", "with nobody selected a vocal mic still says Vocal…");
+  eq(E.micDrawnName(band, loose, labelsOf(band)), "Vocal", "…on the diagram too, belonging to nobody");
+  ok(!E.legendKeys(E.makeFromParts([["trumpet",1]], null, "x")).some(k => /carries no name/.test(k.text)), "a plot with no unnamed mic keeps the short key entry");
   eq(loose.x + "," + loose.y, "100,100", "…and lands where it is told, belonging to nobody");
   ok(/\+ Vocal mic/.test(src) && /data-vocal/.test(src), "the Mics & DIs tab offers + Vocal mic");
   const ownerHandler = src.slice(src.indexOf('querySelectorAll("[data-owner]")'), src.indexOf("$(\"bRot\")"));
