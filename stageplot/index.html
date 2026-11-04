@@ -1559,13 +1559,17 @@ function positionLabelBox(plot, pos, g, taken, labels, force){
    which held only for a row the engine had just laid: a singer dragged half
    a chair out of line kept their own side, and their name landed on the
    vocal mic they had dragged downstage. Half a chair is still well inside
-   the engine's narrowest row gap. */
+   the engine's narrowest row gap. Rows are disjoint: the first unplaced
+   player in plot order seeds a row and takes everyone not yet placed within
+   LABEL_ROW of their depth, so a staggered chain (100″, 110″, 120″) is two
+   rows cut at the seed, never a middle player placed twice with a stale
+   box left behind in `taken`. */
 const LABEL_ROW = 12;
 function labelBoxes(plot, g){
   const map = {}, taken = [], labels = positionLabels(plot);
   const list = plot.positions.filter(pos => !(roleOf(plot, pos).stance === "object" && !posShortLines(plot, pos, labels).length));
-  const rowOf = pos => list.filter(o => Math.abs(o.y - pos.y) < LABEL_ROW);
   const done = new Set();
+  const rowOf = pos => list.filter(o => !done.has(o.id) && Math.abs(o.y - pos.y) < LABEL_ROW);
   for (const pos of list){
     if (done.has(pos.id)) continue;
     const row = rowOf(pos);
@@ -2140,7 +2144,7 @@ function diagramSVG(plot, opt){
         fit.lines.forEach((ln, i) => { gl += ts(ln, lx, ly + (i - (n - 1) / 2) * 1.15 * u + u * .36, fit.pt, "dim"); }); insideFit = true; }
       else gl = ts(outsideName, px, belowY, DRAW.smallPt, "dim");
     }
-    if (it.kind === "byo" && it.label){
+    if (it.kind === "byo" && it.label && !isMic){                     // a mic's label IS its name, written once above (or not at all, for a singer's own vocal mic)
       const bl = String(it.label).trim(), shown = bl.length > 18 ? bl.slice(0, 17).trimEnd() + "…" : bl;   // the deck gets the gist; Musicians provide prints it whole
       gl += ts(shown, px, belowY + (insideFit || isStand ? 0 : g.pt(DRAW.smallPt) * 1.15), DRAW.smallPt, "dim");
     }

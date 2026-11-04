@@ -820,6 +820,9 @@ for (const t of E.TEMPLATES){
   eq(E.micText(band, loose, labelsOf(band)), "Vocal", "with nobody selected a vocal mic still says Vocal…");
   eq(E.micDrawnName(band, loose, labelsOf(band)), "Vocal", "…on the diagram too, belonging to nobody");
   ok(!E.legendKeys(E.makeFromParts([["trumpet",1]], null, "x")).some(k => /carries no name/.test(k.text)), "a plot with no unnamed mic keeps the short key entry");
+  const own = E.addByoItem(band, "byo-hornmic", gtr); own.label = "Vocal";
+  eq(E.micDrawnName(band, own, labelsOf(band)), "", "the band's own mic, labelled Vocal in front of its owner, carries no name either…");
+  ok(/it\.kind === "byo" && it\.label && !isMic/.test(src), "…and the diagram's band-brings line skips a mic, whose label is its name, so nothing writes it twice");
   eq(loose.x + "," + loose.y, "100,100", "…and lands where it is told, belonging to nobody");
   ok(/\+ Vocal mic/.test(src) && /data-vocal/.test(src), "the Mics & DIs tab offers + Vocal mic");
   const ownerHandler = src.slice(src.indexOf('querySelectorAll("[data-owner]")'), src.indexOf("$(\"bRot\")"));
@@ -1322,6 +1325,19 @@ for (const t of E.TEMPLATES){
   const LB2 = E.labelBoxes(p, E.diagramGeom(p));
   eq(LB2[jack.id].side, "down", "…and one dragged 30″ downstage is on their own, with room under the chair");
   ok(E.LABEL_ROW === 12, "LABEL_ROW is half a chair (" + E.LABEL_ROW + "″)");
+  /* Rows are disjoint. A staggered chain — singers at 100″, 110″ and 120″,
+     mics in front of the first two only — is two rows cut at the seed: the
+     first two go up together (their mics are in the way), the third is on
+     their own with room below. Nobody is placed twice, so `taken` holds one
+     box per label and no stale one. */
+  const q = E.makeFromParts([["voice",3],["guitar",1],["bass",1],["drums",1]], null, "Three voices");
+  const v3 = q.positions.filter(x => x.roleId === "voice").sort((a, b) => a.x - b.x);
+  v3.forEach((v, i) => { v.names = ["Pat Q"]; v.y = 100 + 10 * i; v.moved = true; });
+  E.addVocalMic(q, v3[0]); E.addVocalMic(q, v3[1]);
+  const g3 = E.diagramGeom(q), LB3 = E.labelBoxes(q, g3);
+  eq(v3.map(v => LB3[v.id].side).join(","), "up,up,down", "a staggered chain is two rows cut at the seed: the first two up with their mics, the third on their own");
+  const again = E.labelBoxes(q, g3);
+  ok(v3.every(v => again[v.id].side === LB3[v.id].side), "…and the same every time");
 }
 
 /* ---- 19o. labels inside shapes, and the stand as a bar (William, 2026-09-16) ---- */
