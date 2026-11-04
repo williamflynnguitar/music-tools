@@ -89,7 +89,7 @@ counts and the deck are still placeholders.
 | `kit` label — "House drum kit" | confirmed | no model: the house has several kits (Tim Shade, 2026-09-16). A drums position chooses House kit / Bring your own (`pos.kit`) and may name it (`pos.kitLabel`) |
 | `mic` 8, `musicstand` 20, `di` 8, `chair` 40 | **ASSUMED** | only used to flag "more than Somewhere Works has" |
 | power strips, risers | removed 2026-09-16 | Somewhere Works handles power; there are no risers. An old file's power/riser items are dropped on load |
-| `monitorMixes: 5`, `consoleChannels: 32` | confirmed | `warnChannelsAt: 28` is our own headroom line |
+| `wedgesDealt: 5`, `consoleChannels: 32` | confirmed | the engine deals at most five wedges, the room's usual count. **Not a limit**: Somewhere Works said a sixth wedge is no problem (William, 2026-11-04), so the amber over-count warning, the "/ 5" in the meta row and `extraWedgesFrom` (Shocker Studios) went that day. `warnChannelsAt: 28` is our own headroom line |
 
 Footprints are approximate on purpose: they only have to draw at a sensible
 size on a 24′ deck, and the tech is not measuring off this page.
@@ -613,8 +613,8 @@ plot that never used it saves byte-identical. The toggle is **in-ears** on
 the player's card (Positions tab) and a Wedge / In-ears segment in the
 inspector. What it does: the player's pack is their own (Somewhere Works has
 wedges, not packs), so it prints under Musicians provide; it needs a mix off
-the console, so `mixCount()` — wedges plus packs — is what the meta row and
-the over-count warning read against `VENUE.monitorMixes`; the Monitors table
+the console, so `mixCount()` — wedges plus packs — is what the meta row
+prints (against the room's five until 2026-11-04; see `wedgesDealt`); the Monitors table
 prints an *in-ears* row per player after the wedge rows; the diagram says
 *in-ears* under the chair with the doubles and the names; and the Wedges
 tab lists who is on them. **Going on in-ears takes the player's wedge off
@@ -808,7 +808,7 @@ ones, and a blank plot stays at zero wedges no matter how many instruments go
 into it. `monitorGroups()` decides how many, their numbers and where: groups
 in priority order — voices, drums, bass, guitar, keys, sax row, trombones,
 trumpets, strings, other — merged smallest-adjacent-pair until they fit
-`VENUE.monitorMixes`, each wedge landing downstage of its group. Nothing
+`VENUE.wedgesDealt`, each wedge landing downstage of its group. Nothing
 records the grouping afterwards; the number is the mix and the diagram is
 where it stands. The printed Monitors table is mix number and location
 (`posText()`), one row per wedge — the zone in words, "Center stage right",
