@@ -53,7 +53,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .bar-actions{display:flex;gap:6px;flex-wrap:wrap}
 
 .tabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap;padding:6px 16px;border-bottom:1px solid var(--line)}
-.tab{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-bottom-color:transparent;border-radius:4px 4px 0 0;padding:5px 10px;font-size:13px;background:transparent}
+.tab{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-bottom-color:transparent;border-radius:4px 4px 0 0;padding:5px 10px;font-size:13px;background:transparent;touch-action:none;user-select:none;-webkit-user-select:none}
+.tab.dragging{border-color:var(--brass);background:var(--petrol-2);cursor:grabbing}
+.tab.dragging button{cursor:grabbing}
 .tab[aria-current=true]{background:var(--petrol);border-color:var(--brass)}
 .tab .x{color:var(--bone-dim);font-family:var(--mono);font-size:12px}
 .tab .x:hover{color:var(--red)}
@@ -2285,7 +2287,7 @@ function sheetHTML(p, opt){
     scheduleLines(p).map(l => '<span>' + esc(l) + '</span>').join("") +
     '<span>Prepared ' + fmtDate(todayISO()) + '</span>' +
     '<span>Mics ' + mics.length + ' · DI boxes ' + dis.length + (unusedNote(mics.concat(dis)) ? ' · ' + unusedNote(mics.concat(dis)) : "") + '</span>' +
-    '<span>Monitor mixes ' + mixCount(p) + (mon.iems.length ? " (" + mon.iems.length + " in-ears)" : "") + '</span>' +
+    '<span>Monitor mixes ' + mixCount(p) + (mon.iems.length ? " (" + mon.iems.length + " in-ears)" : "") + (unusedNote(mon.rows.concat(mon.iems)) ? ' · ' + unusedNote(mon.rows.concat(mon.iems)) : "") + '</span>' +   // a dead wedge or a pack on a player not used is still a mix on the set, so it counts and is then counted out, like the DIs
     '<span>Deck ' + p.deck.widthFt + "′ × " + p.deck.depthFt + '′</span></p>');
   H.push('<hr class="rule">');
   H.push('<div class="diagram">' + diagramSVG(p, { mode:"print" }) + '</div>');
@@ -2392,7 +2394,7 @@ function render(opt){
 function renderTabs(){
   const t = $("tabs"); t.hidden = S.plots.length < 2;
   t.innerHTML = S.plots.map((p, i) =>
-    '<span class="tab" aria-current="' + (i === S.active) + '"><button class="btn sm" style="border:0;padding:0" data-go="' + i + '">' +
+    '<span class="tab" data-i="' + i + '" aria-current="' + (i === S.active) + '"><button class="btn sm" style="border:0;padding:0" data-go="' + i + '">' +
     esc(p.name || "Plot") + '</button>' + (S.readOnly ? "" : '<button class="x" data-close="' + i + '" title="close">×</button>') + '</span>').join("") +
     (S.readOnly ? "" : '<button class="btn sm" id="bAddTab">+ plot</button>');
   t.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { S.active = +b.dataset.go; S.sel = null; render(); });
@@ -2400,6 +2402,35 @@ function renderTabs(){
     S.plots.splice(+b.dataset.close, 1); S.active = Math.max(0, Math.min(S.active, S.plots.length - 1)); S.sel = null;
   }));
   const add = $("bAddTab"); if (add) add.onclick = () => openStart();
+  if (!S.readOnly) t.querySelectorAll(".tab").forEach(tab => tab.addEventListener("pointerdown", e => tabDrag(t, tab, e)));
+}
+/* Drag a tab to reorder the plots (William, 2026-11-05). Pointer events,
+   so a finger works as well as a mouse; the tab jumps into place as it
+   crosses the middle of a neighbour, and the order is committed on release
+   (one undo step). The order matters: the changeover sheets print between
+   neighbouring tabs, so this is the running order of the bill. A press
+   that never moves is still the click that switches plots. */
+function tabDrag(strip, tab, e){
+  if (e.button !== 0 || e.target.closest("[data-close]")) return;
+  const x0 = e.clientX, y0 = e.clientY; let moved = false;
+  const tabs = () => [...strip.querySelectorAll(".tab")];
+  const move = ev => {
+    if (!moved){ if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return; moved = true; try { tab.setPointerCapture(e.pointerId); } catch (_){} tab.classList.add("dragging"); }
+    const others = tabs().filter(o => o !== tab).map(o => ({ o, r:o.getBoundingClientRect() }));
+    const row = others.filter(x => ev.clientY >= x.r.top && ev.clientY <= x.r.bottom);   // the strip wraps on a narrow window: the row under the pointer, or the whole strip when it is between rows
+    const lane = row.length ? row : others;
+    const left = lane.filter(x => ev.clientX > x.r.left + x.r.width / 2);   // every tab whose middle the pointer has passed; the dragged tab goes after the last of them
+    if (left.length){ const o = left[left.length - 1].o; if (o.nextElementSibling !== tab) o.after(tab); }
+    else { const o = lane[0].o; if (o.previousElementSibling !== tab) o.before(tab); }
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+    if (!moved) return;
+    const order = tabs().map(o => +o.dataset.i);
+    if (order.some((v, i) => v !== i)) commit(() => { const cur = S.plots[S.active]; S.plots = order.map(i => S.plots[i]); S.active = S.plots.indexOf(cur); });
+    else renderTabs();                               // put down where it started: redraw, which also drops the click that would have switched plots
+  };
+  window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);   // on the window: until the tab captures the pointer, the moves land on whatever is under it
 }
 function renderWarnings(p){
   const w = warnings(p);
