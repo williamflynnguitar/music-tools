@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stripes</title>
+<!-- Link preview -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="William Flynn Guitar">
+<meta property="og:title" content="Stripes">
+<meta property="og:description" content="Three diminished families, one striped neck. Chord symbol to family, fast.">
+<meta property="og:url" content="https://williamflynnguitar.github.io/music-tools/stripes/">
+<meta property="og:image" content="https://williamflynnguitar.github.io/music-tools/og-image-v2.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="William Flynn playing archtop guitar">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="description" content="Three diminished families, one striped neck. Chord symbol to family, fast.">
+<style>
+button,.seg,.qp{touch-action:manipulation}
+
+:root{
+  --ink:#0b1a1f; --petrol:#123640; --petrol-2:#1a4551; --line:#2a5461;
+  --dark:#071317;
+  --bone:#e8e1d1; --bone-dim:#a89f8c; --brass:#c9a24a;
+  --good:#7fb28a; --bad:#d4715f;
+  --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--serif);font-size:16px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+[hidden]{display:none!important}
+
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:22px 28px 0;flex-wrap:wrap}
+.wordmark{font-size:28px;font-weight:400;margin:0}
+.wordmark em{font-style:italic;color:var(--brass)}
+.modes{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.modes button{background:transparent;border:0;padding:8px 16px;min-height:44px;cursor:pointer;color:var(--bone-dim)}
+.modes button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.app{padding:14px 28px 40px;max-width:1040px}
+.intro{color:var(--bone-dim);max-width:62ch;margin:0 0 20px;font-size:16px}
+@media (max-width:600px){.top{padding:16px 16px 0}.app{padding:12px 16px 40px}.wordmark{font-size:24px}}
+
+.lbl{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);margin-bottom:6px}
+.row{margin-bottom:16px}
+.sym{display:flex;gap:8px;align-items:stretch;max-width:420px}
+.sym input{flex:1;min-width:0;background:var(--dark);border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:20px;color:var(--bone);min-height:48px}
+.sym button{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:0 18px;min-height:48px;cursor:pointer;font-family:var(--mono)}
+.qp{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.qp button{background:transparent;border:1px solid var(--line);border-radius:4px;min-width:46px;min-height:44px;padding:0 10px;cursor:pointer;font-family:var(--mono);font-size:15px}
+.qp button[aria-pressed=true]{background:var(--petrol-2);border-color:var(--brass)}
+.qp button:hover{border-color:var(--brass)}
+
+.result{font-family:var(--mono);margin:6px 0 12px;min-height:1.6em}
+.result .fam{color:var(--brass);font-size:22px;letter-spacing:.04em}
+.result .conv{display:block;color:var(--bone);font-size:14px;margin-top:4px}
+.result .note{display:block;color:var(--bad);font-size:14px;margin-top:4px}
+.result .aside{display:block;color:var(--bone-dim);font-size:13px;margin-top:4px}
+
+.neckwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:4px;background:var(--petrol);padding:6px 0}
+.neckwrap svg{display:block}
+.opts{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:14px;color:var(--bone-dim)}
+.check{display:flex;gap:8px;align-items:center;cursor:pointer;min-height:36px}
+.check input{accent-color:var(--brass);width:18px;height:18px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{background:transparent;border:0;padding:0 12px;min-height:36px;cursor:pointer;color:var(--bone-dim);font-family:var(--mono);font-size:13px}
+.seg button[aria-pressed=true]{background:var(--petrol-2);color:var(--bone)}
+
+.anchor{font-family:var(--mono);font-size:14px;color:var(--bone);border-left:2px solid var(--brass);padding:4px 12px;margin:16px 0}
+.anchor b{color:var(--brass);font-weight:400}
+
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.thumb{background:var(--petrol);border:1px solid var(--line);border-radius:4px;padding:6px 6px 4px;cursor:pointer;text-align:left;color:var(--bone-dim);font-family:var(--mono);font-size:12px}
+.thumb[aria-pressed=true]{border-color:var(--brass);color:var(--brass)}
+.thumb svg{display:block;width:100%;height:auto;margin-bottom:4px}
+@media (max-width:600px){.thumbs{gap:6px}.thumb{font-size:10px;padding:4px 4px 3px}}
+
+/* drill */
+.setup{display:grid;gap:16px;max-width:520px}
+.levels{display:grid;gap:6px}
+.levels button{display:flex;gap:12px;align-items:baseline;background:transparent;border:1px solid var(--line);border-radius:4px;padding:10px 14px;min-height:48px;cursor:pointer;text-align:left}
+.levels button[aria-pressed=true]{background:var(--petrol-2);border-color:var(--brass)}
+.levels b{font-family:var(--mono);font-weight:400;color:var(--brass);flex:none}
+.levels span{color:var(--bone-dim);font-size:14px}
+.btn{background:var(--brass);color:var(--ink);border:0;border-radius:4px;padding:0 20px;min-height:48px;cursor:pointer;font-family:var(--mono)}
+.btn.quiet{background:transparent;color:var(--bone);border:1px solid var(--line)}
+.count{font-family:var(--mono);font-size:14px;color:var(--bone-dim);font-variant-numeric:tabular-nums}
+.prompt{font-family:var(--mono);font-size:56px;line-height:1.1;margin:10px 0 18px;letter-spacing:.02em;word-break:break-all}
+@media (max-width:600px){.prompt{font-size:44px}}
+.answers{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:560px}
+.answers button{background:var(--petrol);border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-height:60px;cursor:pointer;font-family:var(--mono);font-size:16px;text-align:left;display:flex;gap:10px;align-items:center}
+.answers button i{font-style:normal;color:var(--bone-dim);font-size:12px;flex:none}
+.answers button:hover{border-color:var(--brass)}
+.answers button.right{border-color:var(--good);color:var(--good)}
+.answers button.wrong{border-color:var(--bad);color:var(--bad)}
+.answers button:disabled{cursor:default}
+.verdict{font-family:var(--mono);font-size:22px;margin:14px 0 2px}
+.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
+.advance{margin-top:12px}
+.summary{font-family:var(--mono);font-size:14px;max-width:560px}
+.summary table{border-collapse:collapse;margin:8px 0 14px}
+.summary td{padding:4px 14px 4px 0;vertical-align:top;font-variant-numeric:tabular-nums}
+.summary td:first-child{color:var(--bone-dim)}
+.summary ul{margin:4px 0 14px;padding-left:18px}
+.summary li{margin:2px 0}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<!-- ===== spine menu — keep this block byte-identical across all tool pages (see root CLAUDE.md).
+     Page ranges mirror the source labels on the index.html cards; update both together. ===== -->
+<style>
+  .sp-menu{position:relative;z-index:9999;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:10px 10px 0;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .sp-anchor{position:relative;}
+  .sp-site{display:inline-block;background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;white-space:nowrap;}
+  .sp-site:hover{color:#e9e2d2;border-color:#c9a44c;}
+  .sp-toggle{background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;padding:9px 13px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+  .sp-toggle:hover{color:#e9e2d2;border-color:#c9a44c;background:#10303a;}
+  .sp-panel{position:absolute;right:0;top:calc(100% + 6px);width:312px;background:#10303a;border:1px solid #163f4b;border-radius:6px;padding:0 0 12px;box-shadow:0 8px 28px rgba(0,0,0,.45);}
+  .sp-home{display:flex;align-items:center;gap:9px;padding:12px 16px;color:#e9e2d2;text-decoration:none;font-size:12px;letter-spacing:.16em;text-transform:uppercase;border-bottom:1px solid #163f4b;margin-bottom:12px;}
+  .sp-home:hover{background:#163f4b;}
+  .sp-hb{border-left:3px solid #c9a44c;margin:0 14px;}
+  .sp-cap{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#c9a44c;padding:2px 14px 0;}
+  .sp-sub{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-style:italic;font-size:11px;letter-spacing:.02em;color:#a9a597;padding:3px 14px 4px;}
+  .sp-sec{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#a9a597;padding:10px 14px 3px;}
+  .sp-panel a.sp-item{display:flex;align-items:baseline;gap:12px;padding:8px 14px;color:#e9e2d2;text-decoration:none;font-size:12.5px;letter-spacing:.04em;border-left:3px solid transparent;}
+  .sp-hb a.sp-item{margin-left:-3px;}
+  .sp-panel a.sp-item:hover{background:#163f4b;}
+  .sp-pp{margin-left:auto;font-size:12px;color:#7d7767;white-space:nowrap;padding-left:8px;}
+  .sp-panel a.sp-item[aria-current="page"]{color:#c9a44c;border-left-color:#c9a44c;}
+  .sp-sa{margin:12px 14px 0;padding-top:10px;border-top:1px solid #163f4b;}
+  .sp-sa .sp-cap{color:#a9a597;}
+  @media print{
+    .sp-menu{display:none;}
+  }
+  @media (max-width:480px){
+    .sp-panel{position:fixed;left:10px;right:10px;top:58px;width:auto;max-height:calc(100vh - 70px);overflow:auto;}
+    .sp-sec{display:none;}
+  }
+  @media (max-width:360px){
+    .sp-site{letter-spacing:.06em;padding:9px 9px;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  }
+</style>
+<nav class="sp-menu" aria-label="Jazz Guitar Practice Tools"><a class="sp-site" href="https://williamflynnmusic.com/tools/">&#8592; williamflynnmusic.com</a><div class="sp-anchor">
+  <button class="sp-toggle" type="button" aria-expanded="false">&#9776; tools</button>
+  <div class="sp-panel" hidden>
+    <a class="sp-home" href="../index.html"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 12h3v9h6v-7h2v7h6v-9h3z" fill="currentColor"/></svg>Jazz Guitar Practice Tools</a>
+    <div class="sp-hb">
+      <div class="sp-cap">Handbook</div>
+      <div class="sp-sub">Jazz Guitar Technique Handbook, 3rd ed.</div>
+      <div class="sp-sec">Scales</div>
+      <a class="sp-item" data-sp="fretboard" href="../fretboard/index.html">Fretboard<span class="sp-pp">pp. 6&#8211;23</span></a>
+      <a class="sp-item" data-sp="stripes" href="../stripes/index.html">Stripes<span class="sp-pp">pp. 22&#8211;23</span></a>
+      <a class="sp-item" data-sp="scales-deck" href="../scales-deck/index.html">Scale practice<span class="sp-pp">pp. 61&#8211;64</span></a>
+      <div class="sp-sec">Arpeggios</div>
+      <a class="sp-item" data-sp="arpeggios-deck" href="../arpeggios-deck/index.html">Arpeggio practice<span class="sp-pp">pp. 76&#8211;78</span></a>
+      <div class="sp-sec">Chord voicings</div>
+      <a class="sp-item" data-sp="shell-builder" href="../shell-builder/index.html">Shell voicing builder<span class="sp-pp">pp. 45&#8211;51</span></a>
+      <a class="sp-item" data-sp="inversion-drill" href="../inversion-drill/index.html">Inversion drill<span class="sp-pp">pp. 52&#8211;59</span></a>
+      <a class="sp-item" data-sp="voice-leading" href="../voice-leading/index.html">Voice-leading trainer<span class="sp-pp">p. 79</span></a>
+      <a class="sp-item" data-sp="quartal-voicings" href="../quartal-voicings/index.html">Quartal voicings<span class="sp-pp">new ch.</span></a>
+      <a class="sp-item" data-sp="triad-voicings" href="../triad-voicings/index.html">Triad voicings<span class="sp-pp">pp. 39&#8211;43</span></a>
+      <a class="sp-item" data-sp="comping-rhythms" href="../comping-rhythms/index.html">Charleston<span class="sp-pp">pp. 83&#8211;84</span></a>
+    </div>
+    <div class="sp-sa">
+      <div class="sp-cap">Stand-alone</div>
+      <div class="sp-sub">Not from the handbook</div>
+      <a class="sp-item" data-sp="enclosures" href="../enclosures/index.html">Enclosures</a>
+      <a class="sp-item" data-sp="line-ladder" href="../line-ladder/index.html">Line ladder</a>
+      <a class="sp-item" data-sp="two-and-four" href="../two-and-four/index.html">2 &amp; 4</a>
+      <a class="sp-item" data-sp="chartwright" href="../chartwright/index.html">Chartwright</a>
+      <a class="sp-item" data-sp="composition-assignments" href="../composition-assignments/index.html">Composition assignments</a>
+    </div>
+  </div>
+</div></nav>
+<script>
+(() => {
+  const nav = document.currentScript.previousElementSibling;
+  const btn = nav.querySelector(".sp-toggle"), panel = nav.querySelector(".sp-panel");
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const cur = nav.querySelector('[data-sp="' + here + '"]');
+  if (cur) cur.setAttribute("aria-current", "page");
+  const set = open => { panel.hidden = !open; btn.setAttribute("aria-expanded", String(open)); };
+  btn.addEventListener("click", () => set(panel.hidden));
+  document.addEventListener("click", e => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+})();
+</script>
+<!-- ===== end spine menu ===== -->
+
+<header class="top">
+  <h1 class="wordmark"><em>Stripes</em></h1>
+  <nav class="modes" aria-label="Mode">
+    <button type="button" data-mode="lookup" aria-pressed="true">Lookup</button>
+    <button type="button" data-mode="drill" aria-pressed="false">Conversion drill</button>
+  </nav>
+</header>
+
+<main class="app">
+<p class="intro">There are only three diminished scales. Each one is a family of four dominant chords a minor third apart, and on the guitar each one is the same striped picture shifted by a fret. This page is for getting the chord symbol to the family fast, and seeing the stripes once so you never have to think in fingerings again.</p>
+
+<!-- ===== Lookup ===== -->
+<section id="lookup">
+  <div class="row">
+    <label class="lbl" for="symIn">Chord symbol</label>
+    <form class="sym" id="symForm" autocomplete="off">
+      <input id="symIn" type="text" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="G7  ·  Bdim7  ·  Db13b9" aria-label="Chord symbol">
+      <button type="submit">Look up</button>
+    </form>
+    <div class="qp" id="qpRoots" aria-label="Root"></div>
+    <div class="qp" id="qpQual" aria-label="Quality"></div>
+  </div>
+
+  <div class="result" id="result" aria-live="polite"></div>
+
+  <div class="neckwrap" id="neckwrap"><svg id="neck" role="img" aria-label="Fretboard"></svg></div>
+  <div class="opts">
+    <span class="seg" id="range"><button type="button" data-v="15" aria-pressed="true">0–15</button><button type="button" data-v="24" aria-pressed="false">0–24</button></span>
+    <label class="check"><input type="checkbox" id="optGroups"> show string groups</label>
+    <label class="check"><input type="checkbox" id="optNames"> note names on dots</label>
+  </div>
+
+  <p class="anchor"><b>Anchor.</b> Dominant root = lower note of a lit pair. Dim root = upper note.</p>
+
+  <span class="lbl">The three families</span>
+  <div class="thumbs" id="thumbs"></div>
+</section>
+
+<!-- ===== Drill ===== -->
+<section id="drill" hidden>
+  <div id="setup" class="setup">
+    <div>
+      <span class="lbl">Level</span>
+      <div class="levels" id="levels"></div>
+    </div>
+    <div>
+      <span class="lbl">Round</span>
+      <span class="seg" id="roundLen"><button type="button" data-v="12" aria-pressed="true">12 prompts</button><button type="button" data-v="24" aria-pressed="false">24</button></span>
+      <label class="check" style="margin-top:8px"><input type="checkbox" id="optHint"> hint: show the three families during the prompt</label>
+    </div>
+    <div><button class="btn" id="startBtn" type="button">Start round</button></div>
+  </div>
+
+  <div id="round" hidden>
+    <div class="count" id="count"></div>
+    <div class="prompt" id="promptSym"></div>
+    <div class="thumbs" id="hintThumbs" hidden></div>
+    <div class="answers" id="answers"></div>
+    <div id="reveal" hidden>
+      <div class="verdict" id="verdict"></div>
+      <div class="result" id="dResult"></div>
+      <div class="neckwrap"><svg id="dNeck" role="img" aria-label="Fretboard"></svg></div>
+      <p class="anchor"><b>Anchor.</b> Dominant root = lower note of a lit pair. Dim root = upper note.</p>
+      <div class="advance"><button class="btn" id="nextBtn" type="button">Next</button> <span class="count">space or enter</span></div>
+    </div>
+  </div>
+
+  <div id="summary" class="summary" hidden></div>
+</section>
+</main>
+
+<script>
+/* ===== stripes engine ===== */
+// Pitch classes 0–11, C = 0. Three families f ∈ {0,1,2}: the collection is
+// every pc with pc mod 3 ∈ {f, f+1}; the dark pcs are pc mod 3 = f+2.
+// Each family is named by its four dominant roots (fixed spellings).
+const NAMES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+const FAMILIES = [0,1,2].map(f => ({
+  f,
+  roots: [f, f+3, f+6, f+9],
+  name: [f, f+3, f+6, f+9].map(pc => NAMES[pc]).join(" · "),
+  lit: NAMES.map((_, pc) => pc % 3 !== (f + 2) % 3),
+  dark: [0,1,2,3].map(i => (f + 2) % 3 + 3 * i)
+}));
+const TUNING = [4, 11, 7, 2, 9, 4];          // string 1 (high E) … string 6 (low E), open pcs
+const GROUP = ["E·G·e", "D·B", "E·G·e", "D·B", "A", "E·G·e"];   // by string index 0..5 (high→low)
+
+const famOfDominant = r => ((r % 12) + 12) % 12 % 3;
+const famOfDim = d => ((d - 1) % 3 + 3) % 3;
+const isDark = (f, openPc, fret) => (openPc + fret) % 3 === (f + 2) % 3;
+
+// Degree → semitones above the chord root
+const DOM_DEG = { "R":0, "b9":1, "#9":3, "3":4, "#11":6, "5":7, "13":9, "b7":10, "9":2 };
+const DIM_DEG = { "R":0, "9":2, "b3":3, "11":5, "b5":6, "b13":8, "°7":9, "7":11 };
+
+const ACC = { "#":1, "♯":1, "b":-1, "♭":-1, "": 0 };
+const LETTER = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+const NOTE_ALT = "This chord wants b13. That's the altered scale, not a diminished family.";
+const NOTE_HALFDIM = "Half-diminished isn't a diminished-scale chord.";
+const NOTE_OTHER = "Not a dominant or diminished chord, so no diminished family.";
+
+// parse("G13b9") → { ok, kind:"dom"|"dim", root, rootName, tones:[{deg, pc}], degs:[…], bass, text, family }
+// or { ok:false, text, note }
+function parse(raw){
+  const text = String(raw || "").trim();
+  if (!text) return { ok:false, text, note:"" };
+  let s = text.replace(/\s+/g, "");
+  let bass = null;
+  const slash = s.indexOf("/");
+  if (slash > 0){ bass = s.slice(slash + 1); s = s.slice(0, slash); }
+  const m = s.match(/^([A-Ga-g])([#♯b♭]?)(.*)$/);
+  if (!m) return { ok:false, text, note:NOTE_OTHER };
+  const letter = m[1].toUpperCase(), acc = m[2], q = m[3];
+  const root = (LETTER[letter] + ACC[acc] + 12) % 12;
+  const rootName = letter + (acc === "♯" ? "#" : acc === "♭" ? "b" : acc);
+  const ql = q.toLowerCase();
+
+  // rejections first, so "7alt" and "m7b5" never reach the dominant matcher
+  if (/alt|b13|♭13|#5|♯5|\+/.test(ql)) return { ok:false, text, note:NOTE_ALT };
+  if (/ø|m7b5|m7♭5|-7b5|-7♭5|min7b5|m7\(b5\)/.test(ql)) return { ok:false, text, note:NOTE_HALFDIM };
+
+  let dm;
+  if ((dm = ql.match(/^(dim|°|o)(7?)$/))){
+    const seventh = dm[2] === "7";
+    const degs = seventh ? ["R","b3","b5","°7"] : ["R","b3","b5"];
+    return { ok:true, kind:"dim", seventh, root, rootName, qual:q, degs, bass, text,
+      tones: degs.map(d => ({ deg:d, pc:(root + DIM_DEG[d]) % 12 })), family: famOfDim(root) };
+  }
+  const dom = ql.match(/^(7|9|13)(.*)$/);
+  if (!dom) return { ok:false, text, note:NOTE_OTHER };
+  const base = dom[1];
+  const tail = dom[2].replace(/[(),\s]/g, "").replace(/♭/g, "b").replace(/♯/g, "#");
+  const alts = [];
+  let rest = tail;
+  while (rest.length){
+    const t = rest.match(/^(b9|#9|#11|13)/);
+    if (!t) return { ok:false, text, note:NOTE_OTHER };
+    if (alts.includes(t[1])) return { ok:false, text, note:NOTE_OTHER };
+    alts.push(t[1]); rest = rest.slice(t[1].length);
+  }
+  if (base === "9" && (alts.includes("b9") || alts.includes("#9"))) return { ok:false, text, note:NOTE_OTHER };
+  if (base === "13" && alts.includes("13")) return { ok:false, text, note:NOTE_OTHER };
+  const degs = ["R","3","5","b7"];
+  if (base === "9") degs.push("9");
+  if (base === "13") degs.push("13");
+  for (const a of ["b9","#9","#11","13"]) if (alts.includes(a) && !degs.includes(a)) degs.push(a);
+  return { ok:true, kind:"dom", root, rootName, qual:q, degs, bass, text,
+    tones: degs.map(d => ({ deg:d, pc:(root + DOM_DEG[d]) % 12 })), family: famOfDominant(root) };
+}
+
+// The conversion sentence shown after every lookup and every drill reveal.
+function sentence(p){
+  if (!p.ok) return p.text + " → " + p.note;
+  const fam = FAMILIES[p.family];
+  const chord = p.rootName + p.qual;
+  const parts = [p.text];
+  if (p.bass !== null) parts.push("use " + chord);
+  if (p.kind === "dom") parts.push("root " + p.rootName);
+  else parts.push("a half step below " + p.rootName + " is " + NAMES[(p.root + 11) % 12]);
+  parts.push("family " + fam.name);
+  return parts.join(" → ");
+}
+
+// Which chord tones fall outside the collection (a natural 9 on a 9 or 13 chord).
+const outsideTones = p => p.ok ? p.tones.filter(t => !FAMILIES[p.family].lit[t.pc]) : [];
+
+// Headless fixtures — the acceptance checklist, items 1–4 and 7.
+function runFixtures(){
+  const msgs = [], out = []; let pass = 0, fail = 0;
+  const ok = (cond, msg) => { if (cond) pass++; else { fail++; msgs.push("FAIL " + msg); } };
+  // 1. conversion table
+  out.push("1. Conversion table");
+  out.push("   dominant root → family        dim root → family");
+  for (let pc = 0; pc < 12; pc++){
+    const fd = famOfDominant(pc), fx = famOfDim(pc);
+    ok(fd === pc % 3, "dominant " + NAMES[pc]);
+    ok(fx === ((pc - 1) % 3 + 3) % 3, "dim " + NAMES[pc]);
+    ok(FAMILIES[fd].roots.includes(pc), "dominant root " + NAMES[pc] + " is in its family's name");
+    ok(FAMILIES[fx].lit[pc] && !FAMILIES[fx].lit[(pc + 1) % 12], "dim root " + NAMES[pc] + " is the upper note of a lit pair");
+    out.push("   " + (NAMES[pc] + "7").padEnd(5) + " → " + fd + "  " + FAMILIES[fd].name.padEnd(18) + "  " + (NAMES[pc] + "dim7").padEnd(8) + " → " + fx + "  " + FAMILIES[fx].name);
+  }
+  // 2. stripes per string
+  out.push("2. Dark frets 0–15 per string");
+  const sNames = ["e","B","G","D","A","E"];
+  for (const fam of FAMILIES){
+    out.push("   family " + fam.f + " (" + fam.name + ")");
+    const darkOf = s => { const r = []; for (let x = 0; x <= 15; x++) if (isDark(fam.f, TUNING[s], x)) r.push(x); return r; };
+    const d = [0,1,2,3,4,5].map(darkOf);
+    for (let s = 5; s >= 0; s--) out.push("     " + sNames[s] + ": " + d[s].join(" "));
+    const key = a => a.join(",");
+    ok(key(d[5]) === key(d[2]) && key(d[2]) === key(d[0]), "fam " + fam.f + " E/G/e identical");
+    ok(key(d[3]) === key(d[1]), "fam " + fam.f + " D/B identical");
+    for (let x = 0; x <= 15; x++){
+      ok(isDark(fam.f, TUNING[5], x) === (x % 3 === (fam.f + 1) % 3), "fam " + fam.f + " E dark at x≡f+1, fret " + x);
+      ok(isDark(fam.f, TUNING[3], x) === (x % 3 === fam.f % 3), "fam " + fam.f + " D dark at x≡f, fret " + x);
+      ok(isDark(fam.f, TUNING[4], x) === (x % 3 === (fam.f + 2) % 3), "fam " + fam.f + " A dark at x≡f+2, fret " + x);
+    }
+    ok(d[4][0] === d[5][0] + 1 || (d[5][0] === 2 && d[4][0] === 0), "fam " + fam.f + " A one fret above E group");
+    ok(d[3][0] === d[5][0] - 1 || (d[5][0] === 0 && d[3][0] === 2), "fam " + fam.f + " D/B one fret below E group");
+  }
+  // 3. parser fixture
+  out.push("3. Parser");
+  const F = [
+    ["G7",       {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7"}],
+    ["g7",       {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7"}],
+    ["C9",       {kind:"dom", root:0,  fam:0, degs:"R 3 5 b7 9"}],
+    ["C13",      {kind:"dom", root:0,  fam:0, degs:"R 3 5 b7 13"}],
+    ["G7b9",     {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7 b9"}],
+    ["G7#9",     {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7 #9"}],
+    ["G13b9",    {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7 13 b9"}],
+    ["Db7#11",   {kind:"dom", root:1,  fam:1, degs:"R 3 5 b7 #11"}],
+    ["D♭7♯11",   {kind:"dom", root:1,  fam:1, degs:"R 3 5 b7 #11"}],
+    ["C#7#11",   {kind:"dom", root:1,  fam:1, degs:"R 3 5 b7 #11"}],
+    ["Eb13#11",  {kind:"dom", root:3,  fam:0, degs:"R 3 5 b7 13 #11"}],
+    ["F9#11",    {kind:"dom", root:5,  fam:2, degs:"R 3 5 b7 9 #11"}],
+    ["A7b9#11",  {kind:"dom", root:9,  fam:0, degs:"R 3 5 b7 b9 #11"}],
+    ["A7#9#11",  {kind:"dom", root:9,  fam:0, degs:"R 3 5 b7 #9 #11"}],
+    ["Bb13b9#11",{kind:"dom", root:10, fam:1, degs:"R 3 5 b7 13 b9 #11"}],
+    ["E7(b9)",   {kind:"dom", root:4,  fam:1, degs:"R 3 5 b7 b9"}],
+    ["E7(#9)",   {kind:"dom", root:4,  fam:1, degs:"R 3 5 b7 #9"}],
+    ["E7(b9,#11)",{kind:"dom", root:4, fam:1, degs:"R 3 5 b7 b9 #11"}],
+    ["E7(b9)(13)",{kind:"dom", root:4, fam:1, degs:"R 3 5 b7 b9 13"}],
+    ["F#7",      {kind:"dom", root:6,  fam:0, degs:"R 3 5 b7"}],
+    ["Gb7",      {kind:"dom", root:6,  fam:0, degs:"R 3 5 b7"}],
+    ["Ab7b9",    {kind:"dom", root:8,  fam:2, degs:"R 3 5 b7 b9"}],
+    ["Bb7/D",    {kind:"dom", root:10, fam:1, degs:"R 3 5 b7", bass:"D"}],
+    ["G7/F",     {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7", bass:"F"}],
+    ["Bdim7",    {kind:"dim", root:11, fam:1, degs:"R b3 b5 °7"}],
+    ["B°7",      {kind:"dim", root:11, fam:1, degs:"R b3 b5 °7"}],
+    ["Bo7",      {kind:"dim", root:11, fam:1, degs:"R b3 b5 °7"}],
+    ["BDIM7",    {kind:"dim", root:11, fam:1, degs:"R b3 b5 °7"}],
+    ["Bdim",     {kind:"dim", root:11, fam:1, degs:"R b3 b5"}],
+    ["B°",       {kind:"dim", root:11, fam:1, degs:"R b3 b5"}],
+    ["Bo",       {kind:"dim", root:11, fam:1, degs:"R b3 b5"}],
+    ["F#dim7",   {kind:"dim", root:6,  fam:2, degs:"R b3 b5 °7"}],
+    ["Gbdim7",   {kind:"dim", root:6,  fam:2, degs:"R b3 b5 °7"}],
+    ["Cdim7",    {kind:"dim", root:0,  fam:2, degs:"R b3 b5 °7"}],
+    ["Dbdim7",   {kind:"dim", root:1,  fam:0, degs:"R b3 b5 °7"}],
+    ["Ebdim7/C", {kind:"dim", root:3,  fam:2, degs:"R b3 b5 °7", bass:"C"}],
+    ["Ddim7/Ab", {kind:"dim", root:2,  fam:1, degs:"R b3 b5 °7", bass:"Ab"}],
+    [" G 7 ",    {kind:"dom", root:7,  fam:1, degs:"R 3 5 b7"}],
+    ["G7alt",    {note:NOTE_ALT}],
+    ["G7b13",    {note:NOTE_ALT}],
+    ["G7#5",     {note:NOTE_ALT}],
+    ["G+7",      {note:NOTE_ALT}],
+    ["G7+",      {note:NOTE_ALT}],
+    ["Gm7b5",    {note:NOTE_HALFDIM}],
+    ["Gø",       {note:NOTE_HALFDIM}],
+    ["Gø7",      {note:NOTE_HALFDIM}],
+    ["G-7b5",    {note:NOTE_HALFDIM}],
+    ["Gmaj7",    {note:NOTE_OTHER}],
+    ["Gm7",      {note:NOTE_OTHER}],
+    ["G",        {note:NOTE_OTHER}],
+    ["G6",       {note:NOTE_OTHER}],
+    ["Gsus4",    {note:NOTE_OTHER}],
+    ["G9b9",     {note:NOTE_OTHER}],
+    ["G13(13)",  {note:NOTE_OTHER}],
+    ["H7",       {note:NOTE_OTHER}],
+    ["7",        {note:NOTE_OTHER}],
+  ];
+  for (const [sym, want] of F){
+    const p = parse(sym);
+    if (want.note){
+      ok(!p.ok && p.note === want.note, "reject " + JSON.stringify(sym) + " got " + (p.ok ? "accepted" : JSON.stringify(p.note)));
+      out.push("   " + sym.padEnd(12) + " rejected: " + (p.note || "?"));
+    } else {
+      const got = p.ok ? p.kind + " " + p.root + " f" + p.family + " [" + p.degs.join(" ") + "]" + (p.bass ? " /" + p.bass : "") : "REJECTED " + p.note;
+      const exp = want.kind + " " + want.root + " f" + want.fam + " [" + want.degs + "]" + (want.bass ? " /" + want.bass : "");
+      ok(got === exp, JSON.stringify(sym) + " got " + got + " want " + exp);
+      out.push("   " + sym.padEnd(12) + " " + got + "   → " + (p.ok ? sentence(p) : ""));
+    }
+  }
+  // 4. anchor rule on every string
+  out.push("4. Anchor rule");
+  for (let r = 0; r < 12; r++){
+    const f = famOfDominant(r);
+    for (let s = 0; s < 6; s++){
+      for (let x = 0; x <= 24; x++){
+        const pc = (TUNING[s] + x) % 12;
+        if (pc !== r) continue;
+        ok(!isDark(f, TUNING[s], x) && !isDark(f, TUNING[s], x + 1) && isDark(f, TUNING[s], x + 2), "dominant " + NAMES[r] + " string " + (s + 1) + " fret " + x);
+      }
+    }
+    const d = r, fd = famOfDim(d);
+    for (let s = 0; s < 6; s++){
+      for (let x = 1; x <= 24; x++){
+        const pc = (TUNING[s] + x) % 12;
+        if (pc !== d) continue;
+        ok(!isDark(fd, TUNING[s], x - 1) && !isDark(fd, TUNING[s], x) && isDark(fd, TUNING[s], x + 1), "dim " + NAMES[d] + " string " + (s + 1) + " fret " + x);
+      }
+    }
+  }
+  out.push("   every dominant root: fret r, r+1 lit, r+2 dark on all six strings; every dim root: d−1, d lit, d+1 dark");
+  // 7. degree labels by hand
+  out.push("7. Chord-tone degrees");
+  const byHand = {
+    "G13b9": "R=G 3=B 5=D b7=F 13=E b9=Ab",
+    "Bdim7": "R=B b3=D b5=F °7=Ab",
+    "Db7#11": "R=Db 3=F 5=Ab b7=B #11=G",
+  };
+  for (const sym in byHand){
+    const p = parse(sym);
+    const got = p.tones.map(t => t.deg + "=" + NAMES[t.pc]).join(" ");
+    ok(got === byHand[sym], sym + " got " + got + " want " + byHand[sym]);
+    ok(outsideTones(p).length === 0, sym + " all chord tones in the family");
+    out.push("   " + sym.padEnd(8) + got);
+  }
+  ok(outsideTones(parse("G9")).map(t => t.deg).join() === "9", "G9's natural 9 is outside the family");
+  ok(outsideTones(parse("G13")).length === 0, "G13 without a 9 is inside the family");
+  return { pass, fail, msgs, out };
+}
+/* ===== end stripes engine ===== */
+</script>
+
+<script>
+/* ===== page ===== */
+(() => {
+const $ = id => document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+const mk = (tag, attrs, parent) => { const n = document.createElementNS(SVGNS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+
+/* ---------- fretboard ---------- */
+// Strings horizontal, 1st string on top, frets left to right (suite convention).
+// opts: { f, frets, tones:[{deg,pc}], roots:[pc], names:bool, groups:bool, degLabel:fn }
+function drawNeck(svg, o){
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const fam = FAMILIES[o.f];
+  const FW = o.frets > 15 ? 38 : 44, SH = 26, L = o.groups ? 58 : 34, T = 22, B = 8;
+  const W = L + (o.frets + 1) * FW + 10, H = T + 5 * SH + B + 8;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const x0 = L, y = s => T + s * SH;
+  // dark cells first, so the stripe reads as a stripe
+  for (let s = 0; s < 6; s++) for (let x = 0; x <= o.frets; x++)
+    if (isDark(o.f, TUNING[s], x)) mk("rect", { x: x0 + x * FW, y: y(s) - SH / 2, width: FW, height: SH, fill: "#071317" }, svg);
+  // nut and frets
+  mk("rect", { x: x0 + FW - 2, y: y(0) - SH / 2, width: 4, height: 5 * SH, fill: "#e8e1d1" }, svg);
+  for (let x = 2; x <= o.frets + 1; x++) mk("line", { x1: x0 + x * FW, y1: y(0) - SH / 2, x2: x0 + x * FW, y2: y(5) + SH / 2, stroke: "#2a5461", "stroke-width": 1 }, svg);
+  for (let s = 0; s < 6; s++) mk("line", { x1: x0, y1: y(s), x2: x0 + (o.frets + 1) * FW, y2: y(s), stroke: "#a89f8c", "stroke-width": 1 + s * 0.25 }, svg);
+  // fret numbers, centred over the fret space
+  for (const x of [3,5,7,9,12,15,17,19,21,24]) if (x <= o.frets)
+    mk("text", { x: x0 + x * FW + FW / 2, y: T - 12, "text-anchor": "middle", "font-size": 10, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#a89f8c" }, svg).textContent = x;
+  // string labels, and the group labels at the nut
+  for (let s = 0; s < 6; s++){
+    mk("text", { x: x0 - 6, y: y(s) + 3.5, "text-anchor": "end", "font-size": 10, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: o.groups ? "#c9a24a" : "#a89f8c" }, svg).textContent = o.groups ? GROUP[s] : NAMES[TUNING[s]].replace("E", s === 0 ? "e" : "E");
+  }
+  const toneOf = pc => (o.tones || []).find(t => t.pc === pc);
+  const roots = o.roots || fam.roots;
+  for (let s = 0; s < 6; s++) for (let x = 0; x <= o.frets; x++){
+    if (isDark(o.f, TUNING[s], x)) continue;
+    const pc = (TUNING[s] + x) % 12, t = toneOf(pc), isRoot = roots.includes(pc);
+    const cx = x0 + x * FW + FW / 2, cy = y(s), r = 8.5;
+    mk("circle", { cx, cy, r, fill: t ? "#c9a24a" : "#e8e1d1" }, svg);
+    if (isRoot) mk("circle", { cx, cy, r: r + 3, fill: "none", stroke: "#c9a24a", "stroke-width": 2 }, svg);
+    if (o.names){
+      const label = t ? t.deg : NAMES[pc];
+      mk("text", { x: cx, y: cy + 3.2, "text-anchor": "middle", "font-size": label.length > 2 ? 7 : 8.5, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#0b1a1f" }, svg).textContent = label;
+    }
+  }
+}
+
+// Small 6-string, 12-fret stripe picture for the family row.
+function drawThumb(svg, f){
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const FW = 10, SH = 7, W = 13 * FW + 2, H = 6 * SH + 2;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  for (let s = 0; s < 6; s++) for (let x = 0; x <= 12; x++){
+    const dark = isDark(f, TUNING[s], x);
+    mk("rect", { x: 1 + x * FW, y: 1 + s * SH, width: FW, height: SH, fill: dark ? "#071317" : "#163f4b" }, svg);
+    if (!dark) mk("circle", { cx: 1 + x * FW + FW / 2, cy: 1 + s * SH + SH / 2, r: 2.2, fill: FAMILIES[f].roots.includes((TUNING[s] + x) % 12) ? "#c9a24a" : "#e8e1d1" }, svg);
+  }
+  mk("rect", { x: 1 + FW - 0.5, y: 1, width: 1.5, height: 6 * SH, fill: "#e8e1d1" }, svg);
+}
+function buildThumbs(container, onPick){
+  container.textContent = "";
+  return FAMILIES.map(fam => {
+    const b = el("button", "thumb"); b.type = "button"; b.setAttribute("aria-pressed", "false");
+    const svg = mk("svg", { role: "img", "aria-label": "family " + fam.name });
+    drawThumb(svg, fam.f);
+    b.appendChild(svg); b.appendChild(el("span", null, fam.name));
+    if (onPick) b.addEventListener("click", () => onPick(fam.f)); else b.tabIndex = -1;
+    container.appendChild(b);
+    return b;
+  });
+}
+const markThumbs = (btns, f) => btns.forEach((b, i) => b.setAttribute("aria-pressed", String(i === f)));
+
+/* ---------- result line ---------- */
+function renderResult(box, p, f){
+  box.textContent = "";
+  if (!p){
+    box.appendChild(el("span", "fam", FAMILIES[f].name));
+    box.appendChild(el("span", "conv", "the family's four dominant roots are ringed — enter a chord to see its tones"));
+    return;
+  }
+  if (!p.ok){
+    box.appendChild(el("span", "fam", "not this scale"));
+    box.appendChild(el("span", "note", p.text + " → " + p.note));
+    return;
+  }
+  box.appendChild(el("span", "fam", FAMILIES[p.family].name));
+  box.appendChild(el("span", "conv", sentence(p)));
+  const outside = outsideTones(p);
+  if (outside.length) box.appendChild(el("span", "aside", "the " + outside.map(t => t.deg + " (" + NAMES[t.pc] + ")").join(", ") + " is not in the family — this scale gives the b9 and #9 instead"));
+}
+
+/* ---------- Lookup ---------- */
+const L = { f: 1, p: null, frets: 15, root: null, qual: null };
+const QP_ROOTS = ["C","Db","D","Eb","E","F","F#","G","Ab","A","Bb","B"];   // F#, never Gb, in a root ring (root CLAUDE.md)
+const QP_QUAL = ["7","13b9","7#11","7#9","dim7","dim"];
+const rootBtns = QP_ROOTS.map(n => { const b = el("button", null, n); b.type = "button"; b.setAttribute("aria-pressed", "false"); b.addEventListener("click", () => { L.root = n; quickPick(); }); $("qpRoots").appendChild(b); return b; });
+const qualBtns = QP_QUAL.map(n => { const b = el("button", null, n); b.type = "button"; b.setAttribute("aria-pressed", "false"); b.addEventListener("click", () => { L.qual = n; quickPick(); }); $("qpQual").appendChild(b); return b; });
+function quickPick(){
+  if (!L.root) L.root = "C";
+  if (!L.qual) L.qual = "7";
+  $("symIn").value = L.root + L.qual;
+  lookup($("symIn").value);
+}
+const thumbBtns = buildThumbs($("thumbs"), f => { L.f = f; L.p = null; L.root = L.qual = null; $("symIn").value = ""; renderLookup(); });
+function lookup(text){
+  const p = parse(text);
+  L.p = p;
+  if (p.ok) L.f = p.family;
+  renderLookup();
+}
+function renderLookup(){
+  const p = L.p;
+  renderResult($("result"), p, L.f);
+  drawNeck($("neck"), { f: L.f, frets: L.frets, tones: p && p.ok ? p.tones : [], names: $("optNames").checked, groups: $("optGroups").checked });
+  markThumbs(thumbBtns, L.f);
+  const sym = p && p.ok ? (p.rootName + p.qual) : "";
+  rootBtns.forEach(b => b.setAttribute("aria-pressed", String(!!sym && sym.startsWith(b.textContent) && (sym.length === b.textContent.length || !/[#b]/.test(sym[b.textContent.length])))));
+  qualBtns.forEach(b => b.setAttribute("aria-pressed", String(!!sym && sym.endsWith(b.textContent) && sym.slice(0, -b.textContent.length).match(/^[A-G][#b]?$/) !== null)));
+}
+$("symForm").addEventListener("submit", e => { e.preventDefault(); L.root = L.qual = null; lookup($("symIn").value); $("symIn").blur(); });
+$("symIn").addEventListener("input", () => { L.root = L.qual = null; if (parse($("symIn").value).ok) lookup($("symIn").value); });
+$("range").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L.frets = +b.dataset.v; [...$("range").children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); renderLookup(); });
+$("optGroups").addEventListener("change", renderLookup);
+$("optNames").addEventListener("change", renderLookup);
+
+/* ---------- Drill ---------- */
+const LEVELS = [
+  { n: 1, name: "Dominants", desc: "plain 7 only, all twelve roots" },
+  { n: 2, name: "Diminished", desc: "dim7 and °7, all twelve roots" },
+  { n: 3, name: "Mixed", desc: "dominants with extensions and dim7, enharmonic roots" },
+  { n: 4, name: "Everything", desc: "plus dim triads, slash chords, and chords that are not this scale" },
+];
+const D = { level: 1, n: 12, hint: false, prompts: [], i: 0, answers: [], t0: 0, phase: "setup" };
+const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const spell = (pc, level) => level >= 3 && Math.random() < 0.5 ? SHARP[pc] : NAMES[pc];   // enharmonic roots from level 3
+
+function makePrompts(level, n){
+  const out = [];
+  const roots = () => { const r = []; while (r.length < n) r.push(...shuffle([0,1,2,3,4,5,6,7,8,9,10,11])); return r.slice(0, n); };
+  if (level === 1) return roots().map(pc => ({ sym: NAMES[pc] + "7", type: "dominant" }));
+  if (level === 2) return roots().map(pc => ({ sym: NAMES[pc] + pick(["dim7", "°7"]), type: "dim" }));
+  const DOMQ = ["7","7b9","7#9","13","13b9","7#11","13#11","7b9#11","7#9#11","13b9#11","9#11","7(b9)","7(#9)"];
+  const DIMQ = ["dim7", "°7"];
+  const rs = roots();
+  if (level === 3) return rs.map(pc => Math.random() < 0.55 ? { sym: spell(pc, 3) + pick(DOMQ), type: "dominant" } : { sym: spell(pc, 3) + pick(DIMQ), type: "dim" });
+  // level 4: distractors at most 1 in 4
+  const DIST = ["7alt", "7b13", "7#5", "m7b5", "ø", "ø7", "+7"];
+  const nDist = rnd(Math.floor(n / 4) + 1);
+  const slots = shuffle(rs.map((pc, i) => i)).slice(0, nDist);
+  rs.forEach((pc, i) => {
+    if (slots.includes(i)){ out.push({ sym: spell(pc, 4) + pick(DIST), type: "distractor" }); return; }
+    const k = Math.random();
+    if (k < 0.4) out.push({ sym: spell(pc, 4) + pick(DOMQ), type: "dominant" });
+    else if (k < 0.65) out.push({ sym: spell(pc, 4) + pick(DIMQ), type: "dim" });
+    else if (k < 0.8) out.push({ sym: spell(pc, 4) + pick(["dim", "°"]), type: "dim" });
+    else {
+      const dom = Math.random() < 0.6;
+      const q = dom ? pick(["7", "7b9", "13"]) : "dim7";
+      const bassDeg = dom ? pick([4, 7, 10]) : pick([3, 6, 9]);
+      out.push({ sym: spell(pc, 4) + q + "/" + NAMES[(pc + bassDeg) % 12], type: dom ? "dominant" : "dim" });
+    }
+  });
+  return out;
+}
+
+// level picker
+const levelBtns = LEVELS.map(lv => {
+  const b = el("button"); b.type = "button"; b.setAttribute("aria-pressed", String(lv.n === D.level));
+  b.appendChild(el("b", null, "Level " + lv.n)); b.appendChild(el("span", null, lv.name + " — " + lv.desc));
+  b.addEventListener("click", () => { D.level = lv.n; levelBtns.forEach((x, i) => x.setAttribute("aria-pressed", String(i === lv.n - 1))); });
+  $("levels").appendChild(b); return b;
+});
+$("roundLen").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; D.n = +b.dataset.v; [...$("roundLen").children].forEach(c => c.setAttribute("aria-pressed", String(c === b))); });
+const hintThumbs = buildThumbs($("hintThumbs"), null);
+
+function startRound(){
+  D.hint = $("optHint").checked;
+  D.prompts = makePrompts(D.level, D.n); D.i = 0; D.answers = []; D.phase = "prompt";
+  $("setup").hidden = true; $("summary").hidden = true; $("round").hidden = false;
+  showPrompt();
+}
+function showPrompt(){
+  const pr = D.prompts[D.i];
+  $("count").textContent = (D.i + 1) + " of " + D.prompts.length;
+  $("promptSym").textContent = pr.sym;
+  $("reveal").hidden = true;
+  $("hintThumbs").hidden = !D.hint;
+  if (D.hint) markThumbs(hintThumbs, -1);
+  const box = $("answers"); box.textContent = "";
+  const choices = FAMILIES.map(fam => ({ key: fam.f, label: fam.name }));
+  if (D.level === 4) choices.push({ key: "none", label: "Not this scale" });
+  choices.forEach((c, i) => {
+    const b = el("button"); b.type = "button"; b.dataset.key = String(c.key);
+    b.appendChild(el("i", null, String(i + 1))); b.appendChild(el("span", null, c.label));
+    b.addEventListener("click", () => answer(c.key));
+    box.appendChild(b);
+  });
+  D.phase = "prompt";
+  D.t0 = performance.now();
+}
+function answer(key){
+  if (D.phase !== "prompt") return;
+  const ms = performance.now() - D.t0;
+  const pr = D.prompts[D.i], p = parse(pr.sym);
+  const correct = p.ok ? p.family : "none";
+  const right = String(key) === String(correct);
+  D.answers.push({ sym: pr.sym, type: pr.type, key, correct, right, ms });
+  D.phase = "reveal";
+  [...$("answers").children].forEach(b => {
+    b.disabled = true;
+    if (b.dataset.key === String(correct)) b.classList.add("right");
+    else if (b.dataset.key === String(key)) b.classList.add("wrong");
+  });
+  const v = $("verdict"); v.textContent = right ? "Correct" : "Incorrect"; v.className = "verdict " + (right ? "ok" : "no");
+  renderResult($("dResult"), p, p.ok ? p.family : 0);
+  $("dNeck").parentElement.hidden = !p.ok;
+  if (p.ok) drawNeck($("dNeck"), { f: p.family, frets: 15, tones: p.tones, names: false, groups: false });
+  if (D.hint && p.ok) markThumbs(hintThumbs, p.family);
+  $("reveal").hidden = false;
+  $("nextBtn").textContent = D.i + 1 < D.prompts.length ? "Next" : "Round summary";
+}
+function advance(){
+  if (D.phase !== "reveal") return;
+  D.i++;
+  if (D.i < D.prompts.length) showPrompt(); else finish();
+}
+const fmtMs = ms => (ms / 1000).toFixed(2) + " s";
+const median = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const famLabel = k => k === "none" ? "Not this scale" : FAMILIES[k].name;
+function summaryText(){
+  const A = D.answers, n = A.length, nRight = A.filter(a => a.right).length;
+  const types = ["dominant", "dim", "distractor"].filter(t => A.some(a => a.type === t));
+  const byType = types.map(t => { const xs = A.filter(a => a.type === t).map(a => a.ms); return { t, mean: xs.reduce((s, x) => s + x, 0) / xs.length }; });
+  const slowest = byType.sort((a, b) => b.mean - a.mean)[0];
+  const misses = A.filter(a => !a.right);
+  const lines = [
+    "Stripes — conversion drill, level " + D.level + ", " + n + " prompts",
+    "accuracy: " + nRight + "/" + n + " (" + Math.round(100 * nRight / n) + "%)",
+    "median response: " + fmtMs(median(A.map(a => a.ms))),
+    "slowest prompt type: " + (slowest ? slowest.t + " (" + fmtMs(slowest.mean) + " mean)" : "—"),
+    "misses: " + (misses.length ? "" : "none"),
+    ...misses.map(m => "  " + m.sym + " → " + famLabel(m.key) + " → " + famLabel(m.correct)),
+  ];
+  return { lines, nRight, n, slowest, misses };
+}
+function finish(){
+  D.phase = "done";
+  $("round").hidden = true;
+  const S = summaryText(), box = $("summary"); box.textContent = "";
+  box.appendChild(el("span", "lbl", "Round summary — level " + D.level));
+  const tbl = el("table"), tb = el("tbody"); tbl.appendChild(tb);
+  const row = (k, v) => { const tr = el("tr"); tr.appendChild(el("td", null, k)); tr.appendChild(el("td", null, v)); tb.appendChild(tr); };
+  row("accuracy", S.nRight + " of " + S.n + " (" + Math.round(100 * S.nRight / S.n) + "%)");
+  row("median response", fmtMs(median(D.answers.map(a => a.ms))));
+  row("slowest prompt type", S.slowest ? S.slowest.t + " (" + fmtMs(S.slowest.mean) + " mean)" : "—");
+  box.appendChild(tbl);
+  box.appendChild(el("span", "lbl", "Misses"));
+  if (!S.misses.length) box.appendChild(el("p", null, "none"));
+  else { const ul = el("ul"); S.misses.forEach(m => ul.appendChild(el("li", null, m.sym + " → " + famLabel(m.key) + " → " + famLabel(m.correct)))); box.appendChild(ul); }
+  const tools = el("div", "tools");
+  const copy = el("button", "btn quiet", "Copy summary"); copy.type = "button";
+  copy.addEventListener("click", () => {
+    const text = S.lines.join("\n");
+    const done = () => { copy.textContent = "Copied"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    else fallbackCopy(text, done);
+  });
+  const again = el("button", "btn", "Another round"); again.type = "button";
+  again.addEventListener("click", () => { $("summary").hidden = true; $("setup").hidden = false; D.phase = "setup"; });
+  tools.appendChild(again); tools.appendChild(copy); box.appendChild(tools);
+  box.hidden = false;
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.left = "-9999px";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+$("startBtn").addEventListener("click", startRound);
+$("nextBtn").addEventListener("click", advance);
+document.addEventListener("keydown", e => {
+  if ($("drill").hidden || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target; if (/INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+  if (D.phase === "prompt" && /^[1-4]$/.test(e.key)){
+    const b = $("answers").children[+e.key - 1]; if (b){ e.preventDefault(); b.click(); }
+  } else if (D.phase === "reveal" && (e.code === "Space" || e.key === "Enter")){
+    e.preventDefault(); advance();
+  }
+});
+
+/* ---------- modes ---------- */
+document.querySelector(".modes").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const mode = b.dataset.mode;
+  document.querySelectorAll(".modes button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  $("lookup").hidden = mode !== "lookup"; $("drill").hidden = mode !== "drill";
+});
+
+renderLookup();
+if (/[?&]test=1/.test(location.search)){ const r = runFixtures(); console.log(r.out.join("\n")); console.log(r.pass + " passed, " + r.fail + " failed"); r.msgs.forEach(m => console.log(m)); }
+})();
+</script>
+
+<!-- ===== practice strip — keep this block byte-identical across all tool pages.
+     Metronome is Two-and-Four's mini view in an iframe (one scheduler for the suite);
+     Benchmarks come from window.PF_BENCHMARKS, set by the page just above this block. ===== -->
+<div class="pf-root">
+<style>
+  .pf-root{font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;}
+  .pf-space{height:calc(53px + env(safe-area-inset-bottom,0px));}
+  .pf-strip{position:fixed;left:0;right:0;bottom:0;z-index:9000;display:flex;justify-content:flex-end;gap:8px;padding:6px 10px calc(6px + env(safe-area-inset-bottom,0px));background:#0a1a20;border-top:1px solid #163f4b;}
+  .pf-btn{min-height:40px;padding:0 16px;background:#10303a;color:#a9a597;border:1px solid #163f4b;border-radius:5px;font-family:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-variant-numeric:tabular-nums;cursor:pointer;line-height:1;white-space:nowrap;}
+  .pf-btn:hover{color:#e9e2d2;background:#163f4b;}
+  .pf-btn:focus-visible,.pf-x:focus-visible{outline:2px solid #c9a44c;outline-offset:1px;}
+  .pf-btn[aria-expanded="true"]{border-color:#c9a44c;background:#10303a;}
+  .pf-btn[aria-expanded="true"],.pf-btn.pf-run{color:#c9a44c;}
+  .pf-sheet,.pf-metro{position:fixed;left:0;right:0;bottom:calc(53px + env(safe-area-inset-bottom,0px));background:#10303a;color:#e9e2d2;border:1px solid #163f4b;border-bottom:none;border-radius:10px 10px 0 0;box-shadow:0 -10px 30px rgba(4,12,16,.5);transform:translateY(calc(100% + 70px));}
+  .pf-sheet{z-index:8999;max-height:62vh;display:flex;flex-direction:column;visibility:hidden;transition:transform .16s ease-out,visibility 0s linear .16s;}
+  .pf-sheet.pf-open{transform:none;visibility:visible;transition:transform .16s ease-out;}
+  /* The metronome panel is only ever moved off screen, never hidden or removed:
+     its iframe is keeping time while the panel is collapsed. */
+  .pf-metro{z-index:8998;transition:transform .16s ease-out;}
+  .pf-metro.pf-open{transform:none;}
+  .pf-metro iframe{display:block;width:100%;height:98px;border:0;background:#10303a;}
+  .pf-head{display:flex;align-items:center;gap:10px;padding:12px 8px 10px 16px;border-bottom:1px solid #163f4b;touch-action:none;}
+  .pf-metro .pf-head{padding:4px 4px 4px 16px;}
+  .pf-head h2{margin:0;font:inherit;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e9e2d2;font-weight:500;}
+  .pf-x{margin-left:auto;width:40px;height:40px;background:transparent;color:#a9a597;border:none;border-radius:5px;font-family:inherit;font-size:20px;line-height:1;cursor:pointer;}
+  .pf-x:hover{color:#e9e2d2;background:#163f4b;}
+  .pf-body{overflow:auto;padding:4px 16px 8px;-webkit-overflow-scrolling:touch;}
+  .pf-list{margin:14px 0 2px;padding-left:10px;border-left:2px solid transparent;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#a9a597;}
+  .pf-list.pf-now{color:#c9a44c;border-left-color:#c9a44c;}
+  .pf-item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #163f4b;cursor:pointer;}
+  .pf-item:last-child{border-bottom:none;}
+  .pf-item input{flex:none;width:22px;height:22px;margin:1px 0 0;accent-color:#c9a44c;cursor:pointer;}
+  .pf-t{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:16px;line-height:1.35;color:#e9e2d2;}
+  .pf-t small{display:block;margin-top:4px;font-family:"SF Mono","Cascadia Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:11.5px;line-height:1.3;color:#a9a597;}
+  .pf-item input:checked + .pf-t{color:#a9a597;}
+  .pf-foot{margin:0;padding:9px 16px 11px;border-top:1px solid #163f4b;font-size:11px;color:#7d7767;}
+  .pf-draft{margin:10px 0 0;font-size:11px;color:#d86b4a;}
+  @media (min-width:720px){
+    .pf-sheet{z-index:10000;top:0;left:auto;right:0;width:380px;max-height:none;border-radius:0;border-top:none;border-right:none;box-shadow:-10px 0 30px rgba(4,12,16,.5);transform:translateX(100%);}
+    .pf-root.pf-m-open .pf-sheet{bottom:calc(201px + env(safe-area-inset-bottom,0px));border-bottom:1px solid #163f4b;}
+    .pf-metro{left:auto;right:0;width:380px;border-right:none;border-radius:10px 0 0 0;}
+    .pf-sheet .pf-head{touch-action:auto;}
+  }
+  @media (prefers-reduced-motion:reduce){ .pf-sheet,.pf-sheet.pf-open,.pf-metro{transition:none;} }
+  @media print{ .pf-root{display:none;} }
+</style>
+<div class="pf-space"></div>
+<div class="pf-strip" role="toolbar" aria-label="Practice panels">
+  <button class="pf-btn" type="button" data-pf="m" aria-expanded="false" aria-controls="pf-m">Metronome<span class="pf-tempo"></span></button>
+  <button class="pf-btn" type="button" data-pf="bm" aria-expanded="false" aria-controls="pf-bm">Benchmarks</button>
+</div>
+<section class="pf-metro" id="pf-m" aria-label="Metronome" inert>
+  <div class="pf-head"><h2>Metronome</h2><button class="pf-x" type="button" aria-label="Close metronome panel">&times;</button></div>
+</section>
+<aside class="pf-sheet" id="pf-bm" aria-label="Benchmarks" inert>
+  <div class="pf-head"><h2>Benchmarks</h2><button class="pf-x" type="button" aria-label="Close benchmarks">&times;</button></div>
+  <div class="pf-body"></div>
+  <p class="pf-foot">Checks reset when you reload</p>
+</aside>
+</div>
+<script>
+(() => {
+  const root = document.currentScript.previousElementSibling;
+  const here = location.pathname.split("/").filter(s => s && s !== "index.html").pop() || "";
+  const wide = matchMedia("(min-width:720px)");
+  const panels = {};
+  const isOpen = name => !!panels[name] && panels[name].el.classList.contains("pf-open");
+  const set = (name, on) => {
+    const p = panels[name]; if (!p || isOpen(name) === on) return;
+    // on a phone the two panels share the same ground: opening one collapses the other
+    if (on && !wide.matches) Object.keys(panels).forEach(n => { if (n !== name) set(n, false); });
+    if (on && p.onOpen) p.onOpen();
+    p.el.classList.toggle("pf-open", on); p.el.inert = !on;
+    p.btn.setAttribute("aria-expanded", String(on));
+    root.classList.toggle("pf-" + name + "-open", on);
+  };
+  const panel = (name, el, onOpen) => {
+    const btn = root.querySelector('[data-pf="' + name + '"]'), head = el.querySelector(".pf-head");
+    panels[name] = { btn, el, onOpen };
+    // e.detail is 0 for a keyboard activation: keyboard users keep their place, a mouse or touch
+    // click lets go of the button so the next space bar goes to the page, not back to the button
+    btn.addEventListener("click", e => { set(name, !isOpen(name)); if (e.detail) btn.blur(); });
+    el.querySelector(".pf-x").addEventListener("click", e => { set(name, false); if (!e.detail) btn.focus(); });
+    // swipe down on the header collapses the panel on touch
+    let y0 = null;
+    head.addEventListener("pointerdown", e => { y0 = e.pointerType === "mouse" ? null : e.clientY; });
+    head.addEventListener("pointerup", e => { if (y0 !== null && e.clientY - y0 > 40) set(name, false); y0 = null; });
+    head.addEventListener("pointercancel", () => { y0 = null; });
+  };
+  const drop = name => { root.querySelector('[data-pf="' + name + '"]').remove(); root.querySelector("#pf-" + name).remove(); };
+
+  /* ----- Metronome: Two-and-Four's mini view. Collapsing never stops it; Stop is in the panel. ----- */
+  if (here === "two-and-four") drop("m");
+  else {
+    const el = root.querySelector(".pf-metro"), btn = root.querySelector('[data-pf="m"]'), tempo = btn.querySelector(".pf-tempo");
+    // loaded with the page, not on first open: a practice room may have no wifi by then
+    const frame = document.createElement("iframe");
+    frame.title = "Metronome"; frame.allow = "autoplay"; frame.src = "../two-and-four/index.html?mini=1";
+    el.appendChild(frame);
+    panel("m", el);
+    const send = cmd => { try { frame.contentWindow.postMessage({ pf: "metro", cmd }, "*"); } catch (e) {} };
+    window.addEventListener("message", e => {
+      if (e.source !== frame.contentWindow || !e.data || e.data.pf !== "metro") return;
+      const run = !!e.data.running;
+      btn.classList.toggle("pf-run", run);
+      tempo.textContent = run && typeof e.data.bpm === "number" ? " · " + e.data.bpm : "";
+      if (e.data.refocus) { frame.blur(); window.focus(); }   // give the page its keys back
+    });
+    // A page with its own Play calls this when it starts: two clicks that do not share a clock are worse than one.
+    window.pfMetronomeStop = () => send("stop");
+    // Space belongs to the metronome while its panel is open, and to the page when it is collapsed.
+    window.addEventListener("keydown", e => {
+      if (e.code !== "Space" || !isOpen("m") || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target;
+      if (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (!e.repeat) send("toggle");
+    }, true);
+  }
+
+  /* ----- Benchmarks: reference, never a gate. Checks live in the checkboxes — built here, never
+     stored, autocomplete off so a browser does not bring them back after a reload. ----- */
+  const data = window.PF_BENCHMARKS;
+  if (!data || !data.lists || !data.lists.length) drop("bm");
+  else {
+    const sheet = root.querySelector(".pf-sheet"), body = sheet.querySelector(".pf-body");
+    const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; };
+    if (data.draft) body.appendChild(mk("p", "pf-draft", "Draft wording — not approved"));
+    const heads = data.lists.map(list => {
+      const h = list.name ? body.appendChild(mk("div", "pf-list", list.name)) : null;
+      list.items.forEach(it => {
+        const row = mk("label", "pf-item"), box = mk("input"), t = mk("span", "pf-t", it.t);
+        box.type = "checkbox"; box.autocomplete = "off";
+        if (it.hint) t.appendChild(mk("small", "", it.hint));
+        row.append(box, t); body.appendChild(row);
+      });
+      return h;
+    });
+    const mark = () => data.lists.forEach((list, i) => {
+      let now = false; try { now = !!(list.on && list.on()); } catch (e) {}
+      if (heads[i]) heads[i].classList.toggle("pf-now", now);
+    });
+    panel("bm", sheet, mark);
+    document.addEventListener("click", () => { if (isOpen("bm")) setTimeout(mark, 0); });
+  }
+
+  if (!Object.keys(panels).length) { root.hidden = true; return; }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") Object.keys(panels).forEach(n => set(n, false)); });
+})();
+</script>
+<!-- ===== end practice strip ===== -->
+</body>
+</html>

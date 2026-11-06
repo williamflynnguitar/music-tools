@@ -8,6 +8,12 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `two-and-four/` — metronome (beats 2 and 4, or 4 only; dropout modes; Training Wheels
   rung ladder for students who phase-flip)
 - `fretboard/` — renderer + major-scale fingering data (JGTH p. 7)
+- `stripes/` — **built** (Nov 2026, phase 1). The half-whole diminished
+  scale (pp. 22–23) as three *families*, each named by its four dominant
+  roots, drawn as one striped neck: Lookup (chord symbol → family → lit
+  fretboard) and a Conversion drill with four levels. Brief in `briefs/`;
+  engine rules and the acceptance checklist in `stripes/CLAUDE.md`.
+  Never "half-whole" or "whole-half" as the name of anything on the page
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
 - `arpeggios-deck/` — Arpeggio Practice walkthrough (pp. 76–78, shapes pp. 25–36)
 - `line-ladder/` — stand-alone improvisation line generator, instrument-neutral

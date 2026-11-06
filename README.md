@@ -9,6 +9,8 @@ to open on a phone in the practice room.
 From the handbook:
 
 - **fretboard/** — movable scale fingerings, eleven scales, every key
+- **stripes/** — the three diminished families as one striped neck: chord
+  symbol to family, and a conversion drill
 - **scales-deck/** — Scale Practice 101 as a step-through deck of cards
 - **arpeggios-deck/** — arpeggio practice: parallel shapes, HDA and VDA
 - **shell-builder/** — build shell voicings by rule, then comp them through
