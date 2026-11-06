@@ -57,6 +57,39 @@ Degree labels: dominants `R b9 #9 3 #11 5 13 b7`; dim7 `R 9 b3 11 b5 b13 °7 7`.
 The brief wrote `bb7`; the page writes **°7**, per the root rule that no
 double flat appears anywhere (William, 2026-09-12).
 
+## Position windows and the dim7 grip (addendum 2026-11-06)
+
+`briefs/stripes-brief-addendum-2026-11-06.md`. Two overlays, on both the
+Lookup neck and the drill reveal, sharing one in-memory state (`OV`): what
+Lookup last used is what the reveal shows, and vice versa. Both start off.
+
+- **Position.** A four-fret window `start..start+3` holds, per string, three
+  lit frets (the dark fret inside) or two (dark frets on both edges). Exactly
+  one string group has two-note strings, and the shape is numbered by that
+  group: **Shape 1 = E·G·e, Shape 2 = D·B, Shape 3 = A** (`windowShape`,
+  which counts rather than computes, so the fixture proves the pattern). The
+  same shape recurs every three frets; family f+1 at start x+1 is family f
+  at start x. Reference: family 0, frets 1–4, is Shape 1 — low E 2,3 · A
+  1,3,4 · D 1,2,4 · G 2,3 · B 1,2,4 · high E 2,3. That listing is **fifteen**
+  notes; the addendum says sixteen, but its own frets add to fifteen. A
+  window's count depends on which group is at two notes: E·G·e (three
+  strings) gives 15, D·B (two) 16, A (one) 17. The window is a translucent brass band drawn
+  under the dots; lit frets outside it dim to 35%; it is dragged on the
+  neck, stepped by ‹ › or the arrow keys, one fret at a time, and redrawn,
+  never animated. The label reads "Shape 3 · two notes on A · frets 6–9".
+- **Grip.** The family is the anchor dim7 arpeggio plus its double one fret
+  away: for a dominant, the dim7 **on the dominant root** doubled one fret
+  **up** (G7 = Gdim7 + Abdim7); for a dim chord, its **own** dim7 doubled
+  one fret **down** (Cdim7 = Cdim7 + Bdim7). `grip(p)` returns the brass
+  set (the arpeggio), the bone set (the double) and the caption: "G7: Gdim7
+  shape, plus every note one fret up." With Grip on, brass means the
+  arpeggio, not the chord tones, and everything else dims to 35%. With no
+  chord (a family picked from the thumbnails) the caption asks for one.
+- Both on at once: a dot is full only if it is inside the window and in the
+  grip. Fixtures 9 and 10 cover the shapes and the grip for every family,
+  start fret and root (`check.js`, 772 assertions); item 11 (both overlays at
+  375 px, no page scroll) was checked in the browser on 2026-11-06.
+
 ## Lookup
 
 Text field + quick-pick row (12 roots × `7 13b9 7#11 7#9 dim7 dim`); result
@@ -84,7 +117,8 @@ thumbnails during the prompt. Nothing persists across reloads.
 ## Acceptance checklist
 
 `node stripes/check.js` (or `?test=1` in the browser, logged to the console)
-runs items 1–4 and 7 of the brief's checklist — 562 assertions — and prints
+runs items 1–4 and 7 of the brief's checklist and 9–10 of the addendum —
+772 assertions — and prints
 the full conversion table, the dark-fret lists per family and string, the
 parser fixture (57 symbols) and the hand-checked degrees for G13b9, Bdim7 and
 Db7#11. Items 5, 6 and 8 (no motion, 375 px drill round, OG tags and nav)
@@ -101,7 +135,15 @@ the brief names none and benchmarks are William's to write
 (`briefs/benchmarks.md`), so the button drops itself until he adds a
 "## Stripes" section there and `scripts/benchmarks-sync.js` gets the heading.
 
-## Deferred (brief, not built in phase 1)
+## Deferred (brief and addendum, not built in phase 1)
+
+- Three-notes-per-string view: each string a 0-1-3 cell (fingers 1-2-4) or
+  a 0-2-3 cell (1-3-4), strictly alternating, shifting down one fret per
+  string except across the G–B pair; eighteen notes over six strings.
+- Minor-third cell builder (a four-note cell transposed every three frets)
+  → Mode 3, Structures.
+- Dominant-arpeggios-in-minor-thirds and major-triads-in-minor-thirds
+  overlays → Mode 3.
 
 - Mode 3, Structures: overlays on the lit neck for the two dim7 grips, the
   four major triads, four minor triads, four dominant 7 arpeggios, and a
