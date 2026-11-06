@@ -519,7 +519,7 @@ const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls)
 function drawNeck(svg, o){
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const fam = FAMILIES[o.f];
-  const FW = o.frets > 15 ? 38 : 44, SH = 26, L = o.groups ? 58 : 34, T = 22, B = 8;
+  const FW = o.frets > 15 ? 38 : 44, SH = 26, L = o.groups ? 58 : 34, T = 16, B = 26;
   const W = L + (o.frets + 1) * FW + 10, H = T + 5 * SH + B + 8;
   svg.setAttribute("viewBox", "0 0 " + W + " " + H);
   svg.setAttribute("width", W); svg.setAttribute("height", H);
@@ -531,9 +531,9 @@ function drawNeck(svg, o){
   mk("rect", { x: x0 + FW - 2, y: y(0) - SH / 2, width: 4, height: 5 * SH, fill: "#e8e1d1" }, svg);
   for (let x = 2; x <= o.frets + 1; x++) mk("line", { x1: x0 + x * FW, y1: y(0) - SH / 2, x2: x0 + x * FW, y2: y(5) + SH / 2, stroke: "#2a5461", "stroke-width": 1 }, svg);
   for (let s = 0; s < 6; s++) mk("line", { x1: x0, y1: y(s), x2: x0 + (o.frets + 1) * FW, y2: y(s), stroke: "#a89f8c", "stroke-width": 1 + s * 0.25 }, svg);
-  // fret numbers, centred over the fret space
+  // fret numbers under the neck, centred on the fret space (William, 2026-11-06: easier to read below)
   for (const x of [3,5,7,9,12,15,17,19,21,24]) if (x <= o.frets)
-    mk("text", { x: x0 + x * FW + FW / 2, y: T - 12, "text-anchor": "middle", "font-size": 10, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#a89f8c" }, svg).textContent = x;
+    mk("text", { x: x0 + x * FW + FW / 2, y: y(5) + SH / 2 + 17, "text-anchor": "middle", "font-size": 13, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#e8e1d1" }, svg).textContent = x;
   // string labels, and the group labels at the nut
   for (let s = 0; s < 6; s++){
     mk("text", { x: x0 - 6, y: y(s) + 3.5, "text-anchor": "end", "font-size": 10, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: o.groups ? "#c9a24a" : "#a89f8c" }, svg).textContent = o.groups ? GROUP[s] : NAMES[TUNING[s]].replace("E", s === 0 ? "e" : "E");
