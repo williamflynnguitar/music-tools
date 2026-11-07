@@ -384,7 +384,32 @@ function grip(p){
     caption: p.rootName + p.qual + ": " + p.rootName + "dim7 shape, plus every note one fret " + (dir > 0 ? "up" : "down") + "." };
 }
 
-// Headless fixtures — the acceptance checklist, items 1–4, 7, 9 and 10.
+// Three-note-per-string cells (Randy Vincent, The Guitarist's Introduction to Jazz,
+// Ex. 9-20 and 9-21): eighteen consecutive collection tones, three per string, from a
+// start fret on the low E. Each string is a 1-3-4 cell (frets 0-2-3) or a 1-2-4 cell
+// (0-1-3), and they alternate because the collection alternates whole and half steps.
+// Nothing is hardcoded: the pattern is read off the collection, and fixture 12 proves
+// the shift rule — the next string starts on the same fret after a 1-3-4 cell, one
+// fret lower after a 1-2-4, and one fret higher across G–B. No open strings.
+const OPEN = [64, 59, 55, 50, 45, 40];                // midi of each open string, high → low
+const CELL_FINGERS = { "0,2,3": [1, 3, 4], "0,1,3": [1, 2, 4] };
+function cells(f, start){
+  if (!(start >= 1) || isDark(f, TUNING[5], start)) return null;   // a cell starts on a lit fret
+  const lit = FAMILIES[f].lit;
+  let m = OPEN[5] + start; const notes = [m];
+  while (notes.length < 18){ m++; if (lit[m % 12]) notes.push(m); }
+  const rows = [];                                     // index 5 = low E … 0 = high e
+  for (let s = 5; s >= 0; s--){
+    const frets = notes.slice((5 - s) * 3, (5 - s) * 3 + 3).map(n => n - OPEN[s]);
+    const cell = frets.map(x => x - frets[0]).join();
+    rows[s] = { start: frets[0], frets, cell, fingers: CELL_FINGERS[cell] || [0, 0, 0] };
+  }
+  const all = rows.flatMap(r => r.frets), lo = Math.min(...all), hi = Math.max(...all);
+  const low = rows[5].fingers.join("-");
+  return { start, rows, low, lo, hi, label: low + " on the low E · frets " + lo + "–" + hi };
+}
+
+// Headless fixtures — the acceptance checklist, items 1–4, 7, 9, 10 and 12.
 function runFixtures(){
   const msgs = [], out = []; let pass = 0, fail = 0;
   const ok = (cond, msg) => { if (cond) pass++; else { fail++; msgs.push("FAIL " + msg); } };
@@ -566,6 +591,39 @@ function runFixtures(){
     ok(grip(parse(NAMES[r] + "dim")).dir === -1, "dim triad " + NAMES[r] + " doubles down");
   }
   out.push("   " + grip(parse("G7")).caption + "  /  " + grip(parse("Cdim7")).caption);
+  // 12. three-note-per-string cells (Vincent Ex. 9-20 / 9-21)
+  out.push("12. Cells (three notes per string)");
+  const strName = ["high E","B","G","D","A","low E"];
+  for (const fam of FAMILIES) for (let x = 1; x <= 12; x++){
+    const c = cells(fam.f, x);
+    if (isDark(fam.f, TUNING[5], x)){ ok(c === null, "fam " + fam.f + " start " + x + " is a dark fret: no pattern"); continue; }
+    ok(c !== null, "fam " + fam.f + " start " + x + " has a pattern");
+    if (!c) continue;
+    for (let s = 5; s >= 0; s--){
+      const r = c.rows[s];
+      ok(r.cell === "0,2,3" || r.cell === "0,1,3", "fam " + fam.f + " start " + x + " " + strName[s] + " is a 1-3-4 or 1-2-4 cell (got " + r.cell + ")");
+      ok(r.frets.every(v => !isDark(fam.f, TUNING[s], v)), "fam " + fam.f + " start " + x + " " + strName[s] + " frets " + r.frets.join() + " are all lit");
+      if (s < 5){
+        const prev = c.rows[s + 1];
+        ok(prev.cell !== r.cell, "fam " + fam.f + " start " + x + " cells alternate " + strName[s + 1] + " → " + strName[s]);
+        const want = (prev.cell === "0,2,3" ? 0 : -1) + (s === 1 ? 1 : 0);   // s === 1 is B, reached from G
+        ok(r.start - prev.start === want, "fam " + fam.f + " start " + x + " shift " + strName[s + 1] + " → " + strName[s] + " is " + want + " (got " + (r.start - prev.start) + ")");
+      }
+    }
+    const midi = c.rows.slice().reverse().flatMap((r, i) => r.frets.map(v => v + OPEN[5 - i]));
+    ok(midi.length === 18 && midi.every((m, i) => i === 0 || (m - midi[i - 1] === 1 || m - midi[i - 1] === 2)), "fam " + fam.f + " start " + x + " is eighteen consecutive tones");
+    const c3 = cells(fam.f, x + 3);
+    ok(c3 && c3.rows.every((r, s) => r.frets.every((v, i) => v === c.rows[s].frets[i] + 3)), "fam " + fam.f + " pattern recurs three frets up from " + x);
+  }
+  // Vincent's two printed patterns, C whole-half (the C · Eb · Gb · A dim7 family), lowest movable
+  const vf = famOfDim(0);
+  const ex920 = [[1,2,4],[1,3,4],[1,2,4],[1,3,4],[2,3,5],[2,4,5]], ex921 = [[2,4,5],[3,4,6],[2,4,5],[3,4,6],[3,5,6],[4,5,7]];   // high e … low E
+  const v20 = cells(vf, 2), v21 = cells(vf, 4);
+  ok(v20 && v20.rows.every((r, s) => r.frets.join() === ex920[s].join()), "Ex. 9-20 (1-3-4 on the low E, frets 1–5) is reproduced");
+  ok(v21 && v21.rows.every((r, s) => r.frets.join() === ex921[s].join()), "Ex. 9-21 (1-2-4 on the low E, frets 2–7) is reproduced");
+  ok(v20 && v20.low === "1-3-4" && v21 && v21.low === "1-2-4", "the low-E cell names are the printed fingerings");
+  for (const [t, c] of [["Ex. 9-20", v20], ["Ex. 9-21", v21]]) if (c)
+    out.push("   " + t + " · " + c.label + ": " + [5,4,3,2,1,0].map(s => strName[s] + " " + c.rows[s].frets.join(",")).join(" · "));
   return { pass, fail, msgs, out };
 }
 /* ===== end stripes engine ===== */
@@ -607,23 +665,26 @@ function drawNeck(svg, o){
   }
   const toneOf = pc => (o.tones || []).find(t => t.pc === pc);
   const roots = o.roots || fam.roots;
-  const win = typeof o.win === "number" ? o.win : null, g = o.grip || null;
+  const win = typeof o.win === "number" ? o.win : null, g = o.grip || null, c = o.cells || null;
   // the position window: a translucent four-fret band, drawn under the dots
   if (win !== null) mk("rect", { x: x0 + win * FW, y: y(0) - SH / 2 - 3, width: 4 * FW, height: 6 * SH + 6, fill: "#c9a24a", "fill-opacity": .14, stroke: "#c9a24a", "stroke-width": 1.5, rx: 3, "pointer-events": "none" }, svg);
+  // the cells: one four-fret band per string at that string's own start, a staircase
+  if (c) for (let s = 0; s < 6; s++)
+    mk("rect", { x: x0 + c.rows[s].start * FW, y: y(s) - SH / 2 + 2, width: 4 * FW, height: SH - 4, fill: "#c9a24a", "fill-opacity": .14, stroke: "#c9a24a", "stroke-width": 1, rx: 3, "pointer-events": "none" }, svg);
   for (let s = 0; s < 6; s++) for (let x = 0; x <= o.frets; x++){
     if (isDark(o.f, TUNING[s], x)) continue;
     const pc = (TUNING[s] + x) % 12, t = toneOf(pc), isRoot = roots.includes(pc);
     const cx = x0 + x * FW + FW / 2, cy = y(s), r = 8.5;
     const inWin = win === null || (x >= win && x < win + 4);
     const inGrip = !g || g.brass.includes(pc) || g.bone.includes(pc);
+    const ci = c ? c.rows[s].frets.indexOf(x) : -1, inCells = !c || ci >= 0;
     const fill = g ? (g.brass.includes(pc) ? "#c9a24a" : "#e8e1d1") : (t ? "#c9a24a" : "#e8e1d1");
-    const dot = mk("g", inWin && inGrip ? {} : { opacity: .35 }, svg);
+    const dot = mk("g", inWin && inGrip && inCells ? {} : { opacity: .35 }, svg);
     mk("circle", { cx, cy, r, fill }, dot);
     if (isRoot) mk("circle", { cx, cy, r: r + 3, fill: "none", stroke: "#c9a24a", "stroke-width": 2 }, dot);
-    if (o.names){
-      const label = t ? t.deg : NAMES[pc];
-      mk("text", { x: cx, y: cy + 3.2, "text-anchor": "middle", "font-size": label.length > 2 ? 7 : 8.5, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#0b1a1f" }, dot).textContent = label;
-    }
+    // inside a cell the dot carries its finger; elsewhere the name, when asked for
+    const label = ci >= 0 ? String(c.rows[s].fingers[ci]) : o.names ? (t ? t.deg : NAMES[pc]) : "";
+    if (label) mk("text", { x: cx, y: cy + 3.2, "text-anchor": "middle", "font-size": label.length > 2 ? 7 : 8.5, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#0b1a1f" }, dot).textContent = label;
   }
   return { x0, FW };
 }
@@ -656,8 +717,14 @@ const markThumbs = (btns, f) => btns.forEach((b, i) => b.setAttribute("aria-pres
 
 /* ---------- neck panel: options shared by the Lookup neck and the drill reveal ----------
    OV is the session's overlay state (in memory only): the drill reveal shows whatever
-   Lookup last used, and vice versa. Position and Grip start off. */
-const OV = { frets: 15, groups: false, names: false, pos: false, start: 5, grip: false };
+   Lookup last used, and vice versa. Position, Grip and Cells start off. */
+const OV = { frets: 15, groups: false, names: false, pos: false, start: 5, grip: false, cells: false, cstart: 2 };
+// the nearest low-E fret at or beyond `x` (direction d) where a cell pattern starts and fits the neck
+function cellStart(f, x, d){
+  const top = OV.frets - 2;                           // frets of the highest start whose highest note is on the neck
+  for (let s = Math.max(1, Math.min(x, top)); s >= 1 && s <= top; s += d) { const c = cells(f, s); if (c && c.hi <= OV.frets) return s; }
+  return null;
+}
 const panels = [];
 function neckPanel(svg, box){
   const P = { svg, box, p: null, f: 1, geo: null };
@@ -674,37 +741,59 @@ function neckPanel(svg, box){
   const shape = el("span", "shape"); row2.appendChild(shape);
   row2.appendChild(check("Grip", "grip"));
   const cap = el("p", "cap"); cap.hidden = true;
-  box.textContent = ""; box.appendChild(row1); box.appendChild(row2); box.appendChild(cap);
+  // Cells: three notes per string, the pattern stepped to the next start fret that is lit on the low E
+  const row3 = el("div", "opts ov");
+  row3.appendChild(check("Cells", "cells"));
+  const cstep = seg([[-1, "‹", "cells one start down"], [1, "›", "cells one start up"]], null, d => { const n = cellStart(P.f, OV.cstart + d, d); if (n !== null) OV.cstart = n; });
+  row3.appendChild(cstep);
+  const clabel = el("span", "shape"); row3.appendChild(clabel);
+  const ccap = el("p", "cap"); ccap.hidden = true;
+  ccap.textContent = "Three notes a string: a 1-3-4 cell, then a 1-2-4, alternating. The next string starts on the same fret after a 1-3-4, one fret down after a 1-2-4, and one fret up across G–B. Step ‹ › for the other pattern; every three frets it repeats.";
+  box.textContent = ""; box.appendChild(row1); box.appendChild(row2); box.appendChild(cap); box.appendChild(row3); box.appendChild(ccap);
   P.draw = (p, f) => { P.p = p; P.f = f; P.render(); };
   P.render = () => {
     const p = P.p, f = P.f;
     OV.start = Math.max(0, Math.min(OV.frets - 3, OV.start));
     const g = OV.grip ? grip(p) : null;
-    P.geo = drawNeck(svg, { f, frets: OV.frets, tones: p && p.ok ? p.tones : [], names: OV.names, groups: OV.groups, win: OV.pos ? OV.start : null, grip: g });
-    svg.classList.toggle("pos", OV.pos);
+    let c = null;
+    if (OV.cells){ const s = cellStart(f, OV.cstart, 1) ?? cellStart(f, OV.cstart, -1); if (s !== null){ OV.cstart = s; c = cells(f, s); } }
+    P.geo = drawNeck(svg, { f, frets: OV.frets, tones: p && p.ok ? p.tones : [], names: OV.names, groups: OV.groups, win: OV.pos ? OV.start : null, grip: g, cells: c });
+    svg.classList.toggle("pos", OV.pos || !!c);
     // controls mirror the shared state
     [...row1.querySelector(".seg").children].forEach(b => b.setAttribute("aria-pressed", String(+b.textContent.slice(2) === OV.frets)));
     row1.querySelectorAll("input")[0].checked = OV.groups; row1.querySelectorAll("input")[1].checked = OV.names;
     row2.querySelectorAll("input")[0].checked = OV.pos; row2.querySelectorAll("input")[1].checked = OV.grip;
-    step.hidden = !OV.pos;
+    row3.querySelector("input").checked = OV.cells;
+    step.hidden = !OV.pos; cstep.hidden = !c;
     const w = OV.pos ? windowShape(f, OV.start) : null;
     shape.textContent = w ? "Shape " + w.shape + " · two notes on " + w.group + " · frets " + OV.start + "–" + (OV.start + 3) : "";
     cap.hidden = !(OV.grip && (g || p));
     cap.textContent = OV.grip ? (g ? g.caption : "Grip needs a chord: enter one above.") : "";
+    clabel.textContent = c ? c.label : "";
+    ccap.hidden = !c;
   };
-  // drag the window: pointer down inside it, move one fret at a time, no animation
+  // drag the window or the cells: pointer down inside, move one fret (or one start) at a time, no animation
   let drag = null;
   const fretAt = e => { const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return ((e.clientX - r.left) * vb.width / r.width - P.geo.x0) / P.geo.FW; };
+  const stringAt = e => { const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return Math.round(((e.clientY - r.top) * vb.height / r.height - 16) / 26); };
   svg.addEventListener("pointerdown", e => {
-    if (!OV.pos || !P.geo) return;
-    const fx = fretAt(e);
-    if (fx < OV.start || fx >= OV.start + 4) return;
-    drag = { fx, start: OV.start }; svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); e.preventDefault();
+    if (!P.geo) return;
+    const fx = fretAt(e), c = OV.cells ? cells(P.f, OV.cstart) : null;
+    if (OV.pos && fx >= OV.start && fx < OV.start + 4) drag = { what: "win", fx, start: OV.start };
+    else if (c){ const s = Math.max(0, Math.min(5, stringAt(e))); if (fx >= c.rows[s].start && fx < c.rows[s].start + 4) drag = { what: "cells", fx, start: OV.cstart }; }
+    if (!drag) return;
+    svg.setPointerCapture(e.pointerId); svg.classList.add("dragging"); e.preventDefault();
   });
   svg.addEventListener("pointermove", e => {
     if (!drag) return;
-    const next = Math.max(0, Math.min(OV.frets - 3, drag.start + Math.round(fretAt(e) - drag.fx)));
-    if (next !== OV.start){ OV.start = next; P.render(); }
+    if (drag.what === "win"){
+      const next = Math.max(0, Math.min(OV.frets - 3, drag.start + Math.round(fretAt(e) - drag.fx)));
+      if (next !== OV.start){ OV.start = next; P.render(); }
+    } else {
+      const d = Math.round(fretAt(e) - drag.fx), want = drag.start + d;
+      const next = d === 0 ? drag.start : cellStart(P.f, want, d > 0 ? 1 : -1);
+      if (next !== null && next !== OV.cstart){ OV.cstart = next; P.render(); }
+    }
   });
   const end = () => { if (drag){ drag = null; svg.classList.remove("dragging"); } };
   svg.addEventListener("pointerup", end); svg.addEventListener("pointercancel", end);
@@ -712,11 +801,15 @@ function neckPanel(svg, box){
   return P;
 }
 const redrawAll = () => panels.forEach(P => P.render());
-// arrow keys step the window on whichever neck is on screen
+// arrow keys step the window on whichever neck is on screen (or the cells, when only they are on)
 document.addEventListener("keydown", e => {
-  if (!OV.pos || (e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!(OV.pos || OV.cells) || (e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.metaKey || e.ctrlKey || e.altKey) return;
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  e.preventDefault(); OV.start += e.key === "ArrowRight" ? 1 : -1; redrawAll();
+  e.preventDefault();
+  const d = e.key === "ArrowRight" ? 1 : -1;
+  if (OV.pos) OV.start += d;
+  else { const P = panels.find(P => P.svg.getClientRects().length), n = cellStart(P ? P.f : 1, OV.cstart + d, d); if (n !== null) OV.cstart = n; }
+  redrawAll();
 });
 
 /* ---------- result line ---------- */

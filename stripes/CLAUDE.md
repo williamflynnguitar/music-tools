@@ -85,10 +85,33 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   shape, plus every note one fret up." With Grip on, brass means the
   arpeggio, not the chord tones, and everything else dims to 35%. With no
   chord (a family picked from the thumbnails) the caption asks for one.
-- Both on at once: a dot is full only if it is inside the window and in the
-  grip. Fixtures 9 and 10 cover the shapes and the grip for every family,
-  start fret and root (`check.js`, 772 assertions); item 11 (both overlays at
-  375 px, no page scroll) was checked in the browser on 2026-11-06.
+- **Cells** (2026-11-07, from Randy Vincent, *The Guitarist's Introduction
+  to Jazz*, Ex. 9-20 and 9-21, pp. 137–138; William: "I like his concepts").
+  Three notes a string, eighteen consecutive collection tones from a start
+  fret on the low E: each string is a **1-3-4 cell** (frets 0-2-3, his
+  "minor" trichord) or a **1-2-4 cell** (0-1-3, his "phrygian"), and they
+  alternate because the collection alternates whole and half steps. `cells(f,
+  start)` reads the pattern off the collection (nothing hardcoded) and
+  returns null when the low-E start is dark, so a family has two patterns,
+  one per lit start, recurring every three frets. The shift rule, which the
+  book draws but never states and fixture 12 proves: the next string starts
+  on the **same fret after a 1-3-4 cell, one fret lower after a 1-2-4, and
+  one fret higher across G–B**. The addendum's deferred item said "down one
+  fret per string"; that is not what his patterns do, and the page follows
+  the book. Drawn as one four-fret band per string (a staircase), fingers in
+  the dots inside the cells (note names, when on, apply only outside), the
+  rest dimmed to 35%; label "1-3-4 on the low E · frets 1–5"; stepped by
+  ‹ › to the next lit start, dragged on its bands, or by the arrow keys when
+  Position is off. No open strings, as in the book ("lowest movable"). With
+  Grip on as well, the brass dots inside the cells are his °7 arpeggio
+  forms of Ex. 10-10 (p. 160), which he derives the same way. His long form
+  (Ex. 9-27, the H-W-H tetrachord in tritones, fingers 1-1-3-4) is already
+  Fretboard's Full range; not drawn here.
+- All on at once: a dot is full only if it is inside the window, in the
+  grip and in a cell. Fixtures 9, 10 and 12 cover the shapes, the grip and
+  the cells for every family, start fret and root (`check.js`, 1,387
+  assertions); item 11 (both overlays at 375 px, no page scroll) was
+  checked in the browser on 2026-11-06, and again with Cells on 2026-11-07.
 
 ## Lookup
 
@@ -117,8 +140,9 @@ thumbnails during the prompt. Nothing persists across reloads.
 ## Acceptance checklist
 
 `node stripes/check.js` (or `?test=1` in the browser, logged to the console)
-runs items 1–4 and 7 of the brief's checklist and 9–10 of the addendum —
-772 assertions — and prints
+runs items 1–4 and 7 of the brief's checklist, 9–10 of the addendum and 12
+(Vincent's two printed patterns, reproduced fret for fret) — 1,387
+assertions — and prints
 the full conversion table, the dark-fret lists per family and string, the
 parser fixture (57 symbols) and the hand-checked degrees for G13b9, Bdim7 and
 Db7#11. Items 5, 6 and 8 (no motion, 375 px drill round, OG tags and nav)
@@ -137,9 +161,9 @@ the brief names none and benchmarks are William's to write
 
 ## Deferred (brief and addendum, not built in phase 1)
 
-- Three-notes-per-string view: each string a 0-1-3 cell (fingers 1-2-4) or
-  a 0-2-3 cell (1-3-4), strictly alternating, shifting down one fret per
-  string except across the G–B pair; eighteen notes over six strings.
+- ~~Three-notes-per-string view~~ — built 2026-11-07 as the Cells overlay,
+  from Randy Vincent's patterns rather than the addendum's shift rule (see
+  "Position windows and the dim7 grip").
 - Minor-third cell builder (a four-note cell transposed every three frets)
   → Mode 3, Structures.
 - Dominant-arpeggios-in-minor-thirds and major-triads-in-minor-thirds

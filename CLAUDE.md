@@ -11,8 +11,9 @@ William, a jazz guitarist and educator. Primary users are me and my students.
 - `stripes/` — **built** (Nov 2026, phase 1). The half-whole diminished
   scale (pp. 22–23) as three *families*, each named by its four dominant
   roots, drawn as one striped neck: Lookup (chord symbol → family → lit
-  fretboard, position-window and dim7-grip overlays) and a Conversion drill
-  with four levels. Brief and its 2026-11-06 addendum in `briefs/`;
+  fretboard; position-window, dim7-grip and three-notes-per-string Cells
+  overlays, the last from Randy Vincent's Ex. 9-20/9-21) and a Conversion
+  drill with four levels. Brief and its 2026-11-06 addendum in `briefs/`;
   engine rules and the acceptance checklist in `stripes/CLAUDE.md`.
   Never "half-whole" or "whole-half" as the name of anything on the page
 - `scales-deck/` — Scale Practice 101 walkthrough (pp. 61–64)
