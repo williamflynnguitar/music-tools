@@ -104,14 +104,27 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   ‹ › to the next lit start, dragged on its bands, or by the arrow keys when
   Position is off. No open strings, as in the book ("lowest movable"). With
   Grip on as well, the brass dots inside the cells are his °7 arpeggio
-  forms of Ex. 10-10 (p. 160), which he derives the same way. His long form
-  (Ex. 9-27, the H-W-H tetrachord in tritones, fingers 1-1-3-4) is already
-  Fretboard's Full range; not drawn here.
-- All on at once: a dot is full only if it is inside the window, in the
-  grip and in a cell. Fixtures 9, 10 and 12 cover the shapes, the grip and
-  the cells for every family, start fret and root (`check.js`, 1,387
-  assertions); item 11 (both overlays at 375 px, no page scroll) was
-  checked in the browser on 2026-11-06, and again with Cells on 2026-11-07.
+  forms of Ex. 10-10 (p. 160), which he derives the same way.
+- **Long form** (2026-11-07, Vincent Ex. 9-26/9-27, pp. 143–144). The
+  four-note tetrachord 0-1-3-4 (fingers **1-1-3-4**, the index sliding the
+  half step) once per string, twenty-four consecutive tones from a lit
+  start on the low E whose tetrachord fits, so one start every three frets
+  and one pattern per family. Four of the eight tones is half the scale, so
+  each string starts a tritone up: one fret higher, two across G–B
+  (fixture 13 proves it and reproduces Ex. 9-27 fret for fret). Three
+  octaves; each string pair is one, the same fingers on the same notes,
+  which is how he gets his long-form arpeggios: with Grip on, the brass
+  dots are his third °7 form (two a string, fingers 1 and 4; the fixture
+  cuts Ex. 9-27 to C°7 and gets Ex. 10-10). Same shape and fingers as
+  Fretboard's Full range. Drawn, stepped and dragged like Cells (`PATS`,
+  `patStart`, `patOf` serve both); on a 0–15 neck only the starts whose
+  highest note is on the neck are offered, so ‹ › may have nowhere to go.
+- All on at once: a dot is full only if it is inside the window and in
+  every pattern that is on; Grip recolours rather than dims. Fixtures 9,
+  10, 12 and 13 cover the shapes, the grip, the cells and the long form for
+  every family, start fret and root (`check.js`, 1,653 assertions); item 11
+  (overlays at 375 px, no page scroll) was checked in the browser on
+  2026-11-06, and again with Cells and Long form on 2026-11-07.
 
 ## Lookup
 
@@ -140,9 +153,9 @@ thumbnails during the prompt. Nothing persists across reloads.
 ## Acceptance checklist
 
 `node stripes/check.js` (or `?test=1` in the browser, logged to the console)
-runs items 1–4 and 7 of the brief's checklist, 9–10 of the addendum and 12
-(Vincent's two printed patterns, reproduced fret for fret) — 1,387
-assertions — and prints
+runs items 1–4 and 7 of the brief's checklist, 9–10 of the addendum, 12 and
+13 (Vincent's printed patterns and long form, reproduced fret for fret) —
+1,653 assertions — and prints
 the full conversion table, the dark-fret lists per family and string, the
 parser fixture (57 symbols) and the hand-checked degrees for G13b9, Bdim7 and
 Db7#11. Items 5, 6 and 8 (no motion, 375 px drill round, OG tags and nav)
