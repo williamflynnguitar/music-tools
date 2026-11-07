@@ -595,7 +595,7 @@ function drawNeck(svg, o){
   for (let s = 0; s < 6; s++) for (let x = 0; x <= o.frets; x++)
     if (isDark(o.f, TUNING[s], x)) mk("rect", { x: x0 + x * FW, y: y(s) - SH / 2, width: FW, height: SH, fill: "#071317" }, svg);
   // nut and frets
-  mk("rect", { x: x0 + FW - 2, y: y(0) - SH / 2, width: 4, height: 5 * SH, fill: "#e8e1d1" }, svg);
+  mk("rect", { x: x0 + FW - 2, y: y(0) - SH / 2, width: 4, height: 6 * SH, fill: "#e8e1d1" }, svg);
   for (let x = 2; x <= o.frets + 1; x++) mk("line", { x1: x0 + x * FW, y1: y(0) - SH / 2, x2: x0 + x * FW, y2: y(5) + SH / 2, stroke: "#2a5461", "stroke-width": 1 }, svg);
   for (let s = 0; s < 6; s++) mk("line", { x1: x0, y1: y(s), x2: x0 + (o.frets + 1) * FW, y2: y(s), stroke: "#a89f8c", "stroke-width": 1 + s * 0.25 }, svg);
   // fret numbers under the neck, centred on the fret space (William, 2026-11-06: easier to read below)
@@ -609,7 +609,7 @@ function drawNeck(svg, o){
   const roots = o.roots || fam.roots;
   const win = typeof o.win === "number" ? o.win : null, g = o.grip || null;
   // the position window: a translucent four-fret band, drawn under the dots
-  if (win !== null) mk("rect", { x: x0 + win * FW, y: y(0) - SH / 2 - 3, width: 4 * FW, height: 5 * SH + 6, fill: "#c9a24a", "fill-opacity": .14, stroke: "#c9a24a", "stroke-width": 1.5, rx: 3, "pointer-events": "none" }, svg);
+  if (win !== null) mk("rect", { x: x0 + win * FW, y: y(0) - SH / 2 - 3, width: 4 * FW, height: 6 * SH + 6, fill: "#c9a24a", "fill-opacity": .14, stroke: "#c9a24a", "stroke-width": 1.5, rx: 3, "pointer-events": "none" }, svg);
   for (let s = 0; s < 6; s++) for (let x = 0; x <= o.frets; x++){
     if (isDark(o.f, TUNING[s], x)) continue;
     const pc = (TUNING[s] + x) % 12, t = toneOf(pc), isRoot = roots.includes(pc);
