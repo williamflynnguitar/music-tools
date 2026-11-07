@@ -374,14 +374,26 @@ function windowShape(f, start){
   const shape = two.length === 1 && three.length === 2 ? two[0] + 1 : 0;   // 0 never happens; the fixture proves it
   return { start, notes, counts, shape, group: shape ? GROUP_NAME[shape - 1] : "" };
 }
-// Dim7 doubling: a dominant's family is the dim7 on its root plus every note one
-// fret UP; a dim chord's family is its own dim7 plus every note one fret DOWN.
+// Dim7 doubling: a family is a dim7 arpeggio plus every note one fret DOWN. The
+// anchor is the dim7 the player actually plays over the chord: for a dominant, the
+// one on its 3rd (G7 → Bdim7 = B D F Ab, the 3, 5, b7 and b9; William, 2026-11-07 —
+// the addendum had anchored on the root, whose dim7 is the #9, #11 and 13); for a
+// dim chord, its own. The double, a fret down, is the rest of the family.
 function grip(p){
   if (!p || !p.ok) return null;
-  const brass = [0, 3, 6, 9].map(i => (p.root + i) % 12), dir = p.kind === "dom" ? 1 : -1;
-  const bone = brass.map(pc => (pc + dir + 12) % 12);
-  return { root: p.root, brass, bone, dir,
-    caption: p.rootName + p.qual + ": " + p.rootName + "dim7 shape, plus every note one fret " + (dir > 0 ? "up" : "down") + "." };
+  const anchor = p.kind === "dom" ? (p.root + 4) % 12 : p.root, dir = -1;
+  const brass = [0, 3, 6, 9].map(i => (anchor + i) % 12);
+  const bone = brass.map(pc => (pc + 11) % 12);
+  const name = p.kind === "dom" ? spellThird(p) : p.rootName;
+  return { root: p.root, anchor, brass, bone, dir,
+    caption: p.rootName + p.qual + ": " + name + "dim7 shape" + (p.kind === "dom" ? " (its 3, 5, b7 and b9)" : "") + ", plus every note one fret down." };
+}
+// The 3rd of a dominant, spelled a letter above its root (F#7 → A#, not Bb); a letter
+// that would need two accidentals gives way to the plain flat name (root rule).
+function spellThird(p){
+  const L = "CDEFGAB", i = L.indexOf(p.rootName[0]), letter = L[(i + 2) % 7], pc = (p.root + 4) % 12;
+  const acc = ((pc - LETTER[letter] + 18) % 12) - 6;
+  return Math.abs(acc) > 1 ? NAMES[pc] : letter + (acc === 1 ? "#" : acc === -1 ? "b" : "");
 }
 
 // Three-note-per-string cells (Randy Vincent, The Guitarist's Introduction to Jazz,
@@ -598,8 +610,8 @@ function runFixtures(){
   const setEq = (a, b) => a.length === b.length && [...a].sort((x, y) => x - y).join() === [...b].sort((x, y) => x - y).join();
   for (let r = 0; r < 12; r++){
     const gd = grip(parse(NAMES[r] + "7")), litD = FAMILIES[famOfDominant(r)].lit.map((v, pc) => v ? pc : -1).filter(pc => pc >= 0);
-    ok(setEq(gd.brass, [r, r+3, r+6, r+9].map(pc => pc % 12)), "dominant " + NAMES[r] + " brass = dim7 on the root");
-    ok(gd.dir === 1 && setEq(gd.bone, gd.brass.map(pc => (pc + 1) % 12)), "dominant " + NAMES[r] + " bone = brass one fret up");
+    ok(setEq(gd.brass, [r+4, r+7, r+10, r+1].map(pc => pc % 12)), "dominant " + NAMES[r] + " brass = dim7 on the 3rd (3 5 b7 b9)");
+    ok(gd.dir === -1 && setEq(gd.bone, gd.brass.map(pc => (pc + 11) % 12)), "dominant " + NAMES[r] + " bone = brass one fret down (the root's dim7)");
     ok(setEq(gd.brass.concat(gd.bone), litD), "dominant " + NAMES[r] + " brass ∪ bone = family");
     const gx = grip(parse(NAMES[r] + "dim7")), litX = FAMILIES[famOfDim(r)].lit.map((v, pc) => v ? pc : -1).filter(pc => pc >= 0);
     ok(setEq(gx.brass, [r, r+3, r+6, r+9].map(pc => pc % 12)), "dim " + NAMES[r] + " brass = its own dim7");
@@ -608,7 +620,8 @@ function runFixtures(){
     out.push("   " + (NAMES[r] + "7").padEnd(5) + " brass " + gd.brass.map(pc => NAMES[pc]).join(" ").padEnd(14) + " bone " + gd.bone.map(pc => NAMES[pc]).join(" ").padEnd(14) + "   " + (NAMES[r] + "dim7").padEnd(7) + " brass " + gx.brass.map(pc => NAMES[pc]).join(" ").padEnd(14) + " bone " + gx.bone.map(pc => NAMES[pc]).join(" "));
     ok(grip(parse(NAMES[r] + "dim")).dir === -1, "dim triad " + NAMES[r] + " doubles down");
   }
-  out.push("   " + grip(parse("G7")).caption + "  /  " + grip(parse("Cdim7")).caption);
+  ok(spellThird(parse("G7")) === "B" && spellThird(parse("F#7")) === "A#" && spellThird(parse("Db7")) === "F" && spellThird(parse("Bb7")) === "D", "the 3rd is spelled a letter above the root");
+  out.push("   " + grip(parse("G7")).caption + "  /  " + grip(parse("F#7")).caption + "  /  " + grip(parse("Cdim7")).caption);
   // 12. three-note-per-string cells (Vincent Ex. 9-20 / 9-21)
   out.push("12. Cells (three notes per string)");
   const strName = ["high E","B","G","D","A","low E"];

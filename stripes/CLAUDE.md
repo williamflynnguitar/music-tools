@@ -78,11 +78,19 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   neck, stepped by ‹ › or the arrow keys, one fret at a time, and redrawn,
   never animated. The label reads "Shape 3 · two notes on A · frets 6–9".
 - **Grip.** The family is the anchor dim7 arpeggio plus its double one fret
-  away: for a dominant, the dim7 **on the dominant root** doubled one fret
-  **up** (G7 = Gdim7 + Abdim7); for a dim chord, its **own** dim7 doubled
-  one fret **down** (Cdim7 = Cdim7 + Bdim7). `grip(p)` returns the brass
-  set (the arpeggio), the bone set (the double) and the caption: "G7: Gdim7
-  shape, plus every note one fret up." With Grip on, brass means the
+  **down**. The anchor is the dim7 a player actually uses over the chord:
+  for a dominant, the dim7 **on its 3rd** (G7 = Bdim7, the 3 5 b7 b9, plus
+  Gdim7 a fret down); for a dim chord, its **own** dim7 (Cdim7 = Cdim7 +
+  Bdim7). The addendum anchored a dominant on its root and doubled up;
+  William's ruling of 2026-11-07 ("the diminished that works over G7 is B,
+  D, F or Ab diminished") moved the anchor to the 3rd, because the root's
+  dim7 is the chord's #9, #11 and 13, not its tones. Fixture 10 now checks
+  the 3rd; the addendum's item 10 wording is the old rule. `grip(p)` returns
+  the brass set (the arpeggio), the bone set (the double) and the caption:
+  "G7: Bdim7 shape (its 3, 5, b7 and b9), plus every note one fret down."
+  The 3rd is spelled a letter above the root (`spellThird`: F#7 → A#dim7,
+  never Bb), falling back to the flat name where a letter would need two
+  accidentals. With Grip on, brass means the
   arpeggio, not the chord tones, and the double is drawn **hollow** (bone
   outline on the neck ground, labels in bone), so the dim7 is the only solid
   shape on the neck. The addendum said "dims everything except" the two,
@@ -130,7 +138,7 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   every pattern that is on; Grip recolours (solid arpeggio, hollow double)
   rather than dims. Fixtures 9,
   10, 12 and 13 cover the shapes, the grip, the cells and the long form for
-  every family, start fret and root (`check.js`, 1,653 assertions); item 11
+  every family, start fret and root (`check.js`, 1,654 assertions); item 11
   (overlays at 375 px, no page scroll) was checked in the browser on
   2026-11-06, and again with Cells and Long form on 2026-11-07.
 
@@ -163,7 +171,7 @@ thumbnails during the prompt. Nothing persists across reloads.
 `node stripes/check.js` (or `?test=1` in the browser, logged to the console)
 runs items 1–4 and 7 of the brief's checklist, 9–10 of the addendum, 12 and
 13 (Vincent's printed patterns and long form, reproduced fret for fret) —
-1,653 assertions — and prints
+1,654 assertions — and prints
 the full conversion table, the dark-fret lists per family and string, the
 parser fixture (57 symbols) and the hand-checked degrees for G13b9, Bdim7 and
 Db7#11. Items 5, 6 and 8 (no motion, 375 px drill round, OG tags and nav)
