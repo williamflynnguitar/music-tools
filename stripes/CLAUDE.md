@@ -91,15 +91,17 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   The 3rd is spelled a letter above the root (`spellThird`: F#7 → A#dim7,
   never Bb), falling back to the flat name where a letter would need two
   accidentals. With Grip on, brass means the
-  arpeggio, not the chord tones, and the double is drawn **hollow** (bone
-  outline on the neck ground, labels in bone), so the dim7 is the only solid
-  shape on the neck. The addendum said "dims everything except" the two,
-  but the two together are the whole family, so nothing was left to dim and
-  the first build (2026-11-06) changed almost nothing visible: a dim7 chord's
-  tones already are its grip, and a dominant's grip is its four ringed
-  roots. William reported it as not working on 2026-11-07; hollow doubles
-  since. With no chord (a family picked from the thumbnails) the caption
-  asks for one.
+  arpeggio, not the chord tones, and the double is a **hollow ghost at 35%**
+  (bone outline on the neck ground, labels in bone, the same opacity as a
+  dot outside the position window), so the dim7 is the only shape at full
+  strength. The addendum said "dims everything except" the arpeggio and its
+  double, but the two together are the whole family, so nothing was left to
+  dim and the first build (2026-11-06) changed almost nothing visible; a
+  hollow-but-bright double (the first fix) was still "not a big enough
+  difference" because the family's root rings sit on the double and made it
+  look like the ringed dots of the plain view. Since 2026-11-07 the double
+  dims, rings and all. With no chord (a family picked from the thumbnails)
+  the caption asks for one.
 - **Cells** (2026-11-07, from Randy Vincent, *The Guitarist's Introduction
   to Jazz*, Ex. 9-20 and 9-21, pp. 137–138; William: "I like his concepts").
   Three notes a string, eighteen consecutive collection tones from a start
@@ -135,8 +137,8 @@ Lookup last used is what the reveal shows, and vice versa. Both start off.
   `patStart`, `patOf` serve both); on a 0–15 neck only the starts whose
   highest note is on the neck are offered, so ‹ › may have nowhere to go.
 - All on at once: a dot is full only if it is inside the window and in
-  every pattern that is on; Grip recolours (solid arpeggio, hollow double)
-  rather than dims. Fixtures 9,
+  every pattern that is on, and with Grip on only if it is in the anchor
+  dim7; the double is a hollow ghost either way. Fixtures 9,
   10, 12 and 13 cover the shapes, the grip, the cells and the long form for
   every family, start fret and root (`check.js`, 1,654 assertions); item 11
   (overlays at 375 px, no page scroll) was checked in the browser on

@@ -732,11 +732,11 @@ function drawNeck(svg, o){
     const pc = (TUNING[s] + x) % 12, t = toneOf(pc), isRoot = roots.includes(pc);
     const cx = x0 + x * FW + FW / 2, cy = y(s), r = 8.5;
     const inWin = win === null || (x >= win && x < win + 4);
-    const inGrip = !g || g.brass.includes(pc) || g.bone.includes(pc);
+    const inGrip = !g || g.brass.includes(pc);          // the double dims with everything else
     const hits = pats.map(pat => pat.rows[s].frets.indexOf(x)), inPats = hits.every(i => i >= 0);
     const fi = hits.findIndex(i => i >= 0), finger = fi >= 0 ? pats[fi].rows[s].fingers[hits[fi]] : 0;
-    // Grip: the anchor dim7 is the only solid shape; its double is drawn hollow, so the
-    // grip reads as four notes slid a fret rather than as the whole stripe recoloured
+    // Grip: the anchor dim7 is the only shape at full strength; its double is a hollow
+    // ghost at 35% (William, 2026-11-07: recolouring alone was not a visible difference)
     const hollow = !!g && !g.brass.includes(pc);
     const fill = g ? (hollow ? "#123640" : "#c9a24a") : (t ? "#c9a24a" : "#e8e1d1");
     const dot = mk("g", inWin && inGrip && inPats ? {} : { opacity: .35 }, svg);
