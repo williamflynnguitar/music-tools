@@ -722,13 +722,16 @@ function drawNeck(svg, o){
     const inGrip = !g || g.brass.includes(pc) || g.bone.includes(pc);
     const hits = pats.map(pat => pat.rows[s].frets.indexOf(x)), inPats = hits.every(i => i >= 0);
     const fi = hits.findIndex(i => i >= 0), finger = fi >= 0 ? pats[fi].rows[s].fingers[hits[fi]] : 0;
-    const fill = g ? (g.brass.includes(pc) ? "#c9a24a" : "#e8e1d1") : (t ? "#c9a24a" : "#e8e1d1");
+    // Grip: the anchor dim7 is the only solid shape; its double is drawn hollow, so the
+    // grip reads as four notes slid a fret rather than as the whole stripe recoloured
+    const hollow = !!g && !g.brass.includes(pc);
+    const fill = g ? (hollow ? "#123640" : "#c9a24a") : (t ? "#c9a24a" : "#e8e1d1");
     const dot = mk("g", inWin && inGrip && inPats ? {} : { opacity: .35 }, svg);
-    mk("circle", { cx, cy, r, fill }, dot);
+    mk("circle", hollow ? { cx, cy, r: r - 1, fill, stroke: "#e8e1d1", "stroke-width": 2 } : { cx, cy, r, fill }, dot);
     if (isRoot) mk("circle", { cx, cy, r: r + 3, fill: "none", stroke: "#c9a24a", "stroke-width": 2 }, dot);
     // inside a pattern the dot carries its finger; elsewhere the name, when asked for
     const label = finger ? String(finger) : o.names ? (t ? t.deg : NAMES[pc]) : "";
-    if (label) mk("text", { x: cx, y: cy + 3.2, "text-anchor": "middle", "font-size": label.length > 2 ? 7 : 8.5, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: "#0b1a1f" }, dot).textContent = label;
+    if (label) mk("text", { x: cx, y: cy + 3.2, "text-anchor": "middle", "font-size": label.length > 2 ? 7 : 8.5, "font-family": "SF Mono,Menlo,Consolas,monospace", fill: hollow ? "#e8e1d1" : "#0b1a1f" }, dot).textContent = label;
   }
   return { x0, FW };
 }
@@ -826,7 +829,7 @@ function neckPanel(svg, box){
     step.hidden = !OV.pos;
     const w = OV.pos ? windowShape(f, OV.start) : null;
     shape.textContent = w ? "Shape " + w.shape + " · two notes on " + w.group + " · frets " + OV.start + "–" + (OV.start + 3) : "";
-    cap.hidden = !(OV.grip && (g || p));
+    cap.hidden = !OV.grip;
     cap.textContent = OV.grip ? (g ? g.caption : "Grip needs a chord: enter one above.") : "";
     for (const [name, r] of [["cells", cellsRow], ["long", longRow]]){
       const pat = pats[name];
