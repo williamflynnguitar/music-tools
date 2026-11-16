@@ -1,0 +1,15 @@
+{
+  "format": "song-roadmap",
+  "version": 1,
+  "exported": "2026-11-16T16:24:10.432Z",
+  "band": "Flunk",
+  "charts": [
+    {
+      "id": "d8env4k939nr",
+      "text": "title: Superstition\nband: Flunk\nkey: Ebm\ntempo: 100\nstart: drums count in from click\nlead: Jyavon\nref: https://...\n\n# Intro A | 2\ndrums alone\n-> straight into 2\n\n# Intro B (clav riff) | 8\nEb7 x8\n-> horns enter bar 5; vocal pickup last beat of bar 8\n\n# Verse 1 | 16\nEb7 x16\n-> no break, chorus hits on the downbeat\n\n# Chorus | 8\nBb7 | B7 | Bb7 | Ab7 | Eb7 | Eb7 | Eb7 | Eb7\n-> horn stabs bars 7-8; back to riff\n\n# Solo | 16 open 32\nEb7 x16\n-> MD fist on last 4 bars = go to 8\n\n# Vamp | open\nEb7 riff w/ horns\n-> drummer crash on 4 = ending\n\n# Ending | 1\nEb7 stabs x4, cut on 4\n",
+      "displayKey": "",
+      "updated": 1794846208167
+    }
+  ],
+  "sets": []
+}
