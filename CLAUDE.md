@@ -65,6 +65,14 @@ William, a jazz guitarist and educator. Primary users are me and my students.
   Its parser accepts whatever gets pasted in, so `normalizeSym` rewrites a
   double accidental at every entry point — typed, imported, or restored from
   a save made before the rule.
+- `song-roadmap/` — **deployed** (Nov 2026). One-page song roadmaps for band
+  rehearsal and the stage: a director writes the chart (sections, bar counts,
+  chords, what happens next), the band reads it in stand view from a share
+  link or a band file (`?band=<slug>` loads `bands/<slug>.json`). For the WSU
+  commercial ensembles, not a practice tool. Unlisted from the landing page
+  and the spine, like Stage Plot, pending William's decision. Uses
+  `localStorage` on purpose, the second deliberate exception to the
+  no-storage rule. Notes and the deferred list in `song-roadmap/CLAUDE.md`
 
 ## Who these are for
 
