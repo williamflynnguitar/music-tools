@@ -21,7 +21,7 @@ const fs = require("fs"), path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const CANON = "arpeggios-deck/index.html";
-const SKIP = ["box-buddy", "stageplot", "chartwright"];   // they make paper, not practice (William, 2026-09-19)
+const SKIP = ["box-buddy", "stageplot", "chartwright", "song-roadmap"];   // they make paper, not practice (William, 2026-09-19)
 const OPEN = "<!-- ===== practice strip";
 const CLOSE = "<!-- ===== end practice strip ===== -->";
 const check = process.argv.includes("--check");
