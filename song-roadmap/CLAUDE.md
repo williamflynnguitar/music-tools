@@ -41,6 +41,8 @@ note: Bass: walk up in bar 8
 
 **Main pieces in the file.** `parseChart` (text → chart), `renderChart` (chart → HTML for preview, stand view, and print), the builder (`toModel`, `serialize`, `commit`), stand view, set lists, share links (chart compressed into the URL hash), band files (`?band=<slug>` loads `bands/<slug>.json` read-only), and an inline QR encoder.
 
+**Build must not shorten a chart it reads.** `toModel` takes the bar count from the chord row when the header has none (`| open` over several bars becomes `| 4 open`; a countless section gets its row's length). Before 2026-11-16 `resizeBars` cut those rows to one bar or none and the next Build edit autosaved the loss. Any new header form needs the same round-trip check: text → Build edit → text keeps every bar.
+
 **Storage.** `localStorage` key `songRoadmap.v1` holds the director's charts, set lists, and settings. `songRoadmap.lib.<slug>` caches a band file for offline reading.
 
 **Visual language.** Petrol/ink ground, bone text, brass accent, monospace for data, serif for reading text, matching the rest of the suite.

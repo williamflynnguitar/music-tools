@@ -1302,6 +1302,9 @@ function toModel(chart){
     const bars = (s.bars || []).map(b => b.join(" "));
     let count = s.barCount || null;
     if (count && bars.length > count) count = bars.length;
+    /* No written count: the chord row is the count. Without this resizeBars cuts an "| open"
+       section to one bar and a countless one to none, and the next Build edit saves the loss. */
+    if (!count && bars.length > (s.open ? 1 : 0)) count = bars.length;
     return { id:uid(), label:s.label, count, open:!!s.open, openMax:s.openMax || null, same:null, shift:0,
       sameN:(s.sameAs && !s.badSame && !s.hadOwn) ? s.sameAs : null, sameShift:s.sameShift || 0, bars,
       then:s.then.join("; "), desc:[...s.desc, s.annotation].filter(Boolean).join("; "), notes:s.notes.join("\n"), lyric:s.lyric || "", at:s.at || "" };
